@@ -543,6 +543,153 @@
             color: #ffdd00; font-size: 16px; font-weight: bold; cursor: pointer;
         }
 
+
+        /* ============================================================ */
+        /* МОБИЛЬНАЯ ВЁРСТКА — компактные меню по высоте */
+        /* ============================================================ */
+        @media (max-width: 768px), (max-height: 820px) {
+            #difficulty-screen .content {
+                padding: 16px 16px 20px !important;
+                max-width: 96vw !important;
+                max-height: 94vh !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            #difficulty-screen h1 { font-size: 20px !important; margin-bottom: 4px !important; }
+            #difficulty-screen .sub { font-size: 12px !important; margin-bottom: 6px !important; }
+            #difficulty-screen .best-time { font-size: 12px !important; margin-bottom: 8px !important; }
+            #difficulty-screen .quality-selector { margin: 8px 0 10px !important; gap: 6px !important; }
+            #difficulty-screen .quality-selector .q-btn { padding: 5px 10px !important; font-size: 11px !important; }
+            #difficulty-screen .difficulty-btn { padding: 10px !important; margin-bottom: 8px !important; font-size: 14px !important; }
+            #difficulty-screen .difficulty-btn .desc { font-size: 11px !important; }
+            #difficulty-screen .content img {
+                max-height: 18vh !important;
+                margin-bottom: 8px !important;
+            }
+
+            #car-select-screen .content,
+            #map-select-screen .content {
+                padding: 12px 12px 16px !important;
+                max-width: 96vw !important;
+                max-height: 94vh !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            #car-select-screen h2,
+            #map-select-screen h2 {
+                font-size: 17px !important;
+                margin-bottom: 4px !important;
+            }
+            #car-select-screen .sub,
+            #map-select-screen .sub {
+                font-size: 11px !important;
+                margin-bottom: 8px !important;
+            }
+            #car-select-banner,
+            #map-select-banner {
+                max-height: 14vh !important;
+                aspect-ratio: auto !important;
+                margin-bottom: 8px !important;
+            }
+            .car-options,
+            .map-options {
+                flex-direction: column !important;
+                gap: 8px !important;
+                align-items: stretch !important;
+            }
+            .car-card,
+            .map-card {
+                max-width: 100% !important;
+                min-width: 0 !important;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 10px !important;
+                padding: 8px 10px !important;
+                text-align: left !important;
+            }
+            .car-card .car-img,
+            .map-card .map-img {
+                width: 72px !important;
+                min-width: 72px !important;
+                height: 48px !important;
+                aspect-ratio: auto !important;
+                margin-bottom: 0 !important;
+                object-fit: cover !important;
+            }
+            .car-card .car-name,
+            .map-card .map-name {
+                font-size: 13px !important;
+                margin-bottom: 2px !important;
+            }
+            .car-card .car-desc,
+            .map-card .map-desc {
+                font-size: 10px !important;
+                line-height: 1.25 !important;
+            }
+            .map-card .lock-badge {
+                font-size: 10px !important;
+                margin-top: 2px !important;
+            }
+            #car-select-go,
+            #map-select-go {
+                margin-top: 10px !important;
+                padding: 10px !important;
+                font-size: 14px !important;
+            }
+            #map-unlock-hint {
+                font-size: 11px !important;
+                margin-top: 6px !important;
+            }
+
+            #lore-screen .lore-panel {
+                max-height: 94vh !important;
+                overflow-y: auto !important;
+            }
+            #lore-screen .lore-img {
+                max-height: 22vh !important;
+                aspect-ratio: auto !important;
+            }
+            #lore-screen .lore-text {
+                padding: 12px 14px 8px !important;
+                font-size: 13px !important;
+                max-height: none !important;
+            }
+            #lore-screen .lore-text h2 {
+                font-size: 16px !important;
+                margin-bottom: 8px !important;
+            }
+            #lore-screen .lore-nav {
+                padding: 8px 12px 14px !important;
+            }
+            #lore-screen .lore-btn {
+                padding: 10px !important;
+                font-size: 13px !important;
+            }
+        }
+
+        /* Очень низкие экраны (телефоны горизонтально / мелкие) */
+        @media (max-height: 600px) {
+            #difficulty-screen .content img,
+            #car-select-banner,
+            #map-select-banner,
+            #lore-screen .lore-img {
+                display: none !important;
+            }
+            .car-card .car-img,
+            .map-card .map-img {
+                width: 56px !important;
+                min-width: 56px !important;
+                height: 40px !important;
+            }
+            #difficulty-screen .content,
+            #car-select-screen .content,
+            #map-select-screen .content {
+                max-height: 98vh !important;
+                padding: 10px !important;
+            }
+        }
+
     </style>
 </head>
 <body>
