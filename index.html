@@ -2,17 +2,48 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>🏎️ Дорожный прорыв</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { overflow: hidden; background: #000; font-family: 'Segoe UI', Arial, sans-serif; }
-        #game-container { width: 100vw; height: 100vh; position: relative; }
-        canvas { display: block; width: 100% !important; height: 100% !important; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+        #game-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
         #loading {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0a0a0a; display: flex; justify-content: center; align-items: center;
-            z-index: 9999; flex-direction: column; gap: 20px;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 20px;
+            transition: opacity 0.5s ease;
+        }
+        #loading.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
         #loading .spinner {
             width: 50px; height: 50px;
@@ -23,15 +54,183 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         #loading p { color: #888; font-size: 16px; }
-        #controls-hint {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.7); color: rgba(255,255,255,0.5);
-            padding: 8px 20px; border-radius: 20px; font-size: 12px;
-            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.05);
-            z-index: 100; pointer-events: none; text-align: center;
-        }
-        #controls-hint span { color: rgba(255,255,255,0.7); font-weight: bold; }
         
+        /* ============================================================ */
+        /* ЭКРАН ВЫБОРА СЛОЖНОСТИ */
+        /* ============================================================ */
+        #difficulty-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.92);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            backdrop-filter: blur(15px);
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        #difficulty-screen .content {
+            background: rgba(0,0,0,0.95);
+            padding: 40px 50px;
+            border-radius: 25px;
+            border: 2px solid rgba(255,255,255,0.1);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+        }
+        #difficulty-screen h1 {
+            font-size: 28px;
+            color: #ffdd00;
+            margin-bottom: 8px;
+        }
+        #difficulty-screen .sub {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        #difficulty-screen .best-time {
+            color: #4caf50;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        #difficulty-screen .quality-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 15px 0 20px 0;
+        }
+        #difficulty-screen .quality-selector .q-btn {
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #888;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        #difficulty-screen .quality-selector .q-btn:hover {
+            border-color: rgba(255,255,255,0.3);
+        }
+        #difficulty-screen .quality-selector .q-btn.active {
+            border-color: #ffdd00;
+            color: #fff;
+            background: rgba(255,220,0,0.15);
+        }
+        #difficulty-screen .difficulty-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 10px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        #difficulty-screen .difficulty-btn:hover {
+            transform: scale(1.02);
+            border-color: #ffdd00;
+        }
+        #difficulty-screen .difficulty-btn .desc {
+            font-weight: normal;
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+        #difficulty-screen .difficulty-btn.easy { border-color: rgba(76, 175, 80, 0.4); }
+        #difficulty-screen .difficulty-btn.easy:hover { background: rgba(76, 175, 80, 0.15); }
+        #difficulty-screen .difficulty-btn.medium { border-color: rgba(255, 193, 7, 0.4); }
+        #difficulty-screen .difficulty-btn.medium:hover { background: rgba(255, 193, 7, 0.15); }
+        #difficulty-screen .difficulty-btn.hard { border-color: rgba(244, 67, 54, 0.4); }
+        #difficulty-screen .difficulty-btn.hard:hover { background: rgba(244, 67, 54, 0.15); }
+
+        /* ============================================================ */
+        /* МОБИЛЬНОЕ УПРАВЛЕНИЕ */
+        /* ============================================================ */
+        #mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            z-index: 150;
+            display: none;
+            padding: 0 20px;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+            touch-action: none;
+        }
+        #mobile-controls.active {
+            display: flex;
+        }
+        .control-group {
+            display: flex;
+            gap: 12px;
+            pointer-events: auto;
+        }
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            color: #fff;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            transition: all 0.15s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .control-btn:active, .control-btn.active {
+            background: rgba(255,255,255,0.25);
+            transform: scale(0.92);
+            border-color: rgba(255,220,0,0.6);
+        }
+        .control-btn.gas { background: rgba(0,200,50,0.2); border-color: rgba(0,200,50,0.4); }
+        .control-btn.gas:active, .control-btn.gas.active { background: rgba(0,200,50,0.4); border-color: rgba(0,200,50,0.8); }
+        .control-btn.brake { background: rgba(200,0,0,0.2); border-color: rgba(200,0,0,0.4); }
+        .control-btn.brake:active, .control-btn.brake.active { background: rgba(200,0,0,0.4); border-color: rgba(200,0,0,0.8); }
+        .control-btn.steer { width: 60px; height: 60px; font-size: 22px; }
+        .control-group-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+        .control-group-center .control-btn { width: 60px; height: 60px; font-size: 20px; }
+
+        @media (max-width: 768px) {
+            .control-btn { width: 60px; height: 60px; font-size: 24px; }
+            .control-btn.steer { width: 50px; height: 50px; font-size: 18px; }
+            .control-group-center .control-btn { width: 50px; height: 50px; font-size: 18px; }
+            #mobile-controls { padding: 0 10px; bottom: 15px; }
+        }
+        @media (max-width: 480px) {
+            .control-btn { width: 50px; height: 50px; font-size: 20px; }
+            .control-btn.steer { width: 42px; height: 42px; font-size: 16px; }
+            .control-group-center .control-btn { width: 42px; height: 42px; font-size: 16px; }
+            #mobile-controls { padding: 0 8px; bottom: 10px; }
+        }
+
+        /* ============================================================ */
+        /* ПОЛЗУНКИ ГРОМКОСТИ */
+        /* ============================================================ */
         #volume-controls {
             position: fixed;
             right: 20px;
@@ -56,10 +255,8 @@
         #volume-controls .slider-group label {
             color: #fff;
             font-size: 11px;
-            font-family: 'Segoe UI', Arial, sans-serif;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(0,0,0,0.8);
-            letter-spacing: 0.5px;
         }
         #volume-controls .slider-group input[type="range"] {
             -webkit-appearance: none;
@@ -92,7 +289,6 @@
         #volume-controls .volume-value {
             color: rgba(255,255,255,0.5);
             font-size: 10px;
-            font-family: 'Segoe UI', Arial, sans-serif;
             min-width: 30px;
             text-align: center;
         }
@@ -101,28 +297,54 @@
             font-size: 9px;
             text-align: center;
             margin-top: 5px;
-            font-family: 'Segoe UI', Arial, sans-serif;
         }
-        
+
         @media (max-width: 768px) {
-            #volume-controls {
-                right: 10px;
-                padding: 10px 12px;
-                gap: 12px;
-            }
-            #volume-controls .slider-group input[type="range"] {
-                width: 50px;
-            }
-            #volume-controls .slider-group label {
-                font-size: 9px;
-            }
+            #volume-controls { right: 10px; padding: 10px 12px; gap: 12px; }
+            #volume-controls .slider-group input[type="range"] { width: 50px; }
+            #volume-controls .slider-group label { font-size: 9px; }
         }
     </style>
 </head>
 <body>
-    <div id="loading"><div class="spinner"></div><p>Загрузка игры...</p></div>
+    <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Загрузка игры...</p>
+    </div>
+
     <div id="game-container"></div>
-    <div id="controls-hint"><span>W</span> — газ · <span>S</span> — тормоз · <span>A</span><span>D</span> — руль · <span>Q</span> — выход</div>
+    
+    <!-- ЭКРАН ВЫБОРА СЛОЖНОСТИ -->
+    <div id="difficulty-screen">
+        <div class="content">
+            <h1>🏎️ ДОРОЖНЫЙ ПРОРЫВ</h1>
+            <div class="sub">Выберите сложность</div>
+            <div class="best-time" id="bestTimeDisplay">🏆 Лучшее время: --</div>
+            
+            <div class="quality-selector">
+                <button class="q-btn low" data-quality="low">🚀 Низкое</button>
+                <button class="q-btn medium active" data-quality="medium">⚡ Среднее</button>
+                <button class="q-btn high" data-quality="high">🔥 Высокое</button>
+            </div>
+            
+            <button class="difficulty-btn easy" data-diff="easy">🟢 ЛЁГКИЙ<div class="desc">Короткая трасса · Мало животных</div></button>
+            <button class="difficulty-btn medium" data-diff="medium">🟡 СРЕДНИЙ<div class="desc">Стандартная трасса · Средняя плотность</div></button>
+            <button class="difficulty-btn hard" data-diff="hard">🔴 СЛОЖНЫЙ<div class="desc">Длинная трасса · Много животных · Ночная зона</div></button>
+        </div>
+    </div>
+
+    <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ -->
+    <div id="mobile-controls">
+        <div class="control-group">
+            <div class="control-btn steer" id="btnLeft">◀</div>
+            <div class="control-btn steer" id="btnRight">▶</div>
+        </div>
+        <div class="control-group-center">
+            <div class="control-btn brake" id="btnBrake">⏬</div>
+            <div class="control-btn gas" id="btnGas">⏫</div>
+        </div>
+    </div>
 
     <script type="importmap">
         {
@@ -138,14 +360,100 @@
 
         console.log('=== 🏎️ ДОРОЖНЫЙ ПРОРЫВ ===');
 
+        // ============================================================
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ДОБАВЛЯЕМ!)
+        // ============================================================
+        function clamp(val, min, max) {
+            return Math.min(Math.max(val, min), max);
+        }
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        // ============================================================
+        // СКРЫВАЕМ ЗАГРУЗОЧНЫЙ ЭКРАН
+        // ============================================================
         setTimeout(() => {
             const loading = document.getElementById('loading');
             if (loading) {
-                loading.style.transition = 'opacity 0.5s ease';
-                loading.style.opacity = '0';
-                setTimeout(() => loading.remove(), 600);
+                loading.classList.add('hidden');
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 500);
             }
         }, 300);
+
+        // ============================================================
+        // РАБОТА С localStorage
+        // ============================================================
+        const STORAGE_KEY = 'road_racing_best_times';
+
+        function getBestTimes() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : { easy: null, medium: null, hard: null };
+            } catch { return { easy: null, medium: null, hard: null }; }
+        }
+
+        function saveBestTime(difficulty, time) {
+            const times = getBestTimes();
+            if (times[difficulty] === null || time < times[difficulty]) {
+                times[difficulty] = time;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(times));
+                return true;
+            }
+            return false;
+        }
+
+        function formatTime(time) {
+            if (time === null || time === undefined || time === Infinity) return '--';
+            const m = Math.floor(time / 60);
+            const s = Math.floor(time % 60);
+            const ms = Math.floor((time % 1) * 10);
+            return `${m}:${String(s).padStart(2, '0')}.${ms}`;
+        }
+
+        // ============================================================
+        // НАСТРОЙКИ СЛОЖНОСТИ
+        // ============================================================
+        const DIFFICULTY_CONFIG = {
+            easy: {
+                label: '🟢 Лёгкий',
+                trackLength: 1200,
+                timeLimit: 90,
+                maxAnimals: 20,
+                maxCars: 12,
+                maxObstacles: 15,
+                trees: 20,
+                animalSpawnRate: 1.5,
+                hasNightZone: false,
+                triggerLookahead: 18
+            },
+            medium: {
+                label: '🟡 Средний',
+                trackLength: 1800,
+                timeLimit: 120,
+                maxAnimals: 30,
+                maxCars: 20,
+                maxObstacles: 25,
+                trees: 35,
+                animalSpawnRate: 1.0,
+                hasNightZone: true,
+                triggerLookahead: 14
+            },
+            hard: {
+                label: '🔴 Сложный',
+                trackLength: 2400,
+                timeLimit: 150,
+                maxAnimals: 40,
+                maxCars: 28,
+                maxObstacles: 35,
+                trees: 50,
+                animalSpawnRate: 0.7,
+                hasNightZone: true,
+                triggerLookahead: 12
+            }
+        };
 
         // ============================================================
         // КЭШИРОВАННЫЕ ВЕКТОРЫ
@@ -164,18 +472,18 @@
         // БАЗА ДАННЫХ ВИДОВ ЖИВОТНЫХ
         // ============================================================
         const ANIMAL_TYPES = {
-            DOG: { id: 'dog', name: 'Собака', width: 0.50, height: 0.38, color: 0xA0522D, accentColor: 0x8B4513, speedCross: 4.0, speedZ: 0.02, penalty: 0.35, timePenalty: 4, radius: 0.60, design: 'dog', emoji: '🐕' },
-            CAT: { id: 'cat', name: 'Кот', width: 0.40, height: 0.30, color: 0xFF8C00, accentColor: 0xFFE4B5, speedCross: 5.0, speedZ: 0.015, penalty: 0.25, timePenalty: 3, radius: 0.50, design: 'cat', emoji: '🐈' },
-            DEER: { id: 'deer', name: 'Олень', width: 0.70, height: 0.65, color: 0xCD853F, accentColor: 0xFFFFFF, speedCross: 5.5, speedZ: 0.025, penalty: 0.45, timePenalty: 6, radius: 0.80, design: 'deer', emoji: '🦌' },
-            BOAR: { id: 'boar', name: 'Кабан', width: 0.65, height: 0.50, color: 0x4A3B32, accentColor: 0x1A1A1A, speedCross: 3.5, speedZ: 0.02, penalty: 0.5, timePenalty: 5, radius: 0.75, design: 'boar', emoji: '🐗' },
-            FOX: { id: 'fox', name: 'Лиса', width: 0.45, height: 0.33, color: 0xFF4500, accentColor: 0xFFFFFF, speedCross: 4.5, speedZ: 0.018, penalty: 0.3, timePenalty: 3.5, radius: 0.55, design: 'fox', emoji: '🦊' },
-            BEAR: { id: 'bear', name: 'Медведь', width: 0.90, height: 0.80, color: 0x5C4033, accentColor: 0x3D2B1F, speedCross: 2.5, speedZ: 0.015, penalty: 0.6, timePenalty: 7, radius: 1.00, design: 'bear', emoji: '🐻' },
-            HUMAN: { id: 'human', name: 'Человек', width: 0.42, height: 0.45, color: 0xE8C9A0, accentColor: 0x3366CC, speedCross: 4.0, speedZ: 0.025, penalty: 0.2, timePenalty: 3, radius: 0.52, design: 'human', emoji: '👤' }
+            DOG: { id: 'dog', name: 'Собака', width: 0.63, height: 0.48, color: 0xA0522D, accentColor: 0x8B4513, speedCross: 4.0, speedZ: 0.02, penalty: 0.35, timePenalty: 4, radius: 0.75, design: 'dog', emoji: '🐕' },
+            CAT: { id: 'cat', name: 'Кот', width: 0.50, height: 0.38, color: 0xFF8C00, accentColor: 0xFFE4B5, speedCross: 5.0, speedZ: 0.015, penalty: 0.25, timePenalty: 3, radius: 0.63, design: 'cat', emoji: '🐈' },
+            DEER: { id: 'deer', name: 'Олень', width: 0.88, height: 0.81, color: 0xCD853F, accentColor: 0xFFFFFF, speedCross: 5.5, speedZ: 0.025, penalty: 0.45, timePenalty: 6, radius: 1.00, design: 'deer', emoji: '🦌' },
+            BOAR: { id: 'boar', name: 'Кабан', width: 0.81, height: 0.63, color: 0x4A3B32, accentColor: 0x1A1A1A, speedCross: 3.5, speedZ: 0.02, penalty: 0.5, timePenalty: 5, radius: 0.94, design: 'boar', emoji: '🐗' },
+            FOX: { id: 'fox', name: 'Лиса', width: 0.56, height: 0.41, color: 0xFF4500, accentColor: 0xFFFFFF, speedCross: 4.5, speedZ: 0.018, penalty: 0.3, timePenalty: 3.5, radius: 0.69, design: 'fox', emoji: '🦊' },
+            BEAR: { id: 'bear', name: 'Медведь', width: 1.13, height: 1.00, color: 0x5C4033, accentColor: 0x3D2B1F, speedCross: 2.5, speedZ: 0.015, penalty: 0.6, timePenalty: 7, radius: 1.25, design: 'bear', emoji: '🐻' },
+            HUMAN: { id: 'human', name: 'Человек', width: 0.53, height: 0.56, color: 0xE8C9A0, accentColor: 0x3366CC, speedCross: 4.0, speedZ: 0.025, penalty: 0.2, timePenalty: 3, radius: 0.65, design: 'human', emoji: '👤' }
         };
         const ANIMAL_KEYS = Object.keys(ANIMAL_TYPES);
 
         // ============================================================
-        // РИСОВАНИЕ ЖИВОТНЫХ НА CANVAS
+        // РИСОВАНИЕ ЖИВОТНЫХ НА CANVAS (СОКРАЩЕНО)
         // ============================================================
         function drawCat(ctx, w, h, color, accentColor, legWiggle) {
             ctx.fillStyle = color;
@@ -617,8 +925,10 @@
         }
 
         // ============================================================
-        // ЗВУКОВОЙ ДВИЖОК - ИСПРАВЛЕННЫЙ (БЕЗ ЗАДВОЕНИЯ)
+        // ЗВУКОВОЙ ДВИЖОК (исправленный)
         // ============================================================
+        let soundEngine = null;
+
         class SoundEngine {
             constructor() {
                 this.audioCtx = null;
@@ -630,61 +940,63 @@
                 this.speed = 0;
                 this.maxSpeed = 0.35;
                 this.enabled = true;
-                this.musicInterval = null;
-                this.isMusicPlaying = false;
                 this.initialized = false;
-                this.musicStarted = false;
+
+                // Музыка
                 this.musicGain = null;
-                this.musicNodes = [];
-                this.musicVolume = 0.5;
-                this.engineVolumeMultiplier = 0.5;
                 this.musicBuffer = null;
                 this.currentMusicSource = null;
-                this.noiseBuffer = null;
+                this.isMusicPlaying = false;
+                this.musicStarted = false;
+                this.musicVolume = 0.55;
+                this.engineVolumeMultiplier = 0.6;
                 this.musicUrl = 'music/race-music.mp3';
                 this.musicLoaded = false;
-                
-                // ════════════════════════════════════════════════════════
-                // ПЕРЕМЕННЫЕ ДЛЯ ПРЕДОТВРАЩЕНИЯ ЗАДВОЕНИЯ
-                // ════════════════════════════════════════════════════════
-                this._engineStartTimeout = null;
-                this._engineStopTimeout = null;
-                this._isEngineStopping = false;
+                this.useProceduralFallback = true;
+
+                this.noiseBuffer = null;
+                this.musicNodes = [];
+                this.musicInterval = null;
+
                 this._engineId = 0;
+                this._isEngineStopping = false;
+                this._engineStopTimeout = null;
             }
 
             init() {
                 try {
                     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    console.log('🔊 AudioContext создан, состояние:', this.audioCtx.state);
-                    
+                    console.log('🔊 AudioContext создан:', this.audioCtx.state);
+
+                    // Двигатель
                     this.engineGain = this.audioCtx.createGain();
                     this.engineGain.gain.value = 0;
                     this.engineGain.connect(this.audioCtx.destination);
-                    
+
+                    // Музыка
                     this.musicGain = this.audioCtx.createGain();
-                    this.musicGain.gain.value = 0.08 * this.musicVolume;
+                    this.musicGain.gain.value = this.musicVolume;
                     this.musicGain.connect(this.audioCtx.destination);
-                    
+
                     this.noiseBuffer = this.createNoiseBuffer();
-                    
                     this.enabled = true;
                     this.initialized = true;
 
                     this.loadMusic();
                     this.createVolumeControls();
-                    this.startMusic();
 
                     const resumeAudio = () => {
                         if (this.audioCtx && this.audioCtx.state === 'suspended') {
                             this.audioCtx.resume().then(() => {
-                                console.log('🔊 AudioContext возобновлен, состояние:', this.audioCtx.state);
+                                console.log('🔊 AudioContext resumed');
                                 if (!this.isMusicPlaying) this.startMusic();
                             });
+                        } else if (!this.isMusicPlaying) {
+                            this.startMusic();
                         }
                     };
-                    document.addEventListener('click', resumeAudio, { once: false });
-                    document.addEventListener('keydown', resumeAudio, { once: false });
+                    document.addEventListener('click', resumeAudio);
+                    document.addEventListener('keydown', resumeAudio);
 
                     return true;
                 } catch (e) {
@@ -697,7 +1009,7 @@
             createNoiseBuffer() {
                 if (!this.audioCtx) return null;
                 try {
-                    const bufferSize = Math.floor(this.audioCtx.sampleRate * 0.1);
+                    const bufferSize = Math.floor(this.audioCtx.sampleRate * 0.2);
                     const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
                     const data = buffer.getChannelData(0);
                     for (let i = 0; i < bufferSize; i++) {
@@ -708,20 +1020,20 @@
             }
 
             createVolumeControls() {
-                const oldControls = document.getElementById('volume-controls');
-                if (oldControls) oldControls.remove();
+                const old = document.getElementById('volume-controls');
+                if (old) old.remove();
 
                 const controls = document.createElement('div');
                 controls.id = 'volume-controls';
                 
-                const musicStatus = this.musicLoaded ? '🎵 MP3' : '🎵 Синтез';
+                const status = this.musicLoaded ? '🎵 MP3' : '⏳ Загрузка...';
                 
                 controls.innerHTML = `
                     <div class="slider-group">
                         <label>🎵 МУЗЫКА</label>
                         <input type="range" id="music-volume" min="0" max="100" value="${Math.round(this.musicVolume * 100)}">
                         <span class="volume-value" id="music-volume-value">${Math.round(this.musicVolume * 100)}%</span>
-                        <span id="music-status" style="color:rgba(255,255,255,0.3);font-size:9px;">${musicStatus}</span>
+                        <span id="music-status" style="color:rgba(255,255,255,0.3);font-size:9px;">${status}</span>
                     </div>
                     <div class="slider-group">
                         <label>🏎️ ДВИГАТЕЛЬ</label>
@@ -729,94 +1041,64 @@
                         <span class="volume-value" id="engine-volume-value">${Math.round(this.engineVolumeMultiplier * 100)}%</span>
                     </div>
                 `;
-                
                 document.body.appendChild(controls);
 
-                const musicSlider = document.getElementById('music-volume');
-                const musicValue = document.getElementById('music-volume-value');
-                musicSlider.addEventListener('input', () => {
-                    const val = parseInt(musicSlider.value) / 100;
+                document.getElementById('music-volume').addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value) / 100;
                     this.musicVolume = val;
-                    musicValue.textContent = Math.round(val * 100) + '%';
+                    document.getElementById('music-volume-value').textContent = Math.round(val * 100) + '%';
                     if (this.musicGain) {
-                        this.musicGain.gain.setValueAtTime(0.08 * val, this.audioCtx.currentTime);
+                        this.musicGain.gain.setValueAtTime(val, this.audioCtx.currentTime);
                     }
                 });
 
-                const engineSlider = document.getElementById('engine-volume');
-                const engineValue = document.getElementById('engine-volume-value');
-                engineSlider.addEventListener('input', () => {
-                    const val = parseInt(engineSlider.value) / 100;
+                document.getElementById('engine-volume').addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value) / 100;
                     this.engineVolumeMultiplier = val;
-                    engineValue.textContent = Math.round(val * 100) + '%';
-                    if (this.isPlaying && this.engineGain) {
-                        const currentVolume = this.engineVolume * val;
-                        this.engineGain.gain.setValueAtTime(currentVolume, this.audioCtx.currentTime);
-                    }
+                    document.getElementById('engine-volume-value').textContent = Math.round(val * 100) + '%';
                 });
             }
 
-            // ════════════════════════════════════════════════════════
-            // МУЗЫКА
-            // ════════════════════════════════════════════════════════
             async loadMusic() {
                 try {
-                    console.log('🎵 Загрузка музыки из:', this.musicUrl);
+                    console.log('🎵 Загрузка MP3:', this.musicUrl);
                     const response = await fetch(this.musicUrl);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status} - файл не найден`);
-                    }
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     
                     const arrayBuffer = await response.arrayBuffer();
                     this.musicBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
                     this.musicLoaded = true;
                     
-                    console.log(`✅ Музыка успешно загружена! Длительность: ${Math.round(this.musicBuffer.duration)} сек`);
+                    console.log(`✅ MP3 загружен (${this.musicBuffer.duration.toFixed(1)} сек)`);
                     
                     const statusEl = document.getElementById('music-status');
                     if (statusEl) statusEl.textContent = '🎵 MP3';
                     
-                    if (this.isMusicPlaying) {
-                        this.stopMusic();
+                    if (this.musicStarted && !this.isMusicPlaying) {
                         this.startMusic();
                     }
-                    
                     return true;
                 } catch (e) {
-                    console.warn('⚠️ Не удалось загрузить музыку:', e.message);
-                    console.warn('▶️ Будет использована встроенная синтезированная музыка');
-                    console.warn('💡 Положите MP3 файл в папку music/ с именем race-music.mp3');
+                    console.warn('⚠️ MP3 не найден:', e.message);
+                    console.warn('💡 Положите файл в music/race-music.mp3 или будет procedural');
                     
                     this.musicBuffer = null;
                     this.musicLoaded = false;
                     
                     const statusEl = document.getElementById('music-status');
-                    if (statusEl) statusEl.textContent = '🎵 Синтез';
+                    if (statusEl) statusEl.textContent = this.useProceduralFallback ? '🎹 Procedural' : '❌ Нет MP3';
                     
                     return false;
                 }
             }
 
             startMusic() {
-                if (!this.enabled || !this.audioCtx) {
-                    console.log('❌ Музыка не может быть запущена - аудио отключено');
-                    return;
-                }
-                if (this.isMusicPlaying) {
-                    console.log('🎵 Музыка уже играет');
-                    return;
-                }
-                
-                console.log('🎵 Запуск музыки... состояние AudioContext:', this.audioCtx.state);
-                
+                if (!this.enabled || !this.audioCtx || this.isMusicPlaying) return;
+
+                this.musicStarted = true;
+
                 if (this.audioCtx.state === 'suspended') {
-                    this.audioCtx.resume().then(() => {
-                        console.log('🔊 AudioContext возобновлен, запускаем музыку');
-                        this._playMusic();
-                    }).catch(e => {
-                        console.warn('⚠️ Не удалось возобновить AudioContext:', e);
-                    });
+                    this.audioCtx.resume().then(() => this._playMusic());
                 } else {
                     this._playMusic();
                 }
@@ -824,219 +1106,138 @@
 
             _playMusic() {
                 if (this.isMusicPlaying) return;
-                if (this.audioCtx.state !== 'running') {
-                    console.log('⏳ AudioContext не running, состояние:', this.audioCtx.state);
-                    return;
-                }
-                
-                console.log('🎵 МУЗЫКА ЗАПУЩЕНА!');
-                this.isMusicPlaying = true;
-                this.musicStarted = true;
-                
+
+                // 1. Пробуем MP3
                 if (this.musicBuffer && this.musicLoaded) {
-                    this._playLoadedMusic();
-                } else {
-                    this._playGeneratedMusic();
-                }
-            }
-
-            _playLoadedMusic() {
-                if (!this.musicBuffer || !this.musicLoaded) {
-                    this._playGeneratedMusic();
+                    this._playMp3Loop();
                     return;
                 }
-                
-                try {
-                    const source = this.audioCtx.createBufferSource();
-                    source.buffer = this.musicBuffer;
-                    
-                    const gainNode = this.audioCtx.createGain();
-                    gainNode.gain.value = 3.08 * this.musicVolume;
-                    
-                    source.connect(gainNode);
-                    gainNode.connect(this.musicGain);
-                    source.start();
-                    
-                    source.onended = () => {
-                        if (this.isMusicPlaying) {
-                            this.currentMusicSource = null;
-                            setTimeout(() => {
-                                if (this.isMusicPlaying) {
-                                    this._playLoadedMusic();
-                                }
-                            }, 100);
-                        }
-                    };
-                    
-                    this.currentMusicSource = source;
-                    this.musicNodes.push(source);
-                    
-                    console.log('🎵 Воспроизводится MP3 музыка');
-                    
-                } catch (e) {
-                    console.warn('Ошибка воспроизведения MP3:', e);
-                    this._playGeneratedMusic();
+
+                // 2. Fallback — процедурная музыка
+                if (this.useProceduralFallback) {
+                    console.log('🎹 Запуск процедурной музыки');
+                    this.isMusicPlaying = true;
+                    this.playProceduralLoop();
+                    this.musicInterval = setInterval(() => this.playProceduralLoop(), 4800);
+                    return;
                 }
+
+                // Ждём загрузку MP3
+                setTimeout(() => {
+                    if (!this.isMusicPlaying) this._playMusic();
+                }, 800);
             }
 
-            _playGeneratedMusic() {
-                if (this.musicInterval) clearInterval(this.musicInterval);
-                this._playMusicLoop();
-                this.musicInterval = setInterval(() => this._playMusicLoop(), 4000);
+            _playMp3Loop() {
+                if (!this.musicBuffer) return;
+
+                // Останавливаем предыдущий
+                if (this.currentMusicSource) {
+                    try { this.currentMusicSource.stop(); } catch(e) {}
+                }
+
+                const source = this.audioCtx.createBufferSource();
+                source.buffer = this.musicBuffer;
+                source.loop = true;
+                source.connect(this.musicGain);
+                source.start(0);
+
+                this.currentMusicSource = source;
+                this.isMusicPlaying = true;
+                console.log('🎵 MP3 loop запущен');
             }
 
-            _playMusicLoop() {
+            playProceduralLoop() {
                 if (!this.enabled || !this.audioCtx || !this.isMusicPlaying) return;
-                if (this.audioCtx.state !== 'running') return;
-                if (this.musicBuffer && this.musicLoaded) return;
-                
                 try {
-                    const startTime = this.audioCtx.currentTime + 0.05;
-                    
+                    const t0 = this.audioCtx.currentTime + 0.05;
                     const melody = [
-                        [523, 0.12], [0, 0.04], [587, 0.12], [0, 0.04], 
-                        [659, 0.12], [0, 0.04], [784, 0.25],
-                        [659, 0.12], [0, 0.04], [587, 0.12], [0, 0.04],
-                        [523, 0.12], [0, 0.04], [587, 0.25],
+                        [523,0.14],[587,0.14],[659,0.14],[784,0.14],
+                        [659,0.14],[587,0.14],[523,0.14],[659,0.14],
+                        [784,0.14],[880,0.14],[784,0.14],[659,0.14],
+                        [880,0.14],[988,0.14],[880,0.14],[784,0.14]
                     ];
-
                     const bass = [
-                        [130, 0.15], [0, 0.05], [130, 0.15], [0, 0.05],
-                        [146, 0.15], [0, 0.05], [146, 0.15], [0, 0.05],
+                        [130,0.28],[130,0.28],[146,0.28],[146,0.28],
+                        [164,0.28],[164,0.28],[146,0.28],[146,0.28]
                     ];
 
-                    const chords = [
-                        [523, 659, 784],
-                        [587, 740, 880],
-                    ];
-
-                    let time = 0;
-
-                    melody.forEach(([freq, duration]) => {
-                        if (freq === 0) {
-                            time += duration;
-                            return;
-                        }
+                    let t = 0;
+                    melody.forEach(([freq, dur]) => {
                         const osc = this.audioCtx.createOscillator();
-                        const gain = this.audioCtx.createGain();
+                        const g = this.audioCtx.createGain();
                         osc.type = 'sawtooth';
                         osc.frequency.value = freq;
-                        gain.gain.setValueAtTime(0.05 * this.musicVolume, startTime + time);
-                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + time + duration);
-                        osc.connect(gain);
-                        gain.connect(this.musicGain);
-                        osc.start(startTime + time);
-                        osc.stop(startTime + time + duration + 0.01);
+                        g.gain.setValueAtTime(0.04, t0 + t);
+                        g.gain.exponentialRampToValueAtTime(0.001, t0 + t + dur);
+                        osc.connect(g);
+                        g.connect(this.musicGain);
+                        osc.start(t0 + t);
+                        osc.stop(t0 + t + dur + 0.02);
                         this.musicNodes.push(osc);
-                        time += duration;
+                        t += dur + 0.015;
                     });
 
-                    time = 0.1;
-                    bass.forEach(([freq, duration]) => {
-                        if (freq === 0) {
-                            time += duration;
-                            return;
-                        }
+                    t = 0;
+                    bass.forEach(([freq, dur]) => {
                         const osc = this.audioCtx.createOscillator();
-                        const gain = this.audioCtx.createGain();
+                        const g = this.audioCtx.createGain();
                         osc.type = 'square';
                         osc.frequency.value = freq;
-                        gain.gain.setValueAtTime(0.06 * this.musicVolume, startTime + time);
-                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + time + duration);
-                        osc.connect(gain);
-                        gain.connect(this.musicGain);
-                        osc.start(startTime + time);
-                        osc.stop(startTime + time + duration + 0.01);
+                        g.gain.setValueAtTime(0.028, t0 + t);
+                        g.gain.exponentialRampToValueAtTime(0.001, t0 + t + dur);
+                        osc.connect(g);
+                        g.connect(this.musicGain);
+                        osc.start(t0 + t);
+                        osc.stop(t0 + t + dur + 0.02);
                         this.musicNodes.push(osc);
-                        time += duration;
+                        t += dur + 0.015;
                     });
-
-                    chords.forEach((chord, ci) => {
-                        chord.forEach(freq => {
-                            const osc = this.audioCtx.createOscillator();
-                            const gain = this.audioCtx.createGain();
-                            osc.type = 'sine';
-                            osc.frequency.value = freq;
-                            gain.gain.setValueAtTime(0.025 * this.musicVolume, startTime + 0.3 + ci * 0.8);
-                            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3 + ci * 0.8 + 0.5);
-                            osc.connect(gain);
-                            gain.connect(this.musicGain);
-                            osc.start(startTime + 0.3 + ci * 0.8);
-                            osc.stop(startTime + 0.3 + ci * 0.8 + 0.5);
-                            this.musicNodes.push(osc);
-                        });
-                    });
-
-                    if (this.noiseBuffer) {
-                        for (let i = 0; i < 2; i++) {
-                            const noise = this.audioCtx.createBufferSource();
-                            noise.buffer = this.noiseBuffer;
-                            const gain = this.audioCtx.createGain();
-                            gain.gain.setValueAtTime(0.04 * this.musicVolume, startTime + 0.5 + i * 0.9);
-                            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5 + i * 0.9 + 0.08);
-                            noise.connect(gain);
-                            gain.connect(this.musicGain);
-                            noise.start(startTime + 0.5 + i * 0.9);
-                        }
-                    }
-
                 } catch (e) {
-                    console.warn('Музыкальная ошибка:', e);
+                    console.warn('Ошибка procedural:', e);
                 }
             }
 
             stopMusic() {
                 this.isMusicPlaying = false;
                 this.musicStarted = false;
+
                 if (this.musicInterval) {
                     clearInterval(this.musicInterval);
                     this.musicInterval = null;
                 }
                 if (this.currentMusicSource) {
-                    try {
-                        this.currentMusicSource.stop();
-                        this.currentMusicSource.disconnect();
-                    } catch (e) {}
+                    try { this.currentMusicSource.stop(); } catch(e) {}
                     this.currentMusicSource = null;
                 }
-                if (this.musicGain) {
-                    try { this.musicGain.gain.setValueAtTime(0, this.audioCtx.currentTime); } catch (e) {}
-                }
-                this.musicNodes.forEach(node => {
-                    try { node.stop(); } catch (e) {}
-                });
+                this.musicNodes.forEach(n => { try { n.stop(); } catch(e) {} });
                 this.musicNodes = [];
+
+                if (this.musicGain) {
+                    try { this.musicGain.gain.setValueAtTime(0, this.audioCtx.currentTime); } catch(e) {}
+                }
             }
 
-            // ════════════════════════════════════════════════════════
-            // ЗВУК ДВИГАТЕЛЯ - ПОЛНОСТЬЮ ПЕРЕПИСАН
-            // ════════════════════════════════════════════════════════
+            // ========== ДВИГАТЕЛЬ ==========
             update(speed) {
                 if (!this.enabled || !this.audioCtx || !this.initialized) return;
                 this.speed = speed;
 
-                const normalizedSpeed = Math.abs(speed) / this.maxSpeed;
-                const targetFreq = 55 + normalizedSpeed * 180;
-                const targetVolume = (0.01 + normalizedSpeed * 0.15) * this.engineVolumeMultiplier;
+                const normalized = Math.abs(speed) / this.maxSpeed;
+                const targetFreq = 55 + normalized * 180;
+                const targetVol = (0.015 + normalized * 0.14) * this.engineVolumeMultiplier;
 
-                // Если скорость > 0 и двигатель не играет - запускаем
                 if (Math.abs(speed) > 0.01) {
-                    // Отменяем запланированную остановку
                     if (this._engineStopTimeout) {
                         clearTimeout(this._engineStopTimeout);
                         this._engineStopTimeout = null;
                         this._isEngineStopping = false;
                     }
-                    
-                    // Если двигатель не запущен - запускаем
-                    if (!this.isPlaying) {
-                        this.startEngine();
-                    }
-                    
-                    // Обновляем частоту и громкость
+                    if (!this.isPlaying) this.startEngine();
+
                     this.engineFrequency += (targetFreq - this.engineFrequency) * 0.15;
-                    this.engineVolume += (targetVolume - this.engineVolume) * 0.15;
-                    
+                    this.engineVolume += (targetVol - this.engineVolume) * 0.15;
+
                     if (this.engineNode && this.engineGain) {
                         try {
                             this.engineNode.frequency.setValueAtTime(this.engineFrequency, this.audioCtx.currentTime);
@@ -1046,290 +1247,360 @@
                         }
                     }
                 } else {
-                    // Скорость = 0 - запускаем плавную остановку
-                    if (this.isPlaying) {
-                        this.stopEngineSmooth();
-                    }
+                    if (this.isPlaying) this.stopEngineSmooth();
                 }
             }
 
             startEngine() {
                 if (this.isPlaying || this._isEngineStopping) return;
-                if (!this.enabled || !this.audioCtx || !this.initialized) return;
-                
-                if (this._engineStartTimeout) {
-                    clearTimeout(this._engineStartTimeout);
-                    this._engineStartTimeout = null;
-                }
-                if (this._engineStopTimeout) {
-                    clearTimeout(this._engineStopTimeout);
-                    this._engineStopTimeout = null;
-                }
-                
+                if (!this.enabled || !this.audioCtx) return;
+
                 try {
                     this._engineId++;
-                    const currentId = this._engineId;
-                    
-                    const newEngineNode = this.audioCtx.createOscillator();
-                    newEngineNode.type = 'sawtooth';
-                    newEngineNode.frequency.value = this.engineFrequency;
-                    newEngineNode.connect(this.engineGain);
-                    
+                    const id = this._engineId;
+
+                    const osc = this.audioCtx.createOscillator();
+                    osc.type = 'sawtooth';
+                    osc.frequency.value = this.engineFrequency;
+                    osc.connect(this.engineGain);
                     this.engineGain.gain.setValueAtTime(this.engineVolume, this.audioCtx.currentTime);
-                    
-                    newEngineNode.start();
-                    
-                    this.engineNode = newEngineNode;
+                    osc.start();
+
+                    this.engineNode = osc;
                     this.isPlaying = true;
                     this._isEngineStopping = false;
-                    
-                    console.log('🏎️ Двигатель запущен, ID:', currentId);
-                    
-                    newEngineNode.onended = () => {
-                        if (this.isPlaying && this._engineId === currentId) {
-                            console.log('⚠️ Двигатель остановился сам, перезапуск...');
-                            this.restartEngine();
-                        }
+
+                    osc.onended = () => {
+                        if (this.isPlaying && this._engineId === id) this.restartEngine();
                     };
-                    
                 } catch (e) {
-                    console.warn('Ошибка запуска двигателя:', e);
                     this.engineNode = null;
                     this.isPlaying = false;
                 }
             }
 
             stopEngineSmooth() {
-                if (this._isEngineStopping) return;
-                if (!this.isPlaying) return;
-                if (!this.engineNode) return;
-                
+                if (this._isEngineStopping || !this.isPlaying || !this.engineNode) return;
                 this._isEngineStopping = true;
-                
-                if (this._engineStopTimeout) {
-                    clearTimeout(this._engineStopTimeout);
-                    this._engineStopTimeout = null;
-                }
-                
+
                 try {
-                    if (this.engineGain) {
-                        this.engineGain.gain.setValueAtTime(this.engineVolume, this.audioCtx.currentTime);
-                        this.engineGain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.15);
-                    }
-                } catch (e) {}
-                
-                const currentId = this._engineId;
+                    this.engineGain.gain.setValueAtTime(Math.max(0.0001, this.engineVolume), this.audioCtx.currentTime);
+                    this.engineGain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + 0.15);
+                } catch(e) {}
+
+                const id = this._engineId;
                 this._engineStopTimeout = setTimeout(() => {
-                    if (this._engineId === currentId) {
-                        this._stopEngineNow();
-                    }
+                    if (this._engineId === id) this._stopEngineNow();
                     this._engineStopTimeout = null;
-                }, 200);
+                }, 180);
             }
 
             _stopEngineNow() {
                 try {
                     if (this.engineNode) {
-                        try {
-                            this.engineNode.stop();
-                            this.engineNode.disconnect();
-                        } catch (e) {}
-                        this.engineNode = null;
+                        this.engineNode.stop();
+                        this.engineNode.disconnect();
                     }
-                } catch (e) {}
-                
+                } catch(e) {}
+                this.engineNode = null;
                 this.isPlaying = false;
                 this._isEngineStopping = false;
-                
                 if (this.engineGain) {
-                    try {
-                        this.engineGain.gain.setValueAtTime(0, this.audioCtx.currentTime);
-                    } catch (e) {}
+                    try { this.engineGain.gain.setValueAtTime(0, this.audioCtx.currentTime); } catch(e) {}
                 }
             }
 
             restartEngine() {
-                console.log('🔄 Перезапуск двигателя...');
                 this._stopEngineNow();
-                setTimeout(() => {
-                    if (Math.abs(this.speed) > 0.01) {
-                        this.startEngine();
-                    }
-                }, 50);
+                setTimeout(() => this.startEngine(), 30);
             }
 
-            stopEngine() {
-                if (this._engineStartTimeout) {
-                    clearTimeout(this._engineStartTimeout);
-                    this._engineStartTimeout = null;
-                }
-                if (this._engineStopTimeout) {
-                    clearTimeout(this._engineStopTimeout);
-                    this._engineStopTimeout = null;
-                }
-                this._stopEngineNow();
-                this._isEngineStopping = false;
-            }
-
-            // ════════════════════════════════════════════════════════
-            // ЗВУКИ СОБЫТИЙ
-            // ════════════════════════════════════════════════════════
             playFinishSound() {
                 if (!this.enabled || !this.audioCtx) return;
                 try {
-                    const notes = [523, 659, 784, 1047];
-                    notes.forEach((freq, i) => {
+                    [523, 659, 784, 1047].forEach((freq, i) => {
                         const osc = this.audioCtx.createOscillator();
-                        const gain = this.audioCtx.createGain();
+                        const g = this.audioCtx.createGain();
                         osc.type = 'sine';
                         osc.frequency.value = freq;
-                        gain.gain.setValueAtTime(0.12 * this.musicVolume, this.audioCtx.currentTime + i * 0.1);
-                        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + i * 0.1 + 0.3);
-                        osc.connect(gain);
-                        gain.connect(this.audioCtx.destination);
+                        g.gain.setValueAtTime(0.12, this.audioCtx.currentTime + i * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + i * 0.1 + 0.3);
+                        osc.connect(g);
+                        g.connect(this.audioCtx.destination);
                         osc.start(this.audioCtx.currentTime + i * 0.1);
                         osc.stop(this.audioCtx.currentTime + i * 0.1 + 0.3);
                     });
-                } catch (e) {}
+                } catch(e) {}
             }
 
             playCrashSound(volumeScale = 1) {
                 if (!this.enabled || !this.audioCtx) return;
-                
                 try {
                     const t0 = this.audioCtx.currentTime;
-                    
                     const thud = this.audioCtx.createOscillator();
-                    const thudGain = this.audioCtx.createGain();
+                    const g = this.audioCtx.createGain();
                     thud.type = 'triangle';
-                    thud.frequency.setValueAtTime(150, t0);
-                    thud.frequency.exponentialRampToValueAtTime(30, t0 + 0.25);
-                    thudGain.gain.setValueAtTime(0.3 * volumeScale * this.engineVolumeMultiplier, t0);
-                    thudGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.3);
-                    thud.connect(thudGain);
-                    thudGain.connect(this.audioCtx.destination);
+                    thud.frequency.setValueAtTime(140, t0);
+                    thud.frequency.exponentialRampToValueAtTime(30, t0 + 0.3);
+                    g.gain.setValueAtTime(0.35 * volumeScale, t0);
+                    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.32);
+                    thud.connect(g);
+                    g.connect(this.audioCtx.destination);
                     thud.start(t0);
-                    thud.stop(t0 + 0.3);
+                    thud.stop(t0 + 0.32);
 
                     if (this.noiseBuffer) {
                         const noise = this.audioCtx.createBufferSource();
                         noise.buffer = this.noiseBuffer;
-                        const noiseGain = this.audioCtx.createGain();
-                        noiseGain.gain.setValueAtTime(0.15 * volumeScale * this.engineVolumeMultiplier, t0);
-                        noiseGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
-                        noise.connect(noiseGain);
-                        noiseGain.connect(this.audioCtx.destination);
+                        const ng = this.audioCtx.createGain();
+                        ng.gain.setValueAtTime(0.16 * volumeScale, t0);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+                        noise.connect(ng);
+                        ng.connect(this.audioCtx.destination);
                         noise.start(t0);
-                        noise.stop(t0 + 0.2);
                     }
-                } catch (e) {}
+                } catch(e) {}
             }
 
             dispose() {
-                if (this.audioCtx) {
-                    try { this.audioCtx.close(); } catch (e) {}
-                }
                 this.stopMusic();
-                this.stopEngine();
+                this._stopEngineNow();
+                if (this.audioCtx) {
+                    try { this.audioCtx.close(); } catch(e) {}
+                }
             }
         }
 
         // ============================================================
-        // МЕНЮ КАЧЕСТВА
+        // AnimalSpawner
         // ============================================================
-        function showQualityMenu() {
-            return new Promise((resolve) => {
-                const menu = document.createElement('div');
-                menu.id = 'quality-menu';
-                menu.style.cssText = `
-                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                    background: rgba(0,0,0,0.95); padding: 30px 40px; border-radius: 20px;
-                    border: 2px solid rgba(255,255,255,0.15); color: #fff;
-                    font-family: 'Segoe UI', Arial, sans-serif; text-align: center;
-                    z-index: 1000; backdrop-filter: blur(15px); min-width: 300px;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.85);
-                `;
-                menu.innerHTML = `
-                    <h1 style="font-size:28px;margin-bottom:10px;color:#ffdd00;">🏎️ ДОРОЖНЫЙ ПРОРЫВ</h1>
-                    <p style="color:#bbb;margin-bottom:20px;font-size:14px;">Выберите качество графики</p>
-                    <div style="display:flex;flex-direction:column;gap:10px;">
-                        <button data-quality="high" style="padding:12px 25px;border:2px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;">🔥 Высокое</button>
-                        <button data-quality="medium" style="padding:12px 25px;border:2px solid rgba(255,200,0,0.3);border-radius:10px;background:rgba(255,200,0,0.05);color:#fff;font-size:16px;cursor:pointer;">⚡ Среднее</button>
-                        <button data-quality="low" style="padding:12px 25px;border:2px solid rgba(0,255,100,0.2);border-radius:10px;background:rgba(0,255,100,0.05);color:#fff;font-size:16px;cursor:pointer;">🚀 Низкое</button>
-                    </div>
-                    <div style="margin-top:15px;font-size:12px;color:#666;">Нажмите Esc для выхода (по умолчанию Среднее)</div>
-                `;
-                document.body.appendChild(menu);
+        class AnimalSpawner {
+            constructor(scene, roadWidth, roadCenter, finishZ, triggerLookahead, maxAnimals, spawnRate) {
+                this.scene = scene;
+                this.roadWidth = roadWidth;
+                this.roadCenter = roadCenter;
+                this.finishZ = finishZ;
+                this.triggerLookahead = triggerLookahead;
+                this.animals = [];
+                this.spawnTimer = 0;
+                this.minSpawnInterval = spawnRate * 0.6;
+                this.maxSpawnInterval = spawnRate * 1.4;
+                this.nextSpawnTime = this.getRandomInterval();
+                this.totalSpawned = 0;
+                this.maxAnimals = maxAnimals;
+                this.enabled = true;
+                
+                this.mandatoryPool = [];
+                this.speciesCount = {};
+                ANIMAL_KEYS.forEach(key => { this.speciesCount[key] = 0; });
+                
+                this.buildMandatoryPool();
+                this.shufflePool();
+            }
 
-                const keyHandler = (e) => {
-                    if (e.key === 'Escape') {
-                        menu.remove();
-                        document.removeEventListener('keydown', keyHandler);
-                        resolve('medium');
-                    }
-                };
-                document.addEventListener('keydown', keyHandler);
-
-                menu.querySelectorAll('button').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const quality = btn.dataset.quality;
-                        menu.remove();
-                        document.removeEventListener('keydown', keyHandler);
-                        if (soundEngine && soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
-                            soundEngine.audioCtx.resume();
-                        }
-                        resolve(quality);
-                    });
+            buildMandatoryPool() {
+                const mandatory = [
+                    { type: 'DOG', count: 4 }, { type: 'HUMAN', count: 5 },
+                    { type: 'DEER', count: 3 }, { type: 'BEAR', count: 4 },
+                    { type: 'CAT', count: 4 }, { type: 'FOX', count: 3 }, { type: 'BOAR', count: 3 }
+                ];
+                this.mandatoryPool = [];
+                mandatory.forEach(item => {
+                    for (let i = 0; i < item.count; i++) this.mandatoryPool.push(item.type);
                 });
-            });
+            }
+
+            shufflePool() {
+                for (let i = this.mandatoryPool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.mandatoryPool[i], this.mandatoryPool[j]] = [this.mandatoryPool[j], this.mandatoryPool[i]];
+                }
+            }
+
+            getRandomInterval() {
+                return Math.random() * (this.maxSpawnInterval - this.minSpawnInterval) + this.minSpawnInterval;
+            }
+
+            getNextSpecies() {
+                if (this.mandatoryPool.length > 0) {
+                    return this.mandatoryPool.pop();
+                }
+                return ANIMAL_KEYS[Math.floor(Math.random() * ANIMAL_KEYS.length)];
+            }
+
+            createAnimal(z, forcedType = null) {
+                const typeId = forcedType || this.getNextSpecies();
+                const type = ANIMAL_TYPES[typeId];
+                const mesh = createAnimalMesh(typeId);
+
+                const fromLeft = Math.random() < 0.5;
+                const startX = fromLeft ? -(this.roadWidth / 2 + 1.5) : (this.roadWidth / 2 + 1.5);
+                const endX = -startX;
+                if (!fromLeft) mesh.scale.x = -1;
+                
+                const scale = 0.8 + Math.random() * 0.5;
+                mesh.scale.set(scale, scale, scale);
+                
+                mesh.position.set(startX, 0, z);
+                mesh.visible = false;
+                this.scene.add(mesh);
+
+                return {
+                    type: 'animal',
+                    speciesKey: typeId,
+                    speciesId: type.id,
+                    animalType: typeId,
+                    mesh: mesh,
+                    z: z,
+                    x: startX,
+                    startX: startX,
+                    endX: endX,
+                    duration: 0.6 + Math.random() * 0.4,
+                    elapsed: 0,
+                    triggered: false,
+                    aliveTime: 0,
+                    radius: type.radius * scale || 0.5,
+                    penalty: type.penalty || 0.35,
+                    timePenalty: type.timePenalty || 4,
+                    speedZ: type.speedZ || 0.02,
+                    speedCross: type.speedCross || 3.0,
+                    direction: fromLeft ? 1 : -1,
+                    hit: false
+                };
+            }
+
+            update(deltaTime, playerZ) {
+                if (!this.enabled || playerZ < this.finishZ) return;
+
+                this.spawnTimer += deltaTime;
+                const totalActive = this.animals.length;
+
+                if (this.spawnTimer >= this.nextSpawnTime && totalActive < this.maxAnimals) {
+                    this.spawnTimer = 0;
+                    this.nextSpawnTime = this.getRandomInterval();
+
+                    const spawnZ = playerZ - 12 - Math.random() * 8;
+                    if (spawnZ > this.finishZ) {
+                        const typeId = this.getNextSpecies();
+                        const animal = this.createAnimal(spawnZ, typeId);
+                        this.animals.push(animal);
+                        this.totalSpawned++;
+                        this.speciesCount[typeId] = (this.speciesCount[typeId] || 0) + 1;
+                    }
+                }
+
+                for (let i = this.animals.length - 1; i >= 0; i--) {
+                    const animal = this.animals[i];
+                    this.updateAnimal(animal, deltaTime, playerZ);
+                    if (animal.triggered) animal.aliveTime += deltaTime;
+
+                    const staleTimeout = animal.aliveTime > 12;
+                    if (animal.z > playerZ + 30 || animal.hit || staleTimeout || animal.z < playerZ - 150) {
+                        this.disposeAnimal(animal);
+                        if (animal.speciesKey) {
+                            this.speciesCount[animal.speciesKey] = Math.max(0, (this.speciesCount[animal.speciesKey] || 0) - 1);
+                        }
+                        this.animals.splice(i, 1);
+                    }
+                }
+            }
+
+            updateAnimal(animal, deltaTime, playerZ) {
+                if (!animal.triggered) {
+                    const distanceAhead = playerZ - animal.z;
+                    if (distanceAhead > 0.5 && distanceAhead <= this.triggerLookahead) {
+                        animal.triggered = true;
+                        animal.mesh.visible = true;
+                    }
+                    if (distanceAhead < -5) {
+                        animal.hit = true;
+                    }
+                    return;
+                }
+
+                if (animal.elapsed < animal.duration) {
+                    animal.elapsed += deltaTime;
+                    const t = Math.min(animal.elapsed / animal.duration, 1);
+                    const easedT = t * t * (3 - 2 * t);
+                    animal.x = animal.startX + (animal.endX - animal.startX) * easedT;
+                    animal.mesh.position.x = animal.x;
+                }
+
+                const zMove = animal.speedZ || 0.02;
+                animal.z -= zMove * 60 * deltaTime * 0.3;
+                animal.mesh.position.z = animal.z;
+            }
+
+            disposeAnimal(animal) {
+                this.scene.remove(animal.mesh);
+            }
+
+            getActiveAnimals() {
+                return this.animals.filter(a => a.triggered && !a.hit);
+            }
+
+            clear() {
+                this.animals.forEach(a => this.disposeAnimal(a));
+                this.animals = [];
+                this.totalSpawned = 0;
+                ANIMAL_KEYS.forEach(key => { this.speciesCount[key] = 0; });
+                this.buildMandatoryPool();
+                this.shufflePool();
+            }
+
+            getStats() {
+                const species = {};
+                ANIMAL_KEYS.forEach(key => {
+                    species[key] = this.speciesCount[key] || 0;
+                });
+                return {
+                    total: this.totalSpawned,
+                    active: this.animals.length,
+                    triggered: this.animals.filter(a => a.triggered && !a.hit).length,
+                    species: species,
+                    remainingInPool: this.mandatoryPool.length
+                };
+            }
         }
 
         // ============================================================
         // ОСНОВНАЯ ИГРА
         // ============================================================
-        let soundEngine = null;
-
-        async function startGame() {
-            const quality = await showQualityMenu();
-            initGame(quality);
-        }
-
-        function initGame(quality) {
-            console.log(`🚀 Запуск с качеством: ${quality}`);
+        function initGame(quality, difficulty) {
+            console.log(`🚀 Запуск с качеством: ${quality}, сложность: ${difficulty}`);
+            
+            const config = DIFFICULTY_CONFIG[difficulty];
             
             if (soundEngine) soundEngine.dispose();
             soundEngine = new SoundEngine();
             soundEngine.init();
             window.soundEngine = soundEngine;
 
-            // КОНСТАНТЫ
-            const TRACK_LENGTH = 1800;
+            const TRACK_LENGTH = config.trackLength;
             const TRACK_WIDTH = 6;
             const LANE_WIDTH = 2;
             const TOTAL_LANES = 3;
             const CAR_WIDTH = 0.8;
-            const TIME_LIMIT = 120;
+            const TIME_LIMIT = config.timeLimit;
             const MAX_STRIKES = 5;
-            const TRIGGER_LOOKAHEAD = 12;
+            const TRIGGER_LOOKAHEAD = config.triggerLookahead;
             const FOG_NEAR = 45;
+            const HAS_NIGHT_ZONE = config.hasNightZone;
 
             const START_Z = TRACK_LENGTH / 2 - 60;
             const FINISH_Z = -TRACK_LENGTH / 2 + 20;
 
-            function lerp(a, b, t) { return a + (b - a) * t; }
-            function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
-            function formatTime(time) {
-                if (time === undefined || time === null || time === Infinity) return '--';
-                const m = Math.floor(time / 60);
-                const s = Math.floor(time % 60);
-                const ms = Math.floor((time % 1) * 10);
-                return `${m}:${String(s).padStart(2, '0')}.${ms}`;
-            }
+            const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+            // Удаление старых элементов
             const oldHud = document.getElementById('game-hud');
             if (oldHud) oldHud.remove();
             const oldFinish = document.getElementById('finish-screen');
             if (oldFinish) oldFinish.remove();
+
+            // Очищаем контейнер
+            const container = document.getElementById('game-container');
+            while (container.firstChild) container.removeChild(container.firstChild);
 
             // ============================================================
             // HUD
@@ -1352,7 +1623,7 @@
                     z-index: 100;
                 `;
                 hud.innerHTML = `
-                    <div style="color:#ff8844;">⏱ ВРЕМЯ: <span id="timeDisplay" style="color:#fff;">2:00</span></div>
+                    <div style="color:#ff8844;">⏱ ВРЕМЯ: <span id="timeDisplay" style="color:#fff;">${formatTime(TIME_LIMIT)}</span></div>
                     <div style="color:#ff5555;">💥 АВАРИИ: <span id="strikesDisplay" style="color:#fff;">0 / ${MAX_STRIKES}</span></div>
                     <div style="color:#88ccff;">⚡ СКОРОСТЬ: <span id="speedDisplay" style="color:#fff;">0</span> км/ч</div>
                     <div style="margin-top:8px;">
@@ -1360,7 +1631,7 @@
                             <div id="progressBar" style="background:linear-gradient(90deg,#ffdd00,#ff8800);height:100%;width:0%;"></div>
                         </div>
                     </div>
-                    <div style="font-size:11px;color:#666;margin-top:4px;">${quality === 'high' ? '🔥' : quality === 'medium' ? '⚡' : '🚀'} ${quality}</div>
+                    <div style="font-size:10px;color:#666;margin-top:4px;">${config.label} · ${quality === 'high' ? '🔥' : quality === 'medium' ? '⚡' : '🚀'}</div>
                 `;
                 document.body.appendChild(hud);
             }
@@ -1374,9 +1645,7 @@
                 
                 if (timeEl) {
                     const remaining = TIME_LIMIT - raceTime;
-                    const m = Math.floor(Math.max(0, remaining) / 60);
-                    const s = Math.floor(Math.max(0, remaining) % 60);
-                    timeEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+                    timeEl.textContent = formatTime(Math.max(0, remaining));
                     timeEl.style.color = remaining <= 15 ? '#ff3333' : '#fff';
                 }
                 if (speedEl) speedEl.textContent = Math.round(Math.abs(speed) * 580);
@@ -1403,11 +1672,21 @@
                     backdrop-filter: blur(10px); font-family: 'Segoe UI', Arial, sans-serif;
                 `;
 
-                let title, color, message;
+                let title, color, message, isBest = false;
+                
                 if (state === 'win') {
+                    const bestTimes = getBestTimes();
+                    const isNewBest = saveBestTime(difficulty, timeTaken);
+                    isBest = isNewBest;
+                    
                     title = strikes === 0 ? '🏆 ИДЕАЛЬНЫЙ ЗАЕЗД!' : '🏁 ФИНИШ!';
                     color = '#ffdd00';
                     message = `Время: ${formatTime(timeTaken)} · Аварий: ${strikes} / ${MAX_STRIKES}`;
+                    if (isBest) message += '\n🎉 НОВЫЙ РЕКОРД!';
+                    
+                    if (bestTimes[difficulty] !== null) {
+                        message += `\n🏆 Лучшее: ${formatTime(bestTimes[difficulty])}`;
+                    }
                 } else if (state === 'timeout') {
                     title = '⏰ ВРЕМЯ ВЫШЛО!';
                     color = '#ff6644';
@@ -1419,33 +1698,44 @@
                 }
 
                 screen.innerHTML = `
-                    <div style="background:rgba(0,0,0,0.95);padding:40px 50px;border-radius:20px;border:2px solid ${color};text-align:center;max-width:400px;box-shadow:0 20px 80px rgba(0,0,0,0.9);">
+                    <div style="background:rgba(0,0,0,0.95);padding:40px 50px;border-radius:20px;border:2px solid ${color};text-align:center;max-width:420px;box-shadow:0 20px 80px rgba(0,0,0,0.9);">
                         <h1 style="font-size:36px;color:${color};margin-bottom:10px;">${title}</h1>
-                        <div style="font-size:16px;color:#fff;margin:10px 0;">${message}</div>
+                        <div style="font-size:16px;color:#fff;margin:10px 0;white-space:pre-line;">${message}</div>
                         <button onclick="location.reload()" style="padding:12px 30px;border:2px solid ${color};border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;margin-top:15px;">
                             🔄 Заново
+                        </button>
+                        <button onclick="showDifficultyScreen()" style="padding:12px 30px;border:2px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;margin-top:10px;display:block;width:100%;">
+                            🏠 Главное меню
                         </button>
                         <div style="margin-top:10px;font-size:12px;color:#666;">Нажмите R для рестарта</div>
                     </div>
                 `;
                 document.body.appendChild(screen);
-
-                if (state === 'win') soundEngine.playFinishSound();
-                else soundEngine.playCrashSound(1.2);
             }
 
             function endGame(state) {
                 if (gameState !== 'racing') return;
                 gameState = state;
-                soundEngine.stopEngine();
-                soundEngine.stopMusic();
+                try { soundEngine.stopEngineSmooth(); } catch(e) {}
+                try { soundEngine._stopEngineNow(); } catch(e) {}
+                try { soundEngine.stopMusic(); } catch(e) {}
                 document.removeEventListener('keydown', keydownHandler);
                 document.removeEventListener('keyup', keyupHandler);
                 window.removeEventListener('resize', resizeHandler);
+                
+                const mobileControls = document.getElementById('mobile-controls');
+                if (mobileControls) mobileControls.classList.remove('active');
+                
                 const hud = document.getElementById('game-hud');
                 if (hud) hud.remove();
                 const timeTaken = raceTime;
-                setTimeout(() => showEndScreen(state, timeTaken), state === 'crash' ? 350 : 500);
+                setTimeout(() => {
+                    showEndScreen(state, timeTaken);
+                    // Optionally cancel further animation after screen shows
+                    if (animationId) {
+                        // keep rendering for a while, no need to cancel hard
+                    }
+                }, state === 'crash' ? 350 : 500);
             }
 
             // ============================================================
@@ -1494,12 +1784,13 @@
             // ============================================================
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            const pixelRatio = quality === 'high' ? 2 : quality === 'medium' ? 1.5 : 1;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatio));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.2;
-            document.getElementById('game-container').appendChild(renderer.domElement);
+            container.appendChild(renderer.domElement);
 
             // ============================================================
             // ТЕКСТУРЫ
@@ -1575,37 +1866,82 @@
             scene.add(track);
 
             // ============================================================
-            // РАЗМЕТКА
+            // РАЗМЕТКА - ОПТИМИЗИРОВАННАЯ (INSTANCED MESH)
             // ============================================================
-            for (let lane = 1; lane < TOTAL_LANES; lane++) {
-                const xMark = -TRACK_WIDTH / 2 + lane * LANE_WIDTH;
-                for (let i = -TRACK_LENGTH / 2 + 0.5; i < TRACK_LENGTH / 2 - 0.5; i += 2.5) {
-                    const mark = new THREE.Mesh(
-                        new THREE.PlaneGeometry(0.1, 0.8),
-                        new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x88aaff, emissiveIntensity: 0.05, side: THREE.DoubleSide })
-                    );
-                    mark.rotation.x = -Math.PI / 2;
-                    mark.position.set(xMark, 0.02, i);
-                    scene.add(mark);
+            function createLaneMarkings() {
+                const geo = new THREE.PlaneGeometry(0.1, 0.8);
+                const mat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff, 
+                    emissive: 0x88aaff, 
+                    emissiveIntensity: 0.05, 
+                    side: THREE.DoubleSide, 
+                    roughness: 0.3 
+                });
+                const spots = [];
+                const spacing = quality === 'low' ? 4.0 : quality === 'medium' ? 3.0 : 2.5;
+                for (let lane = 1; lane < TOTAL_LANES; lane++) {
+                    const xMark = -TRACK_WIDTH / 2 + lane * LANE_WIDTH;
+                    for (let i = -TRACK_LENGTH / 2 + 0.5; i < TRACK_LENGTH / 2 - 0.5; i += spacing) {
+                        spots.push({ x: xMark, z: i });
+                    }
                 }
+                const mesh = new THREE.InstancedMesh(geo, mat, spots.length);
+                const dummy = new THREE.Object3D();
+                dummy.rotation.x = -Math.PI / 2;
+                spots.forEach((p, idx) => {
+                    dummy.position.set(p.x, 0.02, p.z);
+                    dummy.updateMatrix();
+                    mesh.setMatrixAt(idx, dummy.matrix);
+                });
+                mesh.instanceMatrix.needsUpdate = true;
+                mesh.castShadow = false;
+                mesh.receiveShadow = false;
+                scene.add(mesh);
+                return mesh;
             }
+            createLaneMarkings();
 
             // ============================================================
-            // БОРДЮРЫ
+            // БОРДЮРЫ - ОПТИМИЗИРОВАННЫЕ (INSTANCED MESH)
             // ============================================================
-            for (let i = -TRACK_LENGTH / 2; i <= TRACK_LENGTH / 2; i += 1.2) {
-                for (const side of [-1, 1]) {
-                    const curb = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.15, 0.06, 0.35),
-                        new THREE.MeshStandardMaterial({ 
-                            color: Math.floor(i * 2) % 2 === 0 ? 0xff2200 : 0xffffff,
-                            roughness: 0.4
-                        })
-                    );
-                    curb.position.set(side * (TRACK_WIDTH / 2 + 0.15), 0.03, i);
-                    scene.add(curb);
+            function createCurbs() {
+                const geo = new THREE.BoxGeometry(0.15, 0.06, 0.35);
+                const spots = [];
+                const spacing = quality === 'low' ? 1.8 : quality === 'medium' ? 1.5 : 1.2;
+                for (let i = -TRACK_LENGTH / 2; i <= TRACK_LENGTH / 2; i += spacing) {
+                    for (const side of [-1, 1]) {
+                        spots.push({ 
+                            x: side * (TRACK_WIDTH / 2 + 0.15), 
+                            z: i, 
+                            isRed: Math.floor(i * 2) % 2 === 0 
+                        });
+                    }
                 }
+                const mat1 = new THREE.MeshStandardMaterial({ color: 0xff2200, roughness: 0.4, emissive: 0xff0000, emissiveIntensity: 0.05 });
+                const mat2 = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+                const redSpots = spots.filter(s => s.isRed);
+                const whiteSpots = spots.filter(s => !s.isRed);
+                const mesh1 = new THREE.InstancedMesh(geo, mat1, redSpots.length);
+                const mesh2 = new THREE.InstancedMesh(geo, mat2, whiteSpots.length);
+                const dummy = new THREE.Object3D();
+                let idx1 = 0, idx2 = 0;
+                spots.forEach(p => {
+                    dummy.position.set(p.x, 0.03, p.z);
+                    dummy.updateMatrix();
+                    const mesh = p.isRed ? mesh1 : mesh2;
+                    const idx = p.isRed ? idx1++ : idx2++;
+                    mesh.setMatrixAt(idx, dummy.matrix);
+                });
+                mesh1.instanceMatrix.needsUpdate = true;
+                mesh2.instanceMatrix.needsUpdate = true;
+                mesh1.castShadow = false;
+                mesh2.castShadow = false;
+                mesh1.receiveShadow = false;
+                mesh2.receiveShadow = false;
+                if (idx1 > 0) scene.add(mesh1);
+                if (idx2 > 0) scene.add(mesh2);
             }
+            createCurbs();
 
             // ============================================================
             // СТАРТ / ФИНИШ
@@ -1629,6 +1965,26 @@
             }
 
             // ============================================================
+            // НОЧНАЯ ЗОНА
+            // ============================================================
+            const NIGHT_ZONE_START = HAS_NIGHT_ZONE ? TRACK_LENGTH * 0.3 : 9999;
+            const NIGHT_ZONE_END = HAS_NIGHT_ZONE ? TRACK_LENGTH * 0.55 : 9999;
+            
+            const nightOverlay = new THREE.Mesh(
+                new THREE.PlaneGeometry(TRACK_WIDTH + 10, HAS_NIGHT_ZONE ? 200 : 1),
+                new THREE.MeshBasicMaterial({
+                    color: 0x000022,
+                    transparent: true,
+                    opacity: 0,
+                    side: THREE.DoubleSide,
+                    depthWrite: false
+                })
+            );
+            nightOverlay.rotation.x = -Math.PI / 2;
+            nightOverlay.position.set(0, 0.02, -(NIGHT_ZONE_START + NIGHT_ZONE_END) / 2);
+            scene.add(nightOverlay);
+
+            // ============================================================
             // ДЕРЕВЬЯ
             // ============================================================
             function createTree(x, z, scale = 1) {
@@ -1641,7 +1997,8 @@
                 trunk.castShadow = true;
                 group.add(trunk);
                 const colors = [0x2d7d2d, 0x3a8c3a, 0x4a9a4a, 0x5a8a3a];
-                for (let i = 0; i < 3; i++) {
+                const crownCount = quality === 'low' ? 2 : 3;
+                for (let i = 0; i < crownCount; i++) {
                     const crown = new THREE.Mesh(
                         new THREE.SphereGeometry((0.2 + Math.random() * 0.2) * scale, 6),
                         new THREE.MeshStandardMaterial({ color: colors[Math.floor(Math.random() * colors.length)], roughness: 0.8 })
@@ -1654,7 +2011,9 @@
                 scene.add(group);
             }
 
-            for (let i = 0; i < 40; i++) {
+            const treeCount = quality === 'low' ? Math.min(15, config.trees) : 
+                             quality === 'medium' ? config.trees : config.trees * 1.3;
+            for (let i = 0; i < treeCount; i++) {
                 const z = -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH;
                 const side = Math.random() > 0.5 ? 1 : -1;
                 const x = side * (TRACK_WIDTH / 2 + 2 + Math.random() * 5);
@@ -1663,266 +2022,159 @@
             }
 
             // ============================================================
-            // AnimalSpawner
-            // ============================================================
-            class AnimalSpawner {
-                constructor(scene, roadWidth, roadCenter, finishZ, triggerLookahead) {
-                    this.scene = scene;
-                    this.roadWidth = roadWidth;
-                    this.roadCenter = roadCenter;
-                    this.finishZ = finishZ;
-                    this.triggerLookahead = triggerLookahead;
-                    this.animals = [];
-                    this.spawnTimer = 0;
-                    this.minSpawnInterval = 0.8;
-                    this.maxSpawnInterval = 2.0;
-                    this.nextSpawnTime = this.getRandomInterval();
-                    this.totalSpawned = 0;
-                    this.maxAnimals = 40;
-                    this.enabled = true;
-                    
-                    this.mandatoryPool = [];
-                    this.speciesCount = {};
-                    ANIMAL_KEYS.forEach(key => { this.speciesCount[key] = 0; });
-                    
-                    this.buildMandatoryPool();
-                    this.shufflePool();
-                }
-
-                buildMandatoryPool() {
-                    const mandatory = [
-                        { type: 'DOG', count: 4 }, { type: 'HUMAN', count: 5 },
-                        { type: 'DEER', count: 3 }, { type: 'BEAR', count: 4 },
-                        { type: 'CAT', count: 4 }, { type: 'FOX', count: 3 }, { type: 'BOAR', count: 3 }
-                    ];
-                    this.mandatoryPool = [];
-                    mandatory.forEach(item => {
-                        for (let i = 0; i < item.count; i++) this.mandatoryPool.push(item.type);
-                    });
-                    console.log(`🐕 Пул животных: ${this.mandatoryPool.length} особей`);
-                }
-
-                shufflePool() {
-                    for (let i = this.mandatoryPool.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [this.mandatoryPool[i], this.mandatoryPool[j]] = [this.mandatoryPool[j], this.mandatoryPool[i]];
-                    }
-                }
-
-                getRandomInterval() {
-                    return Math.random() * (this.maxSpawnInterval - this.minSpawnInterval) + this.minSpawnInterval;
-                }
-
-                getNextSpecies() {
-                    if (this.mandatoryPool.length > 0) {
-                        const species = this.mandatoryPool.pop();
-                        if (this.mandatoryPool.length === 0) console.log('🔄 Все животные появились!');
-                        return species;
-                    }
-                    return ANIMAL_KEYS[Math.floor(Math.random() * ANIMAL_KEYS.length)];
-                }
-
-                createAnimal(z, forcedType = null) {
-                    const typeId = forcedType || this.getNextSpecies();
-                    const type = ANIMAL_TYPES[typeId];
-                    const mesh = createAnimalMesh(typeId);
-
-                    const fromLeft = Math.random() < 0.5;
-                    const startX = fromLeft ? -(this.roadWidth / 2 + 1.5) : (this.roadWidth / 2 + 1.5);
-                    const endX = -startX;
-                    if (!fromLeft) mesh.scale.x = -1;
-                    
-                    const scale = 0.8 + Math.random() * 0.5;
-                    mesh.scale.set(scale, scale, scale);
-                    
-                    mesh.position.set(startX, 0, z);
-                    mesh.visible = false;
-                    this.scene.add(mesh);
-
-                    return {
-                        type: 'animal',
-                        speciesKey: typeId,
-                        speciesId: type.id,
-                        animalType: typeId,
-                        mesh: mesh,
-                        z: z,
-                        x: startX,
-                        startX: startX,
-                        endX: endX,
-                        duration: 0.6 + Math.random() * 0.4,
-                        elapsed: 0,
-                        triggered: false,
-                        aliveTime: 0,
-                        radius: type.radius * scale || 0.5,
-                        penalty: type.penalty || 0.35,
-                        timePenalty: type.timePenalty || 4,
-                        speedZ: type.speedZ || 0.02,
-                        speedCross: type.speedCross || 3.0,
-                        direction: fromLeft ? 1 : -1,
-                        hit: false
-                    };
-                }
-
-                update(deltaTime, playerZ) {
-                    if (!this.enabled || playerZ < this.finishZ) return;
-
-                    this.spawnTimer += deltaTime;
-                    const totalActive = this.animals.length;
-
-                    if (this.spawnTimer >= this.nextSpawnTime && totalActive < this.maxAnimals) {
-                        this.spawnTimer = 0;
-                        this.nextSpawnTime = this.getRandomInterval();
-
-                        const spawnZ = playerZ - 12 - Math.random() * 8;
-                        if (spawnZ > this.finishZ) {
-                            const typeId = this.getNextSpecies();
-                            const animal = this.createAnimal(spawnZ, typeId);
-                            this.animals.push(animal);
-                            this.totalSpawned++;
-                            this.speciesCount[typeId] = (this.speciesCount[typeId] || 0) + 1;
-                        }
-                    }
-
-                    for (let i = this.animals.length - 1; i >= 0; i--) {
-                        const animal = this.animals[i];
-                        this.updateAnimal(animal, deltaTime, playerZ);
-                        if (animal.triggered) animal.aliveTime += deltaTime;
-
-                        const staleTimeout = animal.aliveTime > 12;
-                        if (animal.z > playerZ + 30 || animal.hit || staleTimeout || animal.z < playerZ - 150) {
-                            this.disposeAnimal(animal);
-                            if (animal.speciesKey) {
-                                this.speciesCount[animal.speciesKey] = Math.max(0, (this.speciesCount[animal.speciesKey] || 0) - 1);
-                            }
-                            this.animals.splice(i, 1);
-                        }
-                    }
-                }
-
-                updateAnimal(animal, deltaTime, playerZ) {
-                    if (!animal.triggered) {
-                        const distanceAhead = playerZ - animal.z;
-                        if (distanceAhead > 0.5 && distanceAhead <= this.triggerLookahead) {
-                            animal.triggered = true;
-                            animal.mesh.visible = true;
-                            console.log(`🏃 ${ANIMAL_TYPES[animal.speciesKey].name} выбегает! (дистанция: ${Math.round(distanceAhead)}м)`);
-                        }
-                        if (distanceAhead < -5) {
-                            animal.hit = true;
-                        }
-                        return;
-                    }
-
-                    if (animal.elapsed < animal.duration) {
-                        animal.elapsed += deltaTime;
-                        const t = Math.min(animal.elapsed / animal.duration, 1);
-                        const easedT = t * t * (3 - 2 * t);
-                        animal.x = animal.startX + (animal.endX - animal.startX) * easedT;
-                        animal.mesh.position.x = animal.x;
-                    }
-
-                    const zMove = animal.speedZ || 0.02;
-                    animal.z -= zMove * 60 * deltaTime * 0.3;
-                    animal.mesh.position.z = animal.z;
-                }
-
-                disposeAnimal(animal) {
-                    this.scene.remove(animal.mesh);
-                }
-
-                getActiveAnimals() {
-                    return this.animals.filter(a => a.triggered && !a.hit);
-                }
-
-                clear() {
-                    this.animals.forEach(a => this.disposeAnimal(a));
-                    this.animals = [];
-                    this.totalSpawned = 0;
-                    ANIMAL_KEYS.forEach(key => { this.speciesCount[key] = 0; });
-                    this.buildMandatoryPool();
-                    this.shufflePool();
-                }
-
-                getStats() {
-                    const species = {};
-                    ANIMAL_KEYS.forEach(key => {
-                        species[key] = this.speciesCount[key] || 0;
-                    });
-                    return {
-                        total: this.totalSpawned,
-                        active: this.animals.length,
-                        triggered: this.animals.filter(a => a.triggered && !a.hit).length,
-                        species: species,
-                        remainingInPool: this.mandatoryPool.length
-                    };
-                }
-            }
-
-            const animalSpawner = new AnimalSpawner(scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD);
-
-            function initAnimals() {
-                const startZ = START_Z - 8;
-                ANIMAL_KEYS.forEach((typeId, index) => {
-                    const z = startZ - index * 5 - Math.random() * 3;
-                    if (z > FINISH_Z) {
-                        const animal = animalSpawner.createAnimal(z, typeId);
-                        animal.triggered = true;
-                        animal.mesh.visible = true;
-                        animal.elapsed = 0.2;
-                        animalSpawner.animals.push(animal);
-                        animalSpawner.totalSpawned++;
-                        animalSpawner.speciesCount[typeId] = (animalSpawner.speciesCount[typeId] || 0) + 1;
-                    }
-                });
-                console.log(`🚧 Начальных животных: ${animalSpawner.animals.length}`);
-            }
-            initAnimals();
-
-            // ============================================================
             // МАШИНА ИГРОКА
             // ============================================================
             function createCar(color = 0xff3333, isPlayer = false) {
                 const car = new THREE.Group();
-                const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.7 });
-                const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 1.4), bodyMat);
-                body.position.y = 0.2;
+                
+                // Основной кузов
+                const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.18, metalness: 0.75 });
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.22, 1.45), bodyMat);
+                body.position.y = 0.22;
                 body.castShadow = true;
                 body.receiveShadow = true;
                 car.add(body);
 
-                const cabinMat = new THREE.MeshStandardMaterial({ color: isPlayer ? 0x88ddff : 0x88ccff, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.8 });
-                const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.5), cabinMat);
-                cabin.position.set(0, 0.38, 0.05);
+                // Кабина
+                const cabinMat = new THREE.MeshStandardMaterial({ 
+                    color: isPlayer ? 0x88ddff : 0x88ccff, 
+                    roughness: 0.05, 
+                    metalness: 0.3, 
+                    transparent: true, 
+                    opacity: 0.75 
+                });
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.18, 0.55), cabinMat);
+                cabin.position.set(0, 0.40, 0.05);
                 cabin.castShadow = true;
                 car.add(cabin);
 
-                const lightMat = new THREE.MeshStandardMaterial({ color: 0xffff88, emissive: 0xffff44, emissiveIntensity: 0.8 });
-                const l1 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8), lightMat);
-                l1.position.set(-0.2, 0.14, -0.7);
+                // Фары
+                const lightMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffaa, 
+                    emissive: 0xffff66, 
+                    emissiveIntensity: isPlayer ? 1.2 : 0.7 
+                });
+                const l1 = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10), lightMat);
+                l1.position.set(-0.22, 0.16, -0.72);
                 car.add(l1);
                 const l2 = l1.clone();
-                l2.position.x = 0.2;
+                l2.position.x = 0.22;
                 car.add(l2);
 
-                const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
-                const shadowGeo = new THREE.PlaneGeometry(1.0, 1.6);
+                // Задние фонари
+                const tailLightMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xff2222, 
+                    emissive: 0xff0000, 
+                    emissiveIntensity: 0.6 
+                });
+                const tl1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.04), tailLightMat);
+                tl1.position.set(-0.28, 0.22, 0.72);
+                car.add(tl1);
+                const tl2 = tl1.clone();
+                tl2.position.x = 0.28;
+                car.add(tl2);
+
+                // Тень
+                const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32 });
+                const shadowGeo = new THREE.PlaneGeometry(1.05, 1.7);
                 const fakeShadow = new THREE.Mesh(shadowGeo, shadowMat);
                 fakeShadow.rotation.x = -Math.PI / 2;
                 fakeShadow.position.y = 0.015;
                 car.add(fakeShadow);
 
+                // Колёса
                 const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
+                const rimMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8, roughness: 0.3 });
                 const wheelPos = [
-                    [-0.35, 0.06, 0.5], [0.35, 0.06, 0.5],
-                    [-0.35, 0.06, -0.5], [0.35, 0.06, -0.5]
+                    [-0.38, 0.07, 0.52], [0.38, 0.07, 0.52],
+                    [-0.38, 0.07, -0.52], [0.38, 0.07, -0.52]
                 ];
                 wheelPos.forEach(p => {
-                    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.05, 8), tireMat);
-                    tire.rotation.x = Math.PI / 2;
+                    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.07, 10), tireMat);
+                    tire.rotation.z = Math.PI / 2;
                     tire.position.set(p[0], p[1], p[2]);
                     tire.castShadow = true;
                     car.add(tire);
+                    
+                    // Диск
+                    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.075, 8), rimMat);
+                    rim.rotation.z = Math.PI / 2;
+                    rim.position.set(p[0], p[1], p[2]);
+                    car.add(rim);
                 });
+
+                // === УЛУЧШЕНИЯ ТОЛЬКО ДЛЯ ИГРОКА ===
+                if (isPlayer) {
+                    // Спойлер
+                    const spoilerMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4, metalness: 0.6 });
+                    const spoilerBase = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.04, 0.12), spoilerMat);
+                    spoilerBase.position.set(0, 0.38, 0.68);
+                    car.add(spoilerBase);
+                    
+                    const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.03, 0.18), spoilerMat);
+                    spoilerWing.position.set(0, 0.48, 0.70);
+                    spoilerWing.rotation.x = -0.25;
+                    car.add(spoilerWing);
+                    
+                    // Стойки спойлера
+                    const strutGeo = new THREE.BoxGeometry(0.03, 0.12, 0.03);
+                    const strut1 = new THREE.Mesh(strutGeo, spoilerMat);
+                    strut1.position.set(-0.25, 0.42, 0.68);
+                    car.add(strut1);
+                    const strut2 = strut1.clone();
+                    strut2.position.x = 0.25;
+                    car.add(strut2);
+
+                    // Выхлопные трубы (двойные)
+                    const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9, roughness: 0.25 });
+                    const pipeGeo = new THREE.CylinderGeometry(0.035, 0.04, 0.18, 8);
+                    
+                    const pipe1 = new THREE.Mesh(pipeGeo, exhaustMat);
+                    pipe1.rotation.x = Math.PI / 2;
+                    pipe1.position.set(-0.18, 0.08, 0.78);
+                    car.add(pipe1);
+                    
+                    const pipe2 = pipe1.clone();
+                    pipe2.position.x = 0.18;
+                    car.add(pipe2);
+                    
+                    // Кончики труб (хром)
+                    const tipMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 1.0, roughness: 0.1 });
+                    const tip1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.038, 0.04, 8), tipMat);
+                    tip1.rotation.x = Math.PI / 2;
+                    tip1.position.set(-0.18, 0.08, 0.88);
+                    car.add(tip1);
+                    const tip2 = tip1.clone();
+                    tip2.position.x = 0.18;
+                    car.add(tip2);
+
+                    // Передний бампер / сплиттер
+                    const splitterMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.4 });
+                    const splitter = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.04, 0.12), splitterMat);
+                    splitter.position.set(0, 0.06, -0.72);
+                    car.add(splitter);
+
+                    // Боковые юбки
+                    const skirtGeo = new THREE.BoxGeometry(0.06, 0.06, 1.1);
+                    const skirt1 = new THREE.Mesh(skirtGeo, splitterMat);
+                    skirt1.position.set(-0.42, 0.08, 0);
+                    car.add(skirt1);
+                    const skirt2 = skirt1.clone();
+                    skirt2.position.x = 0.42;
+                    car.add(skirt2);
+
+                    // Капот с воздухозаборником
+                    const hoodScoop = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.06, 0.3), spoilerMat);
+                    hoodScoop.position.set(0, 0.36, -0.25);
+                    car.add(hoodScoop);
+
+                    // Номер / полоса
+                    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+                    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.01, 1.3), stripeMat);
+                    stripe.position.set(0, 0.335, 0);
+                    car.add(stripe);
+                }
+
                 return car;
             }
 
@@ -1970,10 +2222,11 @@
                 scene.add(car);
                 
                 const speed = 0.01 + Math.random() * 0.025;
-                return { mesh: car, x: x, z: z, lane: lane, speed: speed, active: true, laneChangeTimer: 2 + Math.random() * 4, targetLane: lane, isChangingLane: false, laneChangeProgress: 0 };
+                return { mesh: car, x: x, z: z, lane: lane, speed: speed, active: true, laneChangeTimer: 2 + Math.random() * 4, targetLane: lane, isChangingLane: false, laneChangeProgress: 0, hitCooldown: 0 };
             }
 
-            for (let i = 0; i < 20; i++) {
+            const maxCars = quality === 'low' ? Math.min(12, config.maxCars) : config.maxCars;
+            for (let i = 0; i < maxCars; i++) {
                 const z = -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
                 cars.push(createOpponentCar(z, lane));
@@ -1983,6 +2236,7 @@
             // ПРЕПЯТСТВИЯ
             // ============================================================
             const obstacles = [];
+            const maxObstacles = quality === 'low' ? Math.min(15, config.maxObstacles) : config.maxObstacles;
             
             function createObstacle(z, type) {
                 const group = new THREE.Group();
@@ -2023,11 +2277,65 @@
                 return { mesh: group, x: x, z: z, type: type, active: true };
             }
 
-            for (let i = 0; i < 25; i++) {
+            for (let i = 0; i < maxObstacles; i++) {
                 const z = -TRACK_LENGTH / 2 + 30 + Math.random() * (TRACK_LENGTH - 80);
                 const type = Math.random() < 0.5 ? 'pothole' : 'bump';
                 obstacles.push(createObstacle(z, type));
             }
+
+            // ============================================================
+            // МОБИЛЬНОЕ УПРАВЛЕНИЕ
+            // ============================================================
+            const mobileControls = document.getElementById('mobile-controls');
+            if (isMobile) {
+                mobileControls.classList.add('active');
+            }
+
+            const btnGas = document.getElementById('btnGas');
+            const btnBrake = document.getElementById('btnBrake');
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+            
+            function setupMobileButton(el, onStart, onEnd) {
+                if (!el) return;
+                
+                const start = (e) => {
+                    e.preventDefault();
+                    el.classList.add('active');
+                    if (onStart) onStart();
+                };
+                const end = (e) => {
+                    e.preventDefault();
+                    el.classList.remove('active');
+                    if (onEnd) onEnd();
+                };
+                
+                el.addEventListener('touchstart', start, { passive: false });
+                el.addEventListener('touchend', end, { passive: false });
+                el.addEventListener('touchcancel', end, { passive: false });
+                el.addEventListener('mousedown', start);
+                el.addEventListener('mouseup', end);
+                el.addEventListener('mouseleave', end);
+            }
+
+            let mobileKeys = { w: false, s: false, a: false, d: false };
+
+            setupMobileButton(btnGas, 
+                () => { mobileKeys.w = true; },
+                () => { mobileKeys.w = false; }
+            );
+            setupMobileButton(btnBrake,
+                () => { mobileKeys.s = true; },
+                () => { mobileKeys.s = false; }
+            );
+            setupMobileButton(btnLeft,
+                () => { mobileKeys.a = true; },
+                () => { mobileKeys.a = false; }
+            );
+            setupMobileButton(btnRight,
+                () => { mobileKeys.d = true; },
+                () => { mobileKeys.d = false; }
+            );
 
             // ============================================================
             // УПРАВЛЕНИЕ
@@ -2048,14 +2356,36 @@
             const DRY_DAMPING = 0.82;
             const DRY_STEER = 3.2;
 
+            function getKeys() {
+                if (isMobile) {
+                    return {
+                        w: keys.w || mobileKeys.w,
+                        s: keys.s || mobileKeys.s,
+                        a: keys.a || mobileKeys.a,
+                        d: keys.d || mobileKeys.d
+                    };
+                }
+                return keys;
+            }
+
             const keydownHandler = (e) => {
                 const k = e.key.toLowerCase();
                 if (k === 'w' || k === 'ц') { keys.w = true; e.preventDefault(); }
                 if (k === 's' || k === 'ы') { keys.s = true; e.preventDefault(); }
                 if (k === 'a' || k === 'ф') { keys.a = true; e.preventDefault(); }
                 if (k === 'd' || k === 'в') { keys.d = true; e.preventDefault(); }
-                if (k === 'q') { location.reload(); }
+                if (k === 'q') {
+                    if (gameState === 'racing') {
+                        if (confirm('Выйти из заезда и начать заново?')) location.reload();
+                    } else {
+                        location.reload();
+                    }
+                }
                 if (k === 'r' && gameState !== 'racing') { location.reload(); }
+                if (soundEngine && soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+                    soundEngine.audioCtx.resume();
+                    soundEngine.startMusic();
+                }
             };
 
             const keyupHandler = (e) => {
@@ -2068,6 +2398,13 @@
 
             document.addEventListener('keydown', keydownHandler);
             document.addEventListener('keyup', keyupHandler);
+
+            document.addEventListener('click', () => {
+                if (soundEngine && soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+                    soundEngine.audioCtx.resume();
+                    soundEngine.startMusic();
+                }
+            });
 
             // ============================================================
             // RESIZE
@@ -2185,7 +2522,9 @@
 
                 emit(position, velocity, count = 2, customSize = 0.15) {
                     if (!this.enabled) return;
-                    for (let i = 0; i < count; i++) {
+                    const density = quality === 'high' ? 2 : quality === 'medium' ? 1 : 0.5;
+                    const actualCount = Math.max(1, Math.floor(count * density));
+                    for (let i = 0; i < actualCount; i++) {
                         const idx = this.particleIndex % this.maxParticles;
                         this.particleIndex++;
                         const i3 = idx * 3;
@@ -2246,6 +2585,52 @@
             const particleSystem = new ParticleSystem(scene);
 
             // ============================================================
+            // ЖИВОТНЫЕ
+            // ============================================================
+            const animalSpawner = new AnimalSpawner(
+                scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD,
+                config.maxAnimals, config.animalSpawnRate
+            );
+
+            function initAnimals() {
+                const startZ = START_Z - 8;
+                ANIMAL_KEYS.forEach((typeId, index) => {
+                    const z = startZ - index * 5 - Math.random() * 3;
+                    if (z > FINISH_Z) {
+                        const animal = animalSpawner.createAnimal(z, typeId);
+                        animal.triggered = true;
+                        animal.mesh.visible = true;
+                        animal.elapsed = 0.2;
+                        animalSpawner.animals.push(animal);
+                        animalSpawner.totalSpawned++;
+                        animalSpawner.speciesCount[typeId] = (animalSpawner.speciesCount[typeId] || 0) + 1;
+                    }
+                });
+            }
+            initAnimals();
+
+            // ============================================================
+            // ФАРЫ
+            // ============================================================
+            const headlight1 = new THREE.SpotLight(0xffeedd, 0);
+            headlight1.angle = 0.4;
+            headlight1.penumbra = 0.7;
+            headlight1.decay = 1.5;
+            headlight1.distance = 40;
+            scene.add(headlight1);
+            headlight1.target = new THREE.Object3D();
+            scene.add(headlight1.target);
+
+            const headlight2 = new THREE.SpotLight(0xffeedd, 0);
+            headlight2.angle = 0.4;
+            headlight2.penumbra = 0.7;
+            headlight2.decay = 1.5;
+            headlight2.distance = 40;
+            scene.add(headlight2);
+            headlight2.target = new THREE.Object3D();
+            scene.add(headlight2.target);
+
+            // ============================================================
             // ИГРОВОЙ ЦИКЛ
             // ============================================================
             function update(deltaTime) {
@@ -2253,14 +2638,15 @@
                 
                 raceTime += deltaTime;
                 const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
+                
+                const currentKeys = getKeys();
 
-                // Газ/Тормоз
                 if (stunTimer > 0) {
                     stunTimer -= deltaTime;
                     if (speed > 0) speed = Math.max(speed - FRICTION_FORCE * 2, 0);
-                } else if (keys.w) {
+                } else if (currentKeys.w) {
                     speed = Math.min(speed + ACCELERATION, MAX_SPEED);
-                } else if (keys.s) {
+                } else if (currentKeys.s) {
                     speed = Math.max(speed - BRAKE_FORCE, -MAX_SPEED * 0.2);
                 } else {
                     if (speed > 0) speed = Math.max(speed - FRICTION_FORCE, 0);
@@ -2268,10 +2654,9 @@
 
                 soundEngine.update(speed);
 
-                // Руль
-                if (keys.a) {
+                if (currentKeys.a) {
                     xVelocity = Math.max(xVelocity - DRY_STEER * deltaTime, -MAX_X_SPEED);
-                } else if (keys.d) {
+                } else if (currentKeys.d) {
                     xVelocity = Math.min(xVelocity + DRY_STEER * deltaTime, MAX_X_SPEED);
                 } else {
                     xVelocity *= DRY_DAMPING;
@@ -2282,11 +2667,9 @@
                 const globalMaxX = TRACK_WIDTH / 2 - CAR_WIDTH / 2 - 0.1;
                 xPos = clamp(xPos, -globalMaxX, globalMaxX);
 
-                // Движение вперед
                 const moveAmount = speed * 60 * deltaTime;
                 zPos -= moveAmount;
 
-                // Пыль
                 if (Math.abs(speed) > 0.05) {
                     const pos = playerCar.position;
                     for (let side of [-0.35, 0.35]) {
@@ -2300,13 +2683,47 @@
                     }
                 }
 
-                // Позиция игрока
                 playerCar.position.set(xPos, 0.1, zPos);
                 playerCar.rotation.z = lerp(playerCar.rotation.z, -xVelocity * 0.04, 0.12);
 
-                // ============================================================
-                // ПОПУТНЫЕ МАШИНЫ
-                // ============================================================
+                headlight1.position.copy(playerCar.position);
+                headlight1.position.x -= 0.3;
+                headlight1.position.y += 0.3;
+                headlight1.position.z -= 0.8;
+                headlight1.target.position.copy(playerCar.position);
+                headlight1.target.position.z -= 10;
+                
+                headlight2.position.copy(playerCar.position);
+                headlight2.position.x += 0.3;
+                headlight2.position.y += 0.3;
+                headlight2.position.z -= 0.8;
+                headlight2.target.position.copy(playerCar.position);
+                headlight2.target.position.z -= 10;
+
+                // Ночная зона
+                const isNight = HAS_NIGHT_ZONE && zPos > -NIGHT_ZONE_END && zPos < -NIGHT_ZONE_START;
+                
+                if (isNight) {
+                    const nightProgress = Math.abs(zPos + NIGHT_ZONE_START) / (NIGHT_ZONE_END - NIGHT_ZONE_START);
+                    const opacity = Math.sin(nightProgress * Math.PI) * 0.7;
+                    nightOverlay.material.opacity = opacity;
+                    
+                    headlight1.intensity = 1.8;
+                    headlight2.intensity = 1.8;
+                    
+                    ambient.intensity = 0.08;
+                    scene.background = new THREE.Color(0x080818);
+                    scene.fog.color = new THREE.Color(0x080818);
+                } else {
+                    nightOverlay.material.opacity = 0;
+                    headlight1.intensity = 0;
+                    headlight2.intensity = 0;
+                    ambient.intensity = 0.55;
+                    scene.background = new THREE.Color(0x4a8db7);
+                    scene.fog.color = new THREE.Color(0x4a8db7);
+                }
+
+                // Попутные машины
                 cars.forEach(car => {
                     if (!car.active) return;
                     
@@ -2340,9 +2757,11 @@
                         }
                     }
                     
+                    if (car.hitCooldown > 0) car.hitCooldown -= deltaTime;
                     const dx = xPos - car.x;
                     const dz = zPos - car.z;
-                    if (Math.abs(dx) < 0.7 && Math.abs(dz) < 0.7) {
+                    if (car.hitCooldown <= 0 && Math.abs(dx) < 0.7 && Math.abs(dz) < 0.7) {
+                        car.hitCooldown = 1.2;
                         handleObstacleHit({ penalty: 0.3, timePenalty: 4 });
                     }
                     
@@ -2356,12 +2775,11 @@
                         car.laneChangeTimer = 2 + Math.random() * 3;
                         car.isChangingLane = false;
                         car.laneChangeProgress = 0;
+                        car.hitCooldown = 0;
                     }
                 });
 
-                // ============================================================
-                // ПРЕПЯТСТВИЯ
-                // ============================================================
+                // Препятствия
                 obstacles.forEach(obs => {
                     if (!obs.active) return;
                     
@@ -2385,9 +2803,7 @@
                     }
                 });
 
-                // ============================================================
-                // ЖИВОТНЫЕ
-                // ============================================================
+                // Животные
                 animalSpawner.update(deltaTime, zPos);
 
                 if (gameState === 'racing') {
@@ -2404,9 +2820,7 @@
                     });
                 }
 
-                // ============================================================
-                // ПОБЕДА / ПОРАЖЕНИЕ
-                // ============================================================
+                // Победа / Поражение
                 if (gameState === 'racing' && zPos <= FINISH_Z - 15) {
                     endGame('win');
                 }
@@ -2414,15 +2828,11 @@
                     endGame('timeout');
                 }
 
-                // ============================================================
-                // КАМЕРА - ПЛАВНОЕ СЛЕЖЕНИЕ
-                // ============================================================
+                // Камера
                 const targetX = xPos * 0.35;
-                const targetY = 4.2;
-                const targetZ = zPos + 9;
-                camera.position.x += (targetX - camera.position.x) * 0.06;
-                camera.position.y += (targetY - camera.position.y) * 0.06;
-                camera.position.z += (targetZ - camera.position.z) * 0.06;
+                const targetY = isNight ? 3.8 : 4.2;
+                const targetZ = zPos + (isNight ? 7 : 9);
+                camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 0.08);
                 camera.lookAt(xPos, 0.5, zPos - 12);
 
                 if (shakeTime > 0) {
@@ -2432,9 +2842,6 @@
                     camera.position.y += (Math.random() - 0.5) * power;
                 }
 
-                // ============================================================
-                // ТЕНИ
-                // ============================================================
                 sunLight.position.set(xPos + 30, 50, zPos + 20);
                 sunLight.target.position.set(xPos, 0, zPos);
                 sunLight.target.updateMatrixWorld();
@@ -2447,9 +2854,15 @@
             // АНИМАЦИЯ
             // ============================================================
             let lastTime = performance.now();
+            let animationId = null;
 
             function animate(currentTime) {
-                requestAnimationFrame(animate);
+                animationId = requestAnimationFrame(animate);
+                if (gameState !== 'racing') {
+                    // Continue rendering a few frames for shake/effects, but no need to stop completely
+                    renderer.render(scene, camera);
+                    return;
+                }
                 const deltaTime = Math.min(0.05, (currentTime - lastTime) / 1000);
                 lastTime = currentTime;
                 update(deltaTime);
@@ -2475,14 +2888,81 @@
 
             animate(performance.now());
             console.log('🏁 Игра запущена!');
-            console.log('🎸 Музыка играет! Регулируйте громкость справа!');
-            console.log('💡 Если хотите свою музыку - положите MP3 в папку music/');
         }
+
+        // ============================================================
+        // ПОКАЗ ЭКРАНА ВЫБОРА СЛОЖНОСТИ
+        // ============================================================
+        window.showDifficultyScreen = function() {
+            // Удаляем старые элементы игры
+            const container = document.getElementById('game-container');
+            while (container.firstChild) container.removeChild(container.firstChild);
+            
+            const oldHud = document.getElementById('game-hud');
+            if (oldHud) oldHud.remove();
+            const oldFinish = document.getElementById('finish-screen');
+            if (oldFinish) oldFinish.remove();
+            
+            // Показываем экран выбора сложности
+            const screen = document.getElementById('difficulty-screen');
+            screen.style.display = 'flex';
+            
+            // Обновляем лучшее время
+            const times = getBestTimes();
+            const bestEl = document.getElementById('bestTimeDisplay');
+            if (bestEl) {
+                const bests = [];
+                if (times.easy) bests.push(`🟢 ${formatTime(times.easy)}`);
+                if (times.medium) bests.push(`🟡 ${formatTime(times.medium)}`);
+                if (times.hard) bests.push(`🔴 ${formatTime(times.hard)}`);
+                bestEl.textContent = bests.length ? '🏆 ' + bests.join(' · ') : '🏆 Лучшее время: --';
+            }
+        };
+
+        // ============================================================
+        // НАСТРОЙКИ КАЧЕСТВА
+        // ============================================================
+        let selectedQuality = 'medium';
+
+        document.querySelectorAll('.quality-selector .q-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.quality-selector .q-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedQuality = btn.dataset.quality;
+            });
+        });
 
         // ============================================================
         // ЗАПУСК
         // ============================================================
-        startGame().catch(err => console.error('Ошибка:', err));
+        // Обработчики кнопок сложности
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const difficulty = btn.dataset.diff;
+                const quality = selectedQuality;
+                
+                const screen = document.getElementById('difficulty-screen');
+                screen.style.display = 'none';
+                
+                // Запускаем игру
+                setTimeout(() => {
+                    initGame(quality, difficulty);
+                }, 100);
+            });
+        });
+
+        // Обновляем лучшее время при загрузке
+        const times = getBestTimes();
+        const bestEl = document.getElementById('bestTimeDisplay');
+        if (bestEl) {
+            const bests = [];
+            if (times.easy) bests.push(`🟢 ${formatTime(times.easy)}`);
+            if (times.medium) bests.push(`🟡 ${formatTime(times.medium)}`);
+            if (times.hard) bests.push(`🔴 ${formatTime(times.hard)}`);
+            bestEl.textContent = bests.length ? '🏆 ' + bests.join(' · ') : '🏆 Лучшее время: --';
+        }
+
+        console.log('🎮 Выберите сложность и начните игру!');
     </script>
 </body>
 </html>
