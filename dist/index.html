@@ -7,47 +7,33 @@
     <style>
         * { margin: 0; padding: 0; }
         body { overflow: hidden; background: #000; font-family: Arial, sans-serif; }
-        #hud {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
-            background: rgba(0,0,0,0.8);
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-size: 20px;
-            z-index: 100;
-            pointer-events: none;
-            border: 2px solid rgba(255,255,255,0.1);
-            min-width: 200px;
-        }
-        #hud div {
-            margin: 5px 0;
-        }
+        
         #controls {
             position: absolute;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            color: white;
-            background: rgba(0,0,0,0.8);
-            padding: 12px 25px;
+            color: rgba(255,255,255,0.6);
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
             border-radius: 10px;
-            font-size: 16px;
+            font-size: 14px;
             z-index: 100;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.05);
             pointer-events: none;
+            backdrop-filter: blur(4px);
         }
         #controls kbd {
-            background: #444;
-            padding: 4px 12px;
-            border-radius: 5px;
-            border: 1px solid #666;
-            margin: 0 3px;
+            background: rgba(255,255,255,0.1);
+            padding: 2px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin: 0 2px;
             font-weight: bold;
             color: #ffcc00;
         }
+        
         #message {
             position: absolute;
             top: 50%;
@@ -56,43 +42,21 @@
             color: white;
             font-size: 48px;
             font-weight: bold;
-            text-shadow: 0 0 20px rgba(255,200,0,0.5);
+            text-shadow: 0 0 30px rgba(255,200,0,0.3);
             z-index: 200;
             text-align: center;
             pointer-events: none;
             display: none;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.7);
             padding: 30px 50px;
             border-radius: 20px;
-            border: 3px solid #ffcc00;
+            border: 2px solid rgba(255,200,0,0.3);
+            backdrop-filter: blur(10px);
         }
         #message .sub {
-            font-size: 24px;
+            font-size: 20px;
             color: #aaa;
             margin-top: 10px;
-        }
-        #timer {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            color: white;
-            background: rgba(0,0,0,0.8);
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-size: 24px;
-            z-index: 100;
-            border: 2px solid rgba(255,255,255,0.1);
-            pointer-events: none;
-            text-align: center;
-        }
-        #timer .label {
-            font-size: 14px;
-            color: #aaa;
-        }
-        #timer .time {
-            font-size: 32px;
-            color: #ffcc00;
-            font-weight: bold;
         }
     </style>
     <script type="importmap">
@@ -102,31 +66,21 @@
         }
     }
     </script>
-  <script type="module" crossorigin src="/assets/index-WTBhdA9Q.js"></script>
+  <script type="module" crossorigin src="/assets/index-Ccev0jFi.js"></script>
 </head>
 <body>
 
-    <div id="hud">
-        <div>🏁 Lap: <span id="lapDisplay">0</span> / 3</div>
-        <div>📍 Position: <span id="positionDisplay">1</span> / 6</div>
-        <div>⚡ Speed: <span id="speedDisplay">0</span> km/h</div>
-    </div>
-
-    <div id="timer">
-        <div class="label">⏱ LAP TIME</div>
-        <div class="time" id="lapTime">0:00.0</div>
-        <div style="font-size:12px;color:#666;margin-top:5px;">Best: <span id="bestLap">--</span></div>
-    </div>
-
+    <!-- ТОЛЬКО УПРАВЛЕНИЕ И СООБЩЕНИЯ -->
     <div id="controls">
-        <kbd>W</kbd> Gas · <kbd>S</kbd> Brake · <kbd>A</kbd> <kbd>D</kbd> Steer · <kbd>R</kbd> Restart
+        <kbd>W</kbd> Газ · <kbd>S</kbd> Тормоз · <kbd>A</kbd> <kbd>D</kbd> Рулить · <kbd>R</kbd> Рестарт
     </div>
 
     <div id="message">
-        <div id="msgTitle">🏆 VICTORY!</div>
-        <div class="sub" id="msgSub">Press R to restart</div>
+        <div id="msgTitle">🏆 ПОБЕДА!</div>
+        <div class="sub" id="msgSub">Нажмите R для рестарта</div>
     </div>
 
+    <!-- ИМПОРТ ТРЁХ -->
 
 </body>
 </html>
