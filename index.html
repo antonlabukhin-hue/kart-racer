@@ -74,12 +74,12 @@
         }
         #difficulty-screen .content {
             background: rgba(0,0,0,0.95);
-            padding: 40px 50px;
+            padding: 28px 32px 36px;
             border-radius: 25px;
             border: 2px solid rgba(255,255,255,0.1);
             text-align: center;
-            max-width: 450px;
-            width: 90%;
+            max-width: 520px;
+            width: 92%;
             box-shadow: 0 20px 80px rgba(0,0,0,0.9);
         }
         #difficulty-screen h1 {
@@ -304,6 +304,245 @@
             #volume-controls .slider-group input[type="range"] { width: 50px; }
             #volume-controls .slider-group label { font-size: 9px; }
         }
+
+        /* ============================================================ */
+        /* ЭКРАН ЛОРА */
+        /* ============================================================ */
+        #lore-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #0a0a0a;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3500;
+            flex-direction: column;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        #lore-screen.active { display: flex; }
+        #lore-screen .lore-panel {
+            max-width: 720px;
+            width: 92%;
+            background: rgba(0,0,0,0.92);
+            border: 2px solid rgba(255,220,0,0.25);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.9);
+            display: none;
+        }
+        #lore-screen .lore-panel.active { display: block; }
+        #lore-screen .lore-img {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            height: auto;
+            max-height: 42vh;
+            object-fit: contain;
+            object-position: center;
+            display: block;
+            background: #0a0a0a;
+        }
+        #lore-screen .lore-text {
+            padding: 22px 26px 18px;
+            color: #ddd;
+            font-size: 15px;
+            line-height: 1.55;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        #lore-screen .lore-text h2 {
+            color: #ffdd00;
+            font-size: 20px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        #lore-screen .lore-text p {
+            margin-bottom: 10px;
+        }
+        #lore-screen .lore-nav {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 22px 20px;
+            gap: 12px;
+        }
+        #lore-screen .lore-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #lore-screen .lore-btn:hover {
+            border-color: #ffdd00;
+            background: rgba(255,220,0,0.12);
+        }
+        #lore-screen .lore-btn.primary {
+            border-color: rgba(255,220,0,0.5);
+            background: rgba(255,220,0,0.15);
+            color: #ffdd00;
+        }
+        #lore-screen .lore-progress {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            padding-bottom: 8px;
+        }
+        /* Выкрики животных */
+        .animal-shout {
+            position: fixed;
+            pointer-events: none;
+            z-index: 250;
+            background: rgba(0,0,0,0.85);
+            color: #ffdd00;
+            padding: 6px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,220,0,0.4);
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+            animation: shoutFloat 2.2s ease-out forwards;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+        }
+        @keyframes shoutFloat {
+            0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+            15% { opacity: 1; transform: translateY(0) scale(1); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+        }
+
+
+        /* Выбор машины */
+        #car-select-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); display: none; justify-content: center;
+            align-items: center; z-index: 3400; backdrop-filter: blur(12px);
+        }
+        #car-select-screen.active { display: flex; }
+        #car-select-screen .content {
+            background: rgba(0,0,0,0.95); padding: 28px 32px; border-radius: 20px;
+            border: 2px solid rgba(255,220,0,0.25); max-width: 560px; width: 94%;
+            text-align: center; box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+        }
+        #car-select-screen h2 { color: #ffdd00; margin-bottom: 8px; font-size: 22px; }
+        #car-select-screen .sub { color: #888; font-size: 13px; margin-bottom: 18px; }
+        .car-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .car-card {
+            flex: 1; min-width: 140px; max-width: 170px; padding: 14px 10px;
+            border: 2px solid rgba(255,255,255,0.15); border-radius: 14px;
+            background: rgba(255,255,255,0.04); cursor: pointer; transition: 0.2s;
+            color: #fff;
+        }
+        .car-card:hover, .car-card.selected {
+            border-color: #ffdd00; background: rgba(255,220,0,0.1); transform: scale(1.03);
+        }
+        .car-card .car-emoji { font-size: 32px; margin-bottom: 6px; }
+        .car-card .car-img {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #111;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .car-card .car-name { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
+        .car-card .car-desc { font-size: 11px; color: #aaa; line-height: 1.35; }
+        #car-select-banner {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #111;
+            margin-bottom: 14px;
+            display: block;
+        }
+        #car-select-go {
+            margin-top: 18px; width: 100%; padding: 12px; border-radius: 10px;
+            border: 2px solid rgba(255,220,0,0.5); background: rgba(255,220,0,0.15);
+            color: #ffdd00; font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+        /* Радио */
+        .radio-line {
+            position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: #9fdf9f; padding: 8px 18px;
+            border-radius: 8px; border: 1px solid rgba(100,200,100,0.35);
+            font-size: 13px; font-family: Consolas, monospace; z-index: 260;
+            pointer-events: none; max-width: 90%; text-align: center;
+            animation: radioFade 3.2s ease-out forwards;
+        }
+        @keyframes radioFade {
+            0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+            12% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            75% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+        }
+        /* Нарративные плашки */
+        .story-plaque {
+            position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: #e8d5a3; padding: 12px 22px;
+            border-radius: 12px; border: 1px solid rgba(200,170,100,0.4);
+            font-size: 14px; z-index: 255; pointer-events: none; text-align: center;
+            max-width: 420px; animation: radioFade 4s ease-out forwards;
+        }
+
+
+        /* Выбор карты */
+        #map-select-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); display: none; justify-content: center;
+            align-items: center; z-index: 3450; backdrop-filter: blur(12px);
+        }
+        #map-select-screen.active { display: flex; }
+        #map-select-screen .content {
+            background: rgba(0,0,0,0.95); padding: 28px 32px; border-radius: 20px;
+            border: 2px solid rgba(255,220,0,0.25); max-width: 640px; width: 94%;
+            text-align: center; box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+        }
+        #map-select-screen h2 { color: #ffdd00; margin-bottom: 8px; font-size: 22px; }
+        #map-select-screen .sub { color: #888; font-size: 13px; margin-bottom: 16px; }
+        .map-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .map-card {
+            flex: 1; min-width: 150px; max-width: 190px; padding: 12px 10px;
+            border: 2px solid rgba(255,255,255,0.15); border-radius: 14px;
+            background: rgba(255,255,255,0.04); cursor: pointer; transition: 0.2s; color: #fff;
+        }
+        .map-card:hover, .map-card.selected {
+            border-color: #ffdd00; background: rgba(255,220,0,0.1); transform: scale(1.03);
+        }
+        .map-card .map-img {
+            width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 8px;
+            background: #1a1510; margin-bottom: 8px; display: block;
+        }
+        .map-card .map-name { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
+        .map-card .map-desc { font-size: 11px; color: #aaa; line-height: 1.35; }
+        .map-card.locked {
+            opacity: 0.45; cursor: not-allowed; filter: grayscale(0.8);
+            border-color: rgba(255,255,255,0.08) !important;
+            background: rgba(0,0,0,0.3) !important;
+            transform: none !important;
+        }
+        .map-card.locked:hover { transform: none !important; border-color: rgba(255,255,255,0.08) !important; }
+        .map-card .lock-badge {
+            font-size: 11px; color: #ff8866; margin-top: 6px; font-weight: bold;
+        }
+        #map-select-banner {
+            width: 100%; aspect-ratio: 16/9; object-fit: contain;
+            border-radius: 12px; background: #111; margin-bottom: 14px; display: block;
+        }
+        #map-unlock-hint {
+            color: #888; font-size: 12px; margin-top: 10px; line-height: 1.4;
+        }
+        #map-select-go {
+            margin-top: 18px; width: 100%; padding: 12px; border-radius: 10px;
+            border: 2px solid rgba(255,220,0,0.5); background: rgba(255,220,0,0.15);
+            color: #ffdd00; font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+
     </style>
 </head>
 <body>
@@ -318,8 +557,11 @@
     <!-- ЭКРАН ВЫБОРА СЛОЖНОСТИ -->
     <div id="difficulty-screen">
         <div class="content">
+            <img src="images/menu.jpg" alt="Заставка" 
+                 style="width:100%;aspect-ratio:16/9;object-fit:contain;border-radius:14px;margin-bottom:16px;background:#111;display:block;"
+                 onerror="this.onerror=null;this.src='images/menu.png';this.style.display='block';">
             <h1>🏎️ ДОРОЖНЫЙ ПРОРЫВ</h1>
-            <div class="sub">Выберите сложность</div>
+            <div class="sub">Дорога из Арсеньева · 2037</div>
             <div class="best-time" id="bestTimeDisplay">🏆 Лучшее время: --</div>
             
             <div class="quality-selector">
@@ -328,9 +570,114 @@
                 <button class="q-btn high" data-quality="high">🔥 Высокое</button>
             </div>
             
-            <button class="difficulty-btn easy" data-diff="easy">🟢 ЛЁГКИЙ<div class="desc">Короткая трасса · Мало животных</div></button>
-            <button class="difficulty-btn medium" data-diff="medium">🟡 СРЕДНИЙ<div class="desc">Стандартная трасса · Средняя плотность</div></button>
-            <button class="difficulty-btn hard" data-diff="hard">🔴 СЛОЖНЫЙ<div class="desc">Длинная трасса · Много животных · Ночная зона</div></button>
+            <button class="difficulty-btn easy" data-diff="easy">🟢 ЛЁГКИЙ<div class="desc">До кафе «Ностальджгия» · Мало зверей</div></button>
+            <button class="difficulty-btn medium" data-diff="medium">🟡 СРЕДНИЙ<div class="desc">До Золотого Моста · Средний ЗвероСуд</div></button>
+            <button class="difficulty-btn hard" data-diff="hard">🔴 СЛОЖНЫЙ<div class="desc">Полный Звериный час · Ночь · Много хамов</div></button>
+        </div>
+    </div>
+
+
+
+
+    <!-- ВЫБОР КАРТЫ -->
+    <div id="map-select-screen">
+        <div class="content">
+            <img id="map-select-banner" src="images/map_select.jpg" alt="Выбор карты"
+                 onerror="this.onerror=null;this.src='images/map_select.png';">
+            <h2>🗺️ ВЫБЕРИ МАРШРУТ</h2>
+            <div class="sub">Открой все дороги из Арсеньева</div>
+            <div class="map-options">
+                <div class="map-card selected" data-map="arsenev">
+                    <img class="map-img" src="images/map_arsenev.jpg" alt="Трасса"
+                         onerror="this.onerror=null;this.src='images/map_arsenev.png';">
+                    <div class="map-name">Трасса Арсеньева</div>
+                    <div class="map-desc">Руины жилых кварталов<br>Мёртвые деревья<br>Классический ЗвероСуд</div>
+                    <div class="lock-badge" style="display:none;"></div>
+                </div>
+                <div class="map-card locked" data-map="promzona">
+                    <img class="map-img" src="images/map_promzona.jpg" alt="Промзона"
+                         onerror="this.onerror=null;this.src='images/map_promzona.png';">
+                    <div class="map-name">Промзона</div>
+                    <div class="map-desc">Заводы и трубы<br>Ржавый металл<br>Ядовитый дым</div>
+                    <div class="lock-badge">🔒 Пройди «Трассу» на СЛОЖНОМ</div>
+                </div>
+                <div class="map-card locked" data-map="svalka">
+                    <img class="map-img" src="images/map_svalka.jpg" alt="Свалка"
+                         onerror="this.onerror=null;this.src='images/map_svalka.png';">
+                    <div class="map-name">Свалка «Надежда»</div>
+                    <div class="map-desc">Горы хлама<br>Остовы машин<br>Больше масла и кочек</div>
+                    <div class="lock-badge">🔒 Пройди «Промзону» на СЛОЖНОМ</div>
+                </div>
+            </div>
+            <div id="map-unlock-hint">💡 Новые карты открываются после победы на сложном режиме</div>
+            <button id="map-select-go">ПОЕХАЛИ →</button>
+        </div>
+    </div>
+
+    <!-- ВЫБОР МАШИНЫ -->
+    <div id="car-select-screen">
+        <div class="content">
+            <img id="car-select-banner" src="images/car_select.jpg" alt="Выбор машины"
+                 onerror="this.onerror=null;this.src='images/car_select.png';">
+            <h2>🚗 ВЫБЕРИ ЧЕБУРАШКУ</h2>
+            <div class="sub">От выбора зависят скорость, прочность и поведение на масле</div>
+            <div class="car-options">
+                <div class="car-card selected" data-car="cheburashka">
+                    <img class="car-img" src="images/car_cheburashka.jpg" alt="Чебурашка"
+                         onerror="this.onerror=null;this.src='images/car_cheburashka.png';this.style.background='#331108';">
+                    <div class="car-name">Чебурашка</div>
+                    <div class="car-desc">Баланс<br>Скорость ★★★<br>Прочность ★★★</div>
+                </div>
+                <div class="car-card" data-car="kirpich">
+                    <img class="car-img" src="images/car_kirpich.jpg" alt="Кирпич"
+                         onerror="this.onerror=null;this.src='images/car_kirpich.png';this.style.background='#1a2230';">
+                    <div class="car-name">Кирпич</div>
+                    <div class="car-desc">Танк<br>Скорость ★★<br>Прочность ★★★★</div>
+                </div>
+                <div class="car-card" data-car="turbo">
+                    <img class="car-img" src="images/car_turbo.jpg" alt="Турбо-таз"
+                         onerror="this.onerror=null;this.src='images/car_turbo.png';this.style.background='#332a00';">
+                    <div class="car-name">Турбо-таз</div>
+                    <div class="car-desc">Ракета<br>Скорость ★★★★<br>Масло скользкое</div>
+                </div>
+            </div>
+            <button id="car-select-go">ПОГНАЛИ →</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ЛОРА -->
+    <div id="lore-screen">
+        <!-- Панель 1 -->
+        <div class="lore-panel" id="lore-panel-1">
+            <img class="lore-img" src="images/lore1.jpg" alt="Лор 1" onerror="this.style.display='none'">
+            <div class="lore-text">
+                <h2>🏎️ ДОРОЖНЫЙ ПРОРЫВ — ДОРОГА ИЗ АРСЕНЬЕВА</h2>
+                <p>Год 2037. Мир уже не тот. Животные внезапно осознали, что у них есть права, и решили воспользоваться ими самым радикальным способом. Они вышли на дороги — массово, агрессивно и с полным игнорированием ПДД.</p>
+                <p>Власти объявили режим «ЗвероСуда». Сбивать их нельзя — при неправильном умерщвлении мясо покрывается токсичным слоем. Питаться будет нечем.</p>
+                <p>Ты — Водитель. Последний из могикан. Профессиональный курьер. На самом деле возишь контрабандные кассеты с «Терминатором» и копиями «Битлз» на рентгеновских снимках. Клиент заплатил пачкой жвачки «Турбо» и пообещал ещё одну… если уложишься.</p>
+            </div>
+            <div class="lore-progress">1 / 2</div>
+            <div class="lore-nav">
+                <button class="lore-btn" onclick="skipLore()">Пропустить</button>
+                <button class="lore-btn primary" onclick="nextLorePanel()">Далее →</button>
+            </div>
+        </div>
+
+        <!-- Панель 2 -->
+        <div class="lore-panel" id="lore-panel-2">
+            <img class="lore-img" src="images/lore2.jpg" alt="Лор 2" onerror="this.style.display='none'">
+            <div class="lore-text">
+                <h2>⏱️ 120 СЕКУНД ДО «ЗВЕРИНОГО ЧАСА»</h2>
+                <p>Старт — придорожное кафе «Ностальджгия». Финиш — «Золотой Мост», который открывается только раз в сутки ровно на 120 секунд. Не успел — мост улетает в космос вместе с надеждой.</p>
+                <p>Через 2 минуты сработает «Звериный час». Животные выходят на охоту. Они не кусают — они тормозят машины, чтобы ты прослушал их любимый плейлист «Ранеток» или стихи медведя с сигаретой в пасти.</p>
+                <p>Каждая авария — «поцелуй судьбы». До 7 секунд жизни. 5 аварий — и ты получаешь «Золотой Кирпич». После этого жизнь превращается в бесконечный чёрно-белый фильм с плохим переводом.</p>
+                <p style="color:#ffaa00; margin-top:14px; text-align:center;"><b>Жвачка «Турбо» ждёт. Не подведи Чебурашку.</b></p>
+            </div>
+            <div class="lore-progress">2 / 2</div>
+            <div class="lore-nav">
+                <button class="lore-btn" onclick="prevLorePanel()">← Назад</button>
+                <button class="lore-btn primary" onclick="finishLoreAndStart()">ПОЕХАЛИ! 🚀</button>
+            </div>
         </div>
     </div>
 
@@ -387,6 +734,13 @@
         // РАБОТА С localStorage
         // ============================================================
         const STORAGE_KEY = 'road_racing_best_times';
+        const MAP_UNLOCK_KEY = 'road_racing_maps_unlocked';
+        const MAP_ORDER = ['arsenev', 'promzona', 'svalka'];
+        const MAP_NAMES = {
+            arsenev: 'Трасса Арсеньева',
+            promzona: 'Промзона',
+            svalka: 'Свалка «Надежда»'
+        };
 
         function getBestTimes() {
             try {
@@ -404,6 +758,70 @@
             }
             return false;
         }
+
+        function getUnlockedMaps() {
+            try {
+                const data = localStorage.getItem(MAP_UNLOCK_KEY);
+                if (!data) return ['arsenev'];
+                const arr = JSON.parse(data);
+                if (!Array.isArray(arr) || !arr.includes('arsenev')) return ['arsenev'];
+                return arr;
+            } catch { return ['arsenev']; }
+        }
+
+        function unlockMap(mapId) {
+            const unlocked = getUnlockedMaps();
+            if (unlocked.includes(mapId)) return false;
+            unlocked.push(mapId);
+            localStorage.setItem(MAP_UNLOCK_KEY, JSON.stringify(unlocked));
+            return true;
+        }
+
+        function tryUnlockNextMap(currentMapId, difficulty) {
+            if (difficulty !== 'hard') return null;
+            const idx = MAP_ORDER.indexOf(currentMapId);
+            if (idx < 0 || idx >= MAP_ORDER.length - 1) return null;
+            const nextId = MAP_ORDER[idx + 1];
+            if (unlockMap(nextId)) return nextId;
+            return null;
+        }
+
+        window.refreshMapSelectUI = function refreshMapSelectUI() {
+            const unlocked = getUnlockedMaps();
+            document.querySelectorAll('.map-card').forEach(card => {
+                const id = card.dataset.map;
+                const badge = card.querySelector('.lock-badge');
+                if (unlocked.includes(id)) {
+                    card.classList.remove('locked');
+                    if (badge) badge.style.display = 'none';
+                } else {
+                    card.classList.add('locked');
+                    card.classList.remove('selected');
+                    if (badge) badge.style.display = 'block';
+                }
+            });
+            // Выбрать первую доступную, если текущая закрыта
+            const selected = document.querySelector('.map-card.selected:not(.locked)');
+            if (!selected) {
+                const first = document.querySelector('.map-card:not(.locked)');
+                if (first) {
+                    document.querySelectorAll('.map-card').forEach(c => c.classList.remove('selected'));
+                    first.classList.add('selected');
+                    pendingMap = first.dataset.map;
+                }
+            }
+            const hint = document.getElementById('map-unlock-hint');
+            if (hint) {
+                if (unlocked.length >= 3) {
+                    hint.textContent = '✅ Все маршруты открыты. Добро пожаловать в полный ЗвероСуд.';
+                    hint.style.color = '#6d6';
+                } else if (unlocked.length === 2) {
+                    hint.textContent = '💡 Осталась «Свалка» — пройди «Промзону» на СЛОЖНОМ';
+                } else {
+                    hint.textContent = '💡 Промзона откроется после победы на «Трассе Арсеньева» в режиме СЛОЖНЫЙ';
+                }
+            }
+        };
 
         function formatTime(time) {
             if (time === null || time === undefined || time === Infinity) return '--';
@@ -423,7 +841,7 @@
                 timeLimit: 90,
                 maxAnimals: 20,
                 maxCars: 12,
-                maxObstacles: 15,
+                maxObstacles: 28,
                 trees: 20,
                 animalSpawnRate: 1.5,
                 hasNightZone: false,
@@ -435,10 +853,10 @@
                 timeLimit: 120,
                 maxAnimals: 30,
                 maxCars: 20,
-                maxObstacles: 25,
+                maxObstacles: 40,
                 trees: 35,
                 animalSpawnRate: 1.0,
-                hasNightZone: true,
+                hasNightZone: false,
                 triggerLookahead: 14
             },
             hard: {
@@ -447,10 +865,10 @@
                 timeLimit: 150,
                 maxAnimals: 40,
                 maxCars: 28,
-                maxObstacles: 35,
+                maxObstacles: 55,
                 trees: 50,
                 animalSpawnRate: 0.7,
-                hasNightZone: true,
+                hasNightZone: false,
                 triggerLookahead: 12
             }
         };
@@ -481,6 +899,51 @@
             HUMAN: { id: 'human', name: 'Человек', width: 0.53, height: 0.56, color: 0xE8C9A0, accentColor: 0x3366CC, speedCross: 4.0, speedZ: 0.025, penalty: 0.2, timePenalty: 3, radius: 0.65, design: 'human', emoji: '👤' }
         };
         const ANIMAL_KEYS = Object.keys(ANIMAL_TYPES);
+
+        // ============================================================
+        // ВЫКРИКИ ЖИВОТНЫХ
+        // ============================================================
+        const ANIMAL_SHOUTS_LIST = [
+            'куда прешь!',
+            'я снимаю тебя!',
+            'в интернет выложу!',
+            'Ты че с Мелодии?',
+            'Сковпин, куда прешь!',
+            'Салов не гони',
+            'Кабанцев ты же наш!',
+            'Я тебя засужу!',
+            'Он с Арсеньева!'
+        ];
+        // для совместимости со старым кодом
+        const ANIMAL_SHOUTS = {
+            cat: ANIMAL_SHOUTS_LIST,
+            dog: ANIMAL_SHOUTS_LIST,
+            deer: ANIMAL_SHOUTS_LIST,
+            boar: ANIMAL_SHOUTS_LIST,
+            fox: ANIMAL_SHOUTS_LIST,
+            bear: ANIMAL_SHOUTS_LIST,
+            human: ANIMAL_SHOUTS_LIST
+        };
+
+        function showAnimalShout(typeId, x, y) {
+            const shouts = ANIMAL_SHOUTS[typeId] || ANIMAL_SHOUTS.dog;
+            const text = shouts[Math.floor(Math.random() * shouts.length)];
+            
+            const el = document.createElement('div');
+            el.className = 'animal-shout';
+            el.textContent = text;
+            
+            // Position roughly in the middle-upper area
+            const screenX = window.innerWidth * 0.5 + (Math.random() - 0.5) * 200;
+            const screenY = window.innerHeight * 0.35 + (Math.random() - 0.5) * 80;
+            el.style.left = screenX + 'px';
+            el.style.top = screenY + 'px';
+            el.style.transform = 'translateX(-50%)';
+            
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 2300);
+        }
+
 
         // ============================================================
         // РИСОВАНИЕ ЖИВОТНЫХ НА CANVAS (СОКРАЩЕНО)
@@ -1060,36 +1523,49 @@
             }
 
             async loadMusic() {
-                try {
-                    console.log('🎵 Загрузка MP3:', this.musicUrl);
-                    const response = await fetch(this.musicUrl);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    
-                    const arrayBuffer = await response.arrayBuffer();
-                    this.musicBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
-                    this.musicLoaded = true;
-                    
-                    console.log(`✅ MP3 загружен (${this.musicBuffer.duration.toFixed(1)} сек)`);
-                    
-                    const statusEl = document.getElementById('music-status');
-                    if (statusEl) statusEl.textContent = '🎵 MP3';
-                    
-                    if (this.musicStarted && !this.isMusicPlaying) {
-                        this.startMusic();
+                const candidates = [
+                    this.musicUrl,
+                    'music/race-music.mp3',
+                    './music/race-music.mp3',
+                    'race-music.mp3',
+                    'assets/music/race-music.mp3'
+                ];
+                
+                for (const url of candidates) {
+                    try {
+                        console.log('🎵 Пробую загрузить:', url);
+                        const response = await fetch(url);
+                        if (!response.ok) continue;
+                        
+                        const arrayBuffer = await response.arrayBuffer();
+                        this.musicBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
+                        this.musicLoaded = true;
+                        this.musicUrl = url;
+                        
+                        console.log(`✅ MP3 загружен из ${url} (${this.musicBuffer.duration.toFixed(1)} сек)`);
+                        
+                        const statusEl = document.getElementById('music-status');
+                        if (statusEl) statusEl.textContent = '🎵 MP3';
+                        
+                        if (this.musicStarted && !this.isMusicPlaying) {
+                            this.startMusic();
+                        }
+                        return true;
+                    } catch (e) {
+                        // пробуем следующий путь
                     }
-                    return true;
-                } catch (e) {
-                    console.warn('⚠️ MP3 не найден:', e.message);
-                    console.warn('💡 Положите файл в music/race-music.mp3 или будет procedural');
-                    
-                    this.musicBuffer = null;
-                    this.musicLoaded = false;
-                    
-                    const statusEl = document.getElementById('music-status');
-                    if (statusEl) statusEl.textContent = this.useProceduralFallback ? '🎹 Procedural' : '❌ Нет MP3';
-                    
-                    return false;
                 }
+                
+                console.warn('⚠️ MP3 не найден ни по одному пути');
+                console.warn('💡 Создай папку music/ рядом с index.html и положи туда race-music.mp3');
+                
+                this.musicBuffer = null;
+                this.musicLoaded = false;
+                
+                const statusEl = document.getElementById('music-status');
+                if (statusEl) statusEl.textContent = this.useProceduralFallback ? '🎹 Procedural' : '❌ Нет MP3';
+                
+                return false;
             }
 
             startMusic() {
@@ -1371,6 +1847,13 @@
             }
         }
 
+
+        // Ранняя инициализация звука (чтобы MP3 начал грузиться сразу)
+        soundEngine = new SoundEngine();
+        soundEngine.init();
+        window.soundEngine = soundEngine;
+        console.log('🔊 SoundEngine создан заранее');
+
         // ============================================================
         // AnimalSpawner
         // ============================================================
@@ -1511,6 +1994,10 @@
                     if (distanceAhead > 0.5 && distanceAhead <= this.triggerLookahead) {
                         animal.triggered = true;
                         animal.mesh.visible = true;
+                        // Выкрик животного
+                        if (typeof showAnimalShout === 'function') {
+                            showAnimalShout(animal.typeId || animal.speciesKey || 'dog');
+                        }
                     }
                     if (distanceAhead < -5) {
                         animal.hit = true;
@@ -1566,15 +2053,29 @@
         // ============================================================
         // ОСНОВНАЯ ИГРА
         // ============================================================
-        function initGame(quality, difficulty) {
-            console.log(`🚀 Запуск с качеством: ${quality}, сложность: ${difficulty}`);
+        function initGame(quality, difficulty, carId = 'cheburashka', mapId = 'arsenev') {
+            console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}`);
+            const carPreset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
             
             const config = DIFFICULTY_CONFIG[difficulty];
             
-            if (soundEngine) soundEngine.dispose();
-            soundEngine = new SoundEngine();
-            soundEngine.init();
-            window.soundEngine = soundEngine;
+            // Не уничтожаем существующий SoundEngine — иначе музыка умирает
+            if (!soundEngine || !soundEngine.initialized) {
+                soundEngine = new SoundEngine();
+                soundEngine.init();
+                window.soundEngine = soundEngine;
+            }
+            
+            // Гарантированно запускаем / продолжаем музыку
+            if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+                soundEngine.audioCtx.resume().then(() => {
+                    if (!soundEngine.isMusicPlaying) soundEngine.startMusic();
+                });
+            } else if (!soundEngine.isMusicPlaying) {
+                soundEngine.startMusic();
+            } else {
+                console.log('🎵 Музыка уже играет, продолжаем');
+            }
 
             const TRACK_LENGTH = config.trackLength;
             const TRACK_WIDTH = 6;
@@ -1585,7 +2086,7 @@
             const MAX_STRIKES = 5;
             const TRIGGER_LOOKAHEAD = config.triggerLookahead;
             const FOG_NEAR = 45;
-            const HAS_NIGHT_ZONE = config.hasNightZone;
+            const HAS_NIGHT_ZONE = false; // всегда день
 
             const START_Z = TRACK_LENGTH / 2 - 60;
             const FINISH_Z = -TRACK_LENGTH / 2 + 20;
@@ -1626,6 +2127,12 @@
                     <div style="color:#ff8844;">⏱ ВРЕМЯ: <span id="timeDisplay" style="color:#fff;">${formatTime(TIME_LIMIT)}</span></div>
                     <div style="color:#ff5555;">💥 АВАРИИ: <span id="strikesDisplay" style="color:#fff;">0 / ${MAX_STRIKES}</span></div>
                     <div style="color:#88ccff;">⚡ СКОРОСТЬ: <span id="speedDisplay" style="color:#fff;">0</span> км/ч</div>
+                    <div id="comboDisplay" style="display:none;color:#ffaa66;margin-top:4px;font-size:13px;">🔥 КОМБО</div>
+                    <div id="weatherDisplay" style="color:#88ccff;font-size:12px;margin-top:2px;">☀ ЯСНО</div>
+                    <div style="margin-top:6px;font-size:11px;color:#6f6;">⛽ НИТРО</div>
+                    <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:5px;overflow:hidden;margin-top:2px;">
+                        <div id="nitroBar" style="background:linear-gradient(90deg,#22ff66,#88ff22);height:100%;width:0%;"></div>
+                    </div>
                     <div style="margin-top:8px;">
                         <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:6px;overflow:hidden;">
                             <div id="progressBar" style="background:linear-gradient(90deg,#ffdd00,#ff8800);height:100%;width:0%;"></div>
@@ -1642,13 +2149,20 @@
                 const speedEl = document.getElementById('speedDisplay');
                 const strikesEl = document.getElementById('strikesDisplay');
                 const progressBar = document.getElementById('progressBar');
+                const comboEl = document.getElementById('comboDisplay');
+                const nitroBar = document.getElementById('nitroBar');
+                const weatherEl = document.getElementById('weatherDisplay');
                 
                 if (timeEl) {
                     const remaining = TIME_LIMIT - raceTime;
                     timeEl.textContent = formatTime(Math.max(0, remaining));
                     timeEl.style.color = remaining <= 15 ? '#ff3333' : '#fff';
                 }
-                if (speedEl) speedEl.textContent = Math.round(Math.abs(speed) * 580);
+                if (speedEl) {
+                    const kmh = Math.round(Math.abs(speed) * 580);
+                    speedEl.textContent = kmh;
+                    if (typeof stats !== 'undefined' && kmh > stats.maxSpeedReached) stats.maxSpeedReached = kmh;
+                }
                 if (strikesEl) {
                     strikesEl.textContent = `${strikes} / ${MAX_STRIKES}`;
                     strikesEl.style.color = strikes >= MAX_STRIKES - 1 ? '#ff5555' : '#fff';
@@ -1656,6 +2170,20 @@
                 if (progressBar) {
                     const progress = Math.min(100, ((START_Z - zPos) / (START_Z - FINISH_Z)) * 100);
                     progressBar.style.width = Math.max(0, progress) + '%';
+                }
+                if (comboEl && typeof comboTime !== 'undefined') {
+                    if (comboTime >= 5) {
+                        comboEl.style.display = 'block';
+                        comboEl.textContent = `🔥 КОМБО ${comboTime.toFixed(0)}с (макс ${comboMax.toFixed(0)}с)`;
+                        comboEl.style.color = comboTime >= 20 ? '#ffdd00' : '#ffaa66';
+                    } else comboEl.style.display = 'none';
+                }
+                if (nitroBar && typeof nitroTimer !== 'undefined') {
+                    nitroBar.style.width = Math.max(0, Math.min(100, (nitroTimer / 3.2) * 100)) + '%';
+                }
+                if (weatherEl && typeof weatherZone !== 'undefined') {
+                    weatherEl.textContent = weatherZone === 'dust' ? '🌪 ПЫЛЬНАЯ БУРЯ' : '☀ ЯСНО';
+                    weatherEl.style.color = weatherZone === 'dust' ? '#c4a574' : '#88ccff';
                 }
             }
 
@@ -1678,30 +2206,58 @@
                     const bestTimes = getBestTimes();
                     const isNewBest = saveBestTime(difficulty, timeTaken);
                     isBest = isNewBest;
+
+                    // Открытие следующей карты (только сложный режим)
+                    const newlyUnlocked = tryUnlockNextMap(mapId, difficulty);
                     
                     title = strikes === 0 ? '🏆 ИДЕАЛЬНЫЙ ЗАЕЗД!' : '🏁 ФИНИШ!';
                     color = '#ffdd00';
                     message = `Время: ${formatTime(timeTaken)} · Аварий: ${strikes} / ${MAX_STRIKES}`;
                     if (isBest) message += '\n🎉 НОВЫЙ РЕКОРД!';
-                    
                     if (bestTimes[difficulty] !== null) {
                         message += `\n🏆 Лучшее: ${formatTime(bestTimes[difficulty])}`;
                     }
+                    if (newlyUnlocked) {
+                        message += `\n\n🗺️ ОТКРЫТ НОВЫЙ МАРШРУТ:\n«${MAP_NAMES[newlyUnlocked] || newlyUnlocked}»!`;
+                    } else if (difficulty !== 'hard' && mapId !== 'svalka') {
+                        const idx = MAP_ORDER.indexOf(mapId);
+                        if (idx >= 0 && idx < MAP_ORDER.length - 1) {
+                            const nextName = MAP_NAMES[MAP_ORDER[idx + 1]];
+                            message += `\n\n💡 Чтобы открыть «${nextName}» —\nпройди эту карту на СЛОЖНОМ режиме.`;
+                        }
+                    }
+                    message += '\n\n🍬 Вы победили! Вот ваши жвачки «Турбо»\nи две фишки из серии Mortal Kombat.';
+                    message += `\n\n📊 Макс. скорость: ${stats.maxSpeedReached} км/ч`;
+                    message += `\n🔥 Макс. комбо: ${comboMax.toFixed(0)}с`;
+                    message += `\n⛽ Нитро: ${stats.nitroPicked} · 🍬 Жвачки: ${stats.gumPicked}`;
+                    message += `\n🐾 Ударов по зверям: ${stats.animalsHit} · 🛢 Масло: ${stats.oilHits}`;
+                    if (strikes === 0) message += '\n✨ Титул: Курьер года Арсеньева';
+                    else if (stats.gumPicked >= 2) message += '\n✨ Титул: Коллекционер Турбо';
+                    else if (comboMax >= 25) message += '\n✨ Титул: Тень на трассе';
                 } else if (state === 'timeout') {
-                    title = '⏰ ВРЕМЯ ВЫШЛО!';
+                    title = '🌉 МОСТ УЛЕТЕЛ';
                     color = '#ff6644';
-                    message = `Не удалось доехать за ${TIME_LIMIT} секунд`;
+                    message = `Золотой Мост открывался только ${TIME_LIMIT} секунд.\n«Звериный час» наступил. Жвачка «Турбо» останется неразжёванной.`;
                 } else {
-                    title = '💥 СЛИШКОМ МНОГО АВАРИЙ';
+                    title = '🧱 ЗОЛОТОЙ КИРПИЧ';
                     color = '#ff3333';
-                    message = `Столкновений: ${strikes} / ${MAX_STRIKES}`;
+                    message = `Столкновений: ${strikes} / ${MAX_STRIKES}\n\nДикий медведь готов исполнить свой куплет из группы «РАНЕТКИ».`;
+                }
+
+                // Картинка в зависимости от результата
+                let imgHtml = '';
+                if (state === 'win') {
+                    imgHtml = `<img src="images/win.jpg" alt="Победа" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:14px;display:block;" onerror="this.onerror=null;this.src='images/win.png';">`;
+                } else if (state === 'crash') {
+                    imgHtml = `<img src="images/lose.jpg" alt="Поражение" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:14px;display:block;" onerror="this.onerror=null;this.src='images/lose.png';">`;
                 }
 
                 screen.innerHTML = `
-                    <div style="background:rgba(0,0,0,0.95);padding:40px 50px;border-radius:20px;border:2px solid ${color};text-align:center;max-width:420px;box-shadow:0 20px 80px rgba(0,0,0,0.9);">
-                        <h1 style="font-size:36px;color:${color};margin-bottom:10px;">${title}</h1>
-                        <div style="font-size:16px;color:#fff;margin:10px 0;white-space:pre-line;">${message}</div>
-                        <button onclick="location.reload()" style="padding:12px 30px;border:2px solid ${color};border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;margin-top:15px;">
+                    <div style="background:rgba(0,0,0,0.95);padding:28px 36px 32px;border-radius:20px;border:2px solid ${color};text-align:center;max-width:440px;width:92%;box-shadow:0 20px 80px rgba(0,0,0,0.9);">
+                        ${imgHtml}
+                        <h1 style="font-size:30px;color:${color};margin-bottom:10px;">${title}</h1>
+                        <div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">${message}</div>
+                        <button onclick="location.reload()" style="padding:12px 30px;border:2px solid ${color};border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;margin-top:14px;">
                             🔄 Заново
                         </button>
                         <button onclick="showDifficultyScreen()" style="padding:12px 30px;border:2px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;margin-top:10px;display:block;width:100%;">
@@ -1742,36 +2298,47 @@
             // СЦЕНА
             // ============================================================
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x4a8db7);
-            scene.fog = new THREE.Fog(0x4a8db7, FOG_NEAR, 180);
+            // Постапокалиптическое пыльное небо
+            scene.background = new THREE.Color(0x8a7355);
+            scene.fog = new THREE.Fog(0x8a7355, 35, 160);
 
             // ============================================================
-            // ОСВЕЩЕНИЕ
+            // ОСВЕЩЕНИЕ (реалистичный закатный/пыльный день)
             // ============================================================
-            const ambient = new THREE.AmbientLight(0x446688, 0.55);
+            const ambient = new THREE.AmbientLight(0x6b5a48, 0.45);
             scene.add(ambient);
-            const hemi = new THREE.HemisphereLight(0x88ccff, 0x445533, 0.45);
+            
+            // Небо — тёплый, земля — холоднее/серее
+            const hemi = new THREE.HemisphereLight(0xc4a574, 0x3d3428, 0.55);
             scene.add(hemi);
 
-            const sunLight = new THREE.DirectionalLight(0xffeedd, 1.6);
-            sunLight.position.set(30, 50, 20);
+            // Главное солнце — низкое, жёсткие тени, тёплый оттенок
+            const sunLight = new THREE.DirectionalLight(0xffc88a, 1.85);
+            sunLight.position.set(40, 35, 15);
             sunLight.castShadow = true;
-            sunLight.shadow.mapSize.width = 1024;
-            sunLight.shadow.mapSize.height = 1024;
+            sunLight.shadow.mapSize.width = quality === 'high' ? 2048 : 1024;
+            sunLight.shadow.mapSize.height = quality === 'high' ? 2048 : 1024;
             sunLight.shadow.camera.near = 1;
-            sunLight.shadow.camera.far = 150;
-            sunLight.shadow.camera.left = -25;
-            sunLight.shadow.camera.right = 25;
-            sunLight.shadow.camera.top = 25;
-            sunLight.shadow.camera.bottom = -25;
+            sunLight.shadow.camera.far = 180;
+            sunLight.shadow.camera.left = -35;
+            sunLight.shadow.camera.right = 35;
+            sunLight.shadow.camera.top = 35;
+            sunLight.shadow.camera.bottom = -35;
+            sunLight.shadow.bias = -0.0008;
             sunLight.target = new THREE.Object3D();
             sunLight.target.position.set(0, 0, 0);
             scene.add(sunLight.target);
             scene.add(sunLight);
 
-            const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
-            fillLight.position.set(-20, 30, -10);
+            // Холодная заполняющая подсветка (как от пыльного неба)
+            const fillLight = new THREE.DirectionalLight(0x7a8a9a, 0.25);
+            fillLight.position.set(-25, 20, -15);
             scene.add(fillLight);
+            
+            // Лёгкий оранжевый rim сзади
+            const rimLight = new THREE.DirectionalLight(0xff8844, 0.2);
+            rimLight.position.set(-10, 8, 30);
+            scene.add(rimLight);
 
             // ============================================================
             // КАМЕРА
@@ -1789,7 +2356,7 @@
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.2;
+            renderer.toneMappingExposure = 1.05;
             container.appendChild(renderer.domElement);
 
             // ============================================================
@@ -1800,23 +2367,29 @@
                 canvas.width = 128;
                 canvas.height = 128;
                 const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#3a8a3a';
+                // Мёртвая выжженная земля
+                ctx.fillStyle = '#5c4a32';
                 ctx.fillRect(0, 0, 128, 128);
-                for (let i = 0; i < 500; i++) {
+                for (let i = 0; i < 600; i++) {
                     const x = Math.random() * 128;
                     const y = Math.random() * 128;
-                    const len = 2 + Math.random() * 4;
-                    const shade = 40 + Math.random() * 80;
-                    ctx.strokeStyle = `rgb(${shade}, ${shade + 60}, ${shade - 20})`;
-                    ctx.lineWidth = 1;
+                    const shade = 60 + Math.random() * 50;
+                    ctx.fillStyle = `rgb(${shade}, ${shade * 0.75}, ${shade * 0.45})`;
+                    ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 2);
+                }
+                // Трещины
+                ctx.strokeStyle = 'rgba(30,20,10,0.4)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 40; i++) {
                     ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(x + (Math.random() - 0.5) * len, y + len);
+                    const sx = Math.random() * 128, sy = Math.random() * 128;
+                    ctx.moveTo(sx, sy);
+                    ctx.lineTo(sx + (Math.random() - 0.5) * 20, sy + (Math.random() - 0.5) * 20);
                     ctx.stroke();
                 }
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-                texture.repeat.set(80, 80);
+                texture.repeat.set(60, 60);
                 return texture;
             }
 
@@ -1965,6 +2538,145 @@
             }
 
             // ============================================================
+            // ЗОЛОТОЙ МОСТ (финиш) — постапокалиптичный
+            // ============================================================
+            (function buildGoldenBridge() {
+                const bridgeZ = FINISH_Z - 35; // за финишной чертой
+                const concrete = new THREE.MeshStandardMaterial({ color: 0x6a655c, roughness: 0.9 });
+                const darkConc = new THREE.MeshStandardMaterial({ color: 0x4a453c, roughness: 0.95 });
+                const rust = new THREE.MeshStandardMaterial({ color: 0x8a5a2a, roughness: 0.65, metalness: 0.45 });
+                const gold = new THREE.MeshStandardMaterial({
+                    color: 0xc9a227, roughness: 0.35, metalness: 0.85,
+                    emissive: 0x553300, emissiveIntensity: 0.25
+                });
+                const rebar = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.4, metalness: 0.8 });
+
+                // Дорожное полотно моста
+                const deck = new THREE.Mesh(
+                    new THREE.BoxGeometry(TRACK_WIDTH + 1.2, 0.35, 28),
+                    concrete
+                );
+                deck.position.set(0, 0.15, bridgeZ);
+                deck.receiveShadow = true;
+                deck.castShadow = true;
+                scene.add(deck);
+
+                // Золотая «обшивка» по краям настила
+                for (const side of [-1, 1]) {
+                    const rail = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.25, 0.12, 28),
+                        gold
+                    );
+                    rail.position.set(side * (TRACK_WIDTH / 2 + 0.35), 0.4, bridgeZ);
+                    scene.add(rail);
+                }
+
+                // Опоры
+                for (let i = -1; i <= 1; i++) {
+                    for (const side of [-1, 1]) {
+                        const pillar = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.7, 3.2, 0.7),
+                            darkConc
+                        );
+                        pillar.position.set(side * (TRACK_WIDTH / 2 + 1.4), -1.2, bridgeZ + i * 9);
+                        pillar.castShadow = true;
+                        scene.add(pillar);
+                        // Ржавые стяжки
+                        const beam = new THREE.Mesh(
+                            new THREE.BoxGeometry(TRACK_WIDTH + 2.5, 0.2, 0.25),
+                            rust
+                        );
+                        beam.position.set(0, 0.6, bridgeZ + i * 9);
+                        scene.add(beam);
+                    }
+                }
+
+                // Арки / фермы сверху
+                for (let i = -1; i <= 1; i += 2) {
+                    const arch = new THREE.Mesh(
+                        new THREE.TorusGeometry(TRACK_WIDTH * 0.55, 0.12, 6, 12, Math.PI),
+                        gold
+                    );
+                    arch.rotation.z = Math.PI;
+                    arch.rotation.y = Math.PI / 2;
+                    arch.position.set(0, 2.1, bridgeZ + i * 6);
+                    arch.castShadow = true;
+                    scene.add(arch);
+                }
+
+                // Повреждённые куски перил
+                for (let i = 0; i < 8; i++) {
+                    const side = i % 2 === 0 ? -1 : 1;
+                    const post = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.12, 0.7 + Math.random() * 0.4, 0.12),
+                        Math.random() > 0.4 ? gold : rust
+                    );
+                    post.position.set(
+                        side * (TRACK_WIDTH / 2 + 0.35),
+                        0.75,
+                        bridgeZ - 12 + i * 3.2
+                    );
+                    post.rotation.z = (Math.random() - 0.5) * 0.3;
+                    scene.add(post);
+                }
+
+                // Торчащая арматура
+                for (let i = 0; i < 6; i++) {
+                    const bar = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.03, 0.03, 0.8 + Math.random() * 0.6, 5),
+                        rebar
+                    );
+                    bar.position.set(
+                        (Math.random() - 0.5) * TRACK_WIDTH,
+                        0.5 + Math.random() * 0.4,
+                        bridgeZ + (Math.random() - 0.5) * 20
+                    );
+                    bar.rotation.x = (Math.random() - 0.5) * 0.8;
+                    bar.rotation.z = (Math.random() - 0.5) * 0.5;
+                    scene.add(bar);
+                }
+
+                // Обломки под мостом
+                for (let i = 0; i < 5; i++) {
+                    const rubble = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.5 + Math.random(), 0.3, 0.5 + Math.random()),
+                        darkConc
+                    );
+                    rubble.position.set(
+                        (Math.random() - 0.5) * (TRACK_WIDTH + 4),
+                        0.1,
+                        bridgeZ + (Math.random() - 0.5) * 16
+                    );
+                    rubble.rotation.y = Math.random() * 2;
+                    scene.add(rubble);
+                }
+
+                // Светящиеся «золотые» огни по краям
+                for (const side of [-1, 1]) {
+                    for (let i = -2; i <= 2; i++) {
+                        const lamp = new THREE.Mesh(
+                            new THREE.SphereGeometry(0.1, 8),
+                            new THREE.MeshStandardMaterial({
+                                color: 0xffcc44,
+                                emissive: 0xffaa22,
+                                emissiveIntensity: 0.9
+                            })
+                        );
+                        lamp.position.set(side * (TRACK_WIDTH / 2 + 0.35), 1.15, bridgeZ + i * 5);
+                        scene.add(lamp);
+                    }
+                }
+
+                // Табличка «ЗОЛОТОЙ МОСТ»
+                const sign = new THREE.Mesh(
+                    new THREE.BoxGeometry(3.2, 0.5, 0.1),
+                    gold
+                );
+                sign.position.set(0, 2.8, bridgeZ + 10);
+                scene.add(sign);
+            })();
+
+            // ============================================================
             // НОЧНАЯ ЗОНА
             // ============================================================
             const NIGHT_ZONE_START = HAS_NIGHT_ZONE ? TRACK_LENGTH * 0.3 : 9999;
@@ -1985,41 +2697,329 @@
             scene.add(nightOverlay);
 
             // ============================================================
-            // ДЕРЕВЬЯ
             // ============================================================
-            function createTree(x, z, scale = 1) {
+            // ПОСТАПОКАЛИПТИЧЕСКОЕ ОКРУЖЕНИЕ: руины + мёртвые деревья
+            // ============================================================
+            function createDeadTree(x, z, scale = 1) {
                 const group = new THREE.Group();
+                const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1a, roughness: 0.95 });
                 const trunk = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.06 * scale, 0.12 * scale, 0.5 * scale, 6),
-                    new THREE.MeshStandardMaterial({ color: 0x5a3d2b, roughness: 0.9 })
+                    new THREE.CylinderGeometry(0.05 * scale, 0.1 * scale, 0.9 * scale, 5),
+                    trunkMat
                 );
-                trunk.position.y = 0.25 * scale;
+                trunk.position.y = 0.45 * scale;
                 trunk.castShadow = true;
                 group.add(trunk);
-                const colors = [0x2d7d2d, 0x3a8c3a, 0x4a9a4a, 0x5a8a3a];
-                const crownCount = quality === 'low' ? 2 : 3;
-                for (let i = 0; i < crownCount; i++) {
-                    const crown = new THREE.Mesh(
-                        new THREE.SphereGeometry((0.2 + Math.random() * 0.2) * scale, 6),
-                        new THREE.MeshStandardMaterial({ color: colors[Math.floor(Math.random() * colors.length)], roughness: 0.8 })
+                // Сломанные ветки
+                for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+                    const branch = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.02 * scale, 0.03 * scale, 0.35 * scale, 4),
+                        trunkMat
                     );
-                    crown.position.set((Math.random() - 0.5) * 0.4 * scale, 0.5 * scale + Math.random() * 0.3 * scale, (Math.random() - 0.5) * 0.4 * scale);
-                    crown.castShadow = true;
-                    group.add(crown);
+                    branch.position.set(
+                        (Math.random() - 0.5) * 0.3 * scale,
+                        0.5 * scale + Math.random() * 0.3 * scale,
+                        (Math.random() - 0.5) * 0.2 * scale
+                    );
+                    branch.rotation.z = (Math.random() - 0.5) * 1.2;
+                    branch.rotation.x = (Math.random() - 0.5) * 0.8;
+                    branch.castShadow = true;
+                    group.add(branch);
                 }
                 group.position.set(x, 0, z);
                 scene.add(group);
             }
 
-            const treeCount = quality === 'low' ? Math.min(15, config.trees) : 
-                             quality === 'medium' ? config.trees : config.trees * 1.3;
-            for (let i = 0; i < treeCount; i++) {
-                const z = -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH;
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const x = side * (TRACK_WIDTH / 2 + 2 + Math.random() * 5);
-                const scale = 0.6 + Math.random() * 0.8;
-                createTree(x, z, scale);
+            function createRuinedBuilding(x, z, scale = 1) {
+                const group = new THREE.Group();
+                const concrete = new THREE.MeshStandardMaterial({ color: 0x6a655c, roughness: 0.9, metalness: 0.05 });
+                const darkConcrete = new THREE.MeshStandardMaterial({ color: 0x4a453c, roughness: 0.95 });
+                const rust = new THREE.MeshStandardMaterial({ color: 0x8a4a2a, roughness: 0.7, metalness: 0.3 });
+                const rebar = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.8 });
+
+                const w = (1.2 + Math.random() * 1.8) * scale;
+                const d = (1.0 + Math.random() * 1.4) * scale;
+                const h = (1.5 + Math.random() * 2.5) * scale;
+
+                // Основной корпус (частично разрушен)
+                const body = new THREE.Mesh(new THREE.BoxGeometry(w, h * 0.7, d), concrete);
+                body.position.y = h * 0.35;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                group.add(body);
+
+                // Верхние обломки / неровный верх
+                const topChunks = 2 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < topChunks; i++) {
+                    const cw = w * (0.2 + Math.random() * 0.4);
+                    const ch = h * (0.15 + Math.random() * 0.35);
+                    const cd = d * (0.2 + Math.random() * 0.4);
+                    const chunk = new THREE.Mesh(new THREE.BoxGeometry(cw, ch, cd), Math.random() > 0.5 ? concrete : darkConcrete);
+                    chunk.position.set(
+                        (Math.random() - 0.5) * w * 0.6,
+                        h * 0.7 + ch * 0.4,
+                        (Math.random() - 0.5) * d * 0.6
+                    );
+                    chunk.rotation.y = Math.random() * 0.5;
+                    chunk.rotation.z = (Math.random() - 0.5) * 0.3;
+                    chunk.castShadow = true;
+                    group.add(chunk);
+                }
+
+                // Окна-дыры
+                const windowMat = new THREE.MeshStandardMaterial({ color: 0x1a1814, roughness: 1 });
+                for (let i = 0; i < 2; i++) {
+                    const win = new THREE.Mesh(new THREE.BoxGeometry(0.25 * scale, 0.3 * scale, 0.08), windowMat);
+                    win.position.set(
+                        (i === 0 ? -1 : 1) * w * 0.25,
+                        h * 0.4 + Math.random() * 0.2,
+                        d * 0.5 + 0.01
+                    );
+                    group.add(win);
+                }
+
+                // Торчащая арматура
+                for (let i = 0; i < 3; i++) {
+                    const bar = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.015 * scale, 0.015 * scale, 0.4 * scale + Math.random() * 0.3, 4),
+                        rebar
+                    );
+                    bar.position.set(
+                        (Math.random() - 0.5) * w * 0.7,
+                        h * 0.75 + 0.2,
+                        (Math.random() - 0.5) * d * 0.7
+                    );
+                    bar.rotation.x = (Math.random() - 0.5) * 0.6;
+                    bar.rotation.z = (Math.random() - 0.5) * 0.6;
+                    group.add(bar);
+                }
+
+                // Ржавые куски металла
+                if (Math.random() > 0.4) {
+                    const plate = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.4 * scale, 0.03, 0.5 * scale),
+                        rust
+                    );
+                    plate.position.set((Math.random() - 0.5) * w * 0.5, h * 0.55, d * 0.4);
+                    plate.rotation.z = (Math.random() - 0.5) * 0.4;
+                    group.add(plate);
+                }
+
+                // Обломки у основания
+                for (let i = 0; i < 3; i++) {
+                    const rubble = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.2 + Math.random() * 0.3, 0.1 + Math.random() * 0.15, 0.2 + Math.random() * 0.3),
+                        darkConcrete
+                    );
+                    rubble.position.set(
+                        (Math.random() - 0.5) * (w + 0.8),
+                        0.08,
+                        (Math.random() - 0.5) * (d + 0.8)
+                    );
+                    rubble.rotation.y = Math.random() * Math.PI;
+                    rubble.castShadow = true;
+                    group.add(rubble);
+                }
+
+                group.position.set(x, 0, z);
+                group.rotation.y = Math.random() * Math.PI * 2;
+                scene.add(group);
             }
+
+            // ============================================================
+            // КАРТЫ — уникальное окружение
+            // ============================================================
+            function createFactory(x, z, scale = 1) {
+                const group = new THREE.Group();
+                const concrete = new THREE.MeshStandardMaterial({ color: 0x5a5854, roughness: 0.9 });
+                const metal = new THREE.MeshStandardMaterial({ color: 0x6a5040, roughness: 0.5, metalness: 0.6 });
+                const dark = new THREE.MeshStandardMaterial({ color: 0x3a3834, roughness: 0.95 });
+                // Корпус
+                const body = new THREE.Mesh(new THREE.BoxGeometry(2.2*scale, 2.4*scale, 1.6*scale), concrete);
+                body.position.y = 1.2*scale;
+                body.castShadow = true;
+                group.add(body);
+                // Труба
+                const chimney = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.25*scale, 0.3*scale, 3.5*scale, 8),
+                    metal
+                );
+                chimney.position.set(0.6*scale, 2.8*scale, 0);
+                chimney.castShadow = true;
+                group.add(chimney);
+                // Дым-шар (статичный намёк)
+                const smoke = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.45*scale, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.35 })
+                );
+                smoke.position.set(0.6*scale, 4.8*scale, 0);
+                group.add(smoke);
+                // Пристройка
+                const wing = new THREE.Mesh(new THREE.BoxGeometry(1.2*scale, 1.2*scale, 1.2*scale), dark);
+                wing.position.set(-1.2*scale, 0.6*scale, 0);
+                group.add(wing);
+                group.position.set(x, 0, z);
+                group.rotation.y = Math.random() * 0.5;
+                scene.add(group);
+            }
+
+            function createPipeStack(x, z, scale = 1) {
+                const group = new THREE.Group();
+                const metal = new THREE.MeshStandardMaterial({ color: 0x7a5a3a, roughness: 0.45, metalness: 0.7 });
+                for (let i = 0; i < 3; i++) {
+                    const pipe = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.12*scale, 0.12*scale, 1.5*scale + Math.random(), 6),
+                        metal
+                    );
+                    pipe.position.set((i-1)*0.35*scale, 0.8*scale, 0);
+                    pipe.rotation.z = (Math.random()-0.5)*0.4;
+                    pipe.castShadow = true;
+                    group.add(pipe);
+                }
+                // Горизонтальная труба
+                const hpipe = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1*scale, 0.1*scale, 2*scale, 6),
+                    metal
+                );
+                hpipe.rotation.z = Math.PI/2;
+                hpipe.position.set(0, 1.4*scale, 0);
+                group.add(hpipe);
+                group.position.set(x, 0, z);
+                scene.add(group);
+            }
+
+            function createScrapPile(x, z, scale = 1) {
+                const group = new THREE.Group();
+                const colors = [0x5a554c, 0x6a4a2a, 0x444444, 0x3a5030, 0x8a5a2a];
+                for (let i = 0; i < 6 + Math.floor(Math.random()*4); i++) {
+                    const mat = new THREE.MeshStandardMaterial({
+                        color: colors[Math.floor(Math.random()*colors.length)],
+                        roughness: 0.7 + Math.random()*0.3,
+                        metalness: Math.random()*0.5
+                    });
+                    const mesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(
+                            0.3*scale + Math.random()*0.8*scale,
+                            0.2*scale + Math.random()*0.5*scale,
+                            0.3*scale + Math.random()*0.8*scale
+                        ),
+                        mat
+                    );
+                    mesh.position.set(
+                        (Math.random()-0.5)*1.8*scale,
+                        0.15*scale + Math.random()*0.8*scale,
+                        (Math.random()-0.5)*1.8*scale
+                    );
+                    mesh.rotation.set(Math.random(), Math.random(), Math.random());
+                    mesh.castShadow = true;
+                    group.add(mesh);
+                }
+                group.position.set(x, 0, z);
+                scene.add(group);
+            }
+
+            function createWreckCar(x, z, scale = 1) {
+                const group = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.8, metalness: 0.3 });
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1.6*scale, 0.45*scale, 0.9*scale), bodyMat);
+                body.position.y = 0.35*scale;
+                body.rotation.z = (Math.random()-0.5)*0.4;
+                body.rotation.y = Math.random()*Math.PI;
+                body.castShadow = true;
+                group.add(body);
+                const cabin = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.7*scale, 0.35*scale, 0.8*scale),
+                    new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.9 })
+                );
+                cabin.position.set(0.2*scale, 0.65*scale, 0);
+                group.add(cabin);
+                group.position.set(x, 0, z);
+                scene.add(group);
+            }
+
+            function createBillboard(x, z, scale = 1) {
+                const group = new THREE.Group();
+                const pole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.06*scale, 0.08*scale, 2.2*scale, 6),
+                    new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.6, roughness: 0.5 })
+                );
+                pole.position.y = 1.1*scale;
+                group.add(pole);
+                const board = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.8*scale, 1.0*scale, 0.08*scale),
+                    new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.9 })
+                );
+                board.position.y = 2.3*scale;
+                board.rotation.z = (Math.random()-0.5)*0.2;
+                group.add(board);
+                group.position.set(x, 0, z);
+                scene.add(group);
+            }
+
+            const envCount = quality === 'low' ? 20 : quality === 'medium' ? 36 : 52;
+            const debrisCount = quality === 'low' ? 10 : 18;
+
+            // Тон карты: небо / туман
+            if (mapId === 'promzona') {
+                scene.background = new THREE.Color(0x6a5a4a);
+                scene.fog.color = new THREE.Color(0x6a5a4a);
+                scene.fog.near = 30;
+                scene.fog.far = 140;
+            } else if (mapId === 'svalka') {
+                scene.background = new THREE.Color(0x7a6a48);
+                scene.fog.color = new THREE.Color(0x7a6a48);
+                scene.fog.near = 28;
+                scene.fog.far = 130;
+            }
+
+            for (let i = 0; i < envCount; i++) {
+                const z = -TRACK_LENGTH / 2 + 30 + Math.random() * (TRACK_LENGTH - 60);
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const dist = TRACK_WIDTH / 2 + 3.5 + Math.random() * 10;
+                const x = side * dist;
+                const scale = 0.7 + Math.random() * 1.1;
+
+                if (mapId === 'promzona') {
+                    const r = Math.random();
+                    if (r < 0.4) createFactory(x, z, scale);
+                    else if (r < 0.7) createPipeStack(x, z, scale);
+                    else if (r < 0.85) createRuinedBuilding(x, z, scale * 0.8);
+                    else createDeadTree(x, z, scale);
+                } else if (mapId === 'svalka') {
+                    const r = Math.random();
+                    if (r < 0.4) createScrapPile(x, z, scale);
+                    else if (r < 0.65) createWreckCar(x, z, scale);
+                    else if (r < 0.8) createBillboard(x, z, scale);
+                    else createDeadTree(x, z, scale * 0.9);
+                } else {
+                    // arsenev — классика
+                    if (Math.random() < 0.65) createRuinedBuilding(x, z, scale);
+                    else createDeadTree(x, z, scale);
+                }
+            }
+
+            // Придорожный мусор / баррикады
+            for (let i = 0; i < debrisCount; i++) {
+                const z = -TRACK_LENGTH / 2 + 40 + Math.random() * (TRACK_LENGTH - 80);
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const x = side * (TRACK_WIDTH / 2 + 1.2 + Math.random() * 1.8);
+                if (mapId === 'svalka' && Math.random() < 0.5) {
+                    createScrapPile(x, z, 0.5 + Math.random() * 0.4);
+                } else if (mapId === 'promzona' && Math.random() < 0.4) {
+                    createPipeStack(x, z, 0.5 + Math.random() * 0.4);
+                } else {
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x5a554c, roughness: 0.9 });
+                    const block = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.4 + Math.random() * 0.6, 0.3 + Math.random() * 0.5, 0.4 + Math.random() * 0.5),
+                        mat
+                    );
+                    block.position.set(x, 0.2, z);
+                    block.rotation.y = Math.random() * 1;
+                    block.castShadow = true;
+                    scene.add(block);
+                }
+            }
+
 
             // ============================================================
             // МАШИНА ИГРОКА
@@ -2178,7 +3178,19 @@
                 return car;
             }
 
-            const playerCar = createCar(0xff2200, true);
+            
+            // Силуэты на горизонте
+            const horizonMat = new THREE.MeshBasicMaterial({ color: 0x2a2218, transparent: true, opacity: 0.55 });
+            for (let i = 0; i < 14; i++) {
+                const h = 4 + Math.random() * 10;
+                const w = 3 + Math.random() * 6;
+                const sil = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.5), horizonMat);
+                const side = i % 2 === 0 ? -1 : 1;
+                sil.position.set(side * (25 + Math.random() * 30), h * 0.45, -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH);
+                scene.add(sil);
+            }
+
+            const playerCar = createCar(carPreset.color, true);
             let zPos = START_Z;
             let xPos = 0;
             let xVelocity = 0;
@@ -2236,7 +3248,8 @@
             // ПРЕПЯТСТВИЯ
             // ============================================================
             const obstacles = [];
-            const maxObstacles = quality === 'low' ? Math.min(15, config.maxObstacles) : config.maxObstacles;
+            const maxObstacles = quality === 'low' ? Math.min(22, config.maxObstacles) : config.maxObstacles;
+            let oilSlideTimer = 0; // скольжение на масле
             
             function createObstacle(z, type) {
                 const group = new THREE.Group();
@@ -2244,31 +3257,55 @@
                 
                 if (type === 'pothole') {
                     mesh = new THREE.Mesh(
-                        new THREE.CircleGeometry(0.4, 16),
-                        new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.9, metalness: 0.1 })
+                        new THREE.CircleGeometry(0.42, 16),
+                        new THREE.MeshStandardMaterial({ color: 0x1a1a22, roughness: 0.95, metalness: 0.05 })
                     );
                     mesh.rotation.x = -Math.PI / 2;
                     mesh.position.y = 0.015;
-                    
                     const rim = new THREE.Mesh(
-                        new THREE.RingGeometry(0.4, 0.45, 16),
-                        new THREE.MeshStandardMaterial({ color: 0x555566, roughness: 0.8 })
+                        new THREE.RingGeometry(0.42, 0.48, 16),
+                        new THREE.MeshStandardMaterial({ color: 0x44444a, roughness: 0.85 })
                     );
                     rim.rotation.x = -Math.PI / 2;
                     rim.position.y = 0.018;
                     group.add(rim);
-                } else {
-                    const bumpMat = new THREE.MeshStandardMaterial({ color: 0x555544, roughness: 0.8 });
+                    group.add(mesh);
+                } else if (type === 'oil') {
+                    // Масляное пятно — радужный тёмный эллипс
                     mesh = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.4, 0.4, 0.08, 16),
+                        new THREE.CircleGeometry(0.55, 20),
+                        new THREE.MeshStandardMaterial({
+                            color: 0x1a1520,
+                            roughness: 0.15,
+                            metalness: 0.85,
+                            transparent: true,
+                            opacity: 0.85
+                        })
+                    );
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.y = 0.02;
+                    mesh.scale.set(1.3, 0.7, 1);
+                    group.add(mesh);
+                    // Блик
+                    const gloss = new THREE.Mesh(
+                        new THREE.CircleGeometry(0.2, 12),
+                        new THREE.MeshBasicMaterial({ color: 0x446688, transparent: true, opacity: 0.35 })
+                    );
+                    gloss.rotation.x = -Math.PI / 2;
+                    gloss.position.set(0.1, 0.025, 0.05);
+                    group.add(gloss);
+                } else {
+                    // Кочка
+                    const bumpMat = new THREE.MeshStandardMaterial({ color: 0x5a5344, roughness: 0.85 });
+                    mesh = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.38, 0.45, 0.1, 12),
                         bumpMat
                     );
-                    mesh.position.y = 0.04;
+                    mesh.position.y = 0.05;
                     mesh.receiveShadow = true;
                     mesh.castShadow = true;
+                    group.add(mesh);
                 }
-                
-                group.add(mesh);
                 
                 const x = -TRACK_WIDTH / 2 + 0.5 + Math.floor(Math.random() * 3) * 2;
                 group.position.set(x, 0, z);
@@ -2279,9 +3316,169 @@
 
             for (let i = 0; i < maxObstacles; i++) {
                 const z = -TRACK_LENGTH / 2 + 30 + Math.random() * (TRACK_LENGTH - 80);
-                const type = Math.random() < 0.5 ? 'pothole' : 'bump';
+                const r = Math.random();
+                let type;
+                if (r < 0.28) type = 'pothole';
+                else if (r < 0.55) type = 'oil';
+                else type = 'bump';
                 obstacles.push(createObstacle(z, type));
             }
+            // Бонусные препятствия по картам
+            if (mapId === 'svalka') {
+                for (let i = 0; i < 8; i++) {
+                    const z = -TRACK_LENGTH / 2 + 40 + Math.random() * (TRACK_LENGTH - 80);
+                    obstacles.push(createObstacle(z, 'oil'));
+                }
+            }
+            if (mapId === 'promzona') {
+                for (let i = 0; i < 6; i++) {
+                    const z = -TRACK_LENGTH / 2 + 40 + Math.random() * (TRACK_LENGTH - 80);
+                    obstacles.push(createObstacle(z, 'bump'));
+                }
+            }
+
+
+            // ============================================================
+            // КОЛЛЕКТИБЛЫ: НИТРО + ЖВАЧКА ТУРБО
+            // ============================================================
+            const collectibles = [];
+            let nitroTimer = 0;
+            let fovPunch = 0;
+            const BASE_FOV = 55;
+
+            function createCollectible(z, type) {
+                const group = new THREE.Group();
+                const loader = new THREE.TextureLoader();
+                const img = type === 'nitro' ? 'images/nitro.jpg' : 'images/gum.jpg';
+                const imgPng = type === 'nitro' ? 'images/nitro.png' : 'images/gum.png';
+
+                // Плейсхолдер (цветной бокс), пока грузится текстура
+                const placeholderMat = new THREE.MeshStandardMaterial({
+                    color: type === 'nitro' ? 0x22cc44 : 0xff66aa,
+                    emissive: type === 'nitro' ? 0x115522 : 0x441133,
+                    emissiveIntensity: 0.4,
+                    roughness: 0.4
+                });
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(type === 'nitro' ? 0.35 : 0.28, 0.4, type === 'nitro' ? 0.25 : 0.2),
+                    placeholderMat
+                );
+                body.position.y = 0.35;
+                body.castShadow = true;
+                group.add(body);
+
+                // Спрайт с картинкой
+                const spriteMat = new THREE.SpriteMaterial({
+                    transparent: true,
+                    depthTest: true,
+                    opacity: 0
+                });
+                const sprite = new THREE.Sprite(spriteMat);
+                sprite.scale.set(0.7, 0.7, 1);
+                sprite.position.y = 0.55;
+                group.add(sprite);
+
+                loader.load(img, (tex) => {
+                    spriteMat.map = tex;
+                    spriteMat.opacity = 1;
+                    spriteMat.needsUpdate = true;
+                    body.visible = false;
+                }, undefined, () => {
+                    loader.load(imgPng, (tex) => {
+                        spriteMat.map = tex;
+                        spriteMat.opacity = 1;
+                        spriteMat.needsUpdate = true;
+                        body.visible = false;
+                    }, undefined, () => {});
+                });
+
+                // Свечение под объектом
+                const glow = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.35, 12),
+                    new THREE.MeshBasicMaterial({
+                        color: type === 'nitro' ? 0x33ff66 : 0xff88cc,
+                        transparent: true,
+                        opacity: 0.25
+                    })
+                );
+                glow.rotation.x = -Math.PI / 2;
+                glow.position.y = 0.03;
+                group.add(glow);
+
+                const x = -TRACK_WIDTH / 2 + 0.5 + Math.floor(Math.random() * 3) * 2;
+                group.position.set(x, 0, z);
+                scene.add(group);
+
+                return { mesh: group, x, z, type, active: true, bob: Math.random() * Math.PI * 2 };
+            }
+
+            // Расставляем коллекты
+            const nitroCount = difficulty === 'hard' ? 4 : difficulty === 'medium' ? 3 : 2;
+            const gumCount = difficulty === 'hard' ? 3 : 2;
+            for (let i = 0; i < nitroCount; i++) {
+                const z = -TRACK_LENGTH / 2 + 80 + Math.random() * (TRACK_LENGTH - 160);
+                collectibles.push(createCollectible(z, 'nitro'));
+            }
+            for (let i = 0; i < gumCount; i++) {
+                const z = -TRACK_LENGTH / 2 + 100 + Math.random() * (TRACK_LENGTH - 200);
+                collectibles.push(createCollectible(z, 'gum'));
+            }
+
+            // ============================================================
+            // БОСС — МЕДВЕДЬ «АРСЕНЬЕВСКИХ ЗНАЮ»
+            // ============================================================
+            let boss = null;
+            let bossSpawned = false;
+            let bossShouted = false;
+
+            function spawnBoss() {
+                if (bossSpawned) return;
+                bossSpawned = true;
+
+                const group = createAnimalMesh('BEAR');
+                group.scale.set(1.6, 1.6, 1.6);
+                // Медведь бежит вдоль правой/левой обочины, периодически заходя на полосу
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const startZ = zPos - 40;
+                group.position.set(side * (TRACK_WIDTH / 2 + 0.3), 0, startZ);
+                group.visible = true;
+                scene.add(group);
+
+                boss = {
+                    mesh: group,
+                    x: group.position.x,
+                    z: startZ,
+                    side,
+                    laneTarget: Math.floor(Math.random() * 3),
+                    speed: 0.22,
+                    hp: 1,
+                    active: true,
+                    phase: 0,
+                    shoutTimer: 0
+                };
+
+                // Крик босса
+                showBossShout('Я вас Арсеньевских знаю!');
+                bossShouted = true;
+                radioSay(RADIO_LINES.boss[0]);
+                console.log('🐻 БОСС: Медведь вышел на трассу!');
+            }
+
+            function showBossShout(text) {
+                const el = document.createElement('div');
+                el.className = 'animal-shout';
+                el.textContent = text;
+                el.style.left = '50%';
+                el.style.top = '28%';
+                el.style.transform = 'translateX(-50%)';
+                el.style.fontSize = '20px';
+                el.style.padding = '10px 22px';
+                el.style.borderColor = '#ff4400';
+                el.style.color = '#ff6622';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 2800);
+            }
+
 
             // ============================================================
             // МОБИЛЬНОЕ УПРАВЛЕНИЕ
@@ -2348,13 +3545,53 @@
             let shakeTime = 0;
             let gameState = 'racing';
 
-            const MAX_SPEED = 0.35;
-            const ACCELERATION = 0.018;
+            const MAX_SPEED = carPreset.maxSpeed;
+            const ACCELERATION = carPreset.accel;
             const BRAKE_FORCE = 0.025;
             const FRICTION_FORCE = 0.008;
             const MAX_X_SPEED = 0.55;
             const DRY_DAMPING = 0.82;
             const DRY_STEER = 3.2;
+            const OIL_GRIP = carPreset.oilGrip;
+            const DURABILITY = carPreset.durability; // множитель штрафа времени (меньше = танк)
+
+            // ---- МЕТА-СИСТЕМЫ ----
+            let comboTime = 0;
+            let comboMax = 0;
+            let radioCooldown = 0;
+            let storyFlags = { p25: false, p50: false, p75: false };
+            let stats = { animalsHit: 0, oilHits: 0, nitroPicked: 0, gumPicked: 0, maxSpeedReached: 0 };
+            let weatherZone = 'clear'; // clear | dust
+            let finishNarrow = false;
+
+            function radioSay(text) {
+                if (radioCooldown > 0) return;
+                radioCooldown = 2.5;
+                const el = document.createElement('div');
+                el.className = 'radio-line';
+                el.textContent = '📡 ' + text;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 3200);
+            }
+
+            function showStory(text) {
+                const el = document.createElement('div');
+                el.className = 'story-plaque';
+                el.textContent = text;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 4000);
+            }
+
+            const RADIO_LINES = {
+                start: ['Чебурашка, поехали. Жвачка не будет ждать.', 'Эфир чист… почти. Не слушай Ранеток.'],
+                nitro: ['Нитро в жилах! Держи руль!', 'Турбо-режим, как в хорошем клипе 90-х.'],
+                gum: ['Жвачка Турбо! Вкус победы.', 'Ещё одна фишка в коллекцию, братишка.'],
+                hit: ['Ай! Кузов помнит.', 'Осторожней, курьер. Аванс уже съели.', 'Это было близко к «Золотому Кирпичу».'],
+                boss: ['Медведь на частоте! Он снова про Арсеньевских!', 'Босс на хвосте. Не геройствуй — вези груз.'],
+                combo: ['Чистый эфир! Так держать.', 'Комбо растёт. Мост уже ближе.'],
+                lowTime: ['Время тает, как кофе в «Ностальджгии».', '20 секунд! Мост не будет ждать!'],
+                oil: ['Масло! Руль лёгкий, как обещания депутата.']
+            };
 
             function getKeys() {
                 if (isMobile) {
@@ -2446,13 +3683,22 @@
                 stunTimer = 0.4;
                 shakeTime = 0.35;
 
-                const penaltySeconds = obs.timePenalty || 4;
+                let penaltySeconds = (obs.timePenalty || 4) * DURABILITY;
+                penaltySeconds = Math.max(1, Math.round(penaltySeconds * 10) / 10);
                 raceTime += penaltySeconds;
+                
+                // Сброс комбо
+                if (comboTime > comboMax) comboMax = comboTime;
+                comboTime = 0;
+
+                if (obs.type === 'animal' || obs.speciesKey) stats.animalsHit++;
                 
                 const animalName = obs.type === 'animal' ? ANIMAL_TYPES[obs.speciesKey]?.name : '';
                 showTimePenaltyPopup(penaltySeconds, animalName);
-
                 soundEngine.playCrashSound(0.6);
+
+                const lines = RADIO_LINES.hit;
+                radioSay(lines[Math.floor(Math.random() * lines.length)]);
 
                 updateHUD();
 
@@ -2639,13 +3885,92 @@
                 raceTime += deltaTime;
                 const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
                 
+                // Комбо
+                comboTime += deltaTime;
+                if (comboTime > comboMax) comboMax = comboTime;
+                if (radioCooldown > 0) radioCooldown -= deltaTime;
+                
+                // Радио: мало времени
+                const remaining = TIME_LIMIT - raceTime;
+                if (remaining < 20 && remaining > 19.5) {
+                    radioSay(RADIO_LINES.lowTime[Math.floor(Math.random()*RADIO_LINES.lowTime.length)]);
+                }
+                // Комбо-похвала
+                if (comboTime > 15 && Math.floor(comboTime) === 15) {
+                    radioSay(RADIO_LINES.combo[0]);
+                }
+                
+                // Нарративные плашки
+                if (!storyFlags.p25 && progress >= 0.25) {
+                    storyFlags.p25 = true;
+                    showStory('🏪 Кафе «Ностальджгия» осталось в зеркале заднего вида…');
+                }
+                if (!storyFlags.p50 && progress >= 0.50) {
+                    storyFlags.p50 = true;
+                    showStory('📻 В эфире снова балалайка. Звериный час близко.');
+                }
+                if (!storyFlags.p75 && progress >= 0.75) {
+                    storyFlags.p75 = true;
+                    showStory('🌉 Впереди силуэт Золотого Моста. У тебя один шанс.');
+                }
+                
+                // Погода: пыльная буря в средней трети
+                if (progress > 0.3 && progress < 0.55) {
+                    if (weatherZone !== 'dust') {
+                        weatherZone = 'dust';
+                        scene.fog.near = 20;
+                        scene.fog.far = 100;
+                        scene.background = new THREE.Color(0x9a8060);
+                        scene.fog.color = new THREE.Color(0x9a8060);
+                    }
+                } else if (weatherZone === 'dust') {
+                    weatherZone = 'clear';
+                    scene.fog.near = 35;
+                    scene.fog.far = 160;
+                    scene.background = new THREE.Color(0x8a7355);
+                    scene.fog.color = new THREE.Color(0x8a7355);
+                }
+                
+                // Финишный спринт — сужение (барьеры ближе к центру)
+                if (progress > 0.85 && !finishNarrow) {
+                    finishNarrow = true;
+                    radioSay('Мост сужается! Держись центра!');
+                    for (let i = 0; i < 12; i++) {
+                        const z = FINISH_Z + 20 + i * 8;
+                        for (const side of [-1, 1]) {
+                            const mat = new THREE.MeshStandardMaterial({ color: 0x8a2a1a, roughness: 0.7, metalness: 0.3, emissive: 0x331100, emissiveIntensity: 0.2 });
+                            const barrier = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.9, 3), mat);
+                            barrier.position.set(side * (TRACK_WIDTH / 2 - 0.3), 0.45, z);
+                            barrier.castShadow = true;
+                            scene.add(barrier);
+                        }
+                    }
+                }
+                
                 const currentKeys = getKeys();
+
+                // Нитро
+                if (nitroTimer > 0) {
+                    nitroTimer -= deltaTime;
+                    fovPunch = Math.max(fovPunch, 8);
+                }
+                if (fovPunch > 0) {
+                    fovPunch = Math.max(0, fovPunch - deltaTime * 12);
+                    camera.fov = BASE_FOV + fovPunch;
+                    camera.updateProjectionMatrix();
+                } else if (Math.abs(camera.fov - BASE_FOV) > 0.1) {
+                    camera.fov += (BASE_FOV - camera.fov) * 0.1;
+                    camera.updateProjectionMatrix();
+                }
+
+                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? 1.45 : 1.0);
+                const effectiveAccel = ACCELERATION * (nitroTimer > 0 ? 1.6 : 1.0);
 
                 if (stunTimer > 0) {
                     stunTimer -= deltaTime;
                     if (speed > 0) speed = Math.max(speed - FRICTION_FORCE * 2, 0);
                 } else if (currentKeys.w) {
-                    speed = Math.min(speed + ACCELERATION, MAX_SPEED);
+                    speed = Math.min(speed + effectiveAccel, effectiveMax);
                 } else if (currentKeys.s) {
                     speed = Math.max(speed - BRAKE_FORCE, -MAX_SPEED * 0.2);
                 } else {
@@ -2654,13 +3979,21 @@
 
                 soundEngine.update(speed);
 
+                const onOil = (typeof oilSlideTimer !== 'undefined' && oilSlideTimer > 0);
+                const steerMul = onOil ? (0.35 * (typeof OIL_GRIP !== 'undefined' ? OIL_GRIP : 1)) : 1.0;
+                const dampMul = onOil ? 0.97 : DRY_DAMPING; // на масле почти не гасится — сносит
+                
                 if (currentKeys.a) {
-                    xVelocity = Math.max(xVelocity - DRY_STEER * deltaTime, -MAX_X_SPEED);
+                    xVelocity = Math.max(xVelocity - DRY_STEER * steerMul * deltaTime, -MAX_X_SPEED * (onOil ? 1.3 : 1));
                 } else if (currentKeys.d) {
-                    xVelocity = Math.min(xVelocity + DRY_STEER * deltaTime, MAX_X_SPEED);
+                    xVelocity = Math.min(xVelocity + DRY_STEER * steerMul * deltaTime, MAX_X_SPEED * (onOil ? 1.3 : 1));
                 } else {
-                    xVelocity *= DRY_DAMPING;
+                    xVelocity *= dampMul;
                     if (Math.abs(xVelocity) < 0.001) xVelocity = 0;
+                }
+                // На масле добавляем лёгкий рандомный снос
+                if (onOil) {
+                    xVelocity += (Math.random() - 0.5) * 0.04;
                 }
                 xPos += xVelocity * deltaTime * 15;
 
@@ -2712,15 +4045,15 @@
                     headlight2.intensity = 1.8;
                     
                     ambient.intensity = 0.08;
-                    scene.background = new THREE.Color(0x080818);
-                    scene.fog.color = new THREE.Color(0x080818);
+                    scene.background = new THREE.Color(0x8a7355);
+                    scene.fog.color = new THREE.Color(0x8a7355);
                 } else {
                     nightOverlay.material.opacity = 0;
                     headlight1.intensity = 0;
                     headlight2.intensity = 0;
                     ambient.intensity = 0.55;
-                    scene.background = new THREE.Color(0x4a8db7);
-                    scene.fog.color = new THREE.Color(0x4a8db7);
+                    scene.background = new THREE.Color(0x8a7355);
+                    scene.fog.color = new THREE.Color(0x8a7355);
                 }
 
                 // Попутные машины
@@ -2746,14 +4079,46 @@
                         }
                     } else {
                         car.laneChangeTimer -= deltaTime;
-                        if (car.laneChangeTimer <= 0 && Math.random() < 0.02 * (1 + progress * 0.5)) {
-                            const newLane = Math.floor(Math.random() * 3);
-                            if (newLane !== car.lane) {
-                                car.targetLane = newLane;
+                        
+                        // Агрессивное перестроение: если игрок рядом по Z — целимся в его полосу
+                        const dzToPlayer = car.z - zPos; // попутные: car впереди если dz > 0? 
+                        // Игрок уменьшает z, машины тоже. car.z ближе к игроку спереди = car.z < zPos немного или около
+                        const distZ = zPos - car.z; // >0 значит машина впереди по ходу? Wait: player goes -z, so smaller z is ahead
+                        // player z decreases. Car also decreases z. If car.z is slightly less than player z, car is ahead.
+                        const ahead = (zPos - car.z); // positive = car is ahead of player (smaller z)
+                        
+                        let shouldCut = false;
+                        if (ahead > -8 && ahead < 25) {
+                            // Машина относительно близко — чаще лезет в полосу игрока
+                            const playerLaneApprox = Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2);
+                            const clampedLane = Math.max(0, Math.min(2, playerLaneApprox));
+                            if (car.lane !== clampedLane && Math.random() < 0.04 + progress * 0.06) {
+                                car.targetLane = clampedLane;
                                 car.isChangingLane = true;
                                 car.laneChangeProgress = 0;
+                                car.laneChangeTimer = 1.2 + Math.random() * 1.5;
+                                shouldCut = true;
                             }
-                            car.laneChangeTimer = 2 + Math.random() * 3;
+                        }
+                        
+                        if (!shouldCut && car.laneChangeTimer <= 0) {
+                            const chance = 0.035 * (1 + progress * 0.8);
+                            if (Math.random() < chance) {
+                                // С шансом целимся в игрока, иначе случайная полоса
+                                let newLane;
+                                if (Math.random() < 0.55) {
+                                    const playerLaneApprox = Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2);
+                                    newLane = Math.max(0, Math.min(2, playerLaneApprox));
+                                } else {
+                                    newLane = Math.floor(Math.random() * 3);
+                                }
+                                if (newLane !== car.lane) {
+                                    car.targetLane = newLane;
+                                    car.isChangingLane = true;
+                                    car.laneChangeProgress = 0;
+                                }
+                            }
+                            car.laneChangeTimer = 1.0 + Math.random() * 2.2;
                         }
                     }
                     
@@ -2779,29 +4144,187 @@
                     }
                 });
 
-                // Препятствия
+                // Препятствия (ямы, кочки, масло)
+                if (oilSlideTimer > 0) oilSlideTimer -= deltaTime;
+                
                 obstacles.forEach(obs => {
                     if (!obs.active) return;
                     
                     const dx = xPos - obs.x;
                     const dz = zPos - obs.z;
+                    const hitR = obs.type === 'oil' ? 0.55 : 0.42;
                     
-                    if (Math.abs(dx) < 0.4 && Math.abs(dz) < 0.4) {
+                    if (Math.abs(dx) < hitR && Math.abs(dz) < hitR) {
                         if (obs.type === 'pothole') {
-                            speed *= 0.3;
-                            stunTimer = 0.3;
-                            soundEngine.playCrashSound(0.3);
+                            speed *= 0.28;
+                            stunTimer = 0.35;
+                            shakeTime = 0.3;
+                            soundEngine.playCrashSound(0.35);
                             showTimePenaltyPopup(2, 'Яма');
+                            obs.active = false;
+                            obs.mesh.visible = false;
+                        } else if (obs.type === 'oil') {
+                            // Масло — сильное скольжение, слабый контроль
+                            oilSlideTimer = 1.4;
+                            stats.oilHits++;
+                            if (Math.random() < 0.4) radioSay(RADIO_LINES.oil[0]);
+                            speed *= 0.85;
+                            xVelocity += (Math.random() - 0.5) * 0.8;
+                            soundEngine.playCrashSound(0.15);
+                            showTimePenaltyPopup(1, 'Масло!');
+                            // масло не исчезает сразу — можно проехать ещё раз, но ослабляем
+                            obs.mesh.scale.multiplyScalar(0.92);
+                            if (obs.mesh.scale.x < 0.5) {
+                                obs.active = false;
+                                obs.mesh.visible = false;
+                            }
                         } else {
-                            speed *= 0.6;
-                            playerCar.position.y = 0.35;
-                            setTimeout(() => { playerCar.position.y = 0.1; }, 150);
+                            // Кочка
+                            speed *= 0.55;
+                            playerCar.position.y = 0.38;
+                            shakeTime = 0.25;
+                            setTimeout(() => { if (playerCar) playerCar.position.y = 0.1; }, 140);
+                            soundEngine.playCrashSound(0.2);
                             showTimePenaltyPopup(1.5, 'Кочка');
+                            obs.active = false;
+                            obs.mesh.visible = false;
                         }
-                        obs.active = false;
-                        obs.mesh.visible = false;
                     }
                 });
+
+                // ---- Коллектиблы ----
+                collectibles.forEach(c => {
+                    if (!c.active) return;
+                    c.bob += deltaTime * 3;
+                    c.mesh.position.y = Math.sin(c.bob) * 0.08;
+                    c.mesh.rotation.y += deltaTime * 1.5;
+
+                    const dx = xPos - c.x;
+                    const dz = zPos - c.z;
+                    if (Math.abs(dx) < 0.6 && Math.abs(dz) < 0.6) {
+                        c.active = false;
+                        c.mesh.visible = false;
+                        if (c.type === 'nitro') {
+                            nitroTimer = 3.2;
+                            fovPunch = 10;
+                            stats.nitroPicked++;
+                            radioSay(RADIO_LINES.nitro[Math.floor(Math.random()*RADIO_LINES.nitro.length)]);
+                            showTimePenaltyPopup(0, '⛽ НИТРО!');
+                            // визуальный текст
+                            const el = document.createElement('div');
+                            el.className = 'animal-shout';
+                            el.textContent = '⛽ НИТРО!';
+                            el.style.left = '50%';
+                            el.style.top = '40%';
+                            el.style.transform = 'translateX(-50%)';
+                            el.style.color = '#33ff66';
+                            el.style.borderColor = '#33ff66';
+                            document.body.appendChild(el);
+                            setTimeout(() => el.remove(), 1500);
+                        } else {
+                            // Жвачка Турбо: +5 сек ИЛИ снятие 1 аварии
+                            stats.gumPicked++;
+                            radioSay(RADIO_LINES.gum[Math.floor(Math.random()*RADIO_LINES.gum.length)]);
+                            if (strikes > 0 && Math.random() < 0.5) {
+                                strikes = Math.max(0, strikes - 1);
+                                showTimePenaltyPopup(0, '🍬 −1 авария');
+                                const el = document.createElement('div');
+                                el.className = 'animal-shout';
+                                el.textContent = '🍬 Жвачка! −1 авария';
+                                el.style.left = '50%';
+                                el.style.top = '40%';
+                                el.style.transform = 'translateX(-50%)';
+                                el.style.color = '#ff88cc';
+                                el.style.borderColor = '#ff88cc';
+                                document.body.appendChild(el);
+                                setTimeout(() => el.remove(), 1600);
+                            } else {
+                                raceTime = Math.max(0, raceTime - 5);
+                                showTimePenaltyPopup(0, '🍬 +5 сек');
+                                const el = document.createElement('div');
+                                el.className = 'animal-shout';
+                                el.textContent = '🍬 Жвачка Турбо! +5 сек';
+                                el.style.left = '50%';
+                                el.style.top = '40%';
+                                el.style.transform = 'translateX(-50%)';
+                                el.style.color = '#ff88cc';
+                                el.style.borderColor = '#ff88cc';
+                                document.body.appendChild(el);
+                                setTimeout(() => el.remove(), 1600);
+                            }
+                            updateHUD();
+                        }
+                        particleSystem.emit(
+                            _v.pos.set(c.x, 0.4, c.z),
+                            _v.vel.set(0, 1, 0),
+                            12,
+                            0.2
+                        );
+                    }
+                });
+
+                // ---- Босс ----
+                if (!bossSpawned && progress > 0.45) {
+                    spawnBoss();
+                }
+                if (boss && boss.active) {
+                    // Движется навстречу / вдоль трассы (уменьшает z быстрее игрока иногда)
+                    boss.z -= boss.speed * 55 * deltaTime;
+                    boss.phase += deltaTime;
+
+                    // Периодически заходит на полосу игрока
+                    const targetX = -TRACK_WIDTH / 2 + 0.5 + boss.laneTarget * 2;
+                    boss.x += (targetX - boss.x) * 0.03;
+                    if (Math.sin(boss.phase * 0.7) > 0.92) {
+                        boss.laneTarget = Math.max(0, Math.min(2, Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2)));
+                    }
+
+                    boss.mesh.position.x = boss.x;
+                    boss.mesh.position.z = boss.z;
+                    boss.mesh.position.y = 0.05 + Math.abs(Math.sin(boss.phase * 6)) * 0.06;
+
+                    boss.shoutTimer -= deltaTime;
+                    if (boss.shoutTimer <= 0 && Math.abs(zPos - boss.z) < 30) {
+                        showBossShout('Я вас Арсеньевских знаю!');
+                        boss.shoutTimer = 4 + Math.random() * 3;
+                    }
+
+                    // Коллизия с боссом — жёсткий удар
+                    const bdx = xPos - boss.x;
+                    const bdz = zPos - boss.z;
+                    if (Math.abs(bdx) < 1.0 && Math.abs(bdz) < 1.1) {
+                        handleObstacleHit({ penalty: 0.2, timePenalty: 6, type: 'animal', speciesKey: 'BEAR' });
+                        shakeTime = 0.5;
+                        fovPunch = 12;
+                        boss.x += (Math.random() > 0.5 ? 1.5 : -1.5); // отскакивает в сторону
+                        showBossShout('Я вас Арсеньевских знаю!');
+                    }
+
+                    // Ушёл далеко — деспавн
+                    if (boss.z < zPos - 80 || boss.z > zPos + 100) {
+                        scene.remove(boss.mesh);
+                        boss.active = false;
+                    }
+                }
+
+                // На масле — доп. дым/пыль
+                if (typeof oilSlideTimer !== 'undefined' && oilSlideTimer > 0 && Math.abs(speed) > 0.05) {
+                    particleSystem.emit(
+                        _v.p1.set(xPos, 0.15, zPos + 0.3),
+                        _v.vel.set((Math.random()-0.5)*0.5, 0.4, speed),
+                        2,
+                        0.18
+                    );
+                }
+                // Пыльная буря — частицы в воздухе
+                if (weatherZone === 'dust' && Math.random() < 0.4) {
+                    particleSystem.emit(
+                        _v.p1.set(xPos + (Math.random()-0.5)*8, 1 + Math.random()*2, zPos - 5 - Math.random()*10),
+                        _v.vel.set((Math.random()-0.5)*2, 0.1, 0.5),
+                        1,
+                        0.25
+                    );
+                }
 
                 // Животные
                 animalSpawner.update(deltaTime, zPos);
@@ -2888,6 +4411,9 @@
 
             animate(performance.now());
             console.log('🏁 Игра запущена!');
+            setTimeout(() => {
+                radioSay(RADIO_LINES.start[Math.floor(Math.random()*RADIO_LINES.start.length)]);
+            }, 800);
         }
 
         // ============================================================
@@ -2935,19 +4461,156 @@
         // ============================================================
         // ЗАПУСК
         // ============================================================
-        // Обработчики кнопок сложности
+        // ============================================================
+        // ЛОР-СИСТЕМА
+        // ============================================================
+        let pendingQuality = 'medium';
+        let pendingDifficulty = 'medium';
+        let pendingCar = 'cheburashka';
+        let pendingMap = 'arsenev';
+        let currentLorePanel = 1;
+
+        const CAR_PRESETS = {
+            cheburashka: { name: 'Чебурашка', color: 0xff2200, maxSpeed: 0.35, accel: 0.018, durability: 1.0, oilGrip: 1.0 },
+            kirpich:     { name: 'Кирпич',     color: 0x6688aa, maxSpeed: 0.30, accel: 0.014, durability: 0.65, oilGrip: 1.15 },
+            turbo:       { name: 'Турбо-таз',  color: 0xffcc00, maxSpeed: 0.42, accel: 0.024, durability: 1.2, oilGrip: 0.7 }
+        };
+
+        window.showLoreScreen = function showLoreScreen(quality, difficulty) {
+            pendingQuality = quality;
+            pendingDifficulty = difficulty;
+            currentLorePanel = 1;
+            
+            const diffScreen = document.getElementById('difficulty-screen');
+            if (diffScreen) diffScreen.style.display = 'none';
+            
+            const loreScreen = document.getElementById('lore-screen');
+            if (!loreScreen) {
+                console.error('lore-screen element not found!');
+                initGame(quality, difficulty);
+                return;
+            }
+            loreScreen.classList.add('active');
+            loreScreen.style.display = 'flex';
+            
+            const p1 = document.getElementById('lore-panel-1');
+            const p2 = document.getElementById('lore-panel-2');
+            if (p1) { p1.classList.add('active'); p1.style.display = 'block'; }
+            if (p2) { p2.classList.remove('active'); p2.style.display = 'none'; }
+            
+            console.log('📖 Лор-экран показан');
+        }
+
+        window.nextLorePanel = function nextLorePanel() {
+            const p1 = document.getElementById('lore-panel-1');
+            const p2 = document.getElementById('lore-panel-2');
+            if (p1) { p1.classList.remove('active'); p1.style.display = 'none'; }
+            if (p2) { p2.classList.add('active'); p2.style.display = 'block'; }
+            currentLorePanel = 2;
+        }
+
+        window.prevLorePanel = function prevLorePanel() {
+            const p1 = document.getElementById('lore-panel-1');
+            const p2 = document.getElementById('lore-panel-2');
+            if (p2) { p2.classList.remove('active'); p2.style.display = 'none'; }
+            if (p1) { p1.classList.add('active'); p1.style.display = 'block'; }
+            currentLorePanel = 1;
+        }
+
+        window.skipLore = function skipLore() {
+            window.finishLoreAndStart();
+        }
+
+        window.finishLoreAndStart = function finishLoreAndStart() {
+            const loreScreen = document.getElementById('lore-screen');
+            if (loreScreen) {
+                loreScreen.classList.remove('active');
+                loreScreen.style.display = 'none';
+            }
+            const p1 = document.getElementById('lore-panel-1');
+            const p2 = document.getElementById('lore-panel-2');
+            if (p1) { p1.classList.remove('active'); p1.style.display = 'none'; }
+            if (p2) { p2.classList.remove('active'); p2.style.display = 'none'; }
+            
+            // Сначала выбор машины
+            const carScreen = document.getElementById('car-select-screen');
+            if (carScreen) {
+                carScreen.classList.add('active');
+                carScreen.style.display = 'flex';
+            } else {
+                initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap);
+            }
+        }
+
+        // Выбор машины
+        document.querySelectorAll('.car-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.car-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                pendingCar = card.dataset.car;
+            });
+        });
+        const carGoBtn = document.getElementById('car-select-go');
+        if (carGoBtn) {
+            carGoBtn.addEventListener('click', () => {
+                const carScreen = document.getElementById('car-select-screen');
+                if (carScreen) {
+                    carScreen.classList.remove('active');
+                    carScreen.style.display = 'none';
+                }
+                const mapScreen = document.getElementById('map-select-screen');
+                if (mapScreen) {
+                    if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
+                    mapScreen.classList.add('active');
+                    mapScreen.style.display = 'flex';
+                } else {
+                    initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap);
+                }
+            });
+        }
+
+        document.querySelectorAll('.map-card').forEach(card => {
+            card.addEventListener('click', () => {
+                if (card.classList.contains('locked')) {
+                    const badge = card.querySelector('.lock-badge');
+                    if (badge) {
+                        badge.style.color = '#ffdd00';
+                        setTimeout(() => { badge.style.color = '#ff8866'; }, 400);
+                    }
+                    return;
+                }
+                document.querySelectorAll('.map-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                pendingMap = card.dataset.map;
+            });
+        });
+        const mapGoBtn = document.getElementById('map-select-go');
+        if (mapGoBtn) {
+            mapGoBtn.addEventListener('click', () => {
+                const unlocked = getUnlockedMaps();
+                if (!unlocked.includes(pendingMap)) {
+                    pendingMap = unlocked[0] || 'arsenev';
+                }
+                const mapScreen = document.getElementById('map-select-screen');
+                if (mapScreen) {
+                    mapScreen.classList.remove('active');
+                    mapScreen.style.display = 'none';
+                }
+                initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap);
+            });
+        }
+
+        // Обработчики кнопок сложности → сначала лор
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const difficulty = btn.dataset.diff;
                 const quality = selectedQuality;
-                
-                const screen = document.getElementById('difficulty-screen');
-                screen.style.display = 'none';
-                
-                // Запускаем игру
-                setTimeout(() => {
-                    initGame(quality, difficulty);
-                }, 100);
+                console.log('Выбрана сложность:', difficulty, 'качество:', quality);
+                // Пробуем разбудить AudioContext заранее
+                if (window.soundEngine && window.soundEngine.audioCtx && window.soundEngine.audioCtx.state === 'suspended') {
+                    window.soundEngine.audioCtx.resume();
+                }
+                showLoreScreen(quality, difficulty);
             });
         });
 
@@ -2962,6 +4625,7 @@
             bestEl.textContent = bests.length ? '🏆 ' + bests.join(' · ') : '🏆 Лучшее время: --';
         }
 
+        if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
         console.log('🎮 Выберите сложность и начните игру!');
     </script>
 </body>
