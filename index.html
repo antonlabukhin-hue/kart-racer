@@ -1,83 +1,2488 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дорожный прорыв</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🏎️ Дорожный прорыв</title>
     <style>
-        * { margin: 0; padding: 0; }
-        body { overflow: hidden; background: #000; font-family: Arial, sans-serif; }
-        
-        #controls {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,0.5);
-            background: rgba(0,0,0,0.5);
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            z-index: 100;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.05);
-            pointer-events: none;
-            backdrop-filter: blur(4px);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: 'Segoe UI', Arial, sans-serif; }
+        #game-container { width: 100vw; height: 100vh; position: relative; }
+        canvas { display: block; width: 100% !important; height: 100% !important; }
+        #loading {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0a0a; display: flex; justify-content: center; align-items: center;
+            z-index: 9999; flex-direction: column; gap: 20px;
         }
-        #controls kbd {
-            background: rgba(255,255,255,0.1);
-            padding: 2px 10px;
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.1);
-            margin: 0 2px;
-            font-weight: bold;
-            color: #ffcc00;
+        #loading .spinner {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #ffdd00;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading p { color: #888; font-size: 16px; }
+        #controls-hint {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: rgba(255,255,255,0.5);
+            padding: 8px 20px; border-radius: 20px; font-size: 12px;
+            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.05);
+            z-index: 100; pointer-events: none; text-align: center;
+        }
+        #controls-hint span { color: rgba(255,255,255,0.7); font-weight: bold; }
         
-        #message {
-            position: absolute;
+        #volume-controls {
+            position: fixed;
+            right: 20px;
             top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 48px;
-            font-weight: bold;
-            text-shadow: 0 0 30px rgba(255,200,0,0.3);
+            transform: translateY(-50%);
             z-index: 200;
-            text-align: center;
-            pointer-events: none;
-            display: none;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
             background: rgba(0,0,0,0.7);
-            padding: 30px 50px;
-            border-radius: 20px;
-            border: 2px solid rgba(255,200,0,0.3);
+            padding: 15px 20px;
+            border-radius: 12px;
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        #message .sub {
-            font-size: 20px;
-            color: #aaa;
-            margin-top: 10px;
+        #volume-controls .slider-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        #volume-controls .slider-group label {
+            color: #fff;
+            font-size: 11px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            letter-spacing: 0.5px;
+        }
+        #volume-controls .slider-group input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 80px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+            cursor: pointer;
+        }
+        #volume-controls .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ffdd00;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,220,0,0.3);
+        }
+        #volume-controls .slider-group input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ffdd00;
+            cursor: pointer;
+            border: none;
+        }
+        #volume-controls .volume-value {
+            color: rgba(255,255,255,0.5);
+            font-size: 10px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-width: 30px;
+            text-align: center;
+        }
+        #music-status {
+            color: rgba(255,255,255,0.3);
+            font-size: 9px;
+            text-align: center;
+            margin-top: 5px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        @media (max-width: 768px) {
+            #volume-controls {
+                right: 10px;
+                padding: 10px 12px;
+                gap: 12px;
+            }
+            #volume-controls .slider-group input[type="range"] {
+                width: 50px;
+            }
+            #volume-controls .slider-group label {
+                font-size: 9px;
+            }
         }
     </style>
 </head>
 <body>
-
-    <div id="controls">
-        <kbd>W</kbd> Gas · <kbd>S</kbd> Brake · <kbd>A</kbd> <kbd>D</kbd> Steer · <kbd>R</kbd> Restart
-    </div>
-
-    <div id="message">
-        <div id="msgTitle">🏆 WIN!</div>
-        <div class="sub" id="msgSub">Press R to restart</div>
-    </div>
+    <div id="loading"><div class="spinner"></div><p>Загрузка игры...</p></div>
+    <div id="game-container"></div>
+    <div id="controls-hint"><span>W</span> — газ · <span>S</span> — тормоз · <span>A</span><span>D</span> — руль · <span>Q</span> — выход</div>
 
     <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js"
+            }
         }
-    }
     </script>
-    <script type="module" src="./dist/assets/index-Ccev0jFi.js"></script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        window.THREE = THREE;
+
+        console.log('=== 🏎️ ДОРОЖНЫЙ ПРОРЫВ ===');
+
+        setTimeout(() => {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.style.transition = 'opacity 0.5s ease';
+                loading.style.opacity = '0';
+                setTimeout(() => loading.remove(), 600);
+            }
+        }, 300);
+
+        // ============================================================
+        // КЭШИРОВАННЫЕ ВЕКТОРЫ
+        // ============================================================
+        const _v = {
+            pos: new THREE.Vector3(),
+            vel: new THREE.Vector3(),
+            p1: new THREE.Vector3(),
+            p2: new THREE.Vector3(),
+            p3: new THREE.Vector3(),
+            p4: new THREE.Vector3(),
+            dir: new THREE.Vector3()
+        };
+
+        // ============================================================
+        // БАЗА ДАННЫХ ВИДОВ ЖИВОТНЫХ
+        // ============================================================
+        const ANIMAL_TYPES = {
+            DOG: { id: 'dog', name: 'Собака', width: 0.50, height: 0.38, color: 0xA0522D, accentColor: 0x8B4513, speedCross: 4.0, speedZ: 0.02, penalty: 0.35, timePenalty: 4, radius: 0.60, design: 'dog', emoji: '🐕' },
+            CAT: { id: 'cat', name: 'Кот', width: 0.40, height: 0.30, color: 0xFF8C00, accentColor: 0xFFE4B5, speedCross: 5.0, speedZ: 0.015, penalty: 0.25, timePenalty: 3, radius: 0.50, design: 'cat', emoji: '🐈' },
+            DEER: { id: 'deer', name: 'Олень', width: 0.70, height: 0.65, color: 0xCD853F, accentColor: 0xFFFFFF, speedCross: 5.5, speedZ: 0.025, penalty: 0.45, timePenalty: 6, radius: 0.80, design: 'deer', emoji: '🦌' },
+            BOAR: { id: 'boar', name: 'Кабан', width: 0.65, height: 0.50, color: 0x4A3B32, accentColor: 0x1A1A1A, speedCross: 3.5, speedZ: 0.02, penalty: 0.5, timePenalty: 5, radius: 0.75, design: 'boar', emoji: '🐗' },
+            FOX: { id: 'fox', name: 'Лиса', width: 0.45, height: 0.33, color: 0xFF4500, accentColor: 0xFFFFFF, speedCross: 4.5, speedZ: 0.018, penalty: 0.3, timePenalty: 3.5, radius: 0.55, design: 'fox', emoji: '🦊' },
+            BEAR: { id: 'bear', name: 'Медведь', width: 0.90, height: 0.80, color: 0x5C4033, accentColor: 0x3D2B1F, speedCross: 2.5, speedZ: 0.015, penalty: 0.6, timePenalty: 7, radius: 1.00, design: 'bear', emoji: '🐻' },
+            HUMAN: { id: 'human', name: 'Человек', width: 0.42, height: 0.45, color: 0xE8C9A0, accentColor: 0x3366CC, speedCross: 4.0, speedZ: 0.025, penalty: 0.2, timePenalty: 3, radius: 0.52, design: 'human', emoji: '👤' }
+        };
+        const ANIMAL_KEYS = Object.keys(ANIMAL_TYPES);
+
+        // ============================================================
+        // РИСОВАНИЕ ЖИВОТНЫХ НА CANVAS
+        // ============================================================
+        function drawCat(ctx, w, h, color, accentColor, legWiggle) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, w/2, h/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(w/2 - 4, -h/4, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(w/2 - 8, -h/2 - 4);
+            ctx.lineTo(w/2 - 14, -h/2 - 14);
+            ctx.lineTo(w/2 - 2, -h/2 - 6);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(w/2 + 4, -h/2 - 4);
+            ctx.lineTo(w/2 + 10, -h/2 - 14);
+            ctx.lineTo(w/2 + 16, -h/2 - 6);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(w/2 - 6, -h/4 - 2, 3, 0, Math.PI * 2);
+            ctx.arc(w/2 + 2, -h/4 - 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(w/2 - 4, -h/4 - 1, 1.5, 0, Math.PI * 2);
+            ctx.arc(w/2 + 4, -h/4 - 1, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ff9999';
+            ctx.beginPath();
+            ctx.arc(w/2 - 2, -h/4 + 4, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            for (let i = -2; i <= 2; i+=2) {
+                ctx.beginPath();
+                ctx.moveTo(w/2 - 4, -h/4 + 4 + i);
+                ctx.lineTo(w/2 - 12, -h/4 + 6 + i);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(w/2, -h/4 + 4 + i);
+                ctx.lineTo(w/2 + 8, -h/4 + 6 + i);
+                ctx.stroke();
+            }
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(-w/3, h/4, 4, 6 + legWiggle);
+            ctx.fillRect(w/4, h/4, 4, 6 - legWiggle);
+            ctx.fillRect(-w/4, h/4, 4, 6 + legWiggle);
+            ctx.fillRect(w/3, h/4, 4, 6 - legWiggle);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-w/2 + 2, 0);
+            ctx.quadraticCurveTo(-w/2 - 10, -h/2 - 2, -w/2 - 6, -h/2 - 8);
+            ctx.stroke();
+        }
+
+        function drawDog(ctx, w, h, color, accentColor, legWiggle) {
+            ctx.fillStyle = color;
+            ctx.fillRect(-w/2, -h/2, w, h * 0.7);
+            ctx.beginPath();
+            ctx.arc(w/3, -h/2 + 6, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = accentColor;
+            ctx.beginPath();
+            ctx.ellipse(w/3 + 5, -h/2 + 9, 5, 3.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(w/3 + 8, -h/2 + 9, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(w/3 - 2, -h/2 + 3, 2.5, 0, Math.PI * 2);
+            ctx.arc(w/3 + 6, -h/2 + 3, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(w/3, -h/2 + 4, 1.2, 0, Math.PI * 2);
+            ctx.arc(w/3 + 8, -h/2 + 4, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = accentColor;
+            ctx.beginPath();
+            ctx.ellipse(w/3 - 5, -h/2 - 2, 3, 6, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(w/3 + 10, -h/2 - 2, 3, 6, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(-w/3, h/3, 4, 6 + legWiggle);
+            ctx.fillRect(w/4, h/3, 4, 6 - legWiggle);
+            ctx.fillRect(-w/4, h/3, 4, 6 + legWiggle);
+            ctx.fillRect(w/3, h/3, 4, 6 - legWiggle);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-w/2, -h/4);
+            ctx.quadraticCurveTo(-w/2 - 8, -h/2 - 2, -w/2 - 4, -h/2 - 10);
+            ctx.stroke();
+        }
+
+        function drawDeer(ctx, w, h, color, accentColor, legWiggle) {
+            ctx.fillStyle = color;
+            ctx.fillRect(-w/2, -h/4, w, h * 0.5);
+            ctx.beginPath();
+            ctx.arc(w/3, -h/2 + 4, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(w/3 - 3, -h/2 + 4, 6, 10);
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(w/3 - 2, -h/2 + 2, 2, 0, Math.PI * 2);
+            ctx.arc(w/3 + 6, -h/2 + 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(w/3, -h/2 + 3, 1.2, 0, Math.PI * 2);
+            ctx.arc(w/3 + 8, -h/2 + 3, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#5a3d2b';
+            ctx.lineWidth = 2;
+            for (let side of [-1, 1]) {
+                const baseX = w/3 + 4 + side * 2;
+                ctx.beginPath();
+                ctx.moveTo(baseX, -h/2 + 2);
+                ctx.lineTo(baseX + side * 10, -h/2 - 14);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(baseX + side * 5, -h/2 - 8);
+                ctx.lineTo(baseX + side * 12, -h/2 - 12);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(baseX + side * 6, -h/2 - 4);
+                ctx.lineTo(baseX + side * 14, -h/2 - 6);
+                ctx.stroke();
+            }
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(-w/3, h/4, 3, 8 + legWiggle);
+            ctx.fillRect(w/4, h/4, 3, 8 - legWiggle);
+            ctx.fillRect(-w/4, h/4, 3, 8 + legWiggle);
+            ctx.fillRect(w/3, h/4, 3, 8 - legWiggle);
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            for (let i = 0; i < 4; i++) {
+                const x = -w/3 + Math.random() * w * 0.6;
+                const y = -h/8 + Math.random() * h * 0.3;
+                ctx.beginPath();
+                ctx.arc(x, y, 2 + Math.random() * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawBoar(ctx, w, h, color, accentColor, legWiggle) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, w/2, h/2.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(w/3, -h/6);
+            ctx.quadraticCurveTo(w/2 + 3, -h/6, w/2 + 6, 0);
+            ctx.quadraticCurveTo(w/2 + 3, h/6, w/3, h/6);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.ellipse(w/2 + 4, 0, 3, 2.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(w/3 + 2, -2, 2, 0, Math.PI * 2);
+            ctx.arc(w/3 + 8, -2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(w/3 + 3, -1, 1.2, 0, Math.PI * 2);
+            ctx.arc(w/3 + 9, -1, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#eee';
+            ctx.beginPath();
+            ctx.moveTo(w/2 + 3, 2);
+            ctx.lineTo(w/2 + 4, 6);
+            ctx.lineTo(w/2 + 1, 5);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(w/2 + 6, 2);
+            ctx.lineTo(w/2 + 7, 6);
+            ctx.lineTo(w/2 + 4, 5);
+            ctx.fill();
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(-w/3, h/3, 5, 5 + legWiggle);
+            ctx.fillRect(w/4, h/3, 5, 5 - legWiggle);
+            ctx.fillRect(-w/4, h/3, 5, 5 + legWiggle);
+            ctx.fillRect(w/3, h/3, 5, 5 - legWiggle);
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 6; i++) {
+                const x = -w/3 + i * w/6;
+                ctx.beginPath();
+                ctx.moveTo(x, -h/4);
+                ctx.lineTo(x + 1, -h/4 - 3);
+                ctx.stroke();
+            }
+        }
+
+        function drawFox(ctx, w, h, color, accentColor, legWiggle) {
+            ctx.fillStyle = color;
+            ctx.fillRect(-w/2, -h/2, w, h * 0.6);
+            ctx.beginPath();
+            ctx.moveTo(w/3, -h/3);
+            ctx.quadraticCurveTo(w/2 + 3, -h/3, w/2 + 8, 0);
+            ctx.quadraticCurveTo(w/2 + 3, h/3, w/3, h/3);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(w/3 - 3, -h/3);
+            ctx.lineTo(w/3 - 8, -h/2 - 3);
+            ctx.lineTo(w/3 + 2, -h/3 + 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(w/3 + 8, -h/3);
+            ctx.lineTo(w/3 + 13, -h/2 - 3);
+            ctx.lineTo(w/3 + 4, -h/3 + 2);
+            ctx.fill();
+            ctx.fillStyle = accentColor;
+            ctx.beginPath();
+            ctx.moveTo(w/3 - 1, -h/3 + 2);
+            ctx.lineTo(w/3 - 5, -h/2);
+            ctx.lineTo(w/3 + 3, -h/3 + 4);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(w/3 + 7, -h/3 + 2);
+            ctx.lineTo(w/3 + 11, -h/2);
+            ctx.lineTo(w/3 + 4, -h/3 + 4);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(w/3 + 2, -2, 2.5, 0, Math.PI * 2);
+            ctx.arc(w/3 + 8, -2, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(w/3 + 3, -1, 1.2, 0, Math.PI * 2);
+            ctx.arc(w/3 + 9, -1, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(w/2 + 6, 0, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(-w/3, h/3, 3, 6 + legWiggle);
+            ctx.fillRect(w/4, h/3, 3, 6 - legWiggle);
+            ctx.fillRect(-w/4, h/3, 3, 6 + legWiggle);
+            ctx.fillRect(w/3, h/3, 3, 6 - legWiggle);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(-w/2 + 2, 0);
+            ctx.quadraticCurveTo(-w/2 - 10, -h/3 - 3, -w/2 - 5, -h/2 - 5);
+            ctx.quadraticCurveTo(-w/2 - 1, -h/2 - 8, -w/2 + 2, -h/2 - 3);
+            ctx.fill();
+            ctx.fillStyle = accentColor;
+            ctx.beginPath();
+            ctx.arc(-w/2 - 2, -h/2 - 5, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawBear(ctx, w, h, color, accentColor, legWiggle) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, w/2, h/2.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(w/4, -h/4, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(w/4 - 10, -h/4 - 8, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(w/4 + 10, -h/4 - 8, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = accentColor;
+            ctx.beginPath();
+            ctx.arc(w/4 - 10, -h/4 - 8, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(w/4 + 10, -h/4 - 8, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(w/4 - 4, -h/4 - 2, 2.5, 0, Math.PI * 2);
+            ctx.arc(w/4 + 6, -h/4 - 2, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(w/4 - 2, -h/4 - 1, 1.2, 0, Math.PI * 2);
+            ctx.arc(w/4 + 8, -h/4 - 1, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(w/4 + 1, -h/4 + 5, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(w/4 + 1, -h/4 + 7, 2.5, 0.1, Math.PI - 0.1);
+            ctx.stroke();
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(-w/3, h/3, 7, 8 + legWiggle);
+            ctx.fillRect(w/4, h/3, 7, 8 - legWiggle);
+            ctx.fillRect(-w/4, h/3, 7, 8 + legWiggle);
+            ctx.fillRect(w/3, h/3, 7, 8 - legWiggle);
+        }
+
+        function drawHuman(ctx, w, h, color, accentColor, legWiggle) {
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(-w*0.2, -h*0.1, w*0.4, h*0.5);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, -h*0.25, w*0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#332211';
+            ctx.beginPath();
+            ctx.arc(0, -h*0.3, w*0.2, Math.PI, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(-3, -h*0.27, 2, 0, Math.PI * 2);
+            ctx.arc(3, -h*0.27, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(-2, -h*0.26, 1.2, 0, Math.PI * 2);
+            ctx.arc(4, -h*0.26, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#aa8866';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -h*0.22);
+            ctx.lineTo(0, -h*0.18);
+            ctx.stroke();
+            ctx.strokeStyle = '#cc8866';
+            ctx.beginPath();
+            ctx.arc(0, -h*0.14, 3, 0.1, Math.PI - 0.1);
+            ctx.stroke();
+            ctx.fillStyle = '#445566';
+            ctx.fillRect(-w*0.15, h*0.1, w*0.1, h*0.3 + legWiggle);
+            ctx.fillRect(w*0.05, h*0.1, w*0.1, h*0.3 - legWiggle);
+            ctx.fillStyle = color;
+            ctx.fillRect(-w*0.35, -h*0.05, w*0.08, h*0.25);
+            ctx.fillRect(w*0.27, -h*0.05, w*0.08, h*0.25);
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-w*0.17, h*0.38, w*0.12, 3);
+            ctx.fillRect(w*0.03, h*0.38, w*0.12, 3);
+        }
+
+        // ============================================================
+        // СОЗДАНИЕ 3D МОДЕЛИ ЖИВОТНОГО
+        // ============================================================
+        const _animalAssetCache = {};
+
+        function getAnimalAssets(typeId) {
+            if (_animalAssetCache[typeId]) return _animalAssetCache[typeId];
+
+            const type = ANIMAL_TYPES[typeId] || ANIMAL_TYPES.DOG;
+            const canvas = document.createElement('canvas');
+            const size = 128;
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const cx = size/2;
+            const cy = size/2;
+            const scale = size/2;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const w = type.width * scale * 1.2;
+            const h = type.height * scale * 1.2;
+            const color = '#' + type.color.toString(16).padStart(6, '0');
+            const accentColor = '#' + type.accentColor.toString(16).padStart(6, '0');
+            const legWiggle = 0;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            switch (type.design) {
+                case 'cat': drawCat(ctx, w, h, color, accentColor, legWiggle); break;
+                case 'dog': drawDog(ctx, w, h, color, accentColor, legWiggle); break;
+                case 'deer': drawDeer(ctx, w, h, color, accentColor, legWiggle); break;
+                case 'boar': drawBoar(ctx, w, h, color, accentColor, legWiggle); break;
+                case 'fox': drawFox(ctx, w, h, color, accentColor, legWiggle); break;
+                case 'bear': drawBear(ctx, w, h, color, accentColor, legWiggle); break;
+                case 'human': drawHuman(ctx, w, h, color, accentColor, legWiggle); break;
+            }
+            ctx.restore();
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+
+            const spriteMaterial = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true,
+                depthTest: true,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                opacity: 1.0
+            });
+
+            const shadowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                transparent: true,
+                opacity: 0.35
+            });
+            const shadowGeometry = new THREE.CircleGeometry(type.width * 0.55, 8);
+
+            const assets = { type, texture, spriteMaterial, shadowMaterial, shadowGeometry };
+            _animalAssetCache[typeId] = assets;
+            return assets;
+        }
+
+        function createAnimalMesh(typeId) {
+            const assets = getAnimalAssets(typeId);
+            const type = assets.type;
+            const group = new THREE.Group();
+
+            const sprite = new THREE.Sprite(assets.spriteMaterial);
+            sprite.scale.set(type.width * 1.2, type.height * 1.2, 1);
+            sprite.position.y = type.height * 0.5;
+            group.add(sprite);
+
+            const shadow = new THREE.Mesh(assets.shadowGeometry, assets.shadowMaterial);
+            shadow.rotation.x = -Math.PI / 2;
+            shadow.position.y = 0.02;
+            group.add(shadow);
+
+            group.userData = {
+                type: typeId,
+                sprite: sprite
+            };
+            return group;
+        }
+
+        // ============================================================
+        // ЗВУКОВОЙ ДВИЖОК - ИСПРАВЛЕННЫЙ (БЕЗ ЗАДВОЕНИЯ)
+        // ============================================================
+        class SoundEngine {
+            constructor() {
+                this.audioCtx = null;
+                this.engineNode = null;
+                this.engineGain = null;
+                this.isPlaying = false;
+                this.engineFrequency = 80;
+                this.engineVolume = 0.10;
+                this.speed = 0;
+                this.maxSpeed = 0.35;
+                this.enabled = true;
+                this.musicInterval = null;
+                this.isMusicPlaying = false;
+                this.initialized = false;
+                this.musicStarted = false;
+                this.musicGain = null;
+                this.musicNodes = [];
+                this.musicVolume = 0.5;
+                this.engineVolumeMultiplier = 0.5;
+                this.musicBuffer = null;
+                this.currentMusicSource = null;
+                this.noiseBuffer = null;
+                this.musicUrl = 'music/race-music.mp3';
+                this.musicLoaded = false;
+                
+                // ════════════════════════════════════════════════════════
+                // ПЕРЕМЕННЫЕ ДЛЯ ПРЕДОТВРАЩЕНИЯ ЗАДВОЕНИЯ
+                // ════════════════════════════════════════════════════════
+                this._engineStartTimeout = null;
+                this._engineStopTimeout = null;
+                this._isEngineStopping = false;
+                this._engineId = 0;
+            }
+
+            init() {
+                try {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('🔊 AudioContext создан, состояние:', this.audioCtx.state);
+                    
+                    this.engineGain = this.audioCtx.createGain();
+                    this.engineGain.gain.value = 0;
+                    this.engineGain.connect(this.audioCtx.destination);
+                    
+                    this.musicGain = this.audioCtx.createGain();
+                    this.musicGain.gain.value = 0.08 * this.musicVolume;
+                    this.musicGain.connect(this.audioCtx.destination);
+                    
+                    this.noiseBuffer = this.createNoiseBuffer();
+                    
+                    this.enabled = true;
+                    this.initialized = true;
+
+                    this.loadMusic();
+                    this.createVolumeControls();
+                    this.startMusic();
+
+                    const resumeAudio = () => {
+                        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                            this.audioCtx.resume().then(() => {
+                                console.log('🔊 AudioContext возобновлен, состояние:', this.audioCtx.state);
+                                if (!this.isMusicPlaying) this.startMusic();
+                            });
+                        }
+                    };
+                    document.addEventListener('click', resumeAudio, { once: false });
+                    document.addEventListener('keydown', resumeAudio, { once: false });
+
+                    return true;
+                } catch (e) {
+                    console.warn('⚠️ Аудио не поддерживается:', e);
+                    this.enabled = false;
+                    return false;
+                }
+            }
+
+            createNoiseBuffer() {
+                if (!this.audioCtx) return null;
+                try {
+                    const bufferSize = Math.floor(this.audioCtx.sampleRate * 0.1);
+                    const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+                    }
+                    return buffer;
+                } catch (e) { return null; }
+            }
+
+            createVolumeControls() {
+                const oldControls = document.getElementById('volume-controls');
+                if (oldControls) oldControls.remove();
+
+                const controls = document.createElement('div');
+                controls.id = 'volume-controls';
+                
+                const musicStatus = this.musicLoaded ? '🎵 MP3' : '🎵 Синтез';
+                
+                controls.innerHTML = `
+                    <div class="slider-group">
+                        <label>🎵 МУЗЫКА</label>
+                        <input type="range" id="music-volume" min="0" max="100" value="${Math.round(this.musicVolume * 100)}">
+                        <span class="volume-value" id="music-volume-value">${Math.round(this.musicVolume * 100)}%</span>
+                        <span id="music-status" style="color:rgba(255,255,255,0.3);font-size:9px;">${musicStatus}</span>
+                    </div>
+                    <div class="slider-group">
+                        <label>🏎️ ДВИГАТЕЛЬ</label>
+                        <input type="range" id="engine-volume" min="0" max="100" value="${Math.round(this.engineVolumeMultiplier * 100)}">
+                        <span class="volume-value" id="engine-volume-value">${Math.round(this.engineVolumeMultiplier * 100)}%</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(controls);
+
+                const musicSlider = document.getElementById('music-volume');
+                const musicValue = document.getElementById('music-volume-value');
+                musicSlider.addEventListener('input', () => {
+                    const val = parseInt(musicSlider.value) / 100;
+                    this.musicVolume = val;
+                    musicValue.textContent = Math.round(val * 100) + '%';
+                    if (this.musicGain) {
+                        this.musicGain.gain.setValueAtTime(0.08 * val, this.audioCtx.currentTime);
+                    }
+                });
+
+                const engineSlider = document.getElementById('engine-volume');
+                const engineValue = document.getElementById('engine-volume-value');
+                engineSlider.addEventListener('input', () => {
+                    const val = parseInt(engineSlider.value) / 100;
+                    this.engineVolumeMultiplier = val;
+                    engineValue.textContent = Math.round(val * 100) + '%';
+                    if (this.isPlaying && this.engineGain) {
+                        const currentVolume = this.engineVolume * val;
+                        this.engineGain.gain.setValueAtTime(currentVolume, this.audioCtx.currentTime);
+                    }
+                });
+            }
+
+            // ════════════════════════════════════════════════════════
+            // МУЗЫКА
+            // ════════════════════════════════════════════════════════
+            async loadMusic() {
+                try {
+                    console.log('🎵 Загрузка музыки из:', this.musicUrl);
+                    const response = await fetch(this.musicUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status} - файл не найден`);
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.musicBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
+                    this.musicLoaded = true;
+                    
+                    console.log(`✅ Музыка успешно загружена! Длительность: ${Math.round(this.musicBuffer.duration)} сек`);
+                    
+                    const statusEl = document.getElementById('music-status');
+                    if (statusEl) statusEl.textContent = '🎵 MP3';
+                    
+                    if (this.isMusicPlaying) {
+                        this.stopMusic();
+                        this.startMusic();
+                    }
+                    
+                    return true;
+                } catch (e) {
+                    console.warn('⚠️ Не удалось загрузить музыку:', e.message);
+                    console.warn('▶️ Будет использована встроенная синтезированная музыка');
+                    console.warn('💡 Положите MP3 файл в папку music/ с именем race-music.mp3');
+                    
+                    this.musicBuffer = null;
+                    this.musicLoaded = false;
+                    
+                    const statusEl = document.getElementById('music-status');
+                    if (statusEl) statusEl.textContent = '🎵 Синтез';
+                    
+                    return false;
+                }
+            }
+
+            startMusic() {
+                if (!this.enabled || !this.audioCtx) {
+                    console.log('❌ Музыка не может быть запущена - аудио отключено');
+                    return;
+                }
+                if (this.isMusicPlaying) {
+                    console.log('🎵 Музыка уже играет');
+                    return;
+                }
+                
+                console.log('🎵 Запуск музыки... состояние AudioContext:', this.audioCtx.state);
+                
+                if (this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume().then(() => {
+                        console.log('🔊 AudioContext возобновлен, запускаем музыку');
+                        this._playMusic();
+                    }).catch(e => {
+                        console.warn('⚠️ Не удалось возобновить AudioContext:', e);
+                    });
+                } else {
+                    this._playMusic();
+                }
+            }
+
+            _playMusic() {
+                if (this.isMusicPlaying) return;
+                if (this.audioCtx.state !== 'running') {
+                    console.log('⏳ AudioContext не running, состояние:', this.audioCtx.state);
+                    return;
+                }
+                
+                console.log('🎵 МУЗЫКА ЗАПУЩЕНА!');
+                this.isMusicPlaying = true;
+                this.musicStarted = true;
+                
+                if (this.musicBuffer && this.musicLoaded) {
+                    this._playLoadedMusic();
+                } else {
+                    this._playGeneratedMusic();
+                }
+            }
+
+            _playLoadedMusic() {
+                if (!this.musicBuffer || !this.musicLoaded) {
+                    this._playGeneratedMusic();
+                    return;
+                }
+                
+                try {
+                    const source = this.audioCtx.createBufferSource();
+                    source.buffer = this.musicBuffer;
+                    
+                    const gainNode = this.audioCtx.createGain();
+                    gainNode.gain.value = 3.08 * this.musicVolume;
+                    
+                    source.connect(gainNode);
+                    gainNode.connect(this.musicGain);
+                    source.start();
+                    
+                    source.onended = () => {
+                        if (this.isMusicPlaying) {
+                            this.currentMusicSource = null;
+                            setTimeout(() => {
+                                if (this.isMusicPlaying) {
+                                    this._playLoadedMusic();
+                                }
+                            }, 100);
+                        }
+                    };
+                    
+                    this.currentMusicSource = source;
+                    this.musicNodes.push(source);
+                    
+                    console.log('🎵 Воспроизводится MP3 музыка');
+                    
+                } catch (e) {
+                    console.warn('Ошибка воспроизведения MP3:', e);
+                    this._playGeneratedMusic();
+                }
+            }
+
+            _playGeneratedMusic() {
+                if (this.musicInterval) clearInterval(this.musicInterval);
+                this._playMusicLoop();
+                this.musicInterval = setInterval(() => this._playMusicLoop(), 4000);
+            }
+
+            _playMusicLoop() {
+                if (!this.enabled || !this.audioCtx || !this.isMusicPlaying) return;
+                if (this.audioCtx.state !== 'running') return;
+                if (this.musicBuffer && this.musicLoaded) return;
+                
+                try {
+                    const startTime = this.audioCtx.currentTime + 0.05;
+                    
+                    const melody = [
+                        [523, 0.12], [0, 0.04], [587, 0.12], [0, 0.04], 
+                        [659, 0.12], [0, 0.04], [784, 0.25],
+                        [659, 0.12], [0, 0.04], [587, 0.12], [0, 0.04],
+                        [523, 0.12], [0, 0.04], [587, 0.25],
+                    ];
+
+                    const bass = [
+                        [130, 0.15], [0, 0.05], [130, 0.15], [0, 0.05],
+                        [146, 0.15], [0, 0.05], [146, 0.15], [0, 0.05],
+                    ];
+
+                    const chords = [
+                        [523, 659, 784],
+                        [587, 740, 880],
+                    ];
+
+                    let time = 0;
+
+                    melody.forEach(([freq, duration]) => {
+                        if (freq === 0) {
+                            time += duration;
+                            return;
+                        }
+                        const osc = this.audioCtx.createOscillator();
+                        const gain = this.audioCtx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.05 * this.musicVolume, startTime + time);
+                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + time + duration);
+                        osc.connect(gain);
+                        gain.connect(this.musicGain);
+                        osc.start(startTime + time);
+                        osc.stop(startTime + time + duration + 0.01);
+                        this.musicNodes.push(osc);
+                        time += duration;
+                    });
+
+                    time = 0.1;
+                    bass.forEach(([freq, duration]) => {
+                        if (freq === 0) {
+                            time += duration;
+                            return;
+                        }
+                        const osc = this.audioCtx.createOscillator();
+                        const gain = this.audioCtx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.06 * this.musicVolume, startTime + time);
+                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + time + duration);
+                        osc.connect(gain);
+                        gain.connect(this.musicGain);
+                        osc.start(startTime + time);
+                        osc.stop(startTime + time + duration + 0.01);
+                        this.musicNodes.push(osc);
+                        time += duration;
+                    });
+
+                    chords.forEach((chord, ci) => {
+                        chord.forEach(freq => {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.value = freq;
+                            gain.gain.setValueAtTime(0.025 * this.musicVolume, startTime + 0.3 + ci * 0.8);
+                            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3 + ci * 0.8 + 0.5);
+                            osc.connect(gain);
+                            gain.connect(this.musicGain);
+                            osc.start(startTime + 0.3 + ci * 0.8);
+                            osc.stop(startTime + 0.3 + ci * 0.8 + 0.5);
+                            this.musicNodes.push(osc);
+                        });
+                    });
+
+                    if (this.noiseBuffer) {
+                        for (let i = 0; i < 2; i++) {
+                            const noise = this.audioCtx.createBufferSource();
+                            noise.buffer = this.noiseBuffer;
+                            const gain = this.audioCtx.createGain();
+                            gain.gain.setValueAtTime(0.04 * this.musicVolume, startTime + 0.5 + i * 0.9);
+                            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5 + i * 0.9 + 0.08);
+                            noise.connect(gain);
+                            gain.connect(this.musicGain);
+                            noise.start(startTime + 0.5 + i * 0.9);
+                        }
+                    }
+
+                } catch (e) {
+                    console.warn('Музыкальная ошибка:', e);
+                }
+            }
+
+            stopMusic() {
+                this.isMusicPlaying = false;
+                this.musicStarted = false;
+                if (this.musicInterval) {
+                    clearInterval(this.musicInterval);
+                    this.musicInterval = null;
+                }
+                if (this.currentMusicSource) {
+                    try {
+                        this.currentMusicSource.stop();
+                        this.currentMusicSource.disconnect();
+                    } catch (e) {}
+                    this.currentMusicSource = null;
+                }
+                if (this.musicGain) {
+                    try { this.musicGain.gain.setValueAtTime(0, this.audioCtx.currentTime); } catch (e) {}
+                }
+                this.musicNodes.forEach(node => {
+                    try { node.stop(); } catch (e) {}
+                });
+                this.musicNodes = [];
+            }
+
+            // ════════════════════════════════════════════════════════
+            // ЗВУК ДВИГАТЕЛЯ - ПОЛНОСТЬЮ ПЕРЕПИСАН
+            // ════════════════════════════════════════════════════════
+            update(speed) {
+                if (!this.enabled || !this.audioCtx || !this.initialized) return;
+                this.speed = speed;
+
+                const normalizedSpeed = Math.abs(speed) / this.maxSpeed;
+                const targetFreq = 55 + normalizedSpeed * 180;
+                const targetVolume = (0.01 + normalizedSpeed * 0.15) * this.engineVolumeMultiplier;
+
+                // Если скорость > 0 и двигатель не играет - запускаем
+                if (Math.abs(speed) > 0.01) {
+                    // Отменяем запланированную остановку
+                    if (this._engineStopTimeout) {
+                        clearTimeout(this._engineStopTimeout);
+                        this._engineStopTimeout = null;
+                        this._isEngineStopping = false;
+                    }
+                    
+                    // Если двигатель не запущен - запускаем
+                    if (!this.isPlaying) {
+                        this.startEngine();
+                    }
+                    
+                    // Обновляем частоту и громкость
+                    this.engineFrequency += (targetFreq - this.engineFrequency) * 0.15;
+                    this.engineVolume += (targetVolume - this.engineVolume) * 0.15;
+                    
+                    if (this.engineNode && this.engineGain) {
+                        try {
+                            this.engineNode.frequency.setValueAtTime(this.engineFrequency, this.audioCtx.currentTime);
+                            this.engineGain.gain.setValueAtTime(this.engineVolume, this.audioCtx.currentTime);
+                        } catch (e) {
+                            this.restartEngine();
+                        }
+                    }
+                } else {
+                    // Скорость = 0 - запускаем плавную остановку
+                    if (this.isPlaying) {
+                        this.stopEngineSmooth();
+                    }
+                }
+            }
+
+            startEngine() {
+                if (this.isPlaying || this._isEngineStopping) return;
+                if (!this.enabled || !this.audioCtx || !this.initialized) return;
+                
+                if (this._engineStartTimeout) {
+                    clearTimeout(this._engineStartTimeout);
+                    this._engineStartTimeout = null;
+                }
+                if (this._engineStopTimeout) {
+                    clearTimeout(this._engineStopTimeout);
+                    this._engineStopTimeout = null;
+                }
+                
+                try {
+                    this._engineId++;
+                    const currentId = this._engineId;
+                    
+                    const newEngineNode = this.audioCtx.createOscillator();
+                    newEngineNode.type = 'sawtooth';
+                    newEngineNode.frequency.value = this.engineFrequency;
+                    newEngineNode.connect(this.engineGain);
+                    
+                    this.engineGain.gain.setValueAtTime(this.engineVolume, this.audioCtx.currentTime);
+                    
+                    newEngineNode.start();
+                    
+                    this.engineNode = newEngineNode;
+                    this.isPlaying = true;
+                    this._isEngineStopping = false;
+                    
+                    console.log('🏎️ Двигатель запущен, ID:', currentId);
+                    
+                    newEngineNode.onended = () => {
+                        if (this.isPlaying && this._engineId === currentId) {
+                            console.log('⚠️ Двигатель остановился сам, перезапуск...');
+                            this.restartEngine();
+                        }
+                    };
+                    
+                } catch (e) {
+                    console.warn('Ошибка запуска двигателя:', e);
+                    this.engineNode = null;
+                    this.isPlaying = false;
+                }
+            }
+
+            stopEngineSmooth() {
+                if (this._isEngineStopping) return;
+                if (!this.isPlaying) return;
+                if (!this.engineNode) return;
+                
+                this._isEngineStopping = true;
+                
+                if (this._engineStopTimeout) {
+                    clearTimeout(this._engineStopTimeout);
+                    this._engineStopTimeout = null;
+                }
+                
+                try {
+                    if (this.engineGain) {
+                        this.engineGain.gain.setValueAtTime(this.engineVolume, this.audioCtx.currentTime);
+                        this.engineGain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.15);
+                    }
+                } catch (e) {}
+                
+                const currentId = this._engineId;
+                this._engineStopTimeout = setTimeout(() => {
+                    if (this._engineId === currentId) {
+                        this._stopEngineNow();
+                    }
+                    this._engineStopTimeout = null;
+                }, 200);
+            }
+
+            _stopEngineNow() {
+                try {
+                    if (this.engineNode) {
+                        try {
+                            this.engineNode.stop();
+                            this.engineNode.disconnect();
+                        } catch (e) {}
+                        this.engineNode = null;
+                    }
+                } catch (e) {}
+                
+                this.isPlaying = false;
+                this._isEngineStopping = false;
+                
+                if (this.engineGain) {
+                    try {
+                        this.engineGain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+                    } catch (e) {}
+                }
+            }
+
+            restartEngine() {
+                console.log('🔄 Перезапуск двигателя...');
+                this._stopEngineNow();
+                setTimeout(() => {
+                    if (Math.abs(this.speed) > 0.01) {
+                        this.startEngine();
+                    }
+                }, 50);
+            }
+
+            stopEngine() {
+                if (this._engineStartTimeout) {
+                    clearTimeout(this._engineStartTimeout);
+                    this._engineStartTimeout = null;
+                }
+                if (this._engineStopTimeout) {
+                    clearTimeout(this._engineStopTimeout);
+                    this._engineStopTimeout = null;
+                }
+                this._stopEngineNow();
+                this._isEngineStopping = false;
+            }
+
+            // ════════════════════════════════════════════════════════
+            // ЗВУКИ СОБЫТИЙ
+            // ════════════════════════════════════════════════════════
+            playFinishSound() {
+                if (!this.enabled || !this.audioCtx) return;
+                try {
+                    const notes = [523, 659, 784, 1047];
+                    notes.forEach((freq, i) => {
+                        const osc = this.audioCtx.createOscillator();
+                        const gain = this.audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.12 * this.musicVolume, this.audioCtx.currentTime + i * 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + i * 0.1 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(this.audioCtx.destination);
+                        osc.start(this.audioCtx.currentTime + i * 0.1);
+                        osc.stop(this.audioCtx.currentTime + i * 0.1 + 0.3);
+                    });
+                } catch (e) {}
+            }
+
+            playCrashSound(volumeScale = 1) {
+                if (!this.enabled || !this.audioCtx) return;
+                
+                try {
+                    const t0 = this.audioCtx.currentTime;
+                    
+                    const thud = this.audioCtx.createOscillator();
+                    const thudGain = this.audioCtx.createGain();
+                    thud.type = 'triangle';
+                    thud.frequency.setValueAtTime(150, t0);
+                    thud.frequency.exponentialRampToValueAtTime(30, t0 + 0.25);
+                    thudGain.gain.setValueAtTime(0.3 * volumeScale * this.engineVolumeMultiplier, t0);
+                    thudGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.3);
+                    thud.connect(thudGain);
+                    thudGain.connect(this.audioCtx.destination);
+                    thud.start(t0);
+                    thud.stop(t0 + 0.3);
+
+                    if (this.noiseBuffer) {
+                        const noise = this.audioCtx.createBufferSource();
+                        noise.buffer = this.noiseBuffer;
+                        const noiseGain = this.audioCtx.createGain();
+                        noiseGain.gain.setValueAtTime(0.15 * volumeScale * this.engineVolumeMultiplier, t0);
+                        noiseGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+                        noise.connect(noiseGain);
+                        noiseGain.connect(this.audioCtx.destination);
+                        noise.start(t0);
+                        noise.stop(t0 + 0.2);
+                    }
+                } catch (e) {}
+            }
+
+            dispose() {
+                if (this.audioCtx) {
+                    try { this.audioCtx.close(); } catch (e) {}
+                }
+                this.stopMusic();
+                this.stopEngine();
+            }
+        }
+
+        // ============================================================
+        // МЕНЮ КАЧЕСТВА
+        // ============================================================
+        function showQualityMenu() {
+            return new Promise((resolve) => {
+                const menu = document.createElement('div');
+                menu.id = 'quality-menu';
+                menu.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.95); padding: 30px 40px; border-radius: 20px;
+                    border: 2px solid rgba(255,255,255,0.15); color: #fff;
+                    font-family: 'Segoe UI', Arial, sans-serif; text-align: center;
+                    z-index: 1000; backdrop-filter: blur(15px); min-width: 300px;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.85);
+                `;
+                menu.innerHTML = `
+                    <h1 style="font-size:28px;margin-bottom:10px;color:#ffdd00;">🏎️ ДОРОЖНЫЙ ПРОРЫВ</h1>
+                    <p style="color:#bbb;margin-bottom:20px;font-size:14px;">Выберите качество графики</p>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <button data-quality="high" style="padding:12px 25px;border:2px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;">🔥 Высокое</button>
+                        <button data-quality="medium" style="padding:12px 25px;border:2px solid rgba(255,200,0,0.3);border-radius:10px;background:rgba(255,200,0,0.05);color:#fff;font-size:16px;cursor:pointer;">⚡ Среднее</button>
+                        <button data-quality="low" style="padding:12px 25px;border:2px solid rgba(0,255,100,0.2);border-radius:10px;background:rgba(0,255,100,0.05);color:#fff;font-size:16px;cursor:pointer;">🚀 Низкое</button>
+                    </div>
+                    <div style="margin-top:15px;font-size:12px;color:#666;">Нажмите Esc для выхода (по умолчанию Среднее)</div>
+                `;
+                document.body.appendChild(menu);
+
+                const keyHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        menu.remove();
+                        document.removeEventListener('keydown', keyHandler);
+                        resolve('medium');
+                    }
+                };
+                document.addEventListener('keydown', keyHandler);
+
+                menu.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const quality = btn.dataset.quality;
+                        menu.remove();
+                        document.removeEventListener('keydown', keyHandler);
+                        if (soundEngine && soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+                            soundEngine.audioCtx.resume();
+                        }
+                        resolve(quality);
+                    });
+                });
+            });
+        }
+
+        // ============================================================
+        // ОСНОВНАЯ ИГРА
+        // ============================================================
+        let soundEngine = null;
+
+        async function startGame() {
+            const quality = await showQualityMenu();
+            initGame(quality);
+        }
+
+        function initGame(quality) {
+            console.log(`🚀 Запуск с качеством: ${quality}`);
+            
+            if (soundEngine) soundEngine.dispose();
+            soundEngine = new SoundEngine();
+            soundEngine.init();
+            window.soundEngine = soundEngine;
+
+            // КОНСТАНТЫ
+            const TRACK_LENGTH = 1800;
+            const TRACK_WIDTH = 6;
+            const LANE_WIDTH = 2;
+            const TOTAL_LANES = 3;
+            const CAR_WIDTH = 0.8;
+            const TIME_LIMIT = 120;
+            const MAX_STRIKES = 5;
+            const TRIGGER_LOOKAHEAD = 12;
+            const FOG_NEAR = 45;
+
+            const START_Z = TRACK_LENGTH / 2 - 60;
+            const FINISH_Z = -TRACK_LENGTH / 2 + 20;
+
+            function lerp(a, b, t) { return a + (b - a) * t; }
+            function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
+            function formatTime(time) {
+                if (time === undefined || time === null || time === Infinity) return '--';
+                const m = Math.floor(time / 60);
+                const s = Math.floor(time % 60);
+                const ms = Math.floor((time % 1) * 10);
+                return `${m}:${String(s).padStart(2, '0')}.${ms}`;
+            }
+
+            const oldHud = document.getElementById('game-hud');
+            if (oldHud) oldHud.remove();
+            const oldFinish = document.getElementById('finish-screen');
+            if (oldFinish) oldFinish.remove();
+
+            // ============================================================
+            // HUD
+            // ============================================================
+            function createHUD() {
+                const hud = document.createElement('div');
+                hud.id = 'game-hud';
+                hud.style.cssText = `
+                    position: absolute; top: 20px; left: 20px;
+                    color: #fff; font-family: 'Segoe UI', Arial, sans-serif;
+                    font-size: 18px; font-weight: bold;
+                    text-shadow: 0 0 20px rgba(0,0,0,0.8);
+                    pointer-events: none;
+                    background: rgba(0,0,0,0.6);
+                    padding: 12px 20px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    backdrop-filter: blur(5px);
+                    min-width: 200px;
+                    z-index: 100;
+                `;
+                hud.innerHTML = `
+                    <div style="color:#ff8844;">⏱ ВРЕМЯ: <span id="timeDisplay" style="color:#fff;">2:00</span></div>
+                    <div style="color:#ff5555;">💥 АВАРИИ: <span id="strikesDisplay" style="color:#fff;">0 / ${MAX_STRIKES}</span></div>
+                    <div style="color:#88ccff;">⚡ СКОРОСТЬ: <span id="speedDisplay" style="color:#fff;">0</span> км/ч</div>
+                    <div style="margin-top:8px;">
+                        <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:6px;overflow:hidden;">
+                            <div id="progressBar" style="background:linear-gradient(90deg,#ffdd00,#ff8800);height:100%;width:0%;"></div>
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:#666;margin-top:4px;">${quality === 'high' ? '🔥' : quality === 'medium' ? '⚡' : '🚀'} ${quality}</div>
+                `;
+                document.body.appendChild(hud);
+            }
+            createHUD();
+
+            function updateHUD() {
+                const timeEl = document.getElementById('timeDisplay');
+                const speedEl = document.getElementById('speedDisplay');
+                const strikesEl = document.getElementById('strikesDisplay');
+                const progressBar = document.getElementById('progressBar');
+                
+                if (timeEl) {
+                    const remaining = TIME_LIMIT - raceTime;
+                    const m = Math.floor(Math.max(0, remaining) / 60);
+                    const s = Math.floor(Math.max(0, remaining) % 60);
+                    timeEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+                    timeEl.style.color = remaining <= 15 ? '#ff3333' : '#fff';
+                }
+                if (speedEl) speedEl.textContent = Math.round(Math.abs(speed) * 580);
+                if (strikesEl) {
+                    strikesEl.textContent = `${strikes} / ${MAX_STRIKES}`;
+                    strikesEl.style.color = strikes >= MAX_STRIKES - 1 ? '#ff5555' : '#fff';
+                }
+                if (progressBar) {
+                    const progress = Math.min(100, ((START_Z - zPos) / (START_Z - FINISH_Z)) * 100);
+                    progressBar.style.width = Math.max(0, progress) + '%';
+                }
+            }
+
+            // ============================================================
+            // ЭКРАН ОКОНЧАНИЯ
+            // ============================================================
+            function showEndScreen(state, timeTaken) {
+                const screen = document.createElement('div');
+                screen.id = 'finish-screen';
+                screen.style.cssText = `
+                    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.9); display: flex;
+                    justify-content: center; align-items: center; z-index: 500;
+                    backdrop-filter: blur(10px); font-family: 'Segoe UI', Arial, sans-serif;
+                `;
+
+                let title, color, message;
+                if (state === 'win') {
+                    title = strikes === 0 ? '🏆 ИДЕАЛЬНЫЙ ЗАЕЗД!' : '🏁 ФИНИШ!';
+                    color = '#ffdd00';
+                    message = `Время: ${formatTime(timeTaken)} · Аварий: ${strikes} / ${MAX_STRIKES}`;
+                } else if (state === 'timeout') {
+                    title = '⏰ ВРЕМЯ ВЫШЛО!';
+                    color = '#ff6644';
+                    message = `Не удалось доехать за ${TIME_LIMIT} секунд`;
+                } else {
+                    title = '💥 СЛИШКОМ МНОГО АВАРИЙ';
+                    color = '#ff3333';
+                    message = `Столкновений: ${strikes} / ${MAX_STRIKES}`;
+                }
+
+                screen.innerHTML = `
+                    <div style="background:rgba(0,0,0,0.95);padding:40px 50px;border-radius:20px;border:2px solid ${color};text-align:center;max-width:400px;box-shadow:0 20px 80px rgba(0,0,0,0.9);">
+                        <h1 style="font-size:36px;color:${color};margin-bottom:10px;">${title}</h1>
+                        <div style="font-size:16px;color:#fff;margin:10px 0;">${message}</div>
+                        <button onclick="location.reload()" style="padding:12px 30px;border:2px solid ${color};border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;margin-top:15px;">
+                            🔄 Заново
+                        </button>
+                        <div style="margin-top:10px;font-size:12px;color:#666;">Нажмите R для рестарта</div>
+                    </div>
+                `;
+                document.body.appendChild(screen);
+
+                if (state === 'win') soundEngine.playFinishSound();
+                else soundEngine.playCrashSound(1.2);
+            }
+
+            function endGame(state) {
+                if (gameState !== 'racing') return;
+                gameState = state;
+                soundEngine.stopEngine();
+                soundEngine.stopMusic();
+                document.removeEventListener('keydown', keydownHandler);
+                document.removeEventListener('keyup', keyupHandler);
+                window.removeEventListener('resize', resizeHandler);
+                const hud = document.getElementById('game-hud');
+                if (hud) hud.remove();
+                const timeTaken = raceTime;
+                setTimeout(() => showEndScreen(state, timeTaken), state === 'crash' ? 350 : 500);
+            }
+
+            // ============================================================
+            // СЦЕНА
+            // ============================================================
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x4a8db7);
+            scene.fog = new THREE.Fog(0x4a8db7, FOG_NEAR, 180);
+
+            // ============================================================
+            // ОСВЕЩЕНИЕ
+            // ============================================================
+            const ambient = new THREE.AmbientLight(0x446688, 0.55);
+            scene.add(ambient);
+            const hemi = new THREE.HemisphereLight(0x88ccff, 0x445533, 0.45);
+            scene.add(hemi);
+
+            const sunLight = new THREE.DirectionalLight(0xffeedd, 1.6);
+            sunLight.position.set(30, 50, 20);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            sunLight.shadow.camera.near = 1;
+            sunLight.shadow.camera.far = 150;
+            sunLight.shadow.camera.left = -25;
+            sunLight.shadow.camera.right = 25;
+            sunLight.shadow.camera.top = 25;
+            sunLight.shadow.camera.bottom = -25;
+            sunLight.target = new THREE.Object3D();
+            sunLight.target.position.set(0, 0, 0);
+            scene.add(sunLight.target);
+            scene.add(sunLight);
+
+            const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+            fillLight.position.set(-20, 30, -10);
+            scene.add(fillLight);
+
+            // ============================================================
+            // КАМЕРА
+            // ============================================================
+            const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 300);
+            camera.position.set(0, 8, 15);
+
+            // ============================================================
+            // РЕНДЕРЕР
+            // ============================================================
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            // ============================================================
+            // ТЕКСТУРЫ
+            // ============================================================
+            function createGrassTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#3a8a3a';
+                ctx.fillRect(0, 0, 128, 128);
+                for (let i = 0; i < 500; i++) {
+                    const x = Math.random() * 128;
+                    const y = Math.random() * 128;
+                    const len = 2 + Math.random() * 4;
+                    const shade = 40 + Math.random() * 80;
+                    ctx.strokeStyle = `rgb(${shade}, ${shade + 60}, ${shade - 20})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + (Math.random() - 0.5) * len, y + len);
+                    ctx.stroke();
+                }
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(80, 80);
+                return texture;
+            }
+
+            function createAsphaltTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#444455';
+                ctx.fillRect(0, 0, 128, 128);
+                for (let i = 0; i < 300; i++) {
+                    const x = Math.random() * 128;
+                    const y = Math.random() * 128;
+                    const sz = 1 + Math.random() * 2;
+                    const shade = 50 + Math.random() * 80;
+                    ctx.fillStyle = `rgb(${shade}, ${shade}, ${shade + 10})`;
+                    ctx.fillRect(x, y, sz, sz);
+                }
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(1, 120);
+                return texture;
+            }
+
+            // ============================================================
+            // ЗЕМЛЯ И ТРАССА
+            // ============================================================
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(400, TRACK_LENGTH + 200),
+                new THREE.MeshStandardMaterial({ map: createGrassTexture(), roughness: 1, metalness: 0 })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.05;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const trackMat = new THREE.MeshStandardMaterial({
+                map: createAsphaltTexture(),
+                roughness: 0.75,
+                metalness: 0.1,
+                side: THREE.DoubleSide
+            });
+            const track = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_WIDTH, TRACK_LENGTH), trackMat);
+            track.rotation.x = -Math.PI / 2;
+            track.position.set(0, 0.01, 0);
+            track.receiveShadow = true;
+            scene.add(track);
+
+            // ============================================================
+            // РАЗМЕТКА
+            // ============================================================
+            for (let lane = 1; lane < TOTAL_LANES; lane++) {
+                const xMark = -TRACK_WIDTH / 2 + lane * LANE_WIDTH;
+                for (let i = -TRACK_LENGTH / 2 + 0.5; i < TRACK_LENGTH / 2 - 0.5; i += 2.5) {
+                    const mark = new THREE.Mesh(
+                        new THREE.PlaneGeometry(0.1, 0.8),
+                        new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x88aaff, emissiveIntensity: 0.05, side: THREE.DoubleSide })
+                    );
+                    mark.rotation.x = -Math.PI / 2;
+                    mark.position.set(xMark, 0.02, i);
+                    scene.add(mark);
+                }
+            }
+
+            // ============================================================
+            // БОРДЮРЫ
+            // ============================================================
+            for (let i = -TRACK_LENGTH / 2; i <= TRACK_LENGTH / 2; i += 1.2) {
+                for (const side of [-1, 1]) {
+                    const curb = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.15, 0.06, 0.35),
+                        new THREE.MeshStandardMaterial({ 
+                            color: Math.floor(i * 2) % 2 === 0 ? 0xff2200 : 0xffffff,
+                            roughness: 0.4
+                        })
+                    );
+                    curb.position.set(side * (TRACK_WIDTH / 2 + 0.15), 0.03, i);
+                    scene.add(curb);
+                }
+            }
+
+            // ============================================================
+            // СТАРТ / ФИНИШ
+            // ============================================================
+            const startLine = new THREE.Mesh(
+                new THREE.PlaneGeometry(TRACK_WIDTH - 0.5, 0.4),
+                new THREE.MeshStandardMaterial({ color: 0xffdd00, emissive: 0xff8800, emissiveIntensity: 0.3, side: THREE.DoubleSide })
+            );
+            startLine.rotation.x = -Math.PI / 2;
+            startLine.position.set(0, 0.02, TRACK_LENGTH / 2 - 5);
+            scene.add(startLine);
+
+            for (let i = -TRACK_WIDTH / 2 + 0.3; i < TRACK_WIDTH / 2 - 0.3; i += 0.35) {
+                const flag = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.2, 0.2),
+                    new THREE.MeshStandardMaterial({ color: (Math.floor(i * 4) % 2 === 0) ? 0xffffff : 0x000000, side: THREE.DoubleSide })
+                );
+                flag.rotation.x = -Math.PI / 2;
+                flag.position.set(i, 0.02, -TRACK_LENGTH / 2 + 5);
+                scene.add(flag);
+            }
+
+            // ============================================================
+            // ДЕРЕВЬЯ
+            // ============================================================
+            function createTree(x, z, scale = 1) {
+                const group = new THREE.Group();
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.06 * scale, 0.12 * scale, 0.5 * scale, 6),
+                    new THREE.MeshStandardMaterial({ color: 0x5a3d2b, roughness: 0.9 })
+                );
+                trunk.position.y = 0.25 * scale;
+                trunk.castShadow = true;
+                group.add(trunk);
+                const colors = [0x2d7d2d, 0x3a8c3a, 0x4a9a4a, 0x5a8a3a];
+                for (let i = 0; i < 3; i++) {
+                    const crown = new THREE.Mesh(
+                        new THREE.SphereGeometry((0.2 + Math.random() * 0.2) * scale, 6),
+                        new THREE.MeshStandardMaterial({ color: colors[Math.floor(Math.random() * colors.length)], roughness: 0.8 })
+                    );
+                    crown.position.set((Math.random() - 0.5) * 0.4 * scale, 0.5 * scale + Math.random() * 0.3 * scale, (Math.random() - 0.5) * 0.4 * scale);
+                    crown.castShadow = true;
+                    group.add(crown);
+                }
+                group.position.set(x, 0, z);
+                scene.add(group);
+            }
+
+            for (let i = 0; i < 40; i++) {
+                const z = -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH;
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const x = side * (TRACK_WIDTH / 2 + 2 + Math.random() * 5);
+                const scale = 0.6 + Math.random() * 0.8;
+                createTree(x, z, scale);
+            }
+
+            // ============================================================
+            // AnimalSpawner
+            // ============================================================
+            class AnimalSpawner {
+                constructor(scene, roadWidth, roadCenter, finishZ, triggerLookahead) {
+                    this.scene = scene;
+                    this.roadWidth = roadWidth;
+                    this.roadCenter = roadCenter;
+                    this.finishZ = finishZ;
+                    this.triggerLookahead = triggerLookahead;
+                    this.animals = [];
+                    this.spawnTimer = 0;
+                    this.minSpawnInterval = 0.8;
+                    this.maxSpawnInterval = 2.0;
+                    this.nextSpawnTime = this.getRandomInterval();
+                    this.totalSpawned = 0;
+                    this.maxAnimals = 40;
+                    this.enabled = true;
+                    
+                    this.mandatoryPool = [];
+                    this.speciesCount = {};
+                    ANIMAL_KEYS.forEach(key => { this.speciesCount[key] = 0; });
+                    
+                    this.buildMandatoryPool();
+                    this.shufflePool();
+                }
+
+                buildMandatoryPool() {
+                    const mandatory = [
+                        { type: 'DOG', count: 4 }, { type: 'HUMAN', count: 5 },
+                        { type: 'DEER', count: 3 }, { type: 'BEAR', count: 4 },
+                        { type: 'CAT', count: 4 }, { type: 'FOX', count: 3 }, { type: 'BOAR', count: 3 }
+                    ];
+                    this.mandatoryPool = [];
+                    mandatory.forEach(item => {
+                        for (let i = 0; i < item.count; i++) this.mandatoryPool.push(item.type);
+                    });
+                    console.log(`🐕 Пул животных: ${this.mandatoryPool.length} особей`);
+                }
+
+                shufflePool() {
+                    for (let i = this.mandatoryPool.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [this.mandatoryPool[i], this.mandatoryPool[j]] = [this.mandatoryPool[j], this.mandatoryPool[i]];
+                    }
+                }
+
+                getRandomInterval() {
+                    return Math.random() * (this.maxSpawnInterval - this.minSpawnInterval) + this.minSpawnInterval;
+                }
+
+                getNextSpecies() {
+                    if (this.mandatoryPool.length > 0) {
+                        const species = this.mandatoryPool.pop();
+                        if (this.mandatoryPool.length === 0) console.log('🔄 Все животные появились!');
+                        return species;
+                    }
+                    return ANIMAL_KEYS[Math.floor(Math.random() * ANIMAL_KEYS.length)];
+                }
+
+                createAnimal(z, forcedType = null) {
+                    const typeId = forcedType || this.getNextSpecies();
+                    const type = ANIMAL_TYPES[typeId];
+                    const mesh = createAnimalMesh(typeId);
+
+                    const fromLeft = Math.random() < 0.5;
+                    const startX = fromLeft ? -(this.roadWidth / 2 + 1.5) : (this.roadWidth / 2 + 1.5);
+                    const endX = -startX;
+                    if (!fromLeft) mesh.scale.x = -1;
+                    
+                    const scale = 0.8 + Math.random() * 0.5;
+                    mesh.scale.set(scale, scale, scale);
+                    
+                    mesh.position.set(startX, 0, z);
+                    mesh.visible = false;
+                    this.scene.add(mesh);
+
+                    return {
+                        type: 'animal',
+                        speciesKey: typeId,
+                        speciesId: type.id,
+                        animalType: typeId,
+                        mesh: mesh,
+                        z: z,
+                        x: startX,
+                        startX: startX,
+                        endX: endX,
+                        duration: 0.6 + Math.random() * 0.4,
+                        elapsed: 0,
+                        triggered: false,
+                        aliveTime: 0,
+                        radius: type.radius * scale || 0.5,
+                        penalty: type.penalty || 0.35,
+                        timePenalty: type.timePenalty || 4,
+                        speedZ: type.speedZ || 0.02,
+                        speedCross: type.speedCross || 3.0,
+                        direction: fromLeft ? 1 : -1,
+                        hit: false
+                    };
+                }
+
+                update(deltaTime, playerZ) {
+                    if (!this.enabled || playerZ < this.finishZ) return;
+
+                    this.spawnTimer += deltaTime;
+                    const totalActive = this.animals.length;
+
+                    if (this.spawnTimer >= this.nextSpawnTime && totalActive < this.maxAnimals) {
+                        this.spawnTimer = 0;
+                        this.nextSpawnTime = this.getRandomInterval();
+
+                        const spawnZ = playerZ - 12 - Math.random() * 8;
+                        if (spawnZ > this.finishZ) {
+                            const typeId = this.getNextSpecies();
+                            const animal = this.createAnimal(spawnZ, typeId);
+                            this.animals.push(animal);
+                            this.totalSpawned++;
+                            this.speciesCount[typeId] = (this.speciesCount[typeId] || 0) + 1;
+                        }
+                    }
+
+                    for (let i = this.animals.length - 1; i >= 0; i--) {
+                        const animal = this.animals[i];
+                        this.updateAnimal(animal, deltaTime, playerZ);
+                        if (animal.triggered) animal.aliveTime += deltaTime;
+
+                        const staleTimeout = animal.aliveTime > 12;
+                        if (animal.z > playerZ + 30 || animal.hit || staleTimeout || animal.z < playerZ - 150) {
+                            this.disposeAnimal(animal);
+                            if (animal.speciesKey) {
+                                this.speciesCount[animal.speciesKey] = Math.max(0, (this.speciesCount[animal.speciesKey] || 0) - 1);
+                            }
+                            this.animals.splice(i, 1);
+                        }
+                    }
+                }
+
+                updateAnimal(animal, deltaTime, playerZ) {
+                    if (!animal.triggered) {
+                        const distanceAhead = playerZ - animal.z;
+                        if (distanceAhead > 0.5 && distanceAhead <= this.triggerLookahead) {
+                            animal.triggered = true;
+                            animal.mesh.visible = true;
+                            console.log(`🏃 ${ANIMAL_TYPES[animal.speciesKey].name} выбегает! (дистанция: ${Math.round(distanceAhead)}м)`);
+                        }
+                        if (distanceAhead < -5) {
+                            animal.hit = true;
+                        }
+                        return;
+                    }
+
+                    if (animal.elapsed < animal.duration) {
+                        animal.elapsed += deltaTime;
+                        const t = Math.min(animal.elapsed / animal.duration, 1);
+                        const easedT = t * t * (3 - 2 * t);
+                        animal.x = animal.startX + (animal.endX - animal.startX) * easedT;
+                        animal.mesh.position.x = animal.x;
+                    }
+
+                    const zMove = animal.speedZ || 0.02;
+                    animal.z -= zMove * 60 * deltaTime * 0.3;
+                    animal.mesh.position.z = animal.z;
+                }
+
+                disposeAnimal(animal) {
+                    this.scene.remove(animal.mesh);
+                }
+
+                getActiveAnimals() {
+                    return this.animals.filter(a => a.triggered && !a.hit);
+                }
+
+                clear() {
+                    this.animals.forEach(a => this.disposeAnimal(a));
+                    this.animals = [];
+                    this.totalSpawned = 0;
+                    ANIMAL_KEYS.forEach(key => { this.speciesCount[key] = 0; });
+                    this.buildMandatoryPool();
+                    this.shufflePool();
+                }
+
+                getStats() {
+                    const species = {};
+                    ANIMAL_KEYS.forEach(key => {
+                        species[key] = this.speciesCount[key] || 0;
+                    });
+                    return {
+                        total: this.totalSpawned,
+                        active: this.animals.length,
+                        triggered: this.animals.filter(a => a.triggered && !a.hit).length,
+                        species: species,
+                        remainingInPool: this.mandatoryPool.length
+                    };
+                }
+            }
+
+            const animalSpawner = new AnimalSpawner(scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD);
+
+            function initAnimals() {
+                const startZ = START_Z - 8;
+                ANIMAL_KEYS.forEach((typeId, index) => {
+                    const z = startZ - index * 5 - Math.random() * 3;
+                    if (z > FINISH_Z) {
+                        const animal = animalSpawner.createAnimal(z, typeId);
+                        animal.triggered = true;
+                        animal.mesh.visible = true;
+                        animal.elapsed = 0.2;
+                        animalSpawner.animals.push(animal);
+                        animalSpawner.totalSpawned++;
+                        animalSpawner.speciesCount[typeId] = (animalSpawner.speciesCount[typeId] || 0) + 1;
+                    }
+                });
+                console.log(`🚧 Начальных животных: ${animalSpawner.animals.length}`);
+            }
+            initAnimals();
+
+            // ============================================================
+            // МАШИНА ИГРОКА
+            // ============================================================
+            function createCar(color = 0xff3333, isPlayer = false) {
+                const car = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.7 });
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 1.4), bodyMat);
+                body.position.y = 0.2;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                car.add(body);
+
+                const cabinMat = new THREE.MeshStandardMaterial({ color: isPlayer ? 0x88ddff : 0x88ccff, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.8 });
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.5), cabinMat);
+                cabin.position.set(0, 0.38, 0.05);
+                cabin.castShadow = true;
+                car.add(cabin);
+
+                const lightMat = new THREE.MeshStandardMaterial({ color: 0xffff88, emissive: 0xffff44, emissiveIntensity: 0.8 });
+                const l1 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8), lightMat);
+                l1.position.set(-0.2, 0.14, -0.7);
+                car.add(l1);
+                const l2 = l1.clone();
+                l2.position.x = 0.2;
+                car.add(l2);
+
+                const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
+                const shadowGeo = new THREE.PlaneGeometry(1.0, 1.6);
+                const fakeShadow = new THREE.Mesh(shadowGeo, shadowMat);
+                fakeShadow.rotation.x = -Math.PI / 2;
+                fakeShadow.position.y = 0.015;
+                car.add(fakeShadow);
+
+                const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
+                const wheelPos = [
+                    [-0.35, 0.06, 0.5], [0.35, 0.06, 0.5],
+                    [-0.35, 0.06, -0.5], [0.35, 0.06, -0.5]
+                ];
+                wheelPos.forEach(p => {
+                    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.05, 8), tireMat);
+                    tire.rotation.x = Math.PI / 2;
+                    tire.position.set(p[0], p[1], p[2]);
+                    tire.castShadow = true;
+                    car.add(tire);
+                });
+                return car;
+            }
+
+            const playerCar = createCar(0xff2200, true);
+            let zPos = START_Z;
+            let xPos = 0;
+            let xVelocity = 0;
+            playerCar.position.set(xPos, 0.1, zPos);
+            scene.add(playerCar);
+
+            // ============================================================
+            // ПОПУТНЫЕ МАШИНЫ
+            // ============================================================
+            const cars = [];
+            const carColors = [0x3366ff, 0x33cc33, 0xffff00, 0xcc00ff, 0xff6600, 0x00ccff, 0xff33cc];
+            
+            function createOpponentCar(z, lane) {
+                const car = new THREE.Group();
+                const color = carColors[Math.floor(Math.random() * carColors.length)];
+                
+                const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.5 });
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 1.4), bodyMat);
+                body.position.y = 0.2;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                car.add(body);
+                
+                const cabin = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.5, 0.16, 0.5),
+                    new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.7 })
+                );
+                cabin.position.set(0, 0.38, 0.05);
+                car.add(cabin);
+                
+                const lightMat2 = new THREE.MeshStandardMaterial({ color: 0xffff88, emissive: 0xffff44, emissiveIntensity: 0.5 });
+                const l1b = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8), lightMat2);
+                l1b.position.set(-0.2, 0.14, -0.7);
+                car.add(l1b);
+                const l2b = l1b.clone();
+                l2b.position.x = 0.2;
+                car.add(l2b);
+                
+                const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2;
+                car.position.set(x, 0.1, z);
+                scene.add(car);
+                
+                const speed = 0.01 + Math.random() * 0.025;
+                return { mesh: car, x: x, z: z, lane: lane, speed: speed, active: true, laneChangeTimer: 2 + Math.random() * 4, targetLane: lane, isChangingLane: false, laneChangeProgress: 0 };
+            }
+
+            for (let i = 0; i < 20; i++) {
+                const z = -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
+                const lane = Math.floor(Math.random() * 3);
+                cars.push(createOpponentCar(z, lane));
+            }
+
+            // ============================================================
+            // ПРЕПЯТСТВИЯ
+            // ============================================================
+            const obstacles = [];
+            
+            function createObstacle(z, type) {
+                const group = new THREE.Group();
+                let mesh;
+                
+                if (type === 'pothole') {
+                    mesh = new THREE.Mesh(
+                        new THREE.CircleGeometry(0.4, 16),
+                        new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.9, metalness: 0.1 })
+                    );
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.y = 0.015;
+                    
+                    const rim = new THREE.Mesh(
+                        new THREE.RingGeometry(0.4, 0.45, 16),
+                        new THREE.MeshStandardMaterial({ color: 0x555566, roughness: 0.8 })
+                    );
+                    rim.rotation.x = -Math.PI / 2;
+                    rim.position.y = 0.018;
+                    group.add(rim);
+                } else {
+                    const bumpMat = new THREE.MeshStandardMaterial({ color: 0x555544, roughness: 0.8 });
+                    mesh = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.4, 0.4, 0.08, 16),
+                        bumpMat
+                    );
+                    mesh.position.y = 0.04;
+                    mesh.receiveShadow = true;
+                    mesh.castShadow = true;
+                }
+                
+                group.add(mesh);
+                
+                const x = -TRACK_WIDTH / 2 + 0.5 + Math.floor(Math.random() * 3) * 2;
+                group.position.set(x, 0, z);
+                scene.add(group);
+                
+                return { mesh: group, x: x, z: z, type: type, active: true };
+            }
+
+            for (let i = 0; i < 25; i++) {
+                const z = -TRACK_LENGTH / 2 + 30 + Math.random() * (TRACK_LENGTH - 80);
+                const type = Math.random() < 0.5 ? 'pothole' : 'bump';
+                obstacles.push(createObstacle(z, type));
+            }
+
+            // ============================================================
+            // УПРАВЛЕНИЕ
+            // ============================================================
+            const keys = { w: false, s: false, a: false, d: false };
+            let speed = 0;
+            let strikes = 0;
+            let raceTime = 0;
+            let stunTimer = 0;
+            let shakeTime = 0;
+            let gameState = 'racing';
+
+            const MAX_SPEED = 0.35;
+            const ACCELERATION = 0.018;
+            const BRAKE_FORCE = 0.025;
+            const FRICTION_FORCE = 0.008;
+            const MAX_X_SPEED = 0.55;
+            const DRY_DAMPING = 0.82;
+            const DRY_STEER = 3.2;
+
+            const keydownHandler = (e) => {
+                const k = e.key.toLowerCase();
+                if (k === 'w' || k === 'ц') { keys.w = true; e.preventDefault(); }
+                if (k === 's' || k === 'ы') { keys.s = true; e.preventDefault(); }
+                if (k === 'a' || k === 'ф') { keys.a = true; e.preventDefault(); }
+                if (k === 'd' || k === 'в') { keys.d = true; e.preventDefault(); }
+                if (k === 'q') { location.reload(); }
+                if (k === 'r' && gameState !== 'racing') { location.reload(); }
+            };
+
+            const keyupHandler = (e) => {
+                const k = e.key.toLowerCase();
+                if (k === 'w' || k === 'ц') { keys.w = false; e.preventDefault(); }
+                if (k === 's' || k === 'ы') { keys.s = false; e.preventDefault(); }
+                if (k === 'a' || k === 'ф') { keys.a = false; e.preventDefault(); }
+                if (k === 'd' || k === 'в') { keys.d = false; e.preventDefault(); }
+            };
+
+            document.addEventListener('keydown', keydownHandler);
+            document.addEventListener('keyup', keyupHandler);
+
+            // ============================================================
+            // RESIZE
+            // ============================================================
+            const resizeHandler = () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            };
+            window.addEventListener('resize', resizeHandler);
+
+            // ============================================================
+            // ФУНКЦИИ ДЛЯ HUD
+            // ============================================================
+            function showTimePenaltyPopup(seconds, animalName = '') {
+                const timeEl = document.getElementById('timeDisplay');
+                if (!timeEl) return;
+                const rect = timeEl.getBoundingClientRect();
+                const popup = document.createElement('div');
+                const text = animalName ? `${animalName}: -${seconds}с` : `-${seconds}с`;
+                popup.textContent = text;
+                popup.style.cssText = `
+                    position: fixed; left: ${rect.right + 10}px; top: ${rect.top - 2}px;
+                    color: #ff3333; font-weight: bold; font-size: 18px;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    pointer-events: none; z-index: 200;
+                    animation: timePenaltyFloat 1s ease-out forwards;
+                `;
+                document.body.appendChild(popup);
+                setTimeout(() => popup.remove(), 1000);
+                timeEl.classList.add('time-hit-flash');
+                setTimeout(() => timeEl.classList.remove('time-hit-flash'), 350);
+            }
+
+            function handleObstacleHit(obs) {
+                if (gameState !== 'racing') return;
+                strikes++;
+                speed *= obs.penalty || 0.35;
+                stunTimer = 0.4;
+                shakeTime = 0.35;
+
+                const penaltySeconds = obs.timePenalty || 4;
+                raceTime += penaltySeconds;
+                
+                const animalName = obs.type === 'animal' ? ANIMAL_TYPES[obs.speciesKey]?.name : '';
+                showTimePenaltyPopup(penaltySeconds, animalName);
+
+                soundEngine.playCrashSound(0.6);
+
+                updateHUD();
+
+                if (strikes >= MAX_STRIKES) {
+                    endGame('crash');
+                }
+            }
+
+            // ============================================================
+            // СИСТЕМА ЧАСТИЦ
+            // ============================================================
+            class ParticleSystem {
+                constructor(scene) {
+                    this.scene = scene;
+                    this.maxParticles = 120;
+                    this.enabled = true;
+                    this.geometry = new THREE.BufferGeometry();
+                    this.positions = new Float32Array(this.maxParticles * 3);
+                    this.sizes = new Float32Array(this.maxParticles);
+                    this.opacities = new Float32Array(this.maxParticles);
+                    this.velocities = [];
+                    this.lifetimes = [];
+
+                    for (let i = 0; i < this.maxParticles; i++) {
+                        this.positions[i * 3] = 0;
+                        this.positions[i * 3 + 1] = 0;
+                        this.positions[i * 3 + 2] = 0;
+                        this.sizes[i] = 0;
+                        this.opacities[i] = 0;
+                        this.velocities.push({ x: 0, y: 0, z: 0 });
+                        this.lifetimes.push(0);
+                    }
+
+                    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+                    this.geometry.setAttribute('size', new THREE.BufferAttribute(this.sizes, 1));
+                    this.geometry.setAttribute('opacity', new THREE.BufferAttribute(this.opacities, 1));
+
+                    const material = new THREE.ShaderMaterial({
+                        uniforms: { color: { value: new THREE.Color(0xD2B48C) } },
+                        vertexShader: `
+                            attribute float size; attribute float opacity; varying float vOpacity;
+                            void main() {
+                                vOpacity = opacity;
+                                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                                gl_PointSize = size * (250.0 / max(-mvPosition.z, 0.01));
+                                gl_Position = projectionMatrix * mvPosition;
+                            }
+                        `,
+                        fragmentShader: `
+                            uniform vec3 color; varying float vOpacity;
+                            void main() {
+                                float d = length(gl_PointCoord - vec2(0.5));
+                                if (d > 0.5) discard;
+                                float alpha = smoothstep(0.5, 0.1, d) * vOpacity;
+                                gl_FragColor = vec4(color, alpha);
+                            }
+                        `,
+                        transparent: true,
+                        blending: THREE.NormalBlending,
+                        depthWrite: false
+                    });
+
+                    this.points = new THREE.Points(this.geometry, material);
+                    this.scene.add(this.points);
+                    this.particleIndex = 0;
+                }
+
+                emit(position, velocity, count = 2, customSize = 0.15) {
+                    if (!this.enabled) return;
+                    for (let i = 0; i < count; i++) {
+                        const idx = this.particleIndex % this.maxParticles;
+                        this.particleIndex++;
+                        const i3 = idx * 3;
+
+                        this.positions[i3] = position.x + (Math.random() - 0.5) * 0.15;
+                        this.positions[i3 + 1] = position.y + 0.02;
+                        this.positions[i3 + 2] = position.z + (Math.random() - 0.5) * 0.1;
+
+                        this.sizes[idx] = customSize * (0.6 + Math.random() * 0.8);
+                        this.opacities[idx] = 0.4 + Math.random() * 0.3;
+
+                        this.velocities[idx] = {
+                            x: velocity.x + (Math.random() - 0.5) * 0.4,
+                            y: Math.random() * 0.3 + 0.1,
+                            z: velocity.z + Math.random() * 0.5
+                        };
+                        this.lifetimes[idx] = 0.6 + Math.random() * 0.4;
+                    }
+                }
+
+                update(deltaTime) {
+                    if (!this.enabled) return;
+                    for (let i = 0; i < this.maxParticles; i++) {
+                        const i3 = i * 3;
+                        if (this.opacities[i] > 0.01) {
+                            this.lifetimes[i] -= deltaTime;
+                            if (this.lifetimes[i] <= 0) {
+                                this.opacities[i] = 0;
+                                this.sizes[i] = 0;
+                                continue;
+                            }
+
+                            this.positions[i3] += this.velocities[i].x * deltaTime;
+                            this.positions[i3 + 1] += this.velocities[i].y * deltaTime;
+                            this.positions[i3 + 2] += this.velocities[i].z * deltaTime;
+
+                            this.velocities[i].x *= 0.95;
+                            this.velocities[i].z *= 0.95;
+                            this.velocities[i].y += 0.05 * deltaTime;
+
+                            const lifeRatio = this.lifetimes[i] / 1.0;
+                            this.opacities[i] = Math.max(0, lifeRatio * 0.5);
+                            this.sizes[i] *= 1.02;
+                        }
+                    }
+                    this.geometry.attributes.position.needsUpdate = true;
+                    this.geometry.attributes.size.needsUpdate = true;
+                    this.geometry.attributes.opacity.needsUpdate = true;
+                }
+
+                dispose() {
+                    if (this.geometry) this.geometry.dispose();
+                    if (this.points && this.points.material) this.points.material.dispose();
+                    if (this.points) this.scene.remove(this.points);
+                }
+            }
+
+            const particleSystem = new ParticleSystem(scene);
+
+            // ============================================================
+            // ИГРОВОЙ ЦИКЛ
+            // ============================================================
+            function update(deltaTime) {
+                if (gameState !== 'racing') return;
+                
+                raceTime += deltaTime;
+                const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
+
+                // Газ/Тормоз
+                if (stunTimer > 0) {
+                    stunTimer -= deltaTime;
+                    if (speed > 0) speed = Math.max(speed - FRICTION_FORCE * 2, 0);
+                } else if (keys.w) {
+                    speed = Math.min(speed + ACCELERATION, MAX_SPEED);
+                } else if (keys.s) {
+                    speed = Math.max(speed - BRAKE_FORCE, -MAX_SPEED * 0.2);
+                } else {
+                    if (speed > 0) speed = Math.max(speed - FRICTION_FORCE, 0);
+                }
+
+                soundEngine.update(speed);
+
+                // Руль
+                if (keys.a) {
+                    xVelocity = Math.max(xVelocity - DRY_STEER * deltaTime, -MAX_X_SPEED);
+                } else if (keys.d) {
+                    xVelocity = Math.min(xVelocity + DRY_STEER * deltaTime, MAX_X_SPEED);
+                } else {
+                    xVelocity *= DRY_DAMPING;
+                    if (Math.abs(xVelocity) < 0.001) xVelocity = 0;
+                }
+                xPos += xVelocity * deltaTime * 15;
+
+                const globalMaxX = TRACK_WIDTH / 2 - CAR_WIDTH / 2 - 0.1;
+                xPos = clamp(xPos, -globalMaxX, globalMaxX);
+
+                // Движение вперед
+                const moveAmount = speed * 60 * deltaTime;
+                zPos -= moveAmount;
+
+                // Пыль
+                if (Math.abs(speed) > 0.05) {
+                    const pos = playerCar.position;
+                    for (let side of [-0.35, 0.35]) {
+                        _v.p1.set(pos.x + side, pos.y, pos.z + 0.6);
+                        _v.vel.set(
+                            -xVelocity * 0.5 + (Math.random() - 0.5) * 0.2,
+                            0.2 + Math.random() * 0.3,
+                            speed * 1.5 + Math.random() * 0.5
+                        );
+                        particleSystem.emit(_v.p1, _v.vel, 1, 0.12);
+                    }
+                }
+
+                // Позиция игрока
+                playerCar.position.set(xPos, 0.1, zPos);
+                playerCar.rotation.z = lerp(playerCar.rotation.z, -xVelocity * 0.04, 0.12);
+
+                // ============================================================
+                // ПОПУТНЫЕ МАШИНЫ
+                // ============================================================
+                cars.forEach(car => {
+                    if (!car.active) return;
+                    
+                    car.z -= car.speed * 60 * deltaTime;
+                    car.mesh.position.z = car.z;
+                    
+                    if (car.isChangingLane) {
+                        car.laneChangeProgress += deltaTime * 1.5;
+                        if (car.laneChangeProgress >= 1) {
+                            car.laneChangeProgress = 0;
+                            car.isChangingLane = false;
+                            car.lane = car.targetLane;
+                            car.x = -TRACK_WIDTH / 2 + 0.5 + car.lane * 2;
+                            car.mesh.position.x = car.x;
+                        } else {
+                            const currentX = -TRACK_WIDTH / 2 + 0.5 + car.lane * 2;
+                            const targetX = -TRACK_WIDTH / 2 + 0.5 + car.targetLane * 2;
+                            car.x = currentX + (targetX - currentX) * car.laneChangeProgress;
+                            car.mesh.position.x = car.x;
+                        }
+                    } else {
+                        car.laneChangeTimer -= deltaTime;
+                        if (car.laneChangeTimer <= 0 && Math.random() < 0.02 * (1 + progress * 0.5)) {
+                            const newLane = Math.floor(Math.random() * 3);
+                            if (newLane !== car.lane) {
+                                car.targetLane = newLane;
+                                car.isChangingLane = true;
+                                car.laneChangeProgress = 0;
+                            }
+                            car.laneChangeTimer = 2 + Math.random() * 3;
+                        }
+                    }
+                    
+                    const dx = xPos - car.x;
+                    const dz = zPos - car.z;
+                    if (Math.abs(dx) < 0.7 && Math.abs(dz) < 0.7) {
+                        handleObstacleHit({ penalty: 0.3, timePenalty: 4 });
+                    }
+                    
+                    if (car.z < -TRACK_LENGTH / 2 - 10) {
+                        car.z = TRACK_LENGTH / 2 + 10 + Math.random() * 20;
+                        car.lane = Math.floor(Math.random() * 3);
+                        car.targetLane = car.lane;
+                        car.x = -TRACK_WIDTH / 2 + 0.5 + car.lane * 2;
+                        car.mesh.position.set(car.x, 0.1, car.z);
+                        car.speed = 0.01 + Math.random() * 0.025 * (1 + progress * 0.3);
+                        car.laneChangeTimer = 2 + Math.random() * 3;
+                        car.isChangingLane = false;
+                        car.laneChangeProgress = 0;
+                    }
+                });
+
+                // ============================================================
+                // ПРЕПЯТСТВИЯ
+                // ============================================================
+                obstacles.forEach(obs => {
+                    if (!obs.active) return;
+                    
+                    const dx = xPos - obs.x;
+                    const dz = zPos - obs.z;
+                    
+                    if (Math.abs(dx) < 0.4 && Math.abs(dz) < 0.4) {
+                        if (obs.type === 'pothole') {
+                            speed *= 0.3;
+                            stunTimer = 0.3;
+                            soundEngine.playCrashSound(0.3);
+                            showTimePenaltyPopup(2, 'Яма');
+                        } else {
+                            speed *= 0.6;
+                            playerCar.position.y = 0.35;
+                            setTimeout(() => { playerCar.position.y = 0.1; }, 150);
+                            showTimePenaltyPopup(1.5, 'Кочка');
+                        }
+                        obs.active = false;
+                        obs.mesh.visible = false;
+                    }
+                });
+
+                // ============================================================
+                // ЖИВОТНЫЕ
+                // ============================================================
+                animalSpawner.update(deltaTime, zPos);
+
+                if (gameState === 'racing') {
+                    const activeAnimals = animalSpawner.getActiveAnimals();
+                    activeAnimals.forEach(obs => {
+                        if (obs.hit) return;
+                        const dx = xPos - obs.x;
+                        const dz = zPos - obs.z;
+                        const dist = Math.sqrt(dx * dx + dz * dz);
+                        if (dist < obs.radius + 0.45) {
+                            obs.hit = true;
+                            handleObstacleHit(obs);
+                        }
+                    });
+                }
+
+                // ============================================================
+                // ПОБЕДА / ПОРАЖЕНИЕ
+                // ============================================================
+                if (gameState === 'racing' && zPos <= FINISH_Z - 15) {
+                    endGame('win');
+                }
+                if (gameState === 'racing' && raceTime >= TIME_LIMIT) {
+                    endGame('timeout');
+                }
+
+                // ============================================================
+                // КАМЕРА - ПЛАВНОЕ СЛЕЖЕНИЕ
+                // ============================================================
+                const targetX = xPos * 0.35;
+                const targetY = 4.2;
+                const targetZ = zPos + 9;
+                camera.position.x += (targetX - camera.position.x) * 0.06;
+                camera.position.y += (targetY - camera.position.y) * 0.06;
+                camera.position.z += (targetZ - camera.position.z) * 0.06;
+                camera.lookAt(xPos, 0.5, zPos - 12);
+
+                if (shakeTime > 0) {
+                    shakeTime -= deltaTime;
+                    const power = Math.max(0, shakeTime) * 0.3;
+                    camera.position.x += (Math.random() - 0.5) * power;
+                    camera.position.y += (Math.random() - 0.5) * power;
+                }
+
+                // ============================================================
+                // ТЕНИ
+                // ============================================================
+                sunLight.position.set(xPos + 30, 50, zPos + 20);
+                sunLight.target.position.set(xPos, 0, zPos);
+                sunLight.target.updateMatrixWorld();
+
+                particleSystem.update(deltaTime);
+                updateHUD();
+            }
+
+            // ============================================================
+            // АНИМАЦИЯ
+            // ============================================================
+            let lastTime = performance.now();
+
+            function animate(currentTime) {
+                requestAnimationFrame(animate);
+                const deltaTime = Math.min(0.05, (currentTime - lastTime) / 1000);
+                lastTime = currentTime;
+                update(deltaTime);
+                renderer.render(scene, camera);
+            }
+
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes timePenaltyFloat {
+                    0% { opacity: 1; transform: translateY(0); }
+                    100% { opacity: 0; transform: translateY(-30px); }
+                }
+                @keyframes timeHitPulse {
+                    0% { transform: scale(1.4); }
+                    100% { transform: scale(1); }
+                }
+                .time-hit-flash {
+                    animation: timeHitPulse 0.35s ease-out;
+                    color: #ff3333 !important;
+                }
+            `;
+            document.head.appendChild(style);
+
+            animate(performance.now());
+            console.log('🏁 Игра запущена!');
+            console.log('🎸 Музыка играет! Регулируйте громкость справа!');
+            console.log('💡 Если хотите свою музыку - положите MP3 в папку music/');
+        }
+
+        // ============================================================
+        // ЗАПУСК
+        // ============================================================
+        startGame().catch(err => console.error('Ошибка:', err));
+    </script>
 </body>
 </html>
