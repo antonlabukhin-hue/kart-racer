@@ -974,16 +974,9 @@
         }
 
         window.refreshMapSelectUI = function refreshMapSelectUI() {
+            // Только UI карт. Обработчики .weather-btn — один раз внизу файла (без дублей).
             const unlocked = getUnlockedMaps();
-            document.querySelectorAll('.weather-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                pendingWeather = btn.dataset.weather || 'day';
-            });
-        });
-
-        document.querySelectorAll('.map-card').forEach(card => {
+            document.querySelectorAll('.map-card').forEach(card => {
                 const id = card.dataset.map;
                 const badge = card.querySelector('.lock-badge');
                 if (unlocked.includes(id)) {
@@ -995,7 +988,6 @@
                     if (badge) badge.style.display = 'block';
                 }
             });
-            // Выбрать первую доступную, если текущая закрыта
             const selected = document.querySelector('.map-card.selected:not(.locked)');
             if (!selected) {
                 const first = document.querySelector('.map-card:not(.locked)');
@@ -1005,6 +997,11 @@
                     pendingMap = first.dataset.map;
                 }
             }
+            // Подсветка текущей погоды (без addEventListener)
+            document.querySelectorAll('.weather-btn').forEach(btn => {
+                if (btn.dataset.weather === pendingWeather) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
             const hint = document.getElementById('map-unlock-hint');
             if (hint) {
                 if (unlocked.length >= 3) {
@@ -2732,7 +2729,7 @@
         // AnimalSpawner
         // ============================================================
         class AnimalSpawner {
-            constructor(scene, roadWidth, roadCenter, finishZ, triggerLookahead, maxAnimals, spawnRate) {
+            constructor(scene, roadWidth, roadCenter, finishZ, triggerLookahead, maxAnimals, spawnRate, speciesPool = null) {
                 this.scene = scene;
                 this.roadWidth = roadWidth;
                 this.roadCenter = roadCenter;
@@ -2747,6 +2744,11 @@
                 this.maxAnimals = maxAnimals;
                 this.enabled = true;
                 
+                // Ростер текущей карты (не Арсеньев по умолчанию!)
+                this.animalPool = (speciesPool && speciesPool.length)
+                    ? speciesPool.slice()
+                    : (MAP_ANIMALS.arsenev ? MAP_ANIMALS.arsenev.slice() : ANIMAL_KEYS.slice());
+                
                 this.mandatoryPool = [];
                 this.speciesCount = {};
                 ANIMAL_KEYS.forEach(key => { this.speciesCount[key] = 0; });
@@ -2756,14 +2758,15 @@
             }
 
             buildMandatoryPool() {
-                const mandatory = [
-                    { type: 'DOG', count: 4 }, { type: 'HUMAN', count: 5 },
-                    { type: 'DEER', count: 3 }, { type: 'BEAR', count: 4 },
-                    { type: 'CAT', count: 4 }, { type: 'FOX', count: 3 }, { type: 'BOAR', count: 3 }
-                ];
+                // Гарантированный пул — только из видов текущей карты
+                const roster = (this.animalPool && this.animalPool.length)
+                    ? this.animalPool
+                    : ANIMAL_KEYS;
                 this.mandatoryPool = [];
-                mandatory.forEach(item => {
-                    for (let i = 0; i < item.count; i++) this.mandatoryPool.push(item.type);
+                // По ~3–4 особи каждого вида карты в начале заезда
+                const perType = Math.max(2, Math.ceil(24 / roster.length));
+                roster.forEach(typeId => {
+                    for (let i = 0; i < perType; i++) this.mandatoryPool.push(typeId);
                 });
             }
 
@@ -5212,11 +5215,12 @@
             // ============================================================
             // ЖИВОТНЫЕ
             // ============================================================
+            const mapSpeciesPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
             const animalSpawner = new AnimalSpawner(
                 scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD,
-                config.maxAnimals, config.animalSpawnRate
+                config.maxAnimals, config.animalSpawnRate,
+                mapSpeciesPool
             );
-            animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
 
             function initAnimals() {
                 const startZ = START_Z - 8;
