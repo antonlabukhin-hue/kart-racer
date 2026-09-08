@@ -537,6 +537,23 @@
         #map-unlock-hint {
             color: #888; font-size: 12px; margin-top: 10px; line-height: 1.4;
         }
+
+        .weather-selector {
+            display: flex; gap: 8px; justify-content: center; margin: 12px 0 8px;
+            flex-wrap: wrap;
+        }
+        .weather-btn {
+            padding: 8px 14px; border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #aaa; font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+        .weather-btn:hover { border-color: rgba(255,255,255,0.35); color: #fff; }
+        .weather-btn.active {
+            border-color: #66aaff; color: #fff;
+            background: rgba(80,140,255,0.2);
+        }
+
         #map-select-go {
             margin-top: 18px; width: 100%; padding: 12px; border-radius: 10px;
             border: 2px solid rgba(255,220,0,0.5); background: rgba(255,220,0,0.15);
@@ -632,7 +649,24 @@
                 margin-top: 2px !important;
             }
             #car-select-go,
-            #map-select-go {
+    
+        .weather-selector {
+            display: flex; gap: 8px; justify-content: center; margin: 12px 0 8px;
+            flex-wrap: wrap;
+        }
+        .weather-btn {
+            padding: 8px 14px; border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #aaa; font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+        .weather-btn:hover { border-color: rgba(255,255,255,0.35); color: #fff; }
+        .weather-btn.active {
+            border-color: #66aaff; color: #fff;
+            background: rgba(80,140,255,0.2);
+        }
+
+        #map-select-go {
                 margin-top: 10px !important;
                 padding: 10px !important;
                 font-size: 14px !important;
@@ -755,6 +789,12 @@
                     <div class="map-desc">Горы хлама<br>Остовы машин<br>Больше масла и кочек</div>
                     <div class="lock-badge">🔒 Пройди «Промзону» на СЛОЖНОМ</div>
                 </div>
+            </div>
+            <div style="color:#ccc;font-size:12px;margin-top:10px;">Погода на выезде</div>
+            <div class="weather-selector">
+                <button type="button" class="weather-btn active" data-weather="day">☀️ День</button>
+                <button type="button" class="weather-btn" data-weather="night">🌙 Ночь</button>
+                <button type="button" class="weather-btn" data-weather="rain">🌧 Дождь</button>
             </div>
             <div id="map-unlock-hint">💡 Новые карты открываются после победы на сложном режиме</div>
             <button id="map-select-go">ПОЕХАЛИ →</button>
@@ -935,7 +975,15 @@
 
         window.refreshMapSelectUI = function refreshMapSelectUI() {
             const unlocked = getUnlockedMaps();
-            document.querySelectorAll('.map-card').forEach(card => {
+            document.querySelectorAll('.weather-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                pendingWeather = btn.dataset.weather || 'day';
+            });
+        });
+
+        document.querySelectorAll('.map-card').forEach(card => {
                 const id = card.dataset.map;
                 const badge = card.querySelector('.lock-badge');
                 if (unlocked.includes(id)) {
@@ -1855,7 +1903,8 @@
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.repeat.set(2, 2);
-            tex.colorSpace = THREE.SRGBColorSpace;
+            if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+            else if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
             tex.needsUpdate = true;
             _animalTexCache[key] = tex;
             return tex;
@@ -1928,9 +1977,20 @@
                 group.add(mesh);
                 return mesh;
             }
-            function addEyes(y, z, spread) {
-                addSphere(0.04, y, z, matEye, -spread);
-                addSphere(0.04, y, z, matEye, spread);
+            function addEyes(y, z, spread, angry = true) {
+                // Белки
+                const w1 = addSphere(0.045, y, z, matWhite, -spread);
+                const w2 = addSphere(0.045, y, z, matWhite, spread);
+                // Зрачки / свечение ночью
+                const e1 = addSphere(0.028, y, z + 0.02, matEye, -spread);
+                const e2 = addSphere(0.028, y, z + 0.02, matEye, spread);
+                e1.userData.isEye = true;
+                e2.userData.isEye = true;
+                // Брови злости
+                if (angry) {
+                    addBox(0.08, 0.02, 0.03, y + 0.06, z + 0.02, matDark, -spread, 0, 0.4);
+                    addBox(0.08, 0.02, 0.03, y + 0.06, z + 0.02, matDark, spread, 0, -0.4);
+                }
             }
             function addLegs(bodyY, spreadX, spreadZ, legH, legR) {
                 const positions = [
@@ -1950,12 +2010,18 @@
             // Голова смотрит примерно в +X (поперёк дороги при беге)
             switch (design) {
                 case 'bear': {
-                    addSphere(0.38, 0.55, 0, mat, 0, 1.1, 0.95, 0.9); // body
-                    addSphere(0.28, 0.85, 0.25, mat); // head
-                    addSphere(0.1, 1.05, 0.2, mat, -0.18); // ear
+                    addSphere(0.38, 0.55, 0, mat, 0, 1.1, 0.95, 0.9);
+                    addSphere(0.28, 0.85, 0.25, mat);
+                    addSphere(0.1, 1.05, 0.2, mat, -0.18);
                     addSphere(0.1, 1.05, 0.2, mat, 0.18);
-                    addSphere(0.08, 0.8, 0.45, matDark); // nose
+                    addSphere(0.08, 0.8, 0.45, matDark);
                     addEyes(0.9, 0.42, 0.12);
+                    // Клыки и шрам
+                    addBox(0.03, 0.08, 0.03, 0.78, 0.48, matWhite, -0.06);
+                    addBox(0.03, 0.08, 0.03, 0.78, 0.48, matWhite, 0.06);
+                    addBox(0.12, 0.02, 0.02, 0.92, 0.35, matDark, 0.1, 0.5, 0.3);
+                    // Кожаная куртка 90-х
+                    addBox(0.55, 0.25, 0.45, 0.55, 0, new THREE.MeshStandardMaterial({ color: 0x2a1810, roughness: 0.85 }));
                     addLegs(0.35, 0.22, 0.2, 0.35, 0.08);
                     break;
                 }
@@ -2031,15 +2097,17 @@
                     break;
                 }
                 case 'croc': {
-                    // Длинное тело
                     addSphere(0.22, 0.22, 0, mat, 0, 0.9, 0.6, 2.2);
-                    addSphere(0.16, 0.25, 0.45, mat, 0, 0.9, 0.55, 1.2); // head
-                    addBox(0.28, 0.04, 0.12, 0.2, 0.55, matWhite); // teeth row
-                    addSphere(0.05, 0.35, 0.4, matEye, -0.1);
-                    addSphere(0.05, 0.35, 0.4, matEye, 0.1);
-                    // legs short
+                    addSphere(0.16, 0.25, 0.45, mat, 0, 0.9, 0.55, 1.2);
+                    addBox(0.28, 0.05, 0.14, 0.18, 0.55, matWhite);
+                    // Злые глаза с userData
+                    const ce1 = addSphere(0.05, 0.35, 0.42, matEye, -0.1);
+                    const ce2 = addSphere(0.05, 0.35, 0.42, matEye, 0.1);
+                    ce1.userData.isEye = true; ce2.userData.isEye = true;
+                    addBox(0.07, 0.02, 0.03, 0.4, 0.4, matDark, -0.1, 0, 0.5);
+                    addBox(0.07, 0.02, 0.03, 0.4, 0.4, matDark, 0.1, 0, -0.5);
                     addLegs(0.12, 0.18, 0.25, 0.12, 0.04);
-                    addCyl(0.06, 0.03, 0.4, 0.18, -0.55, mat, 0, Math.PI/2); // tail
+                    addCyl(0.06, 0.03, 0.4, 0.18, -0.55, mat, 0, Math.PI/2);
                     break;
                 }
                 case 'rhino': {
@@ -2706,26 +2774,66 @@
                 return pool[Math.floor(Math.random() * pool.length)];
             }
 
+            acquireMesh(typeId) {
+                if (!this.meshPool) this.meshPool = {};
+                if (!this.meshPool[typeId]) this.meshPool[typeId] = [];
+                let mesh = this.meshPool[typeId].pop();
+                if (!mesh) {
+                    mesh = createAnimalMesh(typeId);
+                    this.scene.add(mesh);
+                }
+                mesh.visible = false;
+                return mesh;
+            }
+
+            releaseMesh(typeId, mesh) {
+                if (!mesh) return;
+                mesh.visible = false;
+                mesh.position.set(0, -50, 0);
+                if (!this.meshPool) this.meshPool = {};
+                if (!this.meshPool[typeId]) this.meshPool[typeId] = [];
+                if (this.meshPool[typeId].length < 12) this.meshPool[typeId].push(mesh);
+                else {
+                    mesh.traverse(obj => {
+                        if (obj.geometry) obj.geometry.dispose();
+                        if (obj.material) {
+                            if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+                            else obj.material.dispose();
+                        }
+                    });
+                    this.scene.remove(mesh);
+                }
+            }
+
             createAnimal(z, forcedType = null) {
                 const typeId = forcedType || this.getNextSpecies();
                 const type = ANIMAL_TYPES[typeId];
-                const mesh = createAnimalMesh(typeId);
+                const mesh = this.acquireMesh(typeId);
 
                 const fromLeft = Math.random() < 0.5;
                 const startX = fromLeft ? -(this.roadWidth / 2 + 1.5) : (this.roadWidth / 2 + 1.5);
                 const endX = -startX;
                 
-                const scale = 0.8 + Math.random() * 0.5;
+                const scale = 0.85 + Math.random() * 0.45;
                 mesh.scale.set(scale, scale, scale);
-                
-                // Модели собраны «головой» в +Z → поворачиваем поперёк дороги
-                // fromLeft: бежит в +X (направо) → rotation.y = +90°
-                // fromRight: бежит в -X (налево) → rotation.y = -90°
                 mesh.rotation.y = fromLeft ? Math.PI / 2 : -Math.PI / 2;
-                
                 mesh.position.set(startX, 0, z);
                 mesh.visible = false;
-                this.scene.add(mesh);
+
+                // Ночные светящиеся глаза
+                mesh.traverse(obj => {
+                    if (obj.userData && obj.userData.isEye && obj.material) {
+                        if (window.weatherMode === 'night') {
+                            obj.material.emissive = new THREE.Color(0x33ff66);
+                            obj.material.emissiveIntensity = 1.4;
+                            obj.material.color = new THREE.Color(0x33ff66);
+                        } else {
+                            obj.material.emissive = new THREE.Color(0x000000);
+                            obj.material.emissiveIntensity = 0;
+                            obj.material.color = new THREE.Color(0x111111);
+                        }
+                    }
+                });
 
                 return {
                     type: 'animal',
@@ -2810,15 +2918,22 @@
                     const easedT = t * t * (3 - 2 * t);
                     animal.x = animal.startX + (animal.endX - animal.startX) * easedT;
                     animal.mesh.position.x = animal.x;
+                    // Лёгкий «бег»
+                    animal.mesh.position.y = Math.abs(Math.sin(easedT * Math.PI * 4)) * 0.06;
                 }
 
                 const zMove = animal.speedZ || 0.02;
                 animal.z -= zMove * 60 * deltaTime * 0.3;
                 animal.mesh.position.z = animal.z;
+                // Сохраняем ориентацию поперёк дороги на всякий случай
+                if (animal.direction !== undefined && animal.mesh.rotation) {
+                    animal.mesh.rotation.y = animal.direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+                }
             }
 
             disposeAnimal(animal) {
-                this.scene.remove(animal.mesh);
+                if (!animal || !animal.mesh) return;
+                this.releaseMesh(animal.speciesKey, animal.mesh);
             }
 
             getActiveAnimals() {
@@ -2852,8 +2967,10 @@
         // ============================================================
         // ОСНОВНАЯ ИГРА
         // ============================================================
-        function initGame(quality, difficulty, carId = 'cheburashka', mapId = 'arsenev') {
-            console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}`);
+        function initGame(quality, difficulty, carId = 'cheburashka', mapId = 'arsenev', weatherId = 'day') {
+            console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}, погода: ${weatherId}`);
+            const weatherMode = weatherId || 'day';
+            window.weatherMode = weatherMode;
             const carPreset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
             
             const config = DIFFICULTY_CONFIG[difficulty];
@@ -2991,10 +3108,18 @@
                 if (nitroBar && typeof nitroTimer !== 'undefined') {
                     nitroBar.style.width = Math.max(0, Math.min(100, (nitroTimer / 3.2) * 100)) + '%';
                 }
-                if (weatherEl && typeof weatherZone !== 'undefined') {
-                    if (weatherZone === 'dust') { weatherEl.textContent = '🌪 ПЫЛЬНАЯ БУРЯ'; weatherEl.style.color = '#c4a574'; }
-                    else if (weatherZone === 'acid') { weatherEl.textContent = '☢ КИСЛОТНЫЙ ДОЖДЬ'; weatherEl.style.color = '#66ff88'; }
-                    else { weatherEl.textContent = '☀ ЯСНО'; weatherEl.style.color = '#88ccff'; }
+                if (weatherEl) {
+                    let wtxt = '☀ ДЕНЬ', wcol = '#88ccff';
+                    if (typeof weatherMode !== 'undefined') {
+                        if (weatherMode === 'night') { wtxt = '🌙 НОЧЬ'; wcol = '#8899ff'; }
+                        else if (weatherMode === 'rain') { wtxt = '🌧 ДОЖДЬ'; wcol = '#66aacc'; }
+                    }
+                    if (typeof weatherZone !== 'undefined') {
+                        if (weatherZone === 'dust') { wtxt = '🌪 ПЫЛЬНАЯ БУРЯ'; wcol = '#c4a574'; }
+                        else if (weatherZone === 'acid') { wtxt = '☢ КИСЛОТНЫЙ ДОЖДЬ'; wcol = '#66ff88'; }
+                    }
+                    weatherEl.textContent = wtxt;
+                    weatherEl.style.color = wcol;
                 }
             }
 
@@ -3102,6 +3227,9 @@
                 
                 const hud = document.getElementById('game-hud');
                 if (hud) hud.remove();
+                const cheb = document.getElementById('cheburashkaWarn');
+                if (cheb) cheb.remove();
+                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque').forEach(el => el.remove());
                 const timeTaken = raceTime;
                 
                 // Финишный cinematic ~1.5с
@@ -3804,45 +3932,123 @@
                 scene.add(group);
             }
 
-            const envCount = quality === 'low' ? 20 : quality === 'medium' ? 36 : 52;
-            const debrisCount = quality === 'low' ? 10 : 18;
+            const envCount = quality === 'low' ? 32 : quality === 'medium' ? 55 : 80;
+            const debrisCount = quality === 'low' ? 16 : 28;
 
-            // Тон карты: небо / туман / свет
-            if (mapId === 'promzona') {
-                scene.background = new THREE.Color(0x4a5a48);
-                scene.fog.color = new THREE.Color(0x4a5a48);
-                scene.fog.near = 28;
-                scene.fog.far = 130;
-                if (typeof ambient !== 'undefined') ambient.color.setHex(0x3a4a38);
-                if (typeof hemi !== 'undefined') { hemi.color.setHex(0x88aa77); hemi.groundColor.setHex(0x2a3020); }
-            } else if (mapId === 'svalka') {
-                scene.background = new THREE.Color(0x5a6a58);
-                scene.fog.color = new THREE.Color(0x5a6a58);
-                scene.fog.near = 26;
-                scene.fog.far = 125;
-                if (typeof ambient !== 'undefined') ambient.color.setHex(0x3a4a42);
-                // Лужи на дороге
-                for (let i = 0; i < 12; i++) {
-                    const puddle = new THREE.Mesh(
-                        new THREE.CircleGeometry(0.4 + Math.random()*0.5, 12),
-                        new THREE.MeshStandardMaterial({ color: 0x1a2a28, roughness: 0.15, metalness: 0.8, transparent: true, opacity: 0.7 })
-                    );
-                    puddle.rotation.x = -Math.PI/2;
-                    puddle.position.set(
-                        -TRACK_WIDTH/2 + 0.5 + Math.floor(Math.random()*3)*2,
-                        0.02,
-                        -TRACK_LENGTH/2 + 40 + Math.random()*(TRACK_LENGTH-80)
-                    );
-                    puddle.scale.set(1.4, 0.7, 1);
-                    scene.add(puddle);
+            // Тон карты + погода
+            function applyMapAndWeather() {
+                let sky = 0xb89060, fogC = 0xb89060, fogNear = 35, fogFar = 155;
+                if (mapId === 'promzona') {
+                    sky = 0x4a5540; fogC = 0x4a5540; fogNear = 28; fogFar = 125;
+                    if (ambient) ambient.color.setHex(0x3a4a38);
+                    if (hemi) { hemi.color.setHex(0x88aa66); hemi.groundColor.setHex(0x2a3020); }
+                    // земля промзоны — серо-зелёная
+                    if (ground && ground.material) {
+                        ground.material.color = new THREE.Color(0x4a5040);
+                    }
+                } else if (mapId === 'svalka') {
+                    sky = 0x3d5a38; fogC = 0x3d5a38; fogNear = 24; fogFar = 120;
+                    if (ambient) ambient.color.setHex(0x2a3a28);
+                    if (hemi) { hemi.color.setHex(0x6a8a55); hemi.groundColor.setHex(0x3a2a18); }
+                    if (ground && ground.material) {
+                        ground.material.color = new THREE.Color(0x3a4a28);
+                        ground.material.roughness = 1;
+                    }
+                    for (let i = 0; i < 14; i++) {
+                        const puddle = new THREE.Mesh(
+                            new THREE.CircleGeometry(0.4 + Math.random()*0.6, 12),
+                            new THREE.MeshStandardMaterial({ color: 0x1a2a18, roughness: 0.12, metalness: 0.85, transparent: true, opacity: 0.75 })
+                        );
+                        puddle.rotation.x = -Math.PI/2;
+                        puddle.position.set(-TRACK_WIDTH/2 + 0.5 + Math.floor(Math.random()*3)*2, 0.02, -TRACK_LENGTH/2 + 40 + Math.random()*(TRACK_LENGTH-80));
+                        puddle.scale.set(1.5, 0.7, 1);
+                        scene.add(puddle);
+                    }
+                } else {
+                    sky = 0xb89060; fogC = 0xb89060;
+                    if (sunLight) sunLight.color.setHex(0xffb070);
+                    if (ground && ground.material) ground.material.color = new THREE.Color(0x8a7048);
                 }
-            } else {
-                // Арсеньев — тёплый пыльный закат
-                scene.background = new THREE.Color(0xb89060);
-                scene.fog.color = new THREE.Color(0xb89060);
-                scene.fog.near = 35;
-                scene.fog.far = 155;
-                if (typeof sunLight !== 'undefined') sunLight.color.setHex(0xffb070);
+
+                if (weatherMode === 'night') {
+                    sky = 0x0a0a18; fogC = 0x0a0a18; fogNear = 15; fogFar = 90;
+                    if (ambient) { ambient.color.setHex(0x1a1a2a); ambient.intensity = 0.15; }
+                    if (hemi) { hemi.intensity = 0.12; }
+                    if (sunLight) { sunLight.intensity = 0.15; sunLight.color.setHex(0x4466aa); }
+                    scene.background = new THREE.Color(sky);
+                    scene.fog.color = new THREE.Color(fogC);
+                    scene.fog.near = fogNear; scene.fog.far = fogFar;
+                    // луна
+                    const moon = new THREE.Mesh(
+                        new THREE.SphereGeometry(2.5, 12, 12),
+                        new THREE.MeshBasicMaterial({ color: 0xccddff })
+                    );
+                    moon.position.set(40, 50, -80);
+                    scene.add(moon);
+                    const moonLight = new THREE.DirectionalLight(0x8899cc, 0.35);
+                    moonLight.position.set(30, 40, 10);
+                    scene.add(moonLight);
+                } else if (weatherMode === 'rain') {
+                    sky = mapId === 'svalka' ? 0x2a3a30 : 0x4a5a58;
+                    fogC = sky; fogNear = 20; fogFar = 100;
+                    if (ambient) ambient.intensity = 0.35;
+                    if (sunLight) sunLight.intensity = 0.5;
+                    scene.background = new THREE.Color(sky);
+                    scene.fog.color = new THREE.Color(fogC);
+                    scene.fog.near = fogNear; scene.fog.far = fogFar;
+                } else {
+                    scene.background = new THREE.Color(sky);
+                    scene.fog.color = new THREE.Color(fogC);
+                    scene.fog.near = fogNear; scene.fog.far = fogFar;
+                }
+            }
+            applyMapAndWeather();
+
+            // Баннеры 90-х вдоль трассы
+            const banners90 = [
+                'ТЕРМИНАТОР 2', 'БРАТ', 'ЖМУРКИ', 'БРИГАДА', 'ДМБ',
+                'ПЕРЕГРУЗКА', 'ВИДЕОПРОКАТ 24Ч', 'TURBO ЖВАЧКА',
+                'СЕГА МЕГА ДРАЙВ', 'VHS ONLY', 'РАНЕТКИ ТУР',
+                'НОСТАЛЬДЖГИЯ CAFE', 'КИНОЗАЛ «ОКТЯБРЬ»', 'ФАНТА'
+            ];
+            function createCinemaBanner(x, z, text) {
+                const g = new THREE.Group();
+                const pole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.06, 0.08, 3.2, 6),
+                    new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.5, roughness: 0.5 })
+                );
+                pole.position.y = 1.6; pole.castShadow = true; g.add(pole);
+                const board = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.4, 1.2, 0.1),
+                    new THREE.MeshStandardMaterial({ color: 0x1a1020, roughness: 0.7 })
+                );
+                board.position.y = 2.8; board.castShadow = true; g.add(board);
+                // canvas text
+                const cv = document.createElement('canvas');
+                cv.width = 256; cv.height = 128;
+                const cx = cv.getContext('2d');
+                cx.fillStyle = '#1a1020'; cx.fillRect(0,0,256,128);
+                cx.fillStyle = '#ff2244'; cx.fillRect(8,8,240,112);
+                cx.fillStyle = '#1a1020'; cx.fillRect(14,14,228,100);
+                cx.fillStyle = '#ffdd44'; cx.font = 'bold 22px Arial';
+                cx.textAlign = 'center'; cx.textBaseline = 'middle';
+                cx.fillText(text, 128, 64);
+                const tex = new THREE.CanvasTexture(cv);
+                const sign = new THREE.Mesh(
+                    new THREE.PlaneGeometry(2.2, 1.05),
+                    new THREE.MeshBasicMaterial({ map: tex })
+                );
+                sign.position.set(0, 2.8, 0.06); g.add(sign);
+                g.position.set(x, 0, z);
+                g.rotation.y = (x > 0 ? -0.3 : 0.3);
+                scene.add(g);
+            }
+            const bannerCount = quality === 'low' ? 8 : 14;
+            for (let i = 0; i < bannerCount; i++) {
+                const z = -TRACK_LENGTH/2 + 50 + Math.random() * (TRACK_LENGTH - 100);
+                const side = i % 2 === 0 ? 1 : -1;
+                const x = side * (TRACK_WIDTH/2 + 5 + Math.random() * 4);
+                createCinemaBanner(x, z, banners90[i % banners90.length]);
             }
 
             for (let i = 0; i < envCount; i++) {
@@ -3865,8 +4071,8 @@
                     else if (r < 0.8) createBillboard(x, z, scale);
                     else createDeadTree(x, z, scale * 0.9);
                 } else {
-                    // arsenev — классика
-                    if (Math.random() < 0.65) createRuinedBuilding(x, z, scale);
+                    // arsenev — больше руин
+                    if (Math.random() < 0.8) createRuinedBuilding(x, z, scale);
                     else createDeadTree(x, z, scale);
                 }
             }
@@ -4803,7 +5009,8 @@
                 }
 
                 emit(position, velocity, count = 2, customSize = 0.15) {
-                    if (!this.enabled) return;
+                    if (!this.enabled || !position) return;
+                    velocity = velocity || { x: 0, y: 0.2, z: 0 };
                     const density = quality === 'high' ? 2 : quality === 'medium' ? 1 : 0.5;
                     const actualCount = Math.max(1, Math.floor(count * density));
                     for (let i = 0; i < actualCount; i++) {
@@ -5042,7 +5249,7 @@
                     if (speed > 0) speed = Math.max(speed - FRICTION_FORCE, 0);
                 }
 
-                soundEngine.update(speed);
+                if (soundEngine) soundEngine.update(speed);
                 
                 // Следы шин
                 if ((currentKeys.s && speed > 0.1) || (typeof oilSlideTimer !== 'undefined' && oilSlideTimer > 0 && speed > 0.08)) {
@@ -5126,13 +5333,14 @@
                     ambient.intensity = 0.08;
                     scene.background = new THREE.Color(0x8a7355);
                     scene.fog.color = new THREE.Color(0x8a7355);
+                } else if (weatherMode === 'night') {
+                    nightOverlay.material.opacity = 0.25;
+                    headlight1.intensity = 2.2;
+                    headlight2.intensity = 2.2;
                 } else {
                     nightOverlay.material.opacity = 0;
-                    headlight1.intensity = 0;
-                    headlight2.intensity = 0;
-                    ambient.intensity = 0.55;
-                    scene.background = new THREE.Color(0x8a7355);
-                    scene.fog.color = new THREE.Color(0x8a7355);
+                    headlight1.intensity = weatherMode === 'rain' ? 0.6 : 0;
+                    headlight2.intensity = weatherMode === 'rain' ? 0.6 : 0;
                 }
 
                 // Попутные машины
@@ -5204,9 +5412,12 @@
                     if (car.hitCooldown > 0) car.hitCooldown -= deltaTime;
                     const dx = xPos - car.x;
                     const dz = zPos - car.z;
-                    if (car.hitCooldown <= 0 && Math.abs(dx) < 0.7 && Math.abs(dz) < 0.7) {
+                    const hw = (car.hitW || 0.75) * 0.55;
+                    const hl = (car.hitL || 1.4) * 0.45;
+                    if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl) {
                         car.hitCooldown = 1.2;
-                        handleObstacleHit({ penalty: 0.3, timePenalty: 4 });
+                        const pen = car.kind === 'bus' || car.kind === 'truck' ? 5 : 4;
+                        handleObstacleHit({ penalty: 0.3, timePenalty: pen });
                     }
                     
                     if (car.z < -TRACK_LENGTH / 2 - 10) {
@@ -5423,6 +5634,17 @@
                         0.25
                     );
                 }
+                // Дождь
+                if (weatherMode === 'rain' && Math.random() < 0.7) {
+                    for (let r = 0; r < 3; r++) {
+                        particleSystem.emit(
+                            _v.p1.set(xPos + (Math.random()-0.5)*12, 4 + Math.random()*3, zPos - Math.random()*15),
+                            _v.vel.set(0.1, -3 - Math.random()*2, 0.2),
+                            1,
+                            0.08
+                        );
+                    }
+                }
 
                 // Животные
                 animalSpawner.update(deltaTime, zPos);
@@ -5538,7 +5760,8 @@
         window.showDifficultyScreen = function() {
             // Удаляем старые элементы игры
             const container = document.getElementById('game-container');
-            while (container.firstChild) container.removeChild(container.firstChild);
+            if (container) while (container.firstChild) container.removeChild(container.firstChild);
+            document.querySelectorAll('#cheburashkaWarn, .animal-shout, .radio-line, .story-plaque, #finish-screen, #game-hud').forEach(el => el.remove());
             
             const oldHud = document.getElementById('game-hud');
             if (oldHud) oldHud.remove();
@@ -5584,6 +5807,7 @@
         let pendingDifficulty = 'medium';
         let pendingCar = 'cheburashka';
         let pendingMap = 'arsenev';
+        let pendingWeather = 'day';
         let currentLorePanel = 1;
 
         const CAR_PRESETS = {
@@ -5654,7 +5878,7 @@
                 carScreen.classList.add('active');
                 carScreen.style.display = 'flex';
             } else {
-                initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap);
+                initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
             }
         }
 
@@ -5680,10 +5904,18 @@
                     mapScreen.classList.add('active');
                     mapScreen.style.display = 'flex';
                 } else {
-                    initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap);
+                    initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
                 }
             });
         }
+
+        document.querySelectorAll('.weather-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                pendingWeather = btn.dataset.weather || 'day';
+            });
+        });
 
         document.querySelectorAll('.map-card').forEach(card => {
             card.addEventListener('click', () => {
@@ -5712,7 +5944,7 @@
                     mapScreen.classList.remove('active');
                     mapScreen.style.display = 'none';
                 }
-                initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap);
+                initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
             });
         }
 
