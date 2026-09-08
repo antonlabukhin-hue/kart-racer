@@ -875,6 +875,7 @@
             <div class="control-btn steer" id="btnRight">▶</div>
         </div>
         <div class="control-group-center">
+            <div class="control-btn" id="btnCam" title="Камера">📷</div>
             <div class="control-btn brake" id="btnBrake">⏬</div>
             <div class="control-btn gas" id="btnGas">⏫</div>
         </div>
@@ -2377,10 +2378,11 @@
                     if (this.audioCtx && this.audioCtx.state === 'suspended') {
                         this.audioCtx.resume();
                     }
-                    if (this.musicGain) {
+                    if (this.musicGain && this.audioCtx) {
                         this.musicGain.gain.setValueAtTime(val, this.audioCtx.currentTime);
                     }
-                    if (!this.isMusicPlaying || (!this.currentMusicSource && !this.musicInterval)) {
+                    if (this.htmlAudio) this.htmlAudio.volume = Math.max(0, val);
+                    if (!this.isMusicPlaying || (!this.currentMusicSource && !this.musicInterval && !this.htmlAudioPlaying)) {
                         this.isMusicPlaying = false;
                         this.startMusic();
                     }
@@ -2440,14 +2442,20 @@
             }
 
             startMusic() {
-                if (!this.enabled || !this.audioCtx) return;
-                // Если «играет», но источника нет — сброс
-                if (this.isMusicPlaying && !this.currentMusicSource && !this.musicInterval) {
+                this.musicStarted = true;
+                // На мобилках HTMLAudio надёжнее WebAudio buffer
+                if (window.__isMobile) {
+                    this._playHtmlAudio();
+                    return;
+                }
+                if (!this.enabled || !this.audioCtx) {
+                    this._playHtmlAudio();
+                    return;
+                }
+                if (this.isMusicPlaying && !this.currentMusicSource && !this.musicInterval && !this.htmlAudioPlaying) {
                     this.isMusicPlaying = false;
                 }
                 if (this.isMusicPlaying) return;
-
-                this.musicStarted = true;
 
                 if (this.audioCtx.state === 'suspended') {
                     this.audioCtx.resume().then(() => this._playMusic()).catch(() => this._playMusic());
@@ -2456,16 +2464,46 @@
                 }
             }
 
+            _playHtmlAudio() {
+                try {
+                    if (!this.htmlAudio) {
+                        this.htmlAudio = new Audio(this.musicUrl || 'music/race-music.mp3');
+                        this.htmlAudio.loop = true;
+                        this.htmlAudio.preload = 'auto';
+                        this.htmlAudio.volume = Math.max(0.05, this.musicVolume || 0.55);
+                    }
+                    this.htmlAudio.volume = Math.max(0.05, this.musicVolume || 0.55);
+                    const p = this.htmlAudio.play();
+                    if (p && p.then) {
+                        p.then(() => {
+                            this.isMusicPlaying = true;
+                            this.htmlAudioPlaying = true;
+                            console.log('🎵 HTMLAudio MP3 play');
+                        }).catch((err) => {
+                            console.warn('HTMLAudio blocked:', err);
+                            // ещё раз после жеста
+                        });
+                    } else {
+                        this.isMusicPlaying = true;
+                        this.htmlAudioPlaying = true;
+                    }
+                } catch (e) {
+                    console.warn('HTMLAudio fail', e);
+                }
+            }
+
             _playMusic() {
                 if (this.isMusicPlaying) return;
 
-                // 1. Пробуем MP3
                 if (this.musicBuffer && this.musicLoaded) {
                     this._playMp3Loop();
                     return;
                 }
 
-                // 2. Fallback — процедурная музыка
+                // mobile / fallback path
+                this._playHtmlAudio();
+                if (this.htmlAudioPlaying) return;
+
                 if (this.useProceduralFallback) {
                     console.log('🎹 Запуск процедурной музыки');
                     this.isMusicPlaying = true;
@@ -2474,7 +2512,6 @@
                     return;
                 }
 
-                // Ждём загрузку MP3
                 setTimeout(() => {
                     if (!this.isMusicPlaying) this._playMusic();
                 }, 800);
@@ -2735,16 +2772,21 @@
             /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
         window.__unlockAudio = function() {
             try {
-                if (!soundEngine || !soundEngine.audioCtx) return;
-                if (soundEngine.audioCtx.state === 'suspended') {
+                if (!soundEngine) return;
+                soundEngine.musicStarted = true;
+                if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
                     soundEngine.audioCtx.resume();
                 }
-                soundEngine.musicStarted = true;
-                if (!soundEngine.isMusicPlaying) soundEngine.startMusic();
-            } catch (e) {}
+                // Всегда пробуем HTMLAudio на mobile
+                if (window.__isMobile) {
+                    soundEngine._playHtmlAudio();
+                } else if (!soundEngine.isMusicPlaying) {
+                    soundEngine.startMusic();
+                }
+            } catch (e) { console.warn('unlock', e); }
         };
         ['touchstart', 'touchend', 'pointerdown', 'click', 'keydown'].forEach(ev => {
-            document.addEventListener(ev, window.__unlockAudio, { passive: true });
+            document.addEventListener(ev, window.__unlockAudio, { passive: true, once: false });
         });
 
         // ============================================================
@@ -3340,15 +3382,15 @@
             // ============================================================
             // ОСВЕЩЕНИЕ (реалистичный закатный/пыльный день)
             // ============================================================
-            const ambient = new THREE.AmbientLight(0x6b5a48, 0.45);
+            const ambient = new THREE.AmbientLight(0xb0a080, 1.0);
             scene.add(ambient);
             
             // Небо — тёплый, земля — холоднее/серее
-            const hemi = new THREE.HemisphereLight(0xc4a574, 0x3d3428, 0.55);
+            const hemi = new THREE.HemisphereLight(0xe8d0a8, 0x5a5040, 1.0);
             scene.add(hemi);
 
             // Главное солнце — низкое, жёсткие тени, тёплый оттенок
-            const sunLight = new THREE.DirectionalLight(0xffc88a, 1.85);
+            const sunLight = new THREE.DirectionalLight(0xffd0a0, 2.8);
             sunLight.position.set(40, 35, 15);
             sunLight.castShadow = true;
             sunLight.castShadow = !window.__isMobile && quality === 'high';
@@ -3396,12 +3438,14 @@
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
             let pixelRatioCap = quality === 'high' ? 2 : quality === 'medium' ? 1.5 : 1;
-            if (isMob) pixelRatioCap = quality === 'high' ? 1.5 : 1.25;
+            if (isMob) pixelRatioCap = 1.15;
             renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
             renderer.shadowMap.enabled = !isMob && quality === 'high';
             renderer.shadowMap.type = THREE.PCFShadowMap; // soft дороже
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.05;
+            // ACES + bloom сильно затемняли день — линейнее и ярче
+            renderer.toneMapping = THREE.NoToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            if (renderer.outputColorSpace !== undefined) renderer.outputColorSpace = THREE.SRGBColorSpace;
             container.appendChild(renderer.domElement);
 
             // ============================================================
@@ -4007,20 +4051,28 @@
             // Тон карты + погода
             function applyMapAndWeather() {
                 let sky = 0xb89060, fogC = 0xb89060, fogNear = 35, fogFar = 155;
+                // Базовый дневной свет — всегда сначала, потом погода может приглушить
+                if (ambient) { ambient.color.setHex(0xb0a080); ambient.intensity = 1.0; }
+                if (hemi) { hemi.color.setHex(0xe8d0a8); hemi.groundColor.setHex(0x5a5040); hemi.intensity = 1.0; }
+                if (sunLight) { sunLight.color.setHex(0xffd0a0); sunLight.intensity = 2.8; }
+                if (typeof fillLight !== 'undefined' && fillLight) { fillLight.intensity = 0.5; fillLight.color.setHex(0xa0b0c0); }
+                if (typeof rimLight !== 'undefined' && rimLight) { rimLight.intensity = 0.35; }
+
                 if (mapId === 'promzona') {
-                    sky = 0x4a5540; fogC = 0x4a5540; fogNear = 28; fogFar = 125;
-                    if (ambient) ambient.color.setHex(0x3a4a38);
-                    if (hemi) { hemi.color.setHex(0x88aa66); hemi.groundColor.setHex(0x2a3020); }
-                    // земля промзоны — серо-зелёная
+                    sky = 0x6a7a58; fogC = 0x6a7a58; fogNear = 30; fogFar = 140;
+                    if (ambient) { ambient.color.setHex(0x6a7a58); ambient.intensity = 0.65; }
+                    if (hemi) { hemi.color.setHex(0x99bb77); hemi.groundColor.setHex(0x3a4030); hemi.intensity = 0.7; }
+                    if (sunLight) { sunLight.color.setHex(0xe8d0a0); sunLight.intensity = 1.9; }
                     if (ground && ground.material) {
-                        ground.material.color = new THREE.Color(0x4a5040);
+                        ground.material.color = new THREE.Color(0x5a6048);
                     }
                 } else if (mapId === 'svalka') {
-                    sky = 0x3d5a38; fogC = 0x3d5a38; fogNear = 24; fogFar = 120;
-                    if (ambient) ambient.color.setHex(0x2a3a28);
-                    if (hemi) { hemi.color.setHex(0x6a8a55); hemi.groundColor.setHex(0x3a2a18); }
+                    sky = 0x5a7a48; fogC = 0x5a7a48; fogNear = 28; fogFar = 135;
+                    if (ambient) { ambient.color.setHex(0x5a6a48); ambient.intensity = 0.65; }
+                    if (hemi) { hemi.color.setHex(0x88aa66); hemi.groundColor.setHex(0x3a2a18); hemi.intensity = 0.7; }
+                    if (sunLight) { sunLight.color.setHex(0xe8c898); sunLight.intensity = 1.85; }
                     if (ground && ground.material) {
-                        ground.material.color = new THREE.Color(0x3a4a28);
+                        ground.material.color = new THREE.Color(0x4a5a38);
                         ground.material.roughness = 1;
                     }
                     for (let i = 0; i < 14; i++) {
@@ -4034,8 +4086,10 @@
                         scene.add(puddle);
                     }
                 } else {
-                    sky = 0xb89060; fogC = 0xb89060;
-                    if (sunLight) sunLight.color.setHex(0xffb070);
+                    sky = 0xc4a070; fogC = 0xb89060; fogNear = 35; fogFar = 160;
+                    if (sunLight) { sunLight.color.setHex(0xffb070); sunLight.intensity = 2.2; }
+                    if (ambient) { ambient.color.setHex(0x9a8060); ambient.intensity = 0.75; }
+                    if (hemi) { hemi.intensity = 0.8; }
                     if (ground && ground.material) ground.material.color = new THREE.Color(0x8a7048);
                 }
 
@@ -4130,7 +4184,9 @@
                 g.rotation.y = (x > 0 ? -0.3 : 0.3);
                 scene.add(g);
             }
-            const bannerCount = window.__isMobile ? 6 : (quality === 'low' ? 8 : 12);
+            // Баннеры: на mobile и ночью — меньше / выкл (тяжело для GPU)
+            const skipBanners = window.__isMobile || weatherMode === 'night';
+            const bannerCount = skipBanners ? 0 : (quality === 'low' ? 6 : 10);
             for (let i = 0; i < bannerCount; i++) {
                 const z = -TRACK_LENGTH/2 + 50 + Math.random() * (TRACK_LENGTH - 100);
                 const side = i % 2 === 0 ? 1 : -1;
@@ -4141,7 +4197,7 @@
             // Фонари вдоль дороги (ночь)
             const streetLamps = [];
             if (weatherMode === 'night') {
-                const lampCount = window.__isMobile ? 4 : (quality === 'low' ? 6 : 8);
+                const lampCount = window.__isMobile ? 0 : (weatherMode === 'night' ? (quality === 'low' ? 4 : 6) : 0);
                 for (let i = 0; i < lampCount; i++) {
                     const z = -TRACK_LENGTH / 2 + 40 + (i / lampCount) * (TRACK_LENGTH - 80);
                     const side = i % 2 === 0 ? 1 : -1;
@@ -4633,7 +4689,7 @@
                 };
             }
 
-            const maxCars = window.__isMobile ? Math.min(8, config.maxCars) : (quality === 'low' ? Math.min(12, config.maxCars) : config.maxCars);
+            const maxCars = window.__isMobile ? Math.min(weatherMode === 'night' ? 5 : 7, config.maxCars) : (quality === 'low' ? Math.min(12, config.maxCars) : config.maxCars);
             for (let i = 0; i < maxCars; i++) {
                 const z = -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
@@ -4946,6 +5002,17 @@
                 () => { mobileKeys.s = true; },
                 () => { mobileKeys.s = false; }
             );
+            const btnCam = document.getElementById('btnCam');
+            if (btnCam) {
+                const cycleCam = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof window.__cycleCamera === 'function') window.__cycleCamera();
+                    if (typeof window.__unlockAudio === 'function') window.__unlockAudio();
+                };
+                btnCam.addEventListener('touchstart', cycleCam, { passive: false });
+                btnCam.addEventListener('click', cycleCam);
+            }
             setupMobileButton(btnLeft,
                 () => { mobileKeys.a = true; },
                 () => { mobileKeys.a = false; }
@@ -5372,25 +5439,14 @@
                     '}'
                 ].join('\n')
             };
-            if (!window.__isMobile && quality !== 'low') {
-                try {
-                    composer = new EffectComposer(renderer);
-                    composer.addPass(new RenderPass(scene, camera));
-                    bloomPass = new UnrealBloomPass(
-                        new THREE.Vector2(Math.min(window.innerWidth, 1280), Math.min(window.innerHeight, 720)),
-                        quality === 'high' ? 0.32 : 0.2,
-                        0.35,
-                        0.88
-                    );
-                    composer.addPass(bloomPass);
-                    vignettePass = new ShaderPass(VignetteShader);
-                    composer.addPass(vignettePass);
-                    console.log('✨ Postprocessing ON');
-                } catch (e) {
-                    console.warn('Postprocessing unavailable', e);
-                    composer = null;
-                }
-            }
+            // Postprocessing отключён: Bloom+ACES давали почти чёрный день на ПК.
+            // Виньетку на нитро делаем CSS-оверлеем (дёшево).
+            composer = null;
+            const nitroVig = document.createElement('div');
+            nitroVig.id = 'nitro-vignette';
+            nitroVig.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:50;opacity:0;transition:opacity .2s;box-shadow:inset 0 0 120px 40px rgba(0,0,0,0.55),inset 0 0 80px 20px rgba(40,255,100,0.15);';
+            document.body.appendChild(nitroVig);
+            window.__nitroVig = nitroVig;
 
             function updateTrafficLights() {
                 if (weatherMode !== 'night' || window.__isMobile) return;
@@ -5444,15 +5500,16 @@
                 } catch (e) {}
             }
 
+            window.__cycleCamera = function() {
+                cameraMode = (cameraMode + 1) % CAMERA_MODES.length;
+                const tip = document.createElement('div');
+                tip.className = 'radio-line';
+                tip.textContent = '📷 Камера: ' + CAMERA_MODES[cameraMode];
+                document.body.appendChild(tip);
+                setTimeout(() => tip.remove(), 1400);
+            };
             window.addEventListener('keydown', (e) => {
-                if (e.code === 'KeyC' && !e.repeat) {
-                    cameraMode = (cameraMode + 1) % CAMERA_MODES.length;
-                    const tip = document.createElement('div');
-                    tip.className = 'radio-line';
-                    tip.textContent = '📷 Камера: ' + CAMERA_MODES[cameraMode];
-                    document.body.appendChild(tip);
-                    setTimeout(() => tip.remove(), 1400);
-                }
+                if (e.code === 'KeyC' && !e.repeat) window.__cycleCamera();
             });
 
             // ============================================================
@@ -5573,9 +5630,8 @@
                     camera.fov += (BASE_FOV - camera.fov) * 0.1;
                     camera.updateProjectionMatrix();
                 }
-                if (vignettePass && vignettePass.uniforms) {
-                    const n = (typeof nitroTimer !== 'undefined' && nitroTimer > 0) ? 1.0 : 0.0;
-                    vignettePass.uniforms.nitro.value += (n - vignettePass.uniforms.nitro.value) * 0.15;
+                if (window.__nitroVig) {
+                    window.__nitroVig.style.opacity = (typeof nitroTimer !== 'undefined' && nitroTimer > 0) ? '1' : '0';
                 }
 
                 const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? 1.45 : 1.0);
@@ -5664,22 +5720,35 @@
                 headlight2.target.position.copy(playerCar.position);
                 headlight2.target.position.z -= 22;
 
-                // Освещение по погоде
+                // Освещение по погоде (день всегда яркий)
                 if (weatherMode === 'night') {
                     nightOverlay.material.opacity = 0;
                     headlight1.intensity = window.__isMobile ? 4.0 : 5.5;
                     headlight2.intensity = window.__isMobile ? 4.0 : 5.5;
-                    if (ambient) ambient.intensity = 0.6;
-                    if (hemi) hemi.intensity = 0.45;
+                    if (ambient) ambient.intensity = 0.55;
+                    if (hemi) hemi.intensity = 0.4;
+                    if (sunLight) sunLight.intensity = 0.35;
+                    if (typeof fillLight !== 'undefined' && fillLight) fillLight.intensity = 0.1;
+                    if (renderer) renderer.toneMappingExposure = 1.0;
                 } else if (weatherMode === 'rain') {
                     nightOverlay.material.opacity = 0;
                     headlight1.intensity = 2.0;
                     headlight2.intensity = 2.0;
-                    if (ambient) ambient.intensity = 0.4;
+                    if (ambient) ambient.intensity = 0.5;
+                    if (hemi) hemi.intensity = 0.5;
+                    if (sunLight) sunLight.intensity = 0.9;
+                    if (typeof fillLight !== 'undefined' && fillLight) fillLight.intensity = 0.25;
+                    if (renderer) renderer.toneMappingExposure = 1.2;
                 } else {
+                    // ДЕНЬ — яркий
                     nightOverlay.material.opacity = 0;
                     headlight1.intensity = 0;
                     headlight2.intensity = 0;
+                    if (ambient) ambient.intensity = 1.05;
+                    if (hemi) hemi.intensity = 1.0;
+                    if (sunLight) sunLight.intensity = 2.8;
+                    if (typeof fillLight !== 'undefined' && fillLight) fillLight.intensity = 0.55;
+                    if (typeof rimLight !== 'undefined' && rimLight) rimLight.intensity = 0.4;
                 }
 
                 // Попутные машины
