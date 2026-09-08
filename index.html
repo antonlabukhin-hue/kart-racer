@@ -880,16 +880,21 @@
         </div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js"
-            }
+        <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
         }
+    }
     </script>
 
     <script type="module">
         import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
         window.THREE = THREE;
 
         console.log('=== 🏎️ ДОРОЖНЫЙ ПРОРЫВ ===');
@@ -2725,6 +2730,23 @@
         window.soundEngine = soundEngine;
         console.log('🔊 SoundEngine создан заранее');
 
+        // Мобильный флаг + разблокировка AudioContext по первому касанию
+        window.__isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
+            /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+        window.__unlockAudio = function() {
+            try {
+                if (!soundEngine || !soundEngine.audioCtx) return;
+                if (soundEngine.audioCtx.state === 'suspended') {
+                    soundEngine.audioCtx.resume();
+                }
+                soundEngine.musicStarted = true;
+                if (!soundEngine.isMusicPlaying) soundEngine.startMusic();
+            } catch (e) {}
+        };
+        ['touchstart', 'touchend', 'pointerdown', 'click', 'keydown'].forEach(ev => {
+            document.addEventListener(ev, window.__unlockAudio, { passive: true });
+        });
+
         // ============================================================
         // AnimalSpawner
         // ============================================================
@@ -3021,9 +3043,10 @@
                 }
             };
             ensureMusic();
-            // Повтор через 0.5с и 1.5с — если MP3 ещё грузился
-            setTimeout(ensureMusic, 500);
-            setTimeout(ensureMusic, 1500);
+            if (typeof window.__unlockAudio === 'function') window.__unlockAudio();
+            setTimeout(ensureMusic, 400);
+            setTimeout(ensureMusic, 1200);
+            setTimeout(ensureMusic, 2500);
             // Любой жест во время гонки тоже поднимает аудио
             const onceMusic = () => { ensureMusic(); };
             document.addEventListener('keydown', onceMusic, { once: true });
@@ -3328,8 +3351,9 @@
             const sunLight = new THREE.DirectionalLight(0xffc88a, 1.85);
             sunLight.position.set(40, 35, 15);
             sunLight.castShadow = true;
-            sunLight.shadow.mapSize.width = quality === 'high' ? 2048 : 1024;
-            sunLight.shadow.mapSize.height = quality === 'high' ? 2048 : 1024;
+            sunLight.castShadow = !window.__isMobile && quality === 'high';
+            sunLight.shadow.mapSize.width = quality === 'high' ? 1024 : 512;
+            sunLight.shadow.mapSize.height = quality === 'high' ? 1024 : 512;
             sunLight.shadow.camera.near = 1;
             sunLight.shadow.camera.far = 180;
             sunLight.shadow.camera.left = -35;
@@ -3361,12 +3385,21 @@
             // ============================================================
             // РЕНДЕРЕР
             // ============================================================
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            const isMob = window.__isMobile || false;
+            // На телефонах режем DPR и AA — главный выигрыш FPS без потери «красоты» моделей
+            const renderer = new THREE.WebGLRenderer({
+                antialias: !isMob && quality === 'high',
+                powerPreference: 'high-performance',
+                alpha: false,
+                stencil: false,
+                depth: true
+            });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            const pixelRatio = quality === 'high' ? 2 : quality === 'medium' ? 1.5 : 1;
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatio));
-            renderer.shadowMap.enabled = (quality !== 'low');
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            let pixelRatioCap = quality === 'high' ? 2 : quality === 'medium' ? 1.5 : 1;
+            if (isMob) pixelRatioCap = quality === 'high' ? 1.5 : 1.25;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
+            renderer.shadowMap.enabled = !isMob && quality === 'high';
+            renderer.shadowMap.type = THREE.PCFShadowMap; // soft дороже
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.05;
             container.appendChild(renderer.domElement);
@@ -3968,8 +4001,8 @@
                 scene.add(group);
             }
 
-            const envCount = quality === 'low' ? 22 : quality === 'medium' ? 40 : 58;
-            const debrisCount = quality === 'low' ? 10 : 18;
+            const envCount = window.__isMobile ? (quality === 'low' ? 14 : 22) : (quality === 'low' ? 22 : quality === 'medium' ? 36 : 50);
+            const debrisCount = window.__isMobile ? 8 : (quality === 'low' ? 10 : 16);
 
             // Тон карты + погода
             function applyMapAndWeather() {
@@ -4097,7 +4130,7 @@
                 g.rotation.y = (x > 0 ? -0.3 : 0.3);
                 scene.add(g);
             }
-            const bannerCount = quality === 'low' ? 8 : 14;
+            const bannerCount = window.__isMobile ? 6 : (quality === 'low' ? 8 : 12);
             for (let i = 0; i < bannerCount; i++) {
                 const z = -TRACK_LENGTH/2 + 50 + Math.random() * (TRACK_LENGTH - 100);
                 const side = i % 2 === 0 ? 1 : -1;
@@ -4108,7 +4141,7 @@
             // Фонари вдоль дороги (ночь)
             const streetLamps = [];
             if (weatherMode === 'night') {
-                const lampCount = quality === 'low' ? 6 : 10;
+                const lampCount = window.__isMobile ? 4 : (quality === 'low' ? 6 : 8);
                 for (let i = 0; i < lampCount; i++) {
                     const z = -TRACK_LENGTH / 2 + 40 + (i / lampCount) * (TRACK_LENGTH - 80);
                     const side = i % 2 === 0 ? 1 : -1;
@@ -4131,9 +4164,13 @@
                     );
                     bulb.position.set(side * -0.7, 3.3, 0);
                     g.add(bulb);
-                    const light = new THREE.PointLight(0xffcc88, 1.2, 14, 2);
-                    light.position.copy(bulb.position);
-                    g.add(light);
+                    if (!window.__isMobile) {
+                        const light = new THREE.PointLight(0xffcc88, 1.0, 12, 2);
+                        light.position.copy(bulb.position);
+                        g.add(light);
+                    } else {
+                        bulb.material = new THREE.MeshBasicMaterial({ color: 0xffeebb });
+                    }
                     g.position.set(side * (TRACK_WIDTH / 2 + 1.8), 0, z);
                     scene.add(g);
                     streetLamps.push(g);
@@ -4563,15 +4600,17 @@
                 fr.position.set(hitW * 0.32, rearY, frontZ);
                 car.add(fl); car.add(fr);
 
-                // Реальный свет фар вперёд (-Z), как у игрока
-                if (isNight) {
-                    const spot = new THREE.SpotLight(0xfff0cc, kind === 'moto' ? 1.2 : 2.2, 28, 0.4, 0.45, 1.3);
-                    spot.position.set(0, 0.4, frontZ);
-                    car.add(spot);
+                // SpotLight создаём, но включаем только у N ближайших (updateTrafficLights)
+                let headSpot = null;
+                if (isNight && !window.__isMobile) {
+                    headSpot = new THREE.SpotLight(0xfff0cc, 0, 20, 0.42, 0.5, 1.5);
+                    headSpot.position.set(0, 0.4, frontZ);
+                    car.add(headSpot);
                     const tgt = new THREE.Object3D();
-                    tgt.position.set(0, 0.2, frontZ - 16);
+                    tgt.position.set(0, 0.2, frontZ - 14);
                     car.add(tgt);
-                    spot.target = tgt;
+                    headSpot.target = tgt;
+                    headSpot.visible = false;
                 }
 
                 const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2;
@@ -4589,11 +4628,12 @@
                     hitCooldown: 0,
                     kind: kind,
                     hitW: hitW,
-                    hitL: hitL
+                    hitL: hitL,
+                    headSpot: headSpot
                 };
             }
 
-            const maxCars = quality === 'low' ? Math.min(12, config.maxCars) : config.maxCars;
+            const maxCars = window.__isMobile ? Math.min(8, config.maxCars) : (quality === 'low' ? Math.min(12, config.maxCars) : config.maxCars);
             for (let i = 0; i < maxCars; i++) {
                 const z = -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
@@ -4604,7 +4644,7 @@
             // ПРЕПЯТСТВИЯ
             // ============================================================
             const obstacles = [];
-            const maxObstacles = quality === 'low' ? Math.min(22, config.maxObstacles) : config.maxObstacles;
+            const maxObstacles = window.__isMobile ? Math.min(14, config.maxObstacles) : (quality === 'low' ? Math.min(22, config.maxObstacles) : config.maxObstacles);
             let oilSlideTimer = 0; // скольжение на масле
             
             function createObstacle(z, type) {
@@ -5031,6 +5071,7 @@
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+                if (composer) composer.setSize(window.innerWidth, window.innerHeight);
             };
             window.addEventListener('resize', resizeHandler);
 
@@ -5083,6 +5124,8 @@
 
                 updateHUD();
 
+                vibrate(strikes >= MAX_STRIKES - 1 ? 220 : 90);
+
                 if (strikes >= MAX_STRIKES) {
                     endGame('crash');
                 }
@@ -5094,7 +5137,7 @@
             class ParticleSystem {
                 constructor(scene) {
                     this.scene = scene;
-                    this.maxParticles = 120;
+                    this.maxParticles = window.__isMobile ? 40 : (quality === 'low' ? 50 : 100);
                     this.enabled = true;
                     this.geometry = new THREE.BufferGeometry();
                     this.positions = new Float32Array(this.maxParticles * 3);
@@ -5150,7 +5193,7 @@
                 emit(position, velocity, count = 2, customSize = 0.15) {
                     if (!this.enabled || !position) return;
                     velocity = velocity || { x: 0, y: 0.2, z: 0 };
-                    const density = quality === 'high' ? 2 : quality === 'medium' ? 1 : 0.5;
+                    const density = window.__isMobile ? 0.35 : (quality === 'high' ? 1.5 : quality === 'medium' ? 1 : 0.4);
                     const actualCount = Math.max(1, Math.floor(count * density));
                     for (let i = 0; i < actualCount; i++) {
                         const idx = this.particleIndex % this.maxParticles;
@@ -5216,9 +5259,10 @@
             // ЖИВОТНЫЕ
             // ============================================================
             const mapSpeciesPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
+            const mobileAnimals = window.__isMobile ? Math.min(14, config.maxAnimals) : config.maxAnimals;
             const animalSpawner = new AnimalSpawner(
                 scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD,
-                config.maxAnimals, config.animalSpawnRate,
+                mobileAnimals, config.animalSpawnRate * (window.__isMobile ? 1.25 : 1),
                 mapSpeciesPool
             );
 
@@ -5244,22 +5288,172 @@
             // ФАРЫ
             // ============================================================
             const headlight1 = new THREE.SpotLight(0xfff0dd, 0);
-            headlight1.angle = 0.55;
-            headlight1.penumbra = 0.4;
-            headlight1.decay = 1.2;
-            headlight1.distance = 75;
+            headlight1.angle = window.__isMobile ? 0.5 : 0.55;
+            headlight1.penumbra = 0.45;
+            headlight1.decay = 1.3;
+            headlight1.distance = window.__isMobile ? 45 : 70;
             scene.add(headlight1);
             headlight1.target = new THREE.Object3D();
             scene.add(headlight1.target);
 
             const headlight2 = new THREE.SpotLight(0xfff0dd, 0);
-            headlight2.angle = 0.55;
-            headlight2.penumbra = 0.4;
-            headlight2.decay = 1.2;
-            headlight2.distance = 75;
+            headlight2.angle = window.__isMobile ? 0.5 : 0.55;
+            headlight2.penumbra = 0.45;
+            headlight2.decay = 1.3;
+            headlight2.distance = window.__isMobile ? 45 : 70;
             scene.add(headlight2);
             headlight2.target = new THREE.Object3D();
             scene.add(headlight2.target);
+
+            // ============================================================
+            // КАМЕРЫ / ГЕЙМПАД / СЛЕДЫ / ПОСТ / ЛИМИТ ФАР
+            // ============================================================
+            let cameraMode = 0;
+            const CAMERA_MODES = ['chase', 'hood', 'cockpit', 'orbit'];
+            let orbitAngle = 0;
+
+            const TIRE_POOL_SIZE = window.__isMobile ? 12 : 24;
+            const tireTrackPool = [];
+            const tireTrackGeo = new THREE.PlaneGeometry(0.12, 0.4);
+            const tireTrackMat = new THREE.MeshBasicMaterial({
+                color: 0x1a1a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false
+            });
+            for (let ti = 0; ti < TIRE_POOL_SIZE; ti++) {
+                const tm = new THREE.Mesh(tireTrackGeo, tireTrackMat);
+                tm.rotation.x = -Math.PI / 2;
+                tm.visible = false;
+                scene.add(tm);
+                tireTrackPool.push({ mesh: tm, life: 0 });
+            }
+            let tirePoolIdx = 0;
+            let tireSpawnCooldown = 0;
+            function spawnTireTrack(x, z) {
+                const t = tireTrackPool[tirePoolIdx % TIRE_POOL_SIZE];
+                tirePoolIdx++;
+                t.mesh.position.set(x, 0.03, z);
+                t.mesh.visible = true;
+                t.life = 1.6;
+            }
+
+            // LOD: дальние объекты envAnim + banners упрощённо
+            function updateLOD() {
+                const hideDist = window.__isMobile ? 55 : 90;
+                if (typeof envAnim !== 'undefined') {
+                    envAnim.forEach(o => {
+                        if (!o.mesh) return;
+                        const dz = Math.abs((o.mesh.position.z || 0) - zPos);
+                        o.mesh.visible = dz < hideDist;
+                    });
+                }
+            }
+
+            let composer = null;
+            let bloomPass = null;
+            let vignettePass = null;
+            const VignetteShader = {
+                uniforms: {
+                    tDiffuse: { value: null },
+                    darkness: { value: 0.4 },
+                    offset: { value: 1.2 },
+                    nitro: { value: 0.0 }
+                },
+                vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+                fragmentShader: [
+                    'uniform sampler2D tDiffuse; uniform float darkness; uniform float offset; uniform float nitro;',
+                    'varying vec2 vUv;',
+                    'void main(){',
+                    '  vec4 c = texture2D(tDiffuse, vUv);',
+                    '  vec2 uv = (vUv - 0.5) * vec2(offset);',
+                    '  float vig = clamp(1.0 - dot(uv, uv), 0.0, 1.0);',
+                    '  vig = pow(vig, darkness + nitro * 0.9);',
+                    '  c.rgb *= vig;',
+                    '  c.rgb += nitro * 0.05 * vec3(0.15, 1.0, 0.35);',
+                    '  gl_FragColor = c;',
+                    '}'
+                ].join('\n')
+            };
+            if (!window.__isMobile && quality !== 'low') {
+                try {
+                    composer = new EffectComposer(renderer);
+                    composer.addPass(new RenderPass(scene, camera));
+                    bloomPass = new UnrealBloomPass(
+                        new THREE.Vector2(Math.min(window.innerWidth, 1280), Math.min(window.innerHeight, 720)),
+                        quality === 'high' ? 0.32 : 0.2,
+                        0.35,
+                        0.88
+                    );
+                    composer.addPass(bloomPass);
+                    vignettePass = new ShaderPass(VignetteShader);
+                    composer.addPass(vignettePass);
+                    console.log('✨ Postprocessing ON');
+                } catch (e) {
+                    console.warn('Postprocessing unavailable', e);
+                    composer = null;
+                }
+            }
+
+            function updateTrafficLights() {
+                if (weatherMode !== 'night' || window.__isMobile) return;
+                const MAX_SPOTS = 6;
+                const ranked = [];
+                for (let i = 0; i < cars.length; i++) {
+                    const c = cars[i];
+                    if (!c.active || !c.headSpot) continue;
+                    ranked.push({ c, d: Math.abs(c.z - zPos) + Math.abs(c.x - xPos) * 0.4 });
+                }
+                ranked.sort((a, b) => a.d - b.d);
+                for (let i = 0; i < ranked.length; i++) {
+                    const on = i < MAX_SPOTS && ranked[i].d < 50;
+                    ranked[i].c.headSpot.intensity = on ? (ranked[i].c.kind === 'moto' ? 0.9 : 1.4) : 0;
+                    ranked[i].c.headSpot.visible = on;
+                }
+            }
+
+            function pollGamepad() {
+                const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+                let gp = null;
+                for (let i = 0; i < gps.length; i++) {
+                    if (gps[i] && gps[i].connected) { gp = gps[i]; break; }
+                }
+                if (!gp) return;
+                const ax = gp.axes[0] || 0;
+                const ay = gp.axes[1] || 0;
+                keys.a = ax < -0.35 || !!(gp.buttons[14] && gp.buttons[14].pressed);
+                keys.d = ax > 0.35 || !!(gp.buttons[15] && gp.buttons[15].pressed);
+                keys.w = ay < -0.35 || !!(gp.buttons[0] && gp.buttons[0].pressed) || (gp.buttons[7] && gp.buttons[7].value > 0.15);
+                keys.s = ay > 0.35 || !!(gp.buttons[1] && gp.buttons[1].pressed) || (gp.buttons[6] && gp.buttons[6].value > 0.15);
+                if (gp.buttons[3] && gp.buttons[3].pressed && !pollGamepad._camLock) {
+                    cameraMode = (cameraMode + 1) % CAMERA_MODES.length;
+                    pollGamepad._camLock = true;
+                }
+                if (gp.buttons[3] && !gp.buttons[3].pressed) pollGamepad._camLock = false;
+            }
+
+            function vibrate(ms) {
+                try {
+                    if (navigator.vibrate) navigator.vibrate(ms);
+                    const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+                    for (let i = 0; i < gps.length; i++) {
+                        const gp = gps[i];
+                        if (gp && gp.vibrationActuator) {
+                            gp.vibrationActuator.playEffect('dual-rumble', {
+                                duration: ms, strongMagnitude: 0.65, weakMagnitude: 0.35
+                            });
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'KeyC' && !e.repeat) {
+                    cameraMode = (cameraMode + 1) % CAMERA_MODES.length;
+                    const tip = document.createElement('div');
+                    tip.className = 'radio-line';
+                    tip.textContent = '📷 Камера: ' + CAMERA_MODES[cameraMode];
+                    document.body.appendChild(tip);
+                    setTimeout(() => tip.remove(), 1400);
+                }
+            });
 
             // ============================================================
             // ИГРОВОЙ ЦИКЛ
@@ -5269,6 +5463,7 @@
                 
                 raceTime += deltaTime;
                 const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
+                pollGamepad();
                 
                 // Комбо
                 comboTime += deltaTime;
@@ -5378,6 +5573,10 @@
                     camera.fov += (BASE_FOV - camera.fov) * 0.1;
                     camera.updateProjectionMatrix();
                 }
+                if (vignettePass && vignettePass.uniforms) {
+                    const n = (typeof nitroTimer !== 'undefined' && nitroTimer > 0) ? 1.0 : 0.0;
+                    vignettePass.uniforms.nitro.value += (n - vignettePass.uniforms.nitro.value) * 0.15;
+                }
 
                 const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? 1.45 : 1.0);
                 const effectiveAccel = ACCELERATION * (nitroTimer > 0 ? 1.6 : 1.0);
@@ -5395,7 +5594,21 @@
 
                 if (soundEngine) soundEngine.update(speed);
                 
-                // Следы шин отключены (давали GC-лаги). Можно вернуть через пул.
+                // Следы шин (пул)
+                tireSpawnCooldown -= deltaTime;
+                if (tireSpawnCooldown <= 0 && ((currentKeys.s && speed > 0.08) || oilSlideTimer > 0)) {
+                    tireSpawnCooldown = 0.08;
+                    spawnTireTrack(xPos - 0.25, zPos + 0.2);
+                    spawnTireTrack(xPos + 0.25, zPos + 0.2);
+                }
+                for (let ti = 0; ti < tireTrackPool.length; ti++) {
+                    const t = tireTrackPool[ti];
+                    if (t.life > 0) {
+                        t.life -= deltaTime;
+                        t.mesh.material.opacity = Math.max(0, t.life * 0.25);
+                        if (t.life <= 0) t.mesh.visible = false;
+                    }
+                }
 
                 const onOil = (typeof oilSlideTimer !== 'undefined' && oilSlideTimer > 0);
                 const steerMul = onOil ? (0.35 * (typeof OIL_GRIP !== 'undefined' ? OIL_GRIP : 1)) : 1.0;
@@ -5453,11 +5666,11 @@
 
                 // Освещение по погоде
                 if (weatherMode === 'night') {
-                    nightOverlay.material.opacity = 0; // не затемняем экран
-                    headlight1.intensity = 6.0;
-                    headlight2.intensity = 6.0;
-                    if (ambient) ambient.intensity = 0.55;
-                    if (hemi) hemi.intensity = 0.4;
+                    nightOverlay.material.opacity = 0;
+                    headlight1.intensity = window.__isMobile ? 4.0 : 5.5;
+                    headlight2.intensity = window.__isMobile ? 4.0 : 5.5;
+                    if (ambient) ambient.intensity = 0.6;
+                    if (hemi) hemi.intensity = 0.45;
                 } else if (weatherMode === 'rain') {
                     nightOverlay.material.opacity = 0;
                     headlight1.intensity = 2.0;
@@ -5770,6 +5983,9 @@
                     );
                 }
 
+                updateTrafficLights();
+                if (Math.floor(raceTime * 2) % 2 === 0) updateLOD();
+
                 // Животные
                 animalSpawner.update(deltaTime, zPos);
 
@@ -5795,14 +6011,41 @@
                     endGame('timeout');
                 }
 
-                // Камера
+                // Камера (C / кнопка Y на геймпаде)
                 const isNightCam = (weatherMode === 'night');
-                const targetX = xPos * 0.35;
-                const targetY = isNightCam ? 3.8 : 4.2;
-                const targetZ = zPos + (isNightCam ? 7 : 9);
-                _v.p2.set(targetX, targetY, targetZ);
-                camera.position.lerp(_v.p2, 0.12);
-                camera.lookAt(xPos, 0.5, zPos - 12);
+                let targetX, targetY, targetZ;
+                const mode = CAMERA_MODES[cameraMode] || 'chase';
+                if (mode === 'hood') {
+                    targetX = xPos;
+                    targetY = 0.85;
+                    targetZ = zPos - 0.2;
+                    _v.p2.set(targetX, targetY, targetZ);
+                    camera.position.lerp(_v.p2, 0.2);
+                    camera.lookAt(xPos, 0.6, zPos - 18);
+                } else if (mode === 'cockpit') {
+                    targetX = xPos;
+                    targetY = 1.05;
+                    targetZ = zPos + 0.15;
+                    _v.p2.set(targetX, targetY, targetZ);
+                    camera.position.lerp(_v.p2, 0.25);
+                    camera.lookAt(xPos, 0.7, zPos - 14);
+                } else if (mode === 'orbit') {
+                    orbitAngle += deltaTime * 0.35;
+                    const r = 11;
+                    targetX = xPos + Math.sin(orbitAngle) * r;
+                    targetY = 5.5;
+                    targetZ = zPos + Math.cos(orbitAngle) * r;
+                    _v.p2.set(targetX, targetY, targetZ);
+                    camera.position.lerp(_v.p2, 0.08);
+                    camera.lookAt(xPos, 0.5, zPos);
+                } else {
+                    targetX = xPos * 0.35;
+                    targetY = isNightCam ? 3.8 : 4.2;
+                    targetZ = zPos + (isNightCam ? 7 : 9);
+                    _v.p2.set(targetX, targetY, targetZ);
+                    camera.position.lerp(_v.p2, 0.12);
+                    camera.lookAt(xPos, 0.5, zPos - 12);
+                }
 
                 if (shakeTime > 0) {
                     shakeTime = Math.max(0, shakeTime - deltaTime);
@@ -5839,7 +6082,11 @@
                 } catch (err) {
                     console.error('update error:', err);
                 }
-                renderer.render(scene, camera);
+                if (composer) {
+                    composer.render();
+                } else {
+                    renderer.render(scene, camera);
+                }
             }
 
             const style = document.createElement('style');
@@ -5917,7 +6164,8 @@
         // ============================================================
         // НАСТРОЙКИ КАЧЕСТВА
         // ============================================================
-        let selectedQuality = 'medium';
+        let selectedQuality = (window.__isMobile ? 'medium' : 'medium');
+        // На слабых телефонах по умолчанию medium; low доступен в меню
 
         document.querySelectorAll('.quality-selector .q-btn').forEach(btn => {
             btn.addEventListener('click', () => {
