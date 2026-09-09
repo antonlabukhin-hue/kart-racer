@@ -438,16 +438,52 @@
                 right: max(8px, env(safe-area-inset-right, 0px) + 6px);
             }
         }
-        @media screen and (orientation: portrait) and (max-width: 900px) {
-            /* подсказка перевернуть — только если ещё не в гонке */
-            #orient-hint {
-                display: none;
-                position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
-                z-index: 160; padding: 8px 14px; border-radius: 10px;
-                background: rgba(0,0,0,0.55); color: #ffdd00; font-size: 12px;
-                pointer-events: none; white-space: nowrap;
-            }
-            #orient-hint.show { display: block; }
+
+        /* === ТОЛЬКО ЛАНДШАФТ НА МОБИЛЬНЫХ === */
+        #rotate-lock {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #050508;
+            color: #fff;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        #rotate-lock.show {
+            display: flex;
+        }
+        #rotate-lock .phone-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: rotPhone 1.6s ease-in-out infinite;
+        }
+        @keyframes rotPhone {
+            0%   { transform: rotate(0deg); }
+            35%  { transform: rotate(90deg); }
+            65%  { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+        }
+        #rotate-lock h2 {
+            color: #ffdd00;
+            font-size: 22px;
+            margin: 0 0 10px;
+        }
+        #rotate-lock p {
+            color: #aaa;
+            font-size: 14px;
+            max-width: 320px;
+            line-height: 1.45;
+            margin: 0;
+        }
+        #rotate-lock .hint-sub {
+            margin-top: 18px;
+            font-size: 12px;
+            color: #666;
         }
 
         /* === МОБИЛЬНОЕ УПРАВЛЕНИЕ (Asphalt/NFS-style) ===
@@ -1075,6 +1111,13 @@
     </style>
 </head>
 <body>
+    <div id="rotate-lock" aria-live="polite">
+        <div class="phone-icon">📱</div>
+        <h2>Поверни телефон</h2>
+        <p>Играть можно только в <b>горизонтальном</b> положении экрана. Поверни устройство набок — и заезд продолжится.</p>
+        <div class="hint-sub">Альбомная ориентация · Landscape</div>
+    </div>
+
     <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
     <div id="loading">
         <div class="spinner"></div>
@@ -1469,6 +1512,114 @@
         import * as THREE from 'three';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
+
+        // ============================================================
+        // ПРИНУДИТЕЛЬНЫЙ ЛАНДШАФТ (мобильные)
+        // ============================================================
+        window.__isMobile = (function() {
+            try {
+                return /Android|iPhone|iPad|iPod|Mobile|Tablet|Touch/i.test(navigator.userAgent)
+                    || (navigator.maxTouchPoints > 1 && window.innerWidth < 1100);
+            } catch (e) { return false; }
+        })();
+
+        function isPortrait() {
+            try {
+                if (window.screen && window.screen.orientation && window.screen.orientation.type) {
+                    return String(window.screen.orientation.type).indexOf('portrait') >= 0;
+                }
+            } catch (e) {}
+            return window.innerHeight > window.innerWidth;
+        }
+
+        function updateRotateLock() {
+            const el = document.getElementById('rotate-lock');
+            if (!el) return;
+            // Оверлей только когда ждём поворота к гонке или уже в гонке «встали» вертикально
+            const blocking = !!(window.__waitingLandscape || window.__inRace);
+            const need = !!(window.__isMobile && isPortrait() && blocking);
+            if (need) el.classList.add('show');
+            else el.classList.remove('show');
+            return need;
+        }
+
+        async function lockLandscape() {
+            if (!window.__isMobile) return false;
+            try {
+                // fullscreen помогает браузеру разрешить orientation.lock
+                const root = document.documentElement;
+                if (root.requestFullscreen) {
+                    try { await root.requestFullscreen(); } catch (e) {}
+                } else if (root.webkitRequestFullscreen) {
+                    try { root.webkitRequestFullscreen(); } catch (e) {}
+                }
+            } catch (e) {}
+            try {
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('landscape');
+                    console.log('🔒 orientation locked landscape');
+                    return true;
+                }
+            } catch (e) {
+                console.warn('orientation.lock недоступен:', e && e.message);
+            }
+            try {
+                // старые Android
+                if (screen.lockOrientation) screen.lockOrientation('landscape');
+                else if (screen.mozLockOrientation) screen.mozLockOrientation('landscape');
+                else if (screen.msLockOrientation) screen.msLockOrientation('landscape');
+            } catch (e) {}
+            return false;
+        }
+
+        function unlockOrientation() {
+            try {
+                if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+            } catch (e) {}
+            try {
+                if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+            } catch (e) {}
+        }
+
+        /** true = можно стартовать гонку */
+        async function ensureLandscapeForRace() {
+            if (!window.__isMobile) return true;
+            updateRotateLock();
+            if (!isPortrait()) {
+                await lockLandscape();
+                updateRotateLock();
+                return true;
+            }
+            // ждём поворота
+            updateRotateLock();
+            return new Promise((resolve) => {
+                const check = () => {
+                    updateRotateLock();
+                    if (!isPortrait()) {
+                        window.removeEventListener('resize', check);
+                        window.removeEventListener('orientationchange', check);
+                        lockLandscape().then(() => resolve(true));
+                    }
+                };
+                window.addEventListener('resize', check);
+                window.addEventListener('orientationchange', check);
+                // на случай если уже почти landscape
+                setTimeout(check, 300);
+            });
+        }
+
+        window.addEventListener('resize', updateRotateLock);
+        window.addEventListener('orientationchange', () => setTimeout(updateRotateLock, 50));
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateRotateLock);
+        } else {
+            updateRotateLock();
+        }
+        window.ensureLandscapeForRace = ensureLandscapeForRace;
+        window.updateRotateLock = updateRotateLock;
+        window.lockLandscape = lockLandscape;
+
+
 
         // ============================================================
         // ПРОВЕРКА И ЗАГРУЗКА РЕСУРСОВ
@@ -3178,6 +3329,9 @@ function startGaragePreview(carId) {
             if (cont) { while (cont.firstChild) cont.removeChild(cont.firstChild); }
             try { if (typeof pendingMode !== 'undefined') pendingMode = 'race'; } catch (e) {}
             window.__inRace = false;
+            window.__waitingLandscape = false;
+            try { if (typeof updateRotateLock === 'function') updateRotateLock(); } catch (e) {}
+            try { if (typeof unlockOrientation === 'function') unlockOrientation(); } catch (e) {}
             if (typeof showMainMenu === 'function') showMainMenu();
             setTimeout(function(){ if (typeof window.playMenuMusic === 'function') window.playMenuMusic(); }, 100);
             if (openGarageAfter) setTimeout(function(){ if (typeof openGarage === 'function') openGarage(); }, 60);
@@ -5295,6 +5449,35 @@ function startGaragePreview(carId) {
         // ОСНОВНАЯ ИГРА
         // ============================================================
         function initGame(quality, difficulty, carId = 'cheburashka', mapId = 'arsenev', weatherId = 'day') {
+            // Мобильные: гонка только в landscape
+            if (window.__isMobile && typeof isPortrait === 'function' && isPortrait()) {
+                console.log('📱 Ждём горизонтальную ориентацию...');
+                window.__inRace = false;
+                window.__waitingLandscape = true;
+                if (typeof updateRotateLock === 'function') updateRotateLock();
+                const retry = () => {
+                    if (typeof isPortrait === 'function' && !isPortrait()) {
+                        window.__waitingLandscape = false;
+                        window.removeEventListener('resize', retry);
+                        window.removeEventListener('orientationchange', retry);
+                        if (typeof lockLandscape === 'function') lockLandscape();
+                        setTimeout(function() {
+                            initGame(quality, difficulty, carId, mapId, weatherId);
+                        }, 150);
+                    } else if (typeof updateRotateLock === 'function') {
+                        updateRotateLock();
+                    }
+                };
+                window.addEventListener('resize', retry);
+                window.addEventListener('orientationchange', retry);
+                return;
+            }
+            window.__waitingLandscape = false;
+            if (typeof lockLandscape === 'function') {
+                try { lockLandscape(); } catch (e) {}
+            }
+            if (typeof updateRotateLock === 'function') updateRotateLock();
+
             console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}, погода: ${weatherId}`);
             window.__inRace = true;
             if (typeof window.stopMenuMusic === 'function') window.stopMenuMusic();
