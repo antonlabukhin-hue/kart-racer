@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>🏎️ Дорожный прорыв</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -408,7 +408,49 @@
         /* ============================================================ */
         /* МОБИЛЬНОЕ УПРАВЛЕНИЕ */
         /* ============================================================ */
-                /* === МОБИЛЬНОЕ УПРАВЛЕНИЕ (Asphalt/NFS-style) ===
+                
+        /* Горизонтальная ориентация — полноэкранная гонка */
+        @media screen and (orientation: landscape) {
+            #game-container canvas {
+                width: 100vw !important;
+                height: 100vh !important;
+                object-fit: cover;
+            }
+            #mobile-controls {
+                padding-bottom: max(12px, env(safe-area-inset-bottom, 0px) + 8px);
+                padding-left: max(28px, env(safe-area-inset-left, 0px) + 16px);
+                padding-right: max(28px, env(safe-area-inset-right, 0px) + 16px);
+            }
+            #mobile-controls .mc-left {
+                left: max(28px, env(safe-area-inset-left, 0px) + 16px);
+                bottom: max(14px, env(safe-area-inset-bottom, 0px) + 10px);
+            }
+            #mobile-controls .mc-right {
+                right: max(28px, env(safe-area-inset-right, 0px) + 16px);
+                bottom: max(14px, env(safe-area-inset-bottom, 0px) + 10px);
+            }
+            #mobile-controls .mc-cam {
+                right: max(28px, env(safe-area-inset-right, 0px) + 16px);
+                transform: translateY(-170px);
+            }
+            #hud-menu-btn {
+                top: max(8px, env(safe-area-inset-top, 0px) + 6px);
+                right: max(8px, env(safe-area-inset-right, 0px) + 6px);
+            }
+        }
+        @media screen and (orientation: portrait) and (max-width: 900px) {
+            /* подсказка перевернуть — только если ещё не в гонке */
+            #orient-hint {
+                display: none;
+                position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+                z-index: 160; padding: 8px 14px; border-radius: 10px;
+                background: rgba(0,0,0,0.55); color: #ffdd00; font-size: 12px;
+                pointer-events: none; white-space: nowrap;
+            }
+            #orient-hint.show { display: block; }
+        }
+
+        /* === МОБИЛЬНОЕ УПРАВЛЕНИЕ (Asphalt/NFS-style) ===
            Большие зоны, отступ от краёв и safe-area, газ справа снизу */
         #mobile-controls {
             position: fixed;
@@ -3135,6 +3177,7 @@ function startGaragePreview(carId) {
             const cont = document.getElementById('game-container');
             if (cont) { while (cont.firstChild) cont.removeChild(cont.firstChild); }
             try { if (typeof pendingMode !== 'undefined') pendingMode = 'race'; } catch (e) {}
+            window.__inRace = false;
             if (typeof showMainMenu === 'function') showMainMenu();
             setTimeout(function(){ if (typeof window.playMenuMusic === 'function') window.playMenuMusic(); }, 100);
             if (openGarageAfter) setTimeout(function(){ if (typeof openGarage === 'function') openGarage(); }, 60);
@@ -4465,16 +4508,19 @@ function startGaragePreview(carId) {
 
                     const resumeAudio = () => {
                         if (this.audioCtx && this.audioCtx.state === 'suspended') {
-                            this.audioCtx.resume().then(() => {
-                                console.log('🔊 AudioContext resumed');
-                                if (!this.isMusicPlaying) this.startMusic();
-                            });
-                        } else if (!this.isMusicPlaying) {
-                            this.startMusic();
+                            this.audioCtx.resume().then(() => console.log('🔊 AudioContext resumed')).catch(()=>{});
+                        }
+                        // В меню — только меню-музыка; в гонке — гоночный трек
+                        const racing = !!(window.__inRace);
+                        if (racing) {
+                            if (!this.isMusicPlaying) this.startMusic();
+                        } else {
+                            this.startMenuMusic();
                         }
                     };
                     document.addEventListener('click', resumeAudio);
                     document.addEventListener('keydown', resumeAudio);
+                    document.addEventListener('touchstart', resumeAudio, { passive: true });
 
                     return true;
                 } catch (e) {
@@ -4534,9 +4580,13 @@ function startGaragePreview(carId) {
                     if (this.menuAudio) {
                         this.menuAudio.volume = val * 0.85;
                     }
-                    if (!this.isMusicPlaying || (!this.currentMusicSource && !this.musicInterval)) {
-                        this.isMusicPlaying = false;
-                        this.startMusic();
+                    if (window.__inRace) {
+                        if (!this.isMusicPlaying || (!this.currentMusicSource && !this.musicInterval)) {
+                            this.isMusicPlaying = false;
+                            this.startMusic();
+                        }
+                    } else {
+                        this.startMenuMusic();
                     }
                 });
 
@@ -4610,17 +4660,8 @@ function startGaragePreview(carId) {
             // ---- Музыка меню (отдельный MP3, HTML5 Audio) ----
             startMenuMusic() {
                 if (!this.enabled) return;
-                // во время гонки меню-музыка не нужна
-                try {
-                    if (typeof gameState !== 'undefined' && gameState === 'racing') return;
-                } catch (e) {}
-                try {
-                    if (window.__gameRenderer && document.getElementById('game-container') && document.getElementById('game-container').children.length) {
-                        // если 3D-сцена жива — скорее гонка
-                        const hud = document.getElementById('game-hud') || document.getElementById('hud-menu-btn');
-                        if (hud) return;
-                    }
-                } catch (e) {}
+                // Только флаг гонки — надёжнее, чем угадывать по DOM
+                if (window.__inRace) return;
 
                 // остановить гоночный трек
                 try { this.stopMusic(); } catch (e) {}
@@ -4664,6 +4705,29 @@ function startGaragePreview(carId) {
                         this.menuAudio.pause();
                         this.menuAudio.currentTime = 0;
                     } catch (e) {}
+                }
+            }
+            /** HTML5 fallback гоночной музыки (ночь/mobile, если WebAudio молчит) */
+            startRaceMusicHTML() {
+                try {
+                    if (!this.raceAudio) {
+                        this.raceAudio = new Audio(this.musicUrl || 'music/race-music.mp3');
+                        this.raceAudio.loop = true;
+                        this.raceAudio.preload = 'auto';
+                    }
+                    this.raceAudio.volume = Math.max(0, Math.min(1, this.musicVolume || 0.55));
+                    const p = this.raceAudio.play();
+                    if (p && p.then) {
+                        p.then(() => { this.isMusicPlaying = true; console.log('🎵 Race MP3 (HTML5)'); })
+                         .catch(()=>{});
+                    } else {
+                        this.isMusicPlaying = true;
+                    }
+                } catch (e) {}
+            }
+            stopRaceMusicHTML() {
+                if (this.raceAudio) {
+                    try { this.raceAudio.pause(); this.raceAudio.currentTime = 0; } catch (e) {}
                 }
             }
             setMusicVolume(v) {
@@ -4788,6 +4852,7 @@ function startGaragePreview(carId) {
             stopMusic() {
                 this.isMusicPlaying = false;
                 this.musicStarted = false;
+                try { this.stopRaceMusicHTML(); } catch (e) {}
 
                 if (this.musicInterval) {
                     clearInterval(this.musicInterval);
@@ -5231,6 +5296,7 @@ function startGaragePreview(carId) {
         // ============================================================
         function initGame(quality, difficulty, carId = 'cheburashka', mapId = 'arsenev', weatherId = 'day') {
             console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}, погода: ${weatherId}`);
+            window.__inRace = true;
             if (typeof window.stopMenuMusic === 'function') window.stopMenuMusic();
             try { if (window.soundEngine && soundEngine.stopMenuMusic) soundEngine.stopMenuMusic(); } catch (e) {}
             // Полная очистка предыдущего заезда (двойной animate = дёрганье)
@@ -5306,7 +5372,15 @@ function startGaragePreview(carId) {
             const CAR_WIDTH = 0.8;
             const TIME_LIMIT = config.timeLimit;
             const MAX_STRIKES = 5;
-            const TRIGGER_LOOKAHEAD = config.triggerLookahead;
+            let TRIGGER_LOOKAHEAD = config.triggerLookahead;
+            // Портрет на телефоне: камера «видит» дальше по дороге — звери казались ранними
+            const _portrait = window.__isMobile && window.innerHeight > window.innerWidth;
+            if (_portrait) {
+                TRIGGER_LOOKAHEAD = Math.max(10, Math.round(TRIGGER_LOOKAHEAD * 0.52));
+            } else if (window.__isMobile) {
+                TRIGGER_LOOKAHEAD = Math.max(12, Math.round(TRIGGER_LOOKAHEAD * 0.75));
+            }
+            window.__portraitMode = _portrait;
             const FOG_NEAR = 45;
             const HAS_NIGHT_ZONE = false; // всегда день
 
@@ -6995,7 +7069,7 @@ function startGaragePreview(carId) {
             const collectibles = [];
             let nitroTimer = 0;
             let fovPunch = 0;
-            const BASE_FOV = 55;
+            const BASE_FOV = (window.__portraitMode) ? 48 : (window.__isMobile ? 52 : 55);
 
             function createNitroArrows(z, lane) {
                 const group = new THREE.Group();
@@ -8233,6 +8307,30 @@ function startGaragePreview(carId) {
             showMapIntroLore();
 
             console.log('🏁 Игра запущена!');
+            window.__inRace = true;
+            (function ensureRaceMusic(attempt) {
+                attempt = attempt || 0;
+                try {
+                    if (!soundEngine) return;
+                    soundEngine.stopMenuMusic && soundEngine.stopMenuMusic();
+                    if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+                        soundEngine.audioCtx.resume();
+                    }
+                    soundEngine.isMusicPlaying = false;
+                    soundEngine.startMusic();
+                    // HTML5 fallback если web-audio молчит ночью
+                    if (attempt >= 1 && soundEngine.startRaceMusicHTML) {
+                        soundEngine.startRaceMusicHTML();
+                    }
+                    if (attempt < 3) {
+                        setTimeout(function() {
+                            if (window.__inRace && soundEngine && !soundEngine.isMusicPlaying) {
+                                ensureRaceMusic(attempt + 1);
+                            }
+                        }, 400 + attempt * 300);
+                    }
+                } catch (e) { console.warn('race music', e); }
+            })(0);
             (function(){
                 let hb = document.getElementById('hud-menu-btn');
                 if (!hb) {
