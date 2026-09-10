@@ -641,6 +641,99 @@
         }
 
         
+        
+        #volume-controls {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 120 !important;
+            pointer-events: auto !important;
+        }
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            #volume-controls {
+                top: auto !important;
+                bottom: max(6px, env(safe-area-inset-bottom, 0px) + 2px) !important;
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%) !important;
+                flex-direction: row !important;
+                gap: 8px !important;
+                padding: 3px 8px !important;
+            }
+            #volume-controls input[type="range"] {
+                width: 48px !important;
+            }
+        }
+        /* предупреждения не в центре дороги */
+        #cheburashkaWarn {
+            top: auto !important;
+            bottom: max(56px, env(safe-area-inset-bottom, 0px) + 48px) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            font-size: 10px !important;
+            padding: 4px 10px !important;
+            max-width: 70vw !important;
+            z-index: 90 !important;
+            pointer-events: none !important;
+        }
+        .story-plaque {
+            top: auto !important;
+            bottom: max(72px, env(safe-area-inset-bottom, 0px) + 60px) !important;
+            font-size: 11px !important;
+            padding: 6px 12px !important;
+            max-width: 70vw !important;
+            z-index: 88 !important;
+        }
+        .radio-line {
+            top: auto !important;
+            bottom: max(40px, env(safe-area-inset-bottom, 0px) + 36px) !important;
+            font-size: 9px !important;
+            padding: 2px 8px !important;
+            max-width: 55vw !important;
+            z-index: 87 !important;
+            opacity: 0.85;
+        }
+        .animal-shout {
+            top: max(4px, env(safe-area-inset-top, 0px)) !important;
+            font-size: 9px !important;
+            padding: 2px 6px !important;
+            max-width: 28vw !important;
+            z-index: 85 !important;
+            opacity: 0.9;
+        }
+        #pause-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 5000;
+            background: rgba(0,0,0,0.72);
+            align-items: center; justify-content: center;
+            flex-direction: column;
+            font-family: system-ui, sans-serif;
+            color: #fff;
+        }
+        #pause-overlay.show { display: flex; }
+        #pause-overlay h2 { color: #ffdd00; margin: 0 0 12px; font-size: 28px; }
+        #pause-overlay .pause-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        #pause-overlay button {
+            padding: 12px 22px; border-radius: 12px; border: 2px solid rgba(255,220,0,0.4);
+            background: rgba(255,255,255,0.08); color: #fff; font-size: 15px; font-weight: bold; cursor: pointer;
+        }
+        #hud-pause-btn {
+            position: fixed;
+            top: max(4px, env(safe-area-inset-top, 0px));
+            right: max(56px, env(safe-area-inset-right, 0px) + 48px);
+            z-index: 130;
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.55);
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+        }
+        body.race-mode #hud-pause-btn { display: block; }
+
         /* ============================================================
            АДАПТИВ + ПРОИЗВОДИТЕЛЬНОСТЬ UI
            ============================================================ */
@@ -743,7 +836,15 @@
         /* Очень узкий landscape (SE / мелкие Android) */
         @media screen and (orientation: landscape) and (max-height: 360px) {
             #game-hud { font-size: 9px !important; max-width: 32vw !important; }
-            #volume-controls { display: none !important; } /* громкость — только системная, экономим место */
+            #volume-controls {
+                display: flex !important;
+                top: auto !important;
+                bottom: max(4px, env(safe-area-inset-bottom, 0px)) !important;
+                right: 50% !important;
+                transform: translateX(50%) !important;
+                padding: 2px 6px !important;
+                opacity: 0.9;
+            }
             .control-btn.steer { width: 48px !important; height: 44px !important; }
             .control-btn.gas { width: 54px !important; height: 54px !important; }
         }
@@ -1409,6 +1510,16 @@
     </style>
 </head>
 <body>
+    
+    <div id="pause-overlay">
+        <h2>⏸ ПАУЗА</h2>
+        <div class="pause-btns">
+            <button type="button" id="pause-resume">▶ Продолжить</button>
+            <button type="button" id="pause-menu">🏠 В меню</button>
+        </div>
+    </div>
+    <button type="button" id="hud-pause-btn" aria-label="Пауза">⏸</button>
+
     <div id="rotate-lock" aria-live="polite">
         <div class="phone-icon">📱</div>
         <h2>Поверни телефон</h2>
@@ -5120,10 +5231,10 @@ function startGaragePreview(carId) {
                         this.menuAudio.volume = val * 0.85;
                     }
                     if (window.__inRace) {
-                        if (!this.isMusicPlaying || (!this.currentMusicSource && !this.musicInterval)) {
-                            this.isMusicPlaying = false;
-                            this.startMusic();
-                        }
+                        this.isMusicPlaying = false;
+                        this.startMusic();
+                        if (this.startRaceMusicHTML) this.startRaceMusicHTML();
+                        try { if (this.startEngine) this.startEngine(); } catch (e) {}
                     } else {
                         this.startMenuMusic();
                     }
@@ -6070,7 +6181,7 @@ function startGaragePreview(carId) {
                         cheb = document.createElement('div');
                         cheb.id = 'cheburashkaWarn';
                         cheb.textContent = '😰 Чебурашка: ещё один удар — и Золотой Кирпич!';
-                        cheb.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(80,0,0,0.85);color:#ffaaaa;padding:8px 16px;border-radius:10px;border:1px solid #ff4444;z-index:300;font-size:13px;';
+                        cheb.style.cssText = 'position:fixed;bottom:58px;left:50%;transform:translateX(-50%);background:rgba(80,0,0,0.8);color:#ffaaaa;padding:4px 10px;border-radius:8px;border:1px solid #ff4444;z-index:90;font-size:10px;max-width:70vw;text-align:center;pointer-events:none;';
                         document.body.appendChild(cheb);
                     }
                 } else if (cheb) cheb.remove();
@@ -7943,7 +8054,7 @@ function startGaragePreview(carId) {
                 el.className = 'radio-line';
                 el.textContent = '📡 ' + text;
                 document.body.appendChild(el);
-                setTimeout(() => el.remove(), 3200);
+                setTimeout(() => el.remove(), window.__isMobile ? 1800 : 2800);
             }
 
             function showStory(text) {
@@ -7951,7 +8062,7 @@ function startGaragePreview(carId) {
                 el.className = 'story-plaque';
                 el.textContent = text;
                 document.body.appendChild(el);
-                setTimeout(() => el.remove(), 4000);
+                setTimeout(() => el.remove(), window.__isMobile ? 2000 : 3500);
             }
 
             const RADIO_LINES = {
@@ -8885,6 +8996,11 @@ function startGaragePreview(carId) {
                     lastTime = currentTime;
                     return;
                 }
+                if (window.__racePaused) {
+                    lastTime = currentTime;
+                    try { renderer.render(scene, camera); } catch (e) {}
+                    return;
+                }
                 const deltaTime = Math.min(0.033, (currentTime - lastTime) / 1000);
                 lastTime = currentTime;
                 try {
@@ -8933,33 +9049,45 @@ function startGaragePreview(carId) {
 
             console.log('🏁 Игра запущена!');
             window.__inRace = true;
+            window.__racePaused = false;
+            try {
+                const ov = document.getElementById('pause-overlay');
+                if (ov) ov.classList.remove('show');
+            } catch (e) {}
             try { document.body.classList.add('race-mode'); } catch (e) {}
             try {
                 const pb = document.getElementById('player-bar');
                 if (pb && window.__isMobile) pb.style.display = 'none';
             } catch (e) {}
-            (function ensureRaceMusic(attempt) {
+            (function ensureRaceAudio(attempt) {
                 attempt = attempt || 0;
                 try {
                     if (!soundEngine) return;
-                    soundEngine.stopMenuMusic && soundEngine.stopMenuMusic();
-                    if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
-                        soundEngine.audioCtx.resume();
+                    soundEngine.enabled = true;
+                    if (soundEngine.stopMenuMusic) soundEngine.stopMenuMusic();
+                    if (soundEngine.audioCtx) {
+                        if (soundEngine.audioCtx.state === 'suspended') {
+                            soundEngine.audioCtx.resume().catch(function(){});
+                        }
                     }
+                    // музыка
                     soundEngine.isMusicPlaying = false;
-                    soundEngine.startMusic();
-                    // HTML5 fallback если web-audio молчит ночью
-                    if (attempt >= 1 && soundEngine.startRaceMusicHTML) {
-                        soundEngine.startRaceMusicHTML();
-                    }
-                    if (attempt < 3) {
+                    if (soundEngine.startMusic) soundEngine.startMusic();
+                    if (attempt >= 1 && soundEngine.startRaceMusicHTML) soundEngine.startRaceMusicHTML();
+                    // двигатель
+                    try {
+                        soundEngine.speed = 0.15;
+                        if (soundEngine.startEngine) soundEngine.startEngine();
+                    } catch (e) {}
+                    if (attempt < 5) {
                         setTimeout(function() {
-                            if (window.__inRace && soundEngine && !soundEngine.isMusicPlaying) {
-                                ensureRaceMusic(attempt + 1);
-                            }
-                        }, 400 + attempt * 300);
+                            if (!window.__inRace || !soundEngine) return;
+                            var needMusic = !soundEngine.isMusicPlaying;
+                            var needEng = !soundEngine.isPlaying;
+                            if (needMusic || needEng) ensureRaceAudio(attempt + 1);
+                        }, 350 + attempt * 250);
                     }
-                } catch (e) { console.warn('race music', e); }
+                } catch (e) { console.warn('race audio', e); }
             })(0);
             (function(){
                 let hb = document.getElementById('hud-menu-btn');
@@ -9435,6 +9563,52 @@ function startGaragePreview(carId) {
                 obs.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
             });
         })();
+
+        
+        window.toggleRacePause = function() {
+            if (!window.__inRace) return;
+            try {
+                // gameState в closure initGame — используем флаг
+                if (window.__racePaused) {
+                    window.__racePaused = false;
+                    const ov = document.getElementById('pause-overlay');
+                    if (ov) ov.classList.remove('show');
+                    if (window.soundEngine) {
+                        try {
+                            if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') soundEngine.audioCtx.resume();
+                            if (!soundEngine.isMusicPlaying && soundEngine.startMusic) soundEngine.startMusic();
+                            if (soundEngine.startEngine) soundEngine.startEngine();
+                        } catch (e) {}
+                    }
+                } else {
+                    window.__racePaused = true;
+                    const ov = document.getElementById('pause-overlay');
+                    if (ov) ov.classList.add('show');
+                    try {
+                        if (window.soundEngine && soundEngine.audioCtx) soundEngine.audioCtx.suspend();
+                    } catch (e) {}
+                }
+            } catch (e) { console.warn(e); }
+        };
+        document.getElementById('hud-pause-btn') && document.getElementById('hud-pause-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.toggleRacePause();
+        });
+        document.getElementById('pause-resume') && document.getElementById('pause-resume').addEventListener('click', function() {
+            if (window.__racePaused) window.toggleRacePause();
+        });
+        document.getElementById('pause-menu') && document.getElementById('pause-menu').addEventListener('click', function() {
+            window.__racePaused = false;
+            const ov = document.getElementById('pause-overlay');
+            if (ov) ov.classList.remove('show');
+            if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
+        });
+        window.addEventListener('keydown', function(e) {
+            if ((e.code === 'KeyP' || e.code === 'Escape') && window.__inRace) {
+                e.preventDefault();
+                window.toggleRacePause();
+            }
+        });
 
         console.log('🎮 Выберите сложность и начните игру!');
 
