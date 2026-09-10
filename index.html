@@ -720,7 +720,7 @@
         #hud-pause-btn {
             position: fixed;
             top: max(4px, env(safe-area-inset-top, 0px));
-            right: max(56px, env(safe-area-inset-right, 0px) + 48px);
+            right: max(52px, env(safe-area-inset-right, 0px) + 48px);
             z-index: 130;
             padding: 6px 10px;
             border-radius: 10px;
@@ -733,6 +733,9 @@
             display: none;
         }
         body.race-mode #hud-pause-btn { display: block; }
+        body.race-mode #hud-menu-btn {
+            right: max(4px, env(safe-area-inset-right, 0px)) !important;
+        }
 
         /* ============================================================
            АДАПТИВ + ПРОИЗВОДИТЕЛЬНОСТЬ UI
@@ -1507,7 +1510,69 @@
             }
         }
 
-    </style>
+    
+        #ach-plaque-root {
+            position: fixed; inset: 0; z-index: 9000;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; /* не блокирует меню/кнопки, пока пусто */
+        }
+        .ach-plaque {
+            pointer-events: auto;
+            width: min(340px, 92vw);
+            background: linear-gradient(180deg, #1a1520 0%, #0a0a10 100%);
+            border: 2px solid #ffdd00;
+            border-radius: 18px;
+            padding: 18px 16px 16px;
+            text-align: center;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 24px rgba(255,220,0,0.25);
+            animation: achPop 0.45s ease-out;
+            font-family: system-ui, 'Segoe UI', sans-serif;
+            color: #fff;
+        }
+        @keyframes achPop {
+            0% { transform: scale(0.7); opacity: 0; }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .ach-plaque img {
+            width: 120px; height: 120px; object-fit: contain;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.06);
+            margin: 0 auto 10px;
+            display: block;
+        }
+        .ach-plaque .ach-emoji-fallback {
+            font-size: 64px; line-height: 1; margin: 8px 0;
+        }
+        .ach-plaque h3 {
+            margin: 0 0 6px; color: #ffdd00; font-size: 18px;
+        }
+        .ach-plaque p {
+            margin: 0 0 12px; color: #ccc; font-size: 13px; line-height: 1.35;
+        }
+        .ach-plaque .ach-congrats {
+            color: #9fdf9f; font-size: 12px; margin-bottom: 10px;
+        }
+        .ach-plaque button {
+            padding: 8px 20px; border-radius: 10px; border: 1px solid rgba(255,220,0,0.5);
+            background: rgba(255,220,0,0.15); color: #ffdd00; font-weight: bold; cursor: pointer;
+        }
+        .trophy-slot img.trophy-img {
+            width: 56px; height: 56px; object-fit: contain;
+            display: block; margin: 0 auto 4px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+        }
+        .trophy-slot.locked img.trophy-img {
+            filter: grayscale(1) brightness(0.4);
+        }
+        #trophy-detail img {
+            width: 96px; height: 96px; object-fit: contain;
+            display: block; margin: 8px auto;
+            border-radius: 10px;
+        }
+
+        </style>
 </head>
 <body>
     
@@ -1923,6 +1988,150 @@
         window.THREE = THREE;
 
         // ============================================================
+        // ОПТИМИЗАЦИЯ ТЕКСТУР Three.js
+        // ============================================================
+        window.optimizeTexture = function(tex, opts) {
+            if (!tex || !THREE) return tex;
+            opts = opts || {};
+            try {
+                // Mipmaps только если реально нужна minification с repeat далеко
+                const needMips = opts.mipmaps === true;
+                tex.generateMipmaps = needMips;
+                if (needMips) {
+                    tex.minFilter = THREE.LinearMipmapLinearFilter;
+                    tex.magFilter = THREE.LinearFilter;
+                } else {
+                    // Без mipmap — дешевле память и upload в GPU
+                    tex.minFilter = opts.nearest ? THREE.NearestFilter : THREE.LinearFilter;
+                    tex.magFilter = opts.nearest ? THREE.NearestFilter : THREE.LinearFilter;
+                }
+                // Anisotropy жрёт fill-rate — на mobile 1, на PC макс 2–4
+                const isMob = !!window.__isMobile;
+                const maxAniso = opts.anisotropy != null ? opts.anisotropy : (isMob ? 1 : 2);
+                if (tex.anisotropy !== undefined) tex.anisotropy = maxAniso;
+                if (THREE.SRGBColorSpace && tex.colorSpace !== undefined && opts.srgb !== false) {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                } else if (THREE.sRGBEncoding && tex.encoding !== undefined && opts.srgb !== false) {
+                    tex.encoding = THREE.sRGBEncoding;
+                }
+                tex.needsUpdate = true;
+            } catch (e) {}
+            return tex;
+        };
+
+        // Патч CanvasTexture: все canvas-текстуры по умолчанию без mipmaps
+        (function patchCanvasTexture() {
+            try {
+                if (!THREE || !THREE.CanvasTexture || THREE.CanvasTexture.__optPatched) return;
+                const Orig = THREE.CanvasTexture;
+                function OptCanvasTexture(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy) {
+                    const tex = new Orig(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
+                    try {
+                        tex.generateMipmaps = false;
+                        tex.minFilter = THREE.LinearFilter;
+                        tex.magFilter = THREE.LinearFilter;
+                        if (tex.anisotropy !== undefined) tex.anisotropy = window.__isMobile ? 1 : 2;
+                        if (THREE.SRGBColorSpace && tex.colorSpace !== undefined) tex.colorSpace = THREE.SRGBColorSpace;
+                    } catch (e) {}
+                    return tex;
+                }
+                OptCanvasTexture.prototype = Orig.prototype;
+                OptCanvasTexture.__optPatched = true;
+                OptCanvasTexture.__original = Orig;
+                THREE.CanvasTexture = OptCanvasTexture;
+                console.log('🖼️ CanvasTexture optimized (no mipmaps, low aniso)');
+            } catch (e) {
+                console.warn('CanvasTexture patch failed', e);
+            }
+        })();
+
+
+
+        // ============================================================
+        // ОПТИМИЗАЦИЯ ШЕЙДЕРОВ (ПК / WebGL)
+        // MeshStandard (PBR) считает light×material дорого на forward-рендере.
+        // Для окружения → Lambert/Phong; PBR оставляем для гаража и кузова игрока.
+        // ============================================================
+        window.__forcePBR = false;
+        (function patchMaterialsForPerf() {
+            try {
+                if (!THREE || !THREE.MeshStandardMaterial || THREE.MeshStandardMaterial.__patchedLite) return;
+                const OrigStd = THREE.MeshStandardMaterial;
+                function LiteStandard(parameters) {
+                    parameters = parameters || {};
+                    if (window.__forcePBR || parameters.__pbr === true) {
+                        const m = new OrigStd(parameters);
+                        return m;
+                    }
+                    // Phong даёт блик дешевле PBR; Lambert — ещё легче для «матовых» пропов
+                    const shiny = (parameters.metalness != null && parameters.metalness > 0.2)
+                        || (parameters.roughness != null && parameters.roughness < 0.45);
+                    const color = parameters.color != null ? parameters.color : 0xffffff;
+                    const common = {
+                        color: color,
+                        map: parameters.map || null,
+                        lightMap: parameters.lightMap || null,
+                        aoMap: parameters.aoMap || null,
+                        alphaMap: parameters.alphaMap || null,
+                        envMap: null, // envMap PBR-кубы отключаем
+                        emissive: parameters.emissive != null ? parameters.emissive : 0x000000,
+                        emissiveMap: parameters.emissiveMap || null,
+                        emissiveIntensity: parameters.emissiveIntensity != null ? parameters.emissiveIntensity : 1,
+                        transparent: !!parameters.transparent,
+                        opacity: parameters.opacity != null ? parameters.opacity : 1,
+                        side: parameters.side != null ? parameters.side : THREE.FrontSide,
+                        flatShading: !!parameters.flatShading,
+                        wireframe: !!parameters.wireframe,
+                        depthTest: parameters.depthTest !== false,
+                        depthWrite: parameters.depthWrite !== false,
+                        fog: parameters.fog !== false,
+                        name: parameters.name || ''
+                    };
+                    let mat;
+                    if (shiny && THREE.MeshPhongMaterial) {
+                        mat = new THREE.MeshPhongMaterial(Object.assign({}, common, {
+                            specular: new THREE.Color(0x333333),
+                            shininess: Math.max(8, (1 - (parameters.roughness != null ? parameters.roughness : 0.5)) * 80),
+                            reflectivity: 0.1
+                        }));
+                    } else {
+                        mat = new THREE.MeshLambertMaterial(common);
+                    }
+                    // Совместимость с кодом, который пишет material.metalness / roughness
+                    try {
+                        Object.defineProperty(mat, 'metalness', {
+                            get: function () { return 0; },
+                            set: function () {},
+                            configurable: true
+                        });
+                        Object.defineProperty(mat, 'roughness', {
+                            get: function () { return 1; },
+                            set: function () {},
+                            configurable: true
+                        });
+                        Object.defineProperty(mat, 'envMapIntensity', {
+                            get: function () { return 0; },
+                            set: function () {},
+                            configurable: true
+                        });
+                    } catch (e) {}
+                    return mat;
+                }
+                LiteStandard.prototype = OrigStd.prototype;
+                LiteStandard.__patchedLite = true;
+                LiteStandard.__original = OrigStd;
+                THREE.MeshStandardMaterial = LiteStandard;
+                console.log('🧱 MeshStandardMaterial → Lambert/Phong (lite shaders)');
+            } catch (e) {
+                console.warn('material patch failed', e);
+            }
+        })();
+
+        // mediump для кастомных шейдеров частиц (меньше ALU на GPU)
+        window.__shaderPrecision = 'mediump';
+
+
+        // ============================================================
         // ПРИНУДИТЕЛЬНЫЙ ЛАНДШАФТ (мобильные)
         // ============================================================
         window.__isMobile = (function() {
@@ -2236,18 +2445,18 @@
         let garageRenderer = null;
 
         const ACHIEVEMENTS = [
-            { id: 'first_win', name: 'Первый финиш', desc: 'Доехать до конца' },
-            { id: 'perfect', name: 'Идеал', desc: 'Финиш без аварий' },
-            { id: 'night_rider', name: 'Ночной курьер', desc: 'Финиш ночью' },
-            { id: 'rain_man', name: 'Дождевик', desc: 'Финиш в дождь' },
-            { id: 'hard_win', name: 'ЗвероСуд', desc: 'Победа на сложном' },
-            { id: 'gum_2', name: 'Турбо-коллекционер', desc: '2 жвачки за заезд' },
-            { id: 'no_nitro', name: 'Без нитро', desc: 'Финиш без нитро' },
-            { id: 'oil_lover', name: 'Масломан', desc: '5 масляных пятен за заезд' },
-            { id: 'bear_friend', name: 'Друг медведя', desc: '5 ударов по зверям за заезд' },
-            { id: 'season5', name: 'Смена открыта', desc: '5 уровень сезона' },
-            { id: 'races10', name: 'Стахановец', desc: '10 заездов' },
-            { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед' }
+            { id: 'first_win', name: 'Первый финиш', desc: 'Доехать до конца', img: 'images/ach_first_win.png' },
+            { id: 'perfect', name: 'Идеал', desc: 'Финиш без аварий', img: 'images/ach_perfect.png' },
+            { id: 'night_rider', name: 'Ночной курьер', desc: 'Финиш ночью', img: 'images/ach_night_rider.png' },
+            { id: 'rain_man', name: 'Дождевик', desc: 'Финиш в дождь', img: 'images/ach_rain_man.png' },
+            { id: 'hard_win', name: 'ЗвероСуд', desc: 'Победа на сложном', img: 'images/ach_hard_win.png' },
+            { id: 'gum_2', name: 'Турбо-коллекционер', desc: '2 жвачки за заезд', img: 'images/ach_gum_2.png' },
+            { id: 'no_nitro', name: 'Без нитро', desc: 'Финиш без нитро', img: 'images/ach_no_nitro.png' },
+            { id: 'oil_lover', name: 'Масломан', desc: '5 масляных пятен за заезд', img: 'images/ach_oil_lover.png' },
+            { id: 'bear_friend', name: 'Друг медведя', desc: '5 ударов по зверям за заезд', img: 'images/ach_bear_friend.png' },
+            { id: 'season5', name: 'Смена открыта', desc: '5 уровень сезона', img: 'images/ach_season5.png' },
+            { id: 'races10', name: 'Стахановец', desc: '10 заездов', img: 'images/ach_races10.png' },
+            { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/ach_wins5.png' }
         ];
 
         function defaultSeason() {
@@ -2510,20 +2719,120 @@ function createProfile(name) {
         };
         window.Notify = Notify;
 
+        
+        window.__achQueue = [];
+        window.__achShowing = false;
+
+        function trophyImgCandidates(t) {
+            const id = (t && t.id) ? t.id : '';
+            const short = id.replace(/^t_/, '');
+            const list = [];
+            if (t && t.img) list.push(t.img);
+            list.push('images/trophy_' + short + '.png');
+            list.push('images/trophy_' + id + '.png');
+            list.push('images/' + id + '.png');
+            list.push('images/' + short + '.png');
+            return list;
+        }
+        function achImgCandidates(a) {
+            const id = (a && a.id) ? a.id : '';
+            const list = [];
+            if (a && a.img) list.push(a.img);
+            list.push('images/ach_' + id + '.png');
+            list.push('images/achievement_' + id + '.png');
+            list.push('images/' + id + '.png');
+            // связанный трофей
+            try {
+                const tr = TROPHIES.find(x => x.need === id);
+                if (tr) trophyImgCandidates(tr).forEach(p => list.push(p));
+            } catch (e) {}
+            return list;
+        }
+        function bindImgFallback(img, candidates, emojiFallback) {
+            let i = 0;
+            const tryNext = () => {
+                if (i >= candidates.length) {
+                    img.style.display = 'none';
+                    if (emojiFallback) {
+                        const span = document.createElement('div');
+                        span.className = 'ach-emoji-fallback';
+                        span.textContent = emojiFallback;
+                        img.parentNode && img.parentNode.insertBefore(span, img.nextSibling);
+                    }
+                    return;
+                }
+                img.onerror = () => { i++; tryNext(); };
+                img.onload = () => { img.style.display = 'block'; };
+                img.src = candidates[i++];
+            };
+            tryNext();
+        }
+
+        function showAchievementPlaque(achId) {
+            if (!achId) return;
+            window.__achQueue = window.__achQueue || [];
+            window.__achSeen = window.__achSeen || {};
+            // не дублировать одну и ту же ачивку в очереди
+            if (window.__achSeen[achId]) return;
+            window.__achSeen[achId] = true;
+            setTimeout(function(){ try { delete window.__achSeen[achId]; } catch(e){} }, 15000);
+            const meta = getAchievementMeta(achId);
+            const trophy = TROPHIES.find(t => t.need === achId);
+            if (window.__achQueue.some(function(x){ return x.achId === achId; })) return;
+            window.__achQueue.push({ meta, trophy, achId });
+            pumpAchQueue();
+        }
+        function pumpAchQueue() {
+            if (window.__achShowing) return;
+            const next = window.__achQueue.shift();
+            let root = document.getElementById('ach-plaque-root');
+            if (!next) {
+                if (root) { root.innerHTML = ''; root.style.pointerEvents = 'none'; }
+                return;
+            }
+            window.__achShowing = true;
+            if (!root) {
+                root = document.createElement('div');
+                root.id = 'ach-plaque-root';
+                document.body.appendChild(root);
+            }
+            root.style.pointerEvents = 'auto';
+            root.innerHTML = '';
+            const card = document.createElement('div');
+            card.className = 'ach-plaque';
+            const title = (next.trophy && next.trophy.name) || next.meta.name;
+            const desc = next.meta.desc || (next.trophy && next.trophy.desc) || '';
+            const emoji = (next.trophy && next.trophy.emoji) || '🏅';
+            card.innerHTML =
+                '<div class="ach-congrats">🎉 Достижение разблокировано!</div>' +
+                '<img alt="" />' +
+                '<h3>' + emoji + ' ' + title + '</h3>' +
+                '<p>' + desc + '</p>' +
+                '<button type="button">Круто!</button>';
+            const img = card.querySelector('img');
+            const cands = next.trophy ? trophyImgCandidates(next.trophy) : achImgCandidates(next.meta);
+            // try ach images too
+            achImgCandidates(next.meta).forEach(p => { if (cands.indexOf(p) < 0) cands.push(p); });
+            bindImgFallback(img, cands, emoji);
+            const close = () => {
+                try { root.innerHTML = ''; root.style.pointerEvents = 'none'; } catch (e) {}
+                window.__achShowing = false;
+                setTimeout(pumpAchQueue, 150);
+            };
+            card.querySelector('button').onclick = close;
+            setTimeout(close, 5500);
+            root.appendChild(card);
+            root.style.pointerEvents = 'auto';
+        }
+
         function getAchievementMeta(id) {
             return ACHIEVEMENTS.find(a => a.id === id) || { id, name: id, desc: '' };
         }
 
         function showAchievementToast(id) {
-            const meta = getAchievementMeta(id);
-            if (window.Notify) {
-                Notify.success('🏅 ' + meta.name, meta.desc || 'Достижение открыто', 3500);
-            } else {
-                const el = document.createElement('div');
-                el.className = 'ach-toast';
-                el.textContent = '🏅 ' + meta.name;
-                document.body.appendChild(el);
-                setTimeout(() => { try { el.remove(); } catch(e){} }, 3000);
+            try { showAchievementPlaque(id); } catch (e) {
+                const meta = getAchievementMeta(id);
+                if (window.Notify) Notify.success('🏅 ' + meta.name, meta.desc || 'Достижение открыто', 3500);
             }
         }
 
@@ -2544,8 +2853,9 @@ function createProfile(name) {
                     }
                 });
             } catch (e) {}
+            // silent=true (расчёт в endGame) — без плашки; плашки один раз после финиша
             if (!silent) {
-                try { showAchievementToast(id); } catch(e) {}
+                try { showAchievementToast(id); } catch (e) {}
             }
             return true;
         }
@@ -2578,7 +2888,7 @@ function createProfile(name) {
             const n = document.getElementById('player-bar-name');
             const s = document.getElementById('player-bar-season');
             if (n) n.textContent = '👤 ' + currentPlayer.name;
-            if (s) s.textContent = 'S1 ур.' + currentPlayer.season.level + ' · 🍬' + currentPlayer.season.gum;
+            if (s) s.textContent = 'S1 ур.' + currentPlayer.season.level + ' · 🪙' + (currentPlayer.season.chips||0) + ' · 🍬' + (currentPlayer.season.gum||0);
         }
 
         function renderProfileList() {
@@ -2928,6 +3238,10 @@ function createProfile(name) {
                 let xp = 25;
                 let gumGain = 0;
                 let chipsGain = 0;
+                // Базовые фишки за любой заезд
+                const baseChips = state === 'win' ? 3 : 1;
+                chipsGain += baseChips;
+                currentPlayer.season.chips = (currentPlayer.season.chips || 0) + baseChips;
 
                 const tryAch = (id) => {
                     // silent — тосты на финишной плашке, не во время расчёта
@@ -2937,8 +3251,8 @@ function createProfile(name) {
                 if (state === 'win') {
                     st.wins = (st.wins || 0) + 1;
                     xp += 60;
-                    chipsGain += 1;
-                    currentPlayer.season.chips += 1;
+                    chipsGain += 2;
+                    currentPlayer.season.chips += 2;
                     tryAch('first_win');
                     if (meta.strikes === 0) {
                         st.perfectWins = (st.perfectWins || 0) + 1;
@@ -3056,6 +3370,7 @@ function createProfile(name) {
         }
 
         function openGarage() {
+            window.__forcePBR = true;
             if (!currentPlayer) return;
             ensureProfileFields(currentPlayer);
             const gs = document.getElementById('garage-screen');
@@ -3286,9 +3601,17 @@ function createProfile(name) {
             grid.innerHTML = TROPHIES.map(t => {
                 const on = !!currentPlayer.trophies[t.id];
                 return '<div class="trophy-slot' + (on?'':' locked') + '" data-trophy="' + t.id + '">' +
-                    '<div class="ticon">' + (on ? t.emoji : '📦') + '</div>' +
+                    '<img class="trophy-img" alt="" data-tid="' + t.id + '" />' +
+                    '<div class="ticon" style="display:none">' + (on ? t.emoji : '📦') + '</div>' +
                     '<div class="tname">' + (on ? t.name : '???') + '</div></div>';
             }).join('');
+            grid.querySelectorAll('img.trophy-img').forEach(img => {
+                const tid = img.getAttribute('data-tid');
+                const t = TROPHIES.find(x => x.id === tid);
+                if (!t) return;
+                const on = !!currentPlayer.trophies[t.id];
+                bindImgFallback(img, trophyImgCandidates(t), on ? t.emoji : '📦');
+            });
             grid.querySelectorAll('.trophy-slot').forEach(slot => {
                 slot.addEventListener('click', () => showTrophyDetail(slot.dataset.trophy));
             });
@@ -3301,13 +3624,22 @@ function createProfile(name) {
             const unlocked = !!currentPlayer.trophies[tid];
             const detail = document.getElementById('trophy-detail');
             const text = document.getElementById('trophy-detail-text');
-            detail.classList.add('active');
-            text.innerHTML = unlocked
-                ? ('<b style="color:#ffdd00">' + t.emoji + ' ' + t.name + '</b><br>' + t.desc +
-                   '<br><span style="color:#888">Получено: ' + new Date(currentPlayer.trophies[tid]).toLocaleDateString() + '</span>')
-                : ('<b>Ещё не открыто</b><br>' + t.desc);
-            stopTrophyPreview();
-            if (unlocked) startTrophyPreview(t);
+            if (detail) detail.classList.add('active');
+            if (detail) detail.style.display = 'block';
+            if (text) {
+                text.innerHTML =
+                    '<img id="trophy-detail-img" alt="" style="width:96px;height:96px;object-fit:contain;display:block;margin:8px auto;border-radius:10px;background:rgba(255,255,255,0.06);" />' +
+                    (unlocked
+                        ? ('<b style="color:#ffdd00">' + t.emoji + ' ' + t.name + '</b><br>' + t.desc +
+                           '<br><span style="color:#888">Получено: ' + new Date(currentPlayer.trophies[tid]).toLocaleDateString() + '</span>')
+                        : ('<b>Ещё не открыто</b><br>' + t.desc));
+                const img = document.getElementById('trophy-detail-img');
+                if (img && typeof bindImgFallback === 'function') {
+                    bindImgFallback(img, trophyImgCandidates(t), unlocked ? t.emoji : '📦');
+                }
+            }
+            try { stopTrophyPreview(); } catch (e) {}
+            try { if (unlocked) startTrophyPreview(t); } catch (e) {}
         }
 
         function stopTrophyPreview() {
@@ -3604,6 +3936,7 @@ function createProfile(name) {
         }
 
 function startGaragePreview(carId) {
+            window.__forcePBR = true;
             try {
                 stopGaragePreview();
             } catch (e) {}
@@ -3774,7 +4107,17 @@ function startGaragePreview(carId) {
         
         window.playMenuMusic = function() {
             try {
+                if (!window.soundEngine) {
+                    try {
+                        if (typeof SoundEngine === 'function') {
+                            window.soundEngine = new SoundEngine();
+                            soundEngine = window.soundEngine;
+                            soundEngine.init();
+                        }
+                    } catch (e2) {}
+                }
                 if (!window.soundEngine) return;
+                window.__inRace = false;
                 if (typeof soundEngine.startMenuMusic === 'function') soundEngine.startMenuMusic();
             } catch (e) {}
         };
@@ -3975,23 +4318,21 @@ function startGaragePreview(carId) {
             el.className = 'animal-shout';
             el.textContent = text;
             
-            // Сверху, не перекрывают дорогу (особенно mobile landscape)
             const mob = !!(window.__isMobile || window.innerHeight < 500);
-            const screenX = window.innerWidth * (0.35 + Math.random() * 0.3);
-            const screenY = mob
-                ? (8 + (window.__shoutRow || 0) * 18 + (typeof window !== 'undefined' && window.visualViewport ? 0 : 0))
-                : (window.innerHeight * 0.12 + Math.random() * 40);
-            window.__shoutRow = ((window.__shoutRow || 0) + 1) % 3;
-            el.style.left = Math.min(screenX, window.innerWidth - 120) + 'px';
-            el.style.top = (screenY + (window.visualViewport && window.visualViewport.offsetTop ? window.visualViewport.offsetTop : 0)) + 'px';
+            // справа сверху — не центр дороги
+            el.style.left = 'auto';
+            el.style.right = (8 + (window.__shoutRow || 0) * 4) + 'px';
+            el.style.top = (6 + (window.__shoutRow || 0) * 16) + 'px';
+            el.style.transform = 'none';
+            window.__shoutRow = ((window.__shoutRow || 0) + 1) % 2;
             if (mob) {
-                el.style.fontSize = '10px';
-                el.style.padding = '2px 8px';
+                if (Math.random() > 0.4) return; // реже на мобилках
+                el.style.fontSize = '9px';
+                el.style.padding = '2px 6px';
+                el.style.maxWidth = '30vw';
             }
-            el.style.transform = 'translateX(-50%)';
-            
             document.body.appendChild(el);
-            setTimeout(() => el.remove(), 2300);
+            setTimeout(() => el.remove(), mob ? 1400 : 2200);
         }
 
 
@@ -4586,6 +4927,7 @@ function startGaragePreview(carId) {
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.needsUpdate = true;
+            if (window.optimizeTexture) window.optimizeTexture(texture, { mipmaps: false, nearest: true, anisotropy: 1 });
 
             const spriteMaterial = new THREE.SpriteMaterial({
                 map: texture,
@@ -4744,6 +5086,7 @@ function startGaragePreview(carId) {
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.repeat.set(2, 2);
+            if (window.optimizeTexture) window.optimizeTexture(tex, { mipmaps: true, anisotropy: 1 });
             if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
             else if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
             tex.needsUpdate = true;
@@ -5985,6 +6328,7 @@ function startGaragePreview(carId) {
             }
             if (typeof updateRotateLock === 'function') updateRotateLock();
 
+            window.__forcePBR = false; // гонка — лёгкие шейдеры
             console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}, погода: ${weatherId}`);
             window.__inRace = true;
             if (typeof window.stopMenuMusic === 'function') window.stopMenuMusic();
@@ -6217,7 +6561,23 @@ function startGaragePreview(carId) {
             // ============================================================
             // ЭКРАН ОКОНЧАНИЯ
             // ============================================================
-            function showEndScreen(state, timeTaken) {
+            
+                function showRaceAchievementPlaques(rewards) {
+                    try {
+                        if (!rewards || !rewards.achievements || !rewards.achievements.length) return;
+                        const seen = {};
+                        rewards.achievements.forEach(function(aid, idx) {
+                            if (!aid || seen[aid]) return;
+                            seen[aid] = true;
+                            setTimeout(function() {
+                                if (typeof showAchievementPlaque === 'function') showAchievementPlaque(aid);
+                            }, 400 + idx * 700);
+                        });
+                    } catch (e) {}
+                }
+
+        function showEndScreen(state, timeTaken, rewards) {
+                rewards = rewards || window.__lastRaceRewards || { xp: 0, gum: 0, chips: 0 };
                 const screen = document.createElement('div');
                 screen.id = 'finish-screen';
                 screen.style.cssText = `
@@ -6258,6 +6618,10 @@ function startGaragePreview(carId) {
                     message += `\n🔥 Макс. комбо: ${comboMax.toFixed(0)}с`;
                     message += `\n⛽ Нитро: ${stats.nitroPicked} · 🍬 Жвачки: ${stats.gumPicked}`;
                     message += `\n🐾 Ударов по зверям: ${stats.animalsHit} · 🛢 Масло: ${stats.oilHits}`;
+                    message += `\n\n🎁 Награда: 🪙+${(rewards && rewards.chips) || 0} · 🍬+${(rewards && rewards.gum) || 0} · XP+${(rewards && rewards.xp) || 0}`;
+                    if (currentPlayer && currentPlayer.season) {
+                        message += `\nИтого: 🪙${currentPlayer.season.chips} · 🍬${currentPlayer.season.gum}`;
+                    }
                     let titleExtra = '';
                     if (strikes === 0 && stats.nitroPicked === 0) titleExtra = 'Без нитро и без тормозов';
                     else if (strikes === 0) titleExtra = 'Курьер года Арсеньева';
@@ -6287,7 +6651,7 @@ function startGaragePreview(carId) {
                 }
 
                 screen.innerHTML = `
-                    <div style="background:rgba(0,0,0,0.95);padding:28px 36px 32px;border-radius:20px;border:2px solid ${color};text-align:center;max-width:440px;width:92%;box-shadow:0 20px 80px rgba(0,0,0,0.9);">
+                    <div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ${color};text-align:center;max-width:440px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">
                         ${imgHtml}
                         <h1 style="font-size:30px;color:${color};margin-bottom:10px;">${title}</h1>
                         <div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">${message}</div>
@@ -6304,10 +6668,19 @@ function startGaragePreview(carId) {
                 `;
                 
                 document.body.appendChild(screen);
-                const goMenu = () => {
-                    screen.remove();
+                const goMenu = (ev) => {
+                    if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch(e){} }
+                    try {
+                        window.__achQueue = [];
+                        window.__achShowing = false;
+                        const ar = document.getElementById('ach-plaque-root');
+                        if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
+                    } catch (e) {}
+                    try { screen.remove(); } catch (e) {}
                     const hb = document.getElementById('hud-menu-btn');
                     if (hb) hb.remove();
+                    const pb = document.getElementById('hud-pause-btn');
+                    if (pb) pb.style.display = 'none';
                     if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
                     else if (typeof showMainMenu === 'function') showMainMenu();
                 };
@@ -6344,6 +6717,28 @@ function startGaragePreview(carId) {
                 if (cheb) cheb.remove();
                 document.querySelectorAll('.animal-shout, .radio-line, .story-plaque').forEach(el => el.remove());
                 const timeTaken = raceTime;
+
+                // Начисление фишек / XP / жвачки (раньше recordRaceResult не вызывался!)
+                let raceRewards = { xp: 0, gum: 0, chips: 0, achievements: [] };
+                try {
+                    if (typeof recordRaceResult === 'function' && currentPlayer) {
+                        raceRewards = recordRaceResult(state, {
+                            time: timeTaken,
+                            strikes: typeof strikes !== 'undefined' ? strikes : 0,
+                            animalsHit: (typeof stats !== 'undefined' && stats.animalsHit) || 0,
+                            oilHits: (typeof stats !== 'undefined' && stats.oilHits) || 0,
+                            nitroPicked: (typeof stats !== 'undefined' && stats.nitroPicked) || 0,
+                            gumPicked: (typeof stats !== 'undefined' && stats.gumPicked) || 0,
+                            weather: (typeof weatherMode !== 'undefined' ? weatherMode : 'day'),
+                            difficulty: (typeof difficulty !== 'undefined' ? difficulty : 'medium'),
+                            mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
+                            maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0
+                        }) || raceRewards;
+                        try { updatePlayerBar(); } catch (e) {}
+                        console.log('🪙 Награды заезда:', raceRewards);
+                    }
+                } catch (e) { console.warn('rewards', e); }
+                window.__lastRaceRewards = raceRewards;
                 
                 // Финишный cinematic ~1.5с
                 if (state === 'win') {
@@ -6367,7 +6762,7 @@ function startGaragePreview(carId) {
                         if (k < 1) requestAnimationFrame(cineFrame);
                         else {
                             try { soundEngine.stopMusic(); } catch(e) {}
-                            showEndScreen(state, timeTaken);
+                            showEndScreen(state, timeTaken, raceRewards); showRaceAchievementPlaques(raceRewards);
                         }
                     }
                     requestAnimationFrame(cineFrame);
@@ -6375,7 +6770,7 @@ function startGaragePreview(carId) {
                 }
                 try { soundEngine.stopMusic(); } catch(e) {}
                 setTimeout(() => {
-                    showEndScreen(state, timeTaken);
+                    showEndScreen(state, timeTaken, raceRewards); showRaceAchievementPlaques(raceRewards);
                     // Optionally cancel further animation after screen shows
                     if (animationId) {
                         // keep rendering for a while, no need to cancel hard
@@ -6463,17 +6858,25 @@ function startGaragePreview(carId) {
             } catch (e) {}
             renderer.setSize(window.innerWidth, window.innerHeight, false);
             // pixelRatio: на mobile жёсткий потолок — главный выигрыш FPS
-            let prCap = quality === 'high' ? 1.5 : quality === 'medium' ? 1.25 : 1.0;
-            if (isMob) prCap = quality === 'high' ? 1.1 : 1.0;
-            // Retina 3x на телефонах убивает FPS — жёсткий потолок
-            const dpr = Math.min(window.devicePixelRatio || 1, isMob ? 1.25 : 2);
+            let prCap = quality === 'high' ? 1.35 : quality === 'medium' ? 1.15 : 1.0;
+            if (isMob) prCap = 1.0;
+            const dpr = Math.min(window.devicePixelRatio || 1, isMob ? 1.15 : 1.5);
             renderer.setPixelRatio(Math.min(dpr, prCap));
-            renderer.shadowMap.enabled = !isMob && quality === 'high';
+            renderer.shadowMap.enabled = !isMob && quality === 'high' && weatherMode !== 'night';
             renderer.shadowMap.type = THREE.PCFShadowMap;
             renderer.toneMapping = THREE.NoToneMapping;
             renderer.toneMappingExposure = 1.0;
             if (renderer.outputColorSpace !== undefined) renderer.outputColorSpace = THREE.SRGBColorSpace;
-            renderer.sortObjects = true;
+            renderer.sortObjects = quality === 'high' && !isMob;
+            // меньше work per frame
+            if (renderer.info) renderer.info.autoReset = true;
+            // меньше работы на GPU: без автоочистки info в dev, без премультиплая
+            try {
+                if (renderer.capabilities && renderer.capabilities.precision) {
+                    // WebGLRenderer уже выбрал precision; логируем
+                    console.log('WebGL precision:', renderer.capabilities.precision);
+                }
+            } catch (e) {}
             // не копировать drawing buffer каждый кадр
             if (renderer.getContext) {
                 try {
@@ -6481,6 +6884,12 @@ function startGaragePreview(carId) {
                     // nothing — preserveDrawingBuffer already false
                 } catch (e) {}
             }
+            try {
+                // ограничиваем max anisotropy устройства (не тянем 16x)
+                if (renderer.capabilities && renderer.capabilities.getMaxAnisotropy) {
+                    window.__maxAniso = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+                }
+            } catch (e) {}
             container.appendChild(renderer.domElement);
             window.__gameRenderer = renderer;
 
@@ -6515,6 +6924,8 @@ function startGaragePreview(carId) {
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(60, 60);
+                // дорога далеко — лёгкие mipmaps, aniso 2
+                if (window.optimizeTexture) window.optimizeTexture(texture, { mipmaps: true, anisotropy: window.__isMobile ? 1 : 2 });
                 return texture;
             }
 
@@ -6536,6 +6947,7 @@ function startGaragePreview(carId) {
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(1, 120);
+                if (window.optimizeTexture) window.optimizeTexture(texture, { mipmaps: true, anisotropy: window.__isMobile ? 1 : 2 });
                 return texture;
             }
 
@@ -7081,8 +7493,8 @@ function startGaragePreview(carId) {
                 scene.add(group);
             }
 
-            const envCount = quality === 'low' ? 22 : quality === 'medium' ? 40 : 58;
-            const debrisCount = quality === 'low' ? 10 : 18;
+            const envCount = quality === 'low' ? 12 : quality === 'medium' ? 24 : (window.__isMobile ? 32 : 42);
+            const debrisCount = quality === 'low' ? 6 : (window.__isMobile ? 10 : 14);
 
             // Тон карты + погода
             function applyMapAndWeather() {
@@ -7180,15 +7592,16 @@ function startGaragePreview(carId) {
                 board.position.y = 2.8; board.castShadow = true; g.add(board);
                 // canvas text
                 const cv = document.createElement('canvas');
-                cv.width = 256; cv.height = 128;
+                cv.width = 128; cv.height = 64;
                 const cx = cv.getContext('2d');
-                cx.fillStyle = '#1a1020'; cx.fillRect(0,0,256,128);
-                cx.fillStyle = '#ff2244'; cx.fillRect(8,8,240,112);
-                cx.fillStyle = '#1a1020'; cx.fillRect(14,14,228,100);
-                cx.fillStyle = '#ffdd44'; cx.font = 'bold 22px Arial';
+                cx.fillStyle = '#1a1020'; cx.fillRect(0,0,128,64);
+                cx.fillStyle = '#ff2244'; cx.fillRect(4,4,120,56);
+                cx.fillStyle = '#1a1020'; cx.fillRect(7,7,114,50);
+                cx.fillStyle = '#ffdd44'; cx.font = 'bold 14px Arial';
                 cx.textAlign = 'center'; cx.textBaseline = 'middle';
-                cx.fillText(text, 128, 64);
+                cx.fillText(text, 64, 32);
                 const tex = new THREE.CanvasTexture(cv);
+                if (window.optimizeTexture) window.optimizeTexture(tex, { mipmaps: false, nearest: false, anisotropy: 1 });
                 const sign = new THREE.Mesh(
                     new THREE.PlaneGeometry(2.2, 1.05),
                     new THREE.MeshBasicMaterial({ map: tex })
@@ -7198,7 +7611,7 @@ function startGaragePreview(carId) {
                 g.rotation.y = (x > 0 ? -0.3 : 0.3);
                 scene.add(g);
             }
-            const bannerCount = quality === 'low' ? 8 : 14;
+            const bannerCount = (weatherMode === 'night') ? 0 : (quality === 'low' ? 8 : 14);
             for (let i = 0; i < bannerCount; i++) {
                 const z = -TRACK_LENGTH/2 + 50 + Math.random() * (TRACK_LENGTH - 100);
                 const side = i % 2 === 0 ? 1 : -1;
@@ -7209,7 +7622,8 @@ function startGaragePreview(carId) {
             // Фонари вдоль дороги (ночь)
             const streetLamps = [];
             if (weatherMode === 'night') {
-                const lampCount = quality === 'low' ? 6 : 10;
+                // Без PointLight — только «лампочки» MeshBasic (иначе FPS проседает)
+                const lampCount = quality === 'low' ? 3 : (quality === 'medium' ? 4 : 5);
                 for (let i = 0; i < lampCount; i++) {
                     const z = -TRACK_LENGTH / 2 + 40 + (i / lampCount) * (TRACK_LENGTH - 80);
                     const side = i % 2 === 0 ? 1 : -1;
@@ -7232,9 +7646,8 @@ function startGaragePreview(carId) {
                     );
                     bulb.position.set(side * -0.7, 3.3, 0);
                     g.add(bulb);
-                    const light = new THREE.PointLight(0xffcc88, 1.2, 14, 2);
-                    light.position.copy(bulb.position);
-                    g.add(light);
+                    // PointLight убран ради FPS; bulb уже MeshBasicMaterial
+                    /* no dynamic light */
                     g.position.set(side * (TRACK_WIDTH / 2 + 1.8), 0, z);
                     scene.add(g);
                     streetLamps.push(g);
@@ -7536,6 +7949,8 @@ function startGaragePreview(carId) {
             let xPos = 0;
             let xVelocity = 0;
             playerCar.position.set(xPos, 0.1, zPos);
+            playerCar.userData.dynamic = true;
+            playerCar.matrixAutoUpdate = true;
             scene.add(playerCar);
 
             // ============================================================
@@ -7695,7 +8110,8 @@ function startGaragePreview(carId) {
                 };
             }
 
-            const maxCars = quality === 'low' ? Math.min(12, config.maxCars) : config.maxCars;
+            const maxCars = quality === 'low' ? Math.min(6, config.maxCars)
+                : (window.__isMobile ? Math.min(10, config.maxCars) : config.maxCars);
             for (let i = 0; i < maxCars; i++) {
                 const z = -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
@@ -8050,19 +8466,21 @@ function startGaragePreview(carId) {
             function radioSay(text) {
                 if (radioCooldown > 0) return;
                 radioCooldown = 2.5;
+                if (window.__isMobile || window.__inRace && window.innerHeight < 500) return; // не перекрываем дорогу
                 const el = document.createElement('div');
                 el.className = 'radio-line';
                 el.textContent = '📡 ' + text;
                 document.body.appendChild(el);
-                setTimeout(() => el.remove(), window.__isMobile ? 1800 : 2800);
+                setTimeout(() => el.remove(), 2800);
             }
 
             function showStory(text) {
+                if (window.__isMobile || (window.__inRace && window.innerHeight < 520)) return;
                 const el = document.createElement('div');
                 el.className = 'story-plaque';
                 el.textContent = text;
                 document.body.appendChild(el);
-                setTimeout(() => el.remove(), window.__isMobile ? 2000 : 3500);
+                setTimeout(() => el.remove(), 3500);
             }
 
             const RADIO_LINES = {
@@ -8222,6 +8640,7 @@ function startGaragePreview(carId) {
                     const material = new THREE.ShaderMaterial({
                         uniforms: { color: { value: new THREE.Color(0xD2B48C) } },
                         vertexShader: `
+                            precision mediump float;
                             attribute float size; attribute float opacity; varying float vOpacity;
                             void main() {
                                 vOpacity = opacity;
@@ -8231,6 +8650,7 @@ function startGaragePreview(carId) {
                             }
                         `,
                         fragmentShader: `
+                            precision mediump float;
                             uniform vec3 color; varying float vOpacity;
                             void main() {
                                 float d = length(gl_PointCoord - vec2(0.5));
@@ -8587,7 +9007,10 @@ function startGaragePreview(carId) {
                     if (!car.active) return;
                     
                     car.z -= car.speed * 60 * deltaTime;
-                    car.mesh.position.z = car.z;
+                    if (car.mesh) {
+                        car.mesh.matrixAutoUpdate = true;
+                        car.mesh.position.z = car.z;
+                    }
                     
                     if (car.isChangingLane) {
                         car.laneChangeProgress += deltaTime * 1.5;
@@ -8884,7 +9307,16 @@ function startGaragePreview(carId) {
                 }
 
                 // Животные
-                animalSpawner.update(deltaTime, zPos);
+                // mobile: AI/спавн зверей через кадр
+                if (!_perfMobile || (window.__frameParity = 1 - (window.__frameParity || 0))) {
+                    animalSpawner.update(deltaTime * (_perfMobile ? 1.15 : 1), zPos);
+                } else if (animalSpawner && animalSpawner.animals) {
+                    // только движение уже активных
+                    for (let ai = 0; ai < animalSpawner.animals.length; ai++) {
+                        const an = animalSpawner.animals[ai];
+                        if (an && an.triggered && !an.hit) animalSpawner.updateAnimal(an, deltaTime, zPos);
+                    }
+                }
 
                 if (gameState === 'racing') {
                     const activeAnimals = animalSpawner.getActiveAnimals();
@@ -8961,8 +9393,13 @@ function startGaragePreview(carId) {
                 sunLight.target.updateMatrixWorld();
 
                 // частицы: на mobile реже
-                if (!_perfMobile || (Math.floor(raceTime * 20) % 2 === 0)) {
-                    particleSystem.update(deltaTime * (_perfMobile ? 1.3 : 1));
+                // частицы: 10 FPS mobile / 20 FPS desktop
+                if (!_v._pAcc) _v._pAcc = 0;
+                _v._pAcc += deltaTime;
+                const pEvery = _perfMobile ? 0.1 : 0.05;
+                if (_v._pAcc >= pEvery) {
+                    particleSystem.update(_v._pAcc * (_perfMobile ? 1.2 : 1));
+                    _v._pAcc = 0;
                 }
                 updateHUD(deltaTime);
             }
@@ -9047,6 +9484,56 @@ function startGaragePreview(carId) {
             }
             showMapIntroLore();
 
+
+            // --- PERF: пометить динамику, затем заморозить статику ---
+            try {
+                if (playerCar) {
+                    playerCar.userData.dynamic = true;
+                    playerCar.matrixAutoUpdate = true;
+                    playerCar.traverse(function(o) {
+                        if (o.isObject3D) { o.userData.dynamic = true; o.matrixAutoUpdate = true; }
+                    });
+                }
+                if (typeof cars !== 'undefined') {
+                    cars.forEach(function(cr) {
+                        if (!cr || !cr.mesh) return;
+                        cr.mesh.userData.dynamic = true;
+                        cr.mesh.matrixAutoUpdate = true;
+                        cr.mesh.traverse(function(o) {
+                            if (o.isObject3D) { o.userData.dynamic = true; o.matrixAutoUpdate = true; }
+                        });
+                    });
+                }
+            } catch (e) {}
+            (function freezeStaticScene() {
+                try {
+                    const skip = new Set();
+                    if (playerCar) playerCar.traverse(o => skip.add(o));
+                    // динамика обновится сама; помечаем остальное
+                    scene.traverse(function(obj) {
+                        if (!obj.isMesh && !obj.isGroup) return;
+                        if (skip.has(obj)) return;
+                        // не трогаем объекты с userData.dynamic
+                        if (obj.userData && (obj.userData.dynamic || obj.userData.isEye || obj.userData.bodyPaint)) return;
+                        if (obj.isMesh) {
+                            obj.frustumCulled = true;
+                            obj.matrixAutoUpdate = false;
+                            obj.updateMatrix();
+                            if (obj.parent) {
+                                // groups still update
+                            }
+                        }
+                    });
+                    // дорога / ground явно
+                    scene.traverse(function(obj) {
+                        if (obj.isMesh && obj.geometry && obj.geometry.type === 'PlaneGeometry') {
+                            obj.matrixAutoUpdate = false;
+                            obj.updateMatrix();
+                        }
+                    });
+                } catch (e) { console.warn('freezeStatic', e); }
+            })();
+
             console.log('🏁 Игра запущена!');
             window.__inRace = true;
             window.__racePaused = false;
@@ -9070,22 +9557,25 @@ function startGaragePreview(carId) {
                             soundEngine.audioCtx.resume().catch(function(){});
                         }
                     }
-                    // музыка
+                    var dark = (window.weatherMode === 'night' || window.weatherMode === 'rain');
                     soundEngine.isMusicPlaying = false;
+                    // ночь/дождь: сразу HTML5 MP3 — надёжнее WebAudio на desktop/mobile
+                    if (dark && soundEngine.startRaceMusicHTML) {
+                        soundEngine.startRaceMusicHTML();
+                    }
                     if (soundEngine.startMusic) soundEngine.startMusic();
                     if (attempt >= 1 && soundEngine.startRaceMusicHTML) soundEngine.startRaceMusicHTML();
-                    // двигатель
                     try {
-                        soundEngine.speed = 0.15;
+                        soundEngine.speed = 0.2;
                         if (soundEngine.startEngine) soundEngine.startEngine();
                     } catch (e) {}
-                    if (attempt < 5) {
+                    if (attempt < 6) {
                         setTimeout(function() {
                             if (!window.__inRace || !soundEngine) return;
                             var needMusic = !soundEngine.isMusicPlaying;
                             var needEng = !soundEngine.isPlaying;
                             if (needMusic || needEng) ensureRaceAudio(attempt + 1);
-                        }, 350 + attempt * 250);
+                        }, 300 + attempt * 200);
                     }
                 } catch (e) { console.warn('race audio', e); }
             })(0);
@@ -9609,6 +10099,12 @@ function startGaragePreview(carId) {
                 window.toggleRacePause();
             }
         });
+
+        
+        document.addEventListener('pointerdown', function menuMusicOnce() {
+            if (window.__inRace) return;
+            if (typeof window.playMenuMusic === 'function') window.playMenuMusic();
+        }, { passive: true });
 
         console.log('🎮 Выберите сложность и начните игру!');
 
