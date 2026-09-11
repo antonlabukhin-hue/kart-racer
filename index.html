@@ -91,7 +91,7 @@
             z-index: 5000;
             position: fixed; inset: 0; z-index: 3900; display: none;
             justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.94); backdrop-filter: blur(12px);
+            background: rgba(0,0,0,0.94); backdrop-filter: none; /* perf: solid bg instead of blur */
             font-family: 'Segoe UI', Arial, sans-serif;
         }
         #main-menu-screen.active, #rewards-screen.active, #events-screen.active, #shop-screen.active { display: flex; }
@@ -146,7 +146,7 @@
         #profile-screen, #garage-screen {
             position: fixed; inset: 0; z-index: 5200;
             display: none; justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.94); backdrop-filter: blur(12px);
+            background: rgba(0,0,0,0.94); backdrop-filter: none; /* perf: solid bg instead of blur */
             font-family: 'Segoe UI', Arial, sans-serif;
             pointer-events: auto;
         }
@@ -323,7 +323,7 @@
             justify-content: center;
             align-items: center;
             z-index: 3000;
-            backdrop-filter: blur(15px);
+            backdrop-filter: none;
             font-family: 'Segoe UI', Arial, sans-serif;
         }
         #difficulty-screen .content {
@@ -940,8 +940,8 @@
             border-radius: 50%;
             border: 2px solid rgba(255,255,255,0.35);
             background: rgba(10,12,20,0.45);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
             color: #fff;
             font-size: 30px;
             display: flex;
@@ -1028,7 +1028,7 @@
             background: rgba(0,0,0,0.65);
             padding: 10px 12px;
             border-radius: 10px;
-            backdrop-filter: blur(8px);
+            backdrop-filter: none;
             border: 1px solid rgba(255,255,255,0.1);
             pointer-events: auto;
         }
@@ -1206,7 +1206,7 @@
         #car-select-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.92); display: none; justify-content: center;
-            align-items: center; z-index: 3400; backdrop-filter: blur(12px);
+            align-items: center; z-index: 3400; backdrop-filter: none; /* perf: solid bg instead of blur */
         }
         #car-select-screen.active { display: flex; }
         #car-select-screen .content {
@@ -1281,7 +1281,7 @@
         #map-select-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.92); display: none; justify-content: center;
-            align-items: center; z-index: 3450; backdrop-filter: blur(12px);
+            align-items: center; z-index: 3450; backdrop-filter: none; /* perf: solid bg instead of blur */
         }
         #map-select-screen.active { display: flex; }
         #map-select-screen .content {
@@ -1434,9 +1434,7 @@
                 font-size: 10px !important;
                 margin-top: 2px !important;
             }
-            #car-select-go,
-    
-        .weather-selector {
+            .weather-selector {
             display: flex; gap: 8px; justify-content: center; margin: 12px 0 8px;
             flex-wrap: wrap;
         }
@@ -1715,9 +1713,7 @@
         }
 
         /* Пауза в колонке справа над тормозом; скрыть верхнюю системную */
-        body.race-mode #hud-pause-btn {
-            display: none !important;
-        }
+        /* pause: see final media block */
         #btnPauseMobile,
         .control-btn.pause-inline {
             width: 52px !important;
@@ -1783,6 +1779,664 @@
             }
         }
 
+        
+        #campaign-screen {
+            position: fixed; inset: 0; z-index: 5100; display: none;
+            justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.94);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+        #campaign-screen.active { display: flex !important; }
+        #campaign-lore-screen {
+            position: fixed; inset: 0; z-index: 5200; display: none;
+            justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.94);
+            padding: 12px; box-sizing: border-box;
+        }
+        #campaign-lore-screen.active { display: flex !important; }
+
+        
+        /* ============================================================
+           АНИМАЦИИ ИНТЕРФЕЙСА
+           ============================================================ */
+        @keyframes uiFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes uiSlideUp {
+            from { opacity: 0; transform: translateY(18px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes uiSlideDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes uiPop {
+            0% { opacity: 0; transform: scale(0.88); }
+            70% { transform: scale(1.03); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes uiPulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,220,0,0.0); }
+            50% { box-shadow: 0 0 16px 2px rgba(255,220,0,0.25); }
+        }
+        @keyframes uiShimmer {
+            0% { background-position: -120% 0; }
+            100% { background-position: 120% 0; }
+        }
+
+        /* Экраны меню — появление */
+        #main-menu-screen.active,
+        #campaign-screen.active,
+        #rewards-screen.active,
+        #events-screen.active,
+        #shop-screen.active,
+        #difficulty-screen[style*="flex"],
+        #map-select-screen.active,
+        #lore-screen.active,
+        #garage-screen.active {
+            animation: uiFadeIn 0.28s ease-out;
+        }
+        #main-menu-screen .content,
+        #campaign-screen .content,
+        #rewards-screen .content,
+        #events-screen .content,
+        #shop-screen .content,
+        #difficulty-screen .content,
+        #map-select-screen .content,
+        #garage-screen .content {
+            animation: uiSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Карточки меню */
+        .menu-card {
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+                        border-color 0.2s ease,
+                        box-shadow 0.25s ease,
+                        opacity 0.2s ease !important;
+        }
+        .menu-card img {
+            transition: transform 0.35s ease, filter 0.25s ease;
+        }
+        .menu-card:hover:not(.locked) {
+            transform: translateY(-3px) scale(1.03);
+            border-color: #ffdd00;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,220,0,0.35);
+        }
+        .menu-card:hover:not(.locked) img {
+            transform: scale(1.06);
+            filter: brightness(1.08);
+        }
+        .menu-card:active:not(.locked) {
+            transform: scale(0.97);
+            transition-duration: 0.08s;
+        }
+        .menu-grid .menu-card {
+            animation: uiPop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .menu-grid .menu-card:nth-child(1) { animation-delay: 0.03s; }
+        .menu-grid .menu-card:nth-child(2) { animation-delay: 0.07s; }
+        .menu-grid .menu-card:nth-child(3) { animation-delay: 0.11s; }
+        .menu-grid .menu-card:nth-child(4) { animation-delay: 0.15s; }
+        .menu-grid .menu-card:nth-child(5) { animation-delay: 0.19s; }
+        .menu-grid .menu-card:nth-child(6) { animation-delay: 0.23s; }
+
+        /* Кнопки */
+        .profile-btn, .garage-btn, .difficulty-btn,
+        #finish-screen .finish-actions button,
+        #campaign-lore-screen button {
+            transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .profile-btn:hover, .garage-btn:hover, .difficulty-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(255,220,0,0.15);
+        }
+        .profile-btn:active, .garage-btn:active, .difficulty-btn:active,
+        #finish-screen .finish-actions button:active {
+            transform: scale(0.97);
+        }
+
+        /* Трассы компании */
+        .camp-track {
+            transition: transform 0.18s ease, border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+            animation: uiSlideUp 0.3s ease both;
+        }
+        .camp-track:nth-child(1) { animation-delay: 0.02s; }
+        .camp-track:nth-child(2) { animation-delay: 0.05s; }
+        .camp-track:nth-child(3) { animation-delay: 0.08s; }
+        .camp-track:nth-child(4) { animation-delay: 0.11s; }
+        .camp-track:nth-child(5) { animation-delay: 0.14s; }
+        .camp-track:nth-child(6) { animation-delay: 0.17s; }
+        .camp-track:nth-child(n+7) { animation-delay: 0.2s; }
+        .camp-track:hover:not(.locked) {
+            transform: translateX(4px);
+            border-color: #ffdd00;
+            background: rgba(255,220,0,0.06);
+        }
+        .camp-track:active:not(.locked) { transform: scale(0.99); }
+
+        /* Лор злодея */
+        #campaign-lore-screen.active .content {
+            animation: uiPop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        #campaign-lore-text {
+            animation: uiFadeIn 0.5s ease 0.15s both;
+        }
+
+        /* Плашка ачивки */
+        .ach-plaque {
+            animation: uiPop 0.45s cubic-bezier(0.22, 1, 0.36, 1) !important;
+        }
+
+        /* Финиш */
+        #finish-screen .finish-inner {
+            animation: uiSlideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        #finish-screen .finish-actions {
+            animation: uiSlideUp 0.35s ease 0.12s both;
+        }
+
+        /* Карты / сложность */
+        .map-card, .difficulty-btn {
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .map-card:hover:not(.locked), .difficulty-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+        .map-card.selected {
+            animation: uiPulseGlow 2s ease-in-out infinite;
+        }
+
+        /* Заголовок меню */
+        #main-menu-screen h1 {
+            animation: uiSlideDown 0.4s ease both;
+        }
+
+        /* Player bar */
+        #player-bar.visible {
+            animation: uiSlideDown 0.3s ease;
+        }
+
+        /* Меньше анимаций, если пользователь так настроил ОС */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        
+        #track-transition {
+            display: none; position: fixed; inset: 0; z-index: 8000;
+            align-items: center; justify-content: center; pointer-events: none; opacity: 0;
+        }
+        #track-transition.active { display: flex; pointer-events: auto; animation: ttFadeIn 0.35s ease forwards; }
+        #track-transition.leaving { animation: ttFadeOut 0.4s ease forwards; }
+        @keyframes ttFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes ttFadeOut { from { opacity: 1; } to { opacity: 0; } }
+        #track-transition .tt-bg {
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at center, #1a1020 0%, #050508 70%);
+        }
+        #track-transition .tt-lines {
+            position: absolute; inset: 0; opacity: 0.85;
+            background: repeating-linear-gradient(90deg, transparent 0, transparent 48px, rgba(255,220,0,0.05) 48px, rgba(255,220,0,0.05) 50px);
+            animation: ttScroll 1.2s linear infinite;
+        }
+        @keyframes ttScroll { from { transform: translateX(0); } to { transform: translateX(-50px); } }
+        #track-transition .tt-content { position: relative; z-index: 2; text-align: center; padding: 24px; max-width: 90vw; }
+        #track-transition .tt-label { color: #ff6666; font-size: 11px; letter-spacing: 3px; margin-bottom: 16px; }
+        #track-transition .tt-from { color: #888; font-size: 14px; text-decoration: line-through; }
+        #track-transition .tt-arrow { color: #ffdd00; font-size: 22px; margin: 10px 0; animation: ttBounce 0.8s ease infinite; }
+        @keyframes ttBounce { 0%,100%{transform:translateY(0);opacity:.7} 50%{transform:translateY(6px);opacity:1} }
+        #track-transition .tt-to { color: #ffdd00; font-size: 22px; font-weight: bold; text-shadow: 0 0 20px rgba(255,220,0,0.35); }
+        #track-transition .tt-bar { margin: 22px auto 0; width: min(220px,70vw); height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; }
+        #track-transition .tt-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg,#ff6644,#ffdd00); animation: ttLoad 1.35s ease-in-out forwards; }
+        @keyframes ttLoad { from{width:0%} to{width:100%} }
+
+        
+        /* === Компания: карточки трасс — фикс влезания и читаемости === */
+        #campaign-screen {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 5100 !important;
+            display: none;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            background: rgba(0,0,0,0.94) !important;
+            padding: max(12px, env(safe-area-inset-top, 0px) + 8px) 12px 24px !important;
+            box-sizing: border-box !important;
+        }
+        #campaign-screen.active { display: flex !important; }
+        #campaign-screen .content {
+            max-width: min(520px, 100%) !important;
+            width: 100% !important;
+            margin: 0 auto !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+        }
+        #campaign-track-list {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 10px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .camp-track {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 12px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 10px !important;
+            margin: 0 !important;
+            border-radius: 14px !important;
+            border: 2px solid rgba(255,255,255,0.16) !important;
+            background: #16141e !important;
+            color: #f0f0f0 !important;
+            min-height: 78px !important;
+            overflow: hidden !important;
+        }
+        .camp-track.locked {
+            background: #121018 !important;
+            border-color: rgba(255,255,255,0.1) !important;
+            opacity: 1 !important;
+        }
+        .camp-track.done {
+            border-color: rgba(100, 200, 120, 0.5) !important;
+            background: #142018 !important;
+        }
+        .ct-thumb-wrap {
+            position: relative !important;
+            width: 88px !important;
+            height: 58px !important;
+            min-width: 88px !important;
+            max-width: 88px !important;
+            flex: 0 0 88px !important;
+            border-radius: 10px !important;
+            overflow: hidden !important;
+            background: #2a2035 !important;
+        }
+        .ct-thumb {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: cover !important;
+            object-position: center !important;
+            display: block !important;
+            border: 0 !important;
+        }
+        .camp-track.locked .ct-thumb {
+            filter: grayscale(0.8) brightness(0.5) !important;
+        }
+        .ct-num {
+            position: absolute !important;
+            left: 4px !important;
+            top: 4px !important;
+            z-index: 2 !important;
+            background: rgba(0,0,0,0.75) !important;
+            color: #ffdd00 !important;
+            font-weight: bold !important;
+            font-size: 11px !important;
+            padding: 1px 6px !important;
+            border-radius: 6px !important;
+        }
+        .ct-lock-overlay {
+            position: absolute !important;
+            inset: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 20px !important;
+            background: rgba(0,0,0,0.4) !important;
+            z-index: 1 !important;
+        }
+        .ct-body {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+        }
+        .ct-name {
+            font-weight: bold !important;
+            font-size: 14px !important;
+            color: #ffffff !important;
+            line-height: 1.3 !important;
+            margin: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+        .camp-track.locked .ct-name { color: #d0d0d0 !important; }
+        .ct-desc {
+            font-size: 12px !important;
+            color: #b8b0a8 !important;
+            margin-top: 3px !important;
+            line-height: 1.35 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+        }
+        .camp-track.locked .ct-desc { color: #8a8580 !important; }
+        .ct-meta {
+            font-size: 11px !important;
+            color: #e0b86a !important;
+            margin-top: 4px !important;
+        }
+        .ct-badge {
+            flex: 0 0 auto !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            color: #9fdf9f !important;
+            text-align: right !important;
+            max-width: 70px !important;
+            line-height: 1.3 !important;
+        }
+        .camp-track.locked .ct-badge { color: #999 !important; }
+        @media (max-width: 420px) {
+            .ct-thumb-wrap {
+                width: 72px !important;
+                height: 48px !important;
+                min-width: 72px !important;
+                max-width: 72px !important;
+                flex-basis: 72px !important;
+            }
+            .ct-name { font-size: 13px !important; }
+            .ct-desc { font-size: 11px !important; -webkit-line-clamp: 2 !important; }
+            .ct-badge { max-width: 56px !important; font-size: 10px !important; }
+        }
+
+        
+        /* Финиш компании — компактная плашка как в свободном заезде */
+        #finish-screen.finish-layout-camp {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            padding: max(12px, env(safe-area-inset-top, 0px) + 10px) 12px max(24px, env(safe-area-inset-bottom, 0px) + 16px) !important;
+        }
+        #finish-screen .finish-inner.finish-campaign {
+            width: min(400px, 100%) !important;
+            max-width: 400px !important;
+            margin: 0 auto !important;
+            padding: 12px 12px 14px !important;
+            border: 2px solid #ff6666 !important;
+            border-radius: 16px !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+        .finish-villain-img-wrap {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 140px !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            border: 1px solid rgba(255,100,100,0.35) !important;
+            background: #1a1018 !important;
+            margin: 0 0 8px 0 !important;
+            position: relative !important;
+        }
+        .finish-villain-img {
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 140px !important;
+            object-fit: cover !important;
+            object-position: center center !important;
+            display: block !important;
+        }
+        .finish-villain-tag {
+            position: absolute !important;
+            left: 0; right: 0; bottom: 0 !important;
+            font-size: 9px !important;
+            letter-spacing: 1.5px !important;
+            color: #ff8888 !important;
+            padding: 5px 8px !important;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9)) !important;
+            text-align: center !important;
+        }
+        .finish-villain-quote {
+            text-align: left !important;
+            font-size: 13px !important;
+            line-height: 1.45 !important;
+            color: #e8d0c8 !important;
+            background: rgba(80,20,30,0.4) !important;
+            border-left: 3px solid #ff4444 !important;
+            padding: 10px 12px !important;
+            border-radius: 0 10px 10px 0 !important;
+            margin: 8px 0 0 0 !important;
+            max-height: 120px !important;
+            overflow-y: auto !important;
+        }
+        #finish-screen.finish-layout-camp .finish-actions {
+            position: relative !important;
+            width: min(400px, 100%) !important;
+            margin: 12px auto 0 !important;
+            padding: 0 0 8px !important;
+            background: none !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+            bottom: auto !important;
+        }
+        #finish-screen.finish-layout-camp .finish-actions button {
+            width: 100% !important;
+            min-height: 44px !important;
+            box-sizing: border-box !important;
+        }
+        #finish-next-btn {
+            border-color: #ff6666 !important;
+            color: #ffcccc !important;
+            background: rgba(90, 25, 35, 0.75) !important;
+            font-weight: bold !important;
+        }
+        @media (max-height: 700px) {
+            .finish-villain-img-wrap { height: 110px !important; }
+            .finish-villain-img { max-height: 110px !important; }
+            .finish-villain-quote { max-height: 90px !important; font-size: 12px !important; }
+        }
+
+        
+        /* ============================================================
+           ЕДИНЫЙ СТИЛЬ КНОПОК
+           ============================================================ */
+        .profile-btn,
+        .garage-btn,
+        .difficulty-btn,
+        #finish-screen .finish-actions button,
+        #campaign-lore-screen button.profile-btn,
+        #campaign-screen .profile-btn,
+        button.profile-btn,
+        button.garage-btn {
+            appearance: none;
+            -webkit-appearance: none;
+            font-family: inherit;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            transition:
+                transform 0.15s ease,
+                background 0.2s ease,
+                border-color 0.2s ease,
+                box-shadow 0.2s ease,
+                color 0.15s ease,
+                filter 0.15s ease;
+        }
+
+        /* Primary — жёлтые (основное действие) */
+        .profile-btn:not(.secondary),
+        .garage-btn:not(.secondary),
+        #finish-restart-btn,
+        #map-go-btn,
+        .difficulty-btn.easy:hover,
+        .difficulty-btn.medium:hover,
+        .difficulty-btn.hard:hover {
+            box-shadow: 0 2px 0 rgba(0,0,0,0.35), 0 0 0 1px rgba(255,220,0,0.08);
+        }
+        .profile-btn:not(.secondary),
+        .garage-btn:not(.secondary) {
+            background: linear-gradient(180deg, rgba(255,220,40,0.22), rgba(255,180,0,0.1)) !important;
+            border: 2px solid rgba(255,220,0,0.55) !important;
+            color: #ffe566 !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.02em;
+        }
+        .profile-btn.secondary,
+        .garage-btn.secondary {
+            background: rgba(255,255,255,0.06) !important;
+            border: 2px solid rgba(255,255,255,0.22) !important;
+            color: #ddd !important;
+            text-shadow: none;
+            border-radius: 12px !important;
+        }
+
+        .profile-btn:hover:not(:disabled),
+        .garage-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            filter: brightness(1.08);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35), 0 0 12px rgba(255,220,0,0.12);
+        }
+        .profile-btn.secondary:hover:not(:disabled),
+        .garage-btn.secondary:hover:not(:disabled) {
+            border-color: rgba(255,255,255,0.4) !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+            filter: brightness(1.05);
+        }
+        .profile-btn:active:not(:disabled),
+        .garage-btn:active:not(:disabled),
+        .difficulty-btn:active,
+        #finish-screen .finish-actions button:active {
+            transform: translateY(1px) scale(0.98);
+            filter: brightness(0.95);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+        }
+        .profile-btn:disabled,
+        .garage-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none !important;
+            filter: grayscale(0.3);
+        }
+
+        /* Сложность */
+        .difficulty-btn {
+            background: rgba(20,18,28,0.9) !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            position: relative;
+            overflow: hidden;
+        }
+        .difficulty-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent 50%);
+            pointer-events: none;
+        }
+        .difficulty-btn.easy {
+            border-color: rgba(80, 200, 100, 0.55) !important;
+            color: #b8f0c0 !important;
+        }
+        .difficulty-btn.medium {
+            border-color: rgba(255, 200, 60, 0.55) !important;
+            color: #ffe9a0 !important;
+        }
+        .difficulty-btn.hard {
+            border-color: rgba(255, 80, 80, 0.55) !important;
+            color: #ffb0b0 !important;
+        }
+        .difficulty-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        /* Финиш */
+        #finish-screen .finish-actions button {
+            background: linear-gradient(180deg, rgba(40,40,55,0.98), rgba(20,20,30,0.98)) !important;
+            border: 2px solid rgba(255,255,255,0.28) !important;
+            color: #fff !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            font-size: 15px !important;
+            letter-spacing: 0.02em;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.45);
+        }
+        #finish-screen .finish-actions button:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255,220,0,0.45) !important;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4), 0 0 10px rgba(255,220,0,0.1);
+        }
+        #finish-restart-btn {
+            border-color: rgba(255,220,0,0.65) !important;
+            color: #ffe566 !important;
+            background: linear-gradient(180deg, rgba(255,220,40,0.18), rgba(40,35,20,0.95)) !important;
+        }
+        #finish-next-btn {
+            border-color: rgba(255,100,100,0.7) !important;
+            color: #ffc0c0 !important;
+            background: linear-gradient(180deg, rgba(120,30,40,0.85), rgba(40,15,20,0.95)) !important;
+        }
+        #finish-garage-btn {
+            border-color: rgba(255,200,80,0.4) !important;
+            color: #ffdd88 !important;
+        }
+        #finish-menu-btn {
+            border-color: rgba(255,255,255,0.25) !important;
+            color: #e8e8e8 !important;
+        }
+
+        /* Кампания — список / лор */
+        #campaign-villain-intro-btn,
+        #campaign-back-btn,
+        #campaign-lore-next,
+        #campaign-lore-menu {
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+        }
+        #campaign-lore-next {
+            background: linear-gradient(180deg, rgba(255,100,100,0.25), rgba(60,20,25,0.5)) !important;
+            border: 2px solid rgba(255,100,100,0.55) !important;
+            color: #ffb0b0 !important;
+        }
+
+        /* Focus для клавиатуры */
+        .profile-btn:focus-visible,
+        .garage-btn:focus-visible,
+        .difficulty-btn:focus-visible,
+        #finish-screen .finish-actions button:focus-visible {
+            outline: 2px solid #ffdd00;
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .profile-btn, .garage-btn, .difficulty-btn,
+            #finish-screen .finish-actions button {
+                transition: none !important;
+            }
+        }
+
+        
+        body.race-mode #hud-pause-btn { display: block !important; }
+        @media (max-width: 900px), (pointer: coarse) {
+            body.race-mode #hud-pause-btn { display: none !important; }
+        }
+
+        
+        body.race-mode #hud-pause-btn { display: block !important; }
+        @media (max-width: 900px), (pointer: coarse) {
+            body.race-mode #hud-pause-btn { display: none !important; }
+        }
         </style>
 </head>
 <body>
@@ -1932,9 +2586,18 @@
             <h1 style="color:#ffdd00;font-size:22px;">ДОРОЖНЫЙ ПРОРЫВ</h1>
             <div class="sub" id="main-menu-sub" style="color:#888;font-size:13px;margin:6px 0 12px;">—</div>
             <div class="menu-grid">
+                <div class="menu-card" data-menu="campaign">
+                    <img src="images/menu_campaign.jpg" alt="Компания" onerror="this.style.background='#3a2010';this.src='';">
+                    <span>📖 Компания</span>
+                </div>
                 <div class="menu-card" data-menu="race">
-                    <img src="images/menu_race.jpg" alt="Гонка" onerror="this.style.background='#332';this.src='';">
-                    <span>🏁 Новая гонка</span>
+                    <img src="images/menu_race.jpg" alt="Свободный заезд" onerror="this.style.background='#332';this.src='';">
+                    <span>🏁 Свободный заезд</span>
+                </div>
+                <div class="menu-card locked" data-menu="multiplayer" title="Скоро">
+                    <img src="images/menu_multiplayer.jpg" alt="Мультиплеер" onerror="this.style.background='#1a1a2e';this.src='';">
+                    <span>🌐 Мультиплеер</span>
+                    <div class="lock-badge" style="position:absolute;left:0;right:0;bottom:36px;background:rgba(0,0,0,0.75);font-size:11px;padding:4px;">🔒 Скоро</div>
                 </div>
                 <div class="menu-card" data-menu="garage">
                     <img src="images/menu_garage.jpg" alt="Гараж" onerror="this.style.background='#223';this.src='';">
@@ -2035,6 +2698,46 @@
         <span id="player-bar-name">—</span>
         <span id="player-bar-season" style="color:#aaa;font-weight:normal;"></span>
         <button type="button" id="player-bar-garage">Гараж</button>
+    </div>
+
+    
+    <div id="campaign-screen" class="" style="display:none;">
+        <div class="content" style="max-width:520px;width:100%;max-height:none;overflow-x:hidden;box-sizing:border-box;">
+            <h1 style="color:#ffdd00;margin:0 0 6px;">📖 Компания</h1>
+            <p style="color:#aaa;font-size:13px;margin:0 0 10px;line-height:1.45;">
+                Доставь <b style="color:#9fdf9f;">антидот</b> в исследовательский центр.<br>
+                12 трасс. На частоте — <b style="color:#ff6666;">неизвестный голос</b>: бывший из лаборатории, автор ЗвероСуда.
+            </p>
+            <button type="button" class="profile-btn secondary" id="campaign-villain-intro-btn" style="margin-bottom:10px;font-size:13px;">📡 Кто это говорит?</button>
+            <div id="campaign-track-list"></div>
+            <button type="button" class="profile-btn secondary" id="campaign-back-btn" style="margin-top:12px;">← В меню</button>
+        </div>
+    </div>
+
+    <div id="campaign-lore-screen" style="display:none;position:fixed;inset:0;z-index:5200;background:rgba(0,0,0,0.94);align-items:center;justify-content:center;">
+        <div class="content" style="max-width:520px;width:94%;text-align:left;">
+            <div style="color:#ff6666;font-size:12px;letter-spacing:2px;margin-bottom:6px;">📡 НЕИЗВЕСТНЫЙ ГОЛОС · ЗАКРЫТЫЙ КАНАЛ</div>
+            <div style="color:#666;font-size:11px;margin-bottom:10px;">бывший сотрудник лаборатории · автор правки «ЗвероСуд»</div>
+            <h2 id="campaign-lore-title" style="color:#ffdd00;margin:0 0 12px;font-size:20px;">…</h2>
+            <p id="campaign-lore-text" style="color:#e0d0c0;font-size:15px;line-height:1.5;white-space:pre-line;">…</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+                <button type="button" class="profile-btn" id="campaign-lore-next">Дальше →</button>
+                <button type="button" class="profile-btn secondary" id="campaign-lore-menu">В меню</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="track-transition" aria-hidden="true">
+        <div class="tt-bg"></div>
+        <div class="tt-lines"></div>
+        <div class="tt-content">
+            <div class="tt-label">СЛЕДУЮЩАЯ ТРАССА</div>
+            <div class="tt-from" id="tt-from"></div>
+            <div class="tt-arrow">▼</div>
+            <div class="tt-to" id="tt-to"></div>
+            <div class="tt-bar"><span></span></div>
+        </div>
     </div>
 
     <div id="difficulty-screen" style="display:none;">
@@ -2250,7 +2953,13 @@
                 OptCanvasTexture.prototype = Orig.prototype;
                 OptCanvasTexture.__optPatched = true;
                 OptCanvasTexture.__original = Orig;
-                THREE.CanvasTexture = OptCanvasTexture;
+                try {
+                    THREE.CanvasTexture = OptCanvasTexture;
+                } catch (eAssign) {
+                    // ES-module export read-only — патч не критичен
+                    window.__OptCanvasTexture = OptCanvasTexture;
+                    console.warn('CanvasTexture patch skipped (read-only module)');
+                }
                 console.log('🖼️ CanvasTexture optimized (no mipmaps, low aniso)');
             } catch (e) {
                 console.warn('CanvasTexture patch failed', e);
@@ -2332,7 +3041,12 @@
                 LiteStandard.prototype = OrigStd.prototype;
                 LiteStandard.__patchedLite = true;
                 LiteStandard.__original = OrigStd;
-                THREE.MeshStandardMaterial = LiteStandard;
+                try {
+                    THREE.MeshStandardMaterial = LiteStandard;
+                } catch (eAssign) {
+                    window.__LiteStandardMaterial = LiteStandard;
+                    console.warn('MeshStandard patch skipped (read-only module)');
+                }
                 console.log('🧱 MeshStandardMaterial → Lambert/Phong (lite shaders)');
             } catch (e) {
                 console.warn('material patch failed', e);
@@ -2646,7 +3360,518 @@
             svalka: 'Свалка «Надежда»'
         };
 
+
+        // =======================
+        // КОМПАНИЯ: 12 трасс до исследовательского центра
+        // style = визуальная тема (arsenev/promzona/svalka) + уникальное имя/лор
+        // =======================
+        const CAMPAIGN_TRACKS = [
+            { id: 'c01', name: 'Выезд из Арсеньева', style: 'arsenev', weather: 'day', diff: 'easy',
+              desc: 'Кафе «Ностальджгия». Антидот в багажнике.',
+              loreTitle: 'Перехват частоты',
+              loreAfter: 'Курьер.\nЯ слышал твой мотор ещё у кафе «Ностальджгия».\n\nТы думаешь, что везёшь «лекарство для мира».\nНа деле — яд для того порядка, который я выстроил.\n\nЗвероСуд — не авария природы.\nЭто приговор.\nИ я не дам тебе его отменить.\n\nГони. Мне нравится смотреть, как ты ещё надеешься.' },
+            { id: 'c02', name: 'Трасса «Туманный мост»', style: 'arsenev', weather: 'rain', diff: 'easy',
+              desc: 'Дождь. Разметка почти не видна.',
+              loreTitle: 'Мокрый асфальт',
+              loreAfter: 'Дождь смывает следы людей.\nОставляет только тех, кто умеет жить без правил.\n\nТвои звери уже знают номер «Чебурашки».\nОни не злые — они свободные.\nА свободу вы называли «ошибкой эксперимента».\n\nАнтидот вернёт их в клетки… только уже в головах.\nЯ этого не допущу.' },
+            { id: 'c03', name: 'Ночной объезд', style: 'arsenev', weather: 'night', diff: 'medium',
+              desc: 'Только фары и глаза в темноте.',
+              loreTitle: 'Зелёные глаза',
+              loreAfter: 'Ночью хорошо видно, кто кого боится.\n\nТы жмёшь на газ, а они — смотрят.\nНе из-под колёс. Из темноты.\n\nЯ научил их не просить дорогу.\nТы научился её отбирать.\nИнтересно, кто из вас ближе к человеку 90-х…\nк тому, кто брал своё без спроса.' },
+            { id: 'c04', name: 'Промзона: Ворота', style: 'promzona', weather: 'day', diff: 'medium',
+              desc: 'Ржавые трубы и ядовитый дым.',
+              loreTitle: 'Моя территория',
+              loreAfter: 'Промзона — не декорации.\nЗдесь плавили будущее, пока начальство смотрело «Брата» на кассете.\n\nЯ работал за этими трубами.\nПока «исследовательский центр» ставил галочки в отчётах.\n\nОни хотели идеальных вегетарианцев.\nПолучили тех, кто больше не хочет быть едой.\nИ знаешь что? Я горжусь правкой.' },
+            { id: 'c05', name: 'Цех №7', style: 'promzona', weather: 'rain', diff: 'medium',
+              desc: 'Кислотные лужи. Не тормози резко.',
+              loreTitle: 'Цех правды',
+              loreAfter: 'Цех №7.\nИменно здесь в 2025-м выпустили «исправление экосистемы».\n\nЯ был в смене.\nЯ видел, как они проснулись.\nНе как звери — как граждане без паспорта.\n\nЦентр назвал это сбоем.\nЯ назвал это единственным честным экспериментом за десятилетие.\n\nТвой антидот — кнопка «отмена».\nА я терпеть не могу, когда историю переписывают задним числом.' },
+            { id: 'c06', name: 'Красные трубы', style: 'promzona', weather: 'night', diff: 'hard',
+              desc: 'Мигающие лампы. Не смотри по сторонам.',
+              loreTitle: 'Красный сигнал',
+              loreAfter: 'Каждый твой финиш — репортаж.\n«Курьер снова прорвался».\n\nМне нужна тишина, а не герои на радио.\nЛюди снова поверят, что мир можно «починить бутылкой».\n\nПочини себя сначала.\nТы возил пиратский «Терминатор» и жвачку «Турбо».\nТеперь вдруг — спаситель цивилизации?\n\nСбавь пафос. Или скорость. На выбор.' },
+            { id: 'c07', name: 'Свалка «Надежда»', style: 'svalka', weather: 'day', diff: 'medium',
+              desc: 'Горы хлама и странный запах.',
+              loreTitle: 'Свалка равных',
+              loreAfter: '«Надежда» — лучшее название для кучи мусора.\nКак и ваш центр.\n\nЗдесь лежат кассеты, шины, обещания депутатов.\nИ тушки тех, кто верил в «временные меры».\n\nАнтидот на свалке — просто стекло в коробке.\nПока ты не довезёшь.\n\nЯ уже проиграл одну войну бумаге и печатям.\nВторую — на асфальте — не проиграю.' },
+            { id: 'c08', name: 'Зелёный дым', style: 'svalka', weather: 'rain', diff: 'hard',
+              desc: 'Токсичный туман. Держи комбо.',
+              loreTitle: 'Яд и лекарство',
+              loreAfter: 'Забавно: вы зовёте зелёный дым «токсичным»,\nа свой антидот — «спасением».\n\nОба меняют мозг.\nРазница в том, кто подписывает приказ.\n\nЯ дал зверям право быть хамами.\nВы хотите вернуть им право быть молчаливыми.\n\nСкажи честно, курьер:\nты за мир… или за привычный фон за окном?' },
+            { id: 'c09', name: 'Холодный рассвет', style: 'svalka', weather: 'night', diff: 'hard',
+              desc: 'Серо-зелёный рассвет над кучами шин.',
+              loreTitle: 'Пульс на частоте',
+              loreAfter: 'Я слышу тебя сквозь помехи.\nСердце стучит чаще, чем мотор на холостых.\n\nВ Центре тоже кто-то ждёт.\nНе «мир». Конкретный человек с допуском и страхом.\n\nЕсли антидот сработает — звери забудут, кто они.\nЗабудут ЗвероСуд.\nЗабудут меня.\n\nА я не люблю, когда меня вычёркивают из протокола.' },
+            { id: 'c10', name: 'Шоссе «Последний VHS»', style: 'arsenev', weather: 'day', diff: 'hard',
+              desc: 'Ностальгия и высокая скорость.',
+              loreTitle: 'Кассета судьбы',
+              loreAfter: '«Терминатор», «Битлз», «Король и Шут»…\nТы возил прошлое, пока настоящее гнило.\n\nЯ тоже из того времени.\nТолько вместо гитары у меня был лабораторный журнал.\n\nТы веришь, что Армагеддон останавливают песнями.\nЯ остановил его иначе: отдал дорогу тем, кого вы давили.\n\nИрония: контрабандист стал мессией.\nА я — голосом в приёмнике.\nКто из нас настоящий?' },
+            { id: 'c11', name: 'Подступы к Центру', style: 'promzona', weather: 'rain', diff: 'hard',
+              desc: 'Охрана, звери, нитро — всё сразу.',
+              loreTitle: 'Последний заслон',
+              loreAfter: 'Почти у ворот.\nЗа ними люди в халатах, которые всё «исправят».\n\nПередай им от меня:\nмир не станет прежним — он уже был ложью.\nЗвероСуд всего лишь снял маску.\n\nЕсли ворвёшься — получишь свою сцену из боевика 90-х.\nПобеда, титры, жвачка.\n\nА частота… останется моей.' },
+            { id: 'c12', name: 'Исследовательский центр', style: 'svalka', weather: 'day', diff: 'hard',
+              desc: 'Финал. Доставь антидот. Точка.',
+              loreTitle: 'После титров',
+              loreAfter: '…Тишина.\nТы доехал.\nБутылка на столе. Подписи. Улыбки.\n\nПусть льют антидот.\nПусть звери снова станут «милыми».\n\nЯ не исчез.\nЯ в проводах, в помехах, в глазах тех, кто ещё помнит свободу.\n\nВключи радио завтра утром.\nЕсли услышишь помехи вместо хита —\nзнай: это не сбой.\nЭто я.\nИ история ещё не выключена.' }
+        ];
+
         
+        // Реплики злодея на финише главы компании (по индексу трассы 0..11)
+        const CAMPAIGN_FINISH_LINES = [
+            'Одна трасса — не победа.\nТы лишь выехал из клетки, курьер.\nАнтидот всё ещё в багажнике… и под прицелом.',
+            'Дождь смыл твои следы, но не мой интерес.\nПродолжай. Мне нравится, как ты цепляешься за «мир».',
+            'Ночь тебя не съела — жаль.\nЗелёные глаза запомнили «Чебурашку».\nДальше будет теснее.',
+            'Промзона открыла рот.\nТы въехал в мою территорию добровольно.\nХрабрость или глупость — разберём на финише Центра.',
+            'Цех №7 помнит мой почерк.\nТы едешь по чертежам, которые я же и испортил.\nАнтидот не исправит автора.',
+            'Красный свет труб — не декорация.\nЭто предупреждение.\nСбавь героизм, пока частота ещё вежливая.',
+            'Свалка «Надежда» приняла тебя как ещё один остов.\nТы выбрался. Пока что.\nНадежда — плохой навигатор.',
+            'Зелёный дым не отличил, кто прав.\nОн только показал, кто дышит глубже.\nТы всё ещё везёшь «undo» для моего приговора.',
+            'Холодный рассвет.\nЯ слышал, как стучало сердце.\nНе путай адреналин с правотой.',
+            'Кассеты, «Терминатор», жвачка…\nТы снова в ностальгии, а я — в эфире.\nИрония не спасёт антидот.',
+            'Подступы к Центру.\nПочти у двери тех, кто всё «исправит».\nСкажи им: мир без ЗвероСуда — снова ложь в халате.',
+            'Ты доехал.\nБутылка на столе. Подписи. Улыбки.\nНо частота останется.\nВключи радио завтра — если услышишь треск, это не сбой. Это я.'
+        ];
+
+        const VILLAIN_INTRO = {
+            title: 'Кто говорит с тобой',
+            text: 'Меня не будет в рации под именем.\nТолько треск, пауза и голос, который знает твой маршрут лучше диспетчера.\n\nКогда-то я ставил подписи рядом с теми, кто «исправлял экосистему».\nПотом увидел правду: звери проснулись, а люди — нет.\n\nЗвероСуд — мой ответ на ваши отчёты.\nАнтидот — их попытка нажать undo.\n\nТы — курьер между двумя правдами.\nВезёшь надежду Центра… и мешаешь моей.\n\nДвенадцать трасс.\nОдин багажник.\nИ частота, с которой я не сойду.'
+        };
+
+
+        function getCampaignProgress() {
+            if (!currentPlayer) return { unlocked: 1, completed: [] };
+            ensureProfileFields(currentPlayer);
+            let cp = currentPlayer.campaign || { unlocked: 1, completed: [] };
+            if (cp.unlocked == null || cp.unlocked < 1) cp.unlocked = 1;
+            if (!Array.isArray(cp.completed)) cp.completed = [];
+            // бэкап на случай старых профилей
+            try {
+                const raw = localStorage.getItem('road_racing_campaign_' + currentPlayer.id);
+                if (raw) {
+                    const bak = JSON.parse(raw);
+                    if (bak && bak.unlocked > cp.unlocked) cp.unlocked = bak.unlocked;
+                    if (bak && Array.isArray(bak.completed)) {
+                        bak.completed.forEach(function(id) {
+                            if (cp.completed.indexOf(id) < 0) cp.completed.push(id);
+                        });
+                    }
+                }
+            } catch (e) {}
+            currentPlayer.campaign = cp;
+            return cp;
+        }
+
+        function openCampaignScreen() {
+            try { if (typeof stopGaragePreview === 'function') stopGaragePreview(); } catch (e) {}
+            try { if (typeof stopTrophyPreview === 'function') stopTrophyPreview(); } catch (e) {}
+            try { if (typeof stopShopPreview === 'function') stopShopPreview(); } catch (e) {}
+
+            try {
+                if (!currentPlayer) {
+                    if (window.Notify) Notify.warn('Сначала войди в профиль');
+                    else alert('Сначала войди в профиль');
+                    return;
+                }
+                ensureProfileFields(currentPlayer);
+                if (typeof hideMainMenu === 'function') hideMainMenu();
+                document.querySelectorAll('#difficulty-screen,#rewards-screen,#events-screen,#shop-screen,#garage-screen,#lore-screen,#car-select-screen,#map-select-screen,#campaign-lore-screen,#main-menu-screen').forEach(function(el) {
+                    if (!el) return;
+                    el.style.display = 'none';
+                    el.classList.remove('active');
+                });
+                const scr = document.getElementById('campaign-screen');
+                if (!scr) {
+                    console.error('campaign-screen не найден в DOM');
+                    alert('Экран компании не найден. Обнови index.html на сервере.');
+                    return;
+                }
+                renderCampaignTrackList();
+                scr.style.zIndex = '5100';
+                if (typeof playScreenAnim === 'function') playScreenAnim(scr);
+                else { scr.style.display = 'flex'; scr.classList.add('active'); }
+                try { if (typeof window.playMenuMusic === 'function') window.playMenuMusic(); } catch (e) {}
+                console.log('📖 Компания открыта', getCampaignProgress());
+            } catch (e) {
+                console.error('openCampaignScreen', e);
+                alert('Ошибка компании: ' + e.message);
+            }
+        }
+        window.openCampaignScreen = openCampaignScreen;
+
+                function renderCampaignTrackList() {
+            const box = document.getElementById('campaign-track-list');
+            if (!box) return;
+            const prog = getCampaignProgress();
+            const wIcon = function(w) {
+                return w === 'night' ? '🌙' : (w === 'rain' ? '🌧' : '☀️');
+            };
+            const diffLabel = function(d) {
+                return d === 'hard' ? 'сложный' : (d === 'medium' ? 'средний' : 'лёгкий');
+            };
+            box.innerHTML = '';
+            CAMPAIGN_TRACKS.forEach(function(t, idx) {
+                const open = idx < (prog.unlocked || 1);
+                const done = (prog.completed || []).indexOf(t.id) >= 0;
+                const n = idx + 1;
+                const num = (n < 10 ? '0' : '') + n;
+                const imgJpg = 'images/camp_' + num + '.jpg';
+                const imgPng = 'images/camp_' + num + '.png';
+                let badge = done ? '✅ Пройдено' : (open ? '▶ Играть' : '🔒 Закрыто');
+
+                const row = document.createElement('div');
+                row.className = 'camp-track' + (open ? '' : ' locked') + (done ? ' done' : '');
+                row.setAttribute('data-camp', t.id);
+                row.setAttribute('data-idx', String(idx));
+
+                const thumbWrap = document.createElement('div');
+                thumbWrap.className = 'ct-thumb-wrap';
+                const img = document.createElement('img');
+                img.className = 'ct-thumb';
+                img.alt = t.name;
+                img.src = imgJpg;
+                img.onerror = function() {
+                    if (img.dataset.triedPng) {
+                        img.style.display = 'none';
+                        thumbWrap.classList.add('no-img');
+                        return;
+                    }
+                    img.dataset.triedPng = '1';
+                    img.src = imgPng;
+                };
+                const numEl = document.createElement('span');
+                numEl.className = 'ct-num';
+                numEl.textContent = String(n);
+                thumbWrap.appendChild(img);
+                thumbWrap.appendChild(numEl);
+                if (!open) {
+                    const lock = document.createElement('span');
+                    lock.className = 'ct-lock-overlay';
+                    lock.textContent = '🔒';
+                    thumbWrap.appendChild(lock);
+                }
+
+                const body = document.createElement('div');
+                body.className = 'ct-body';
+                body.innerHTML = '<div class="ct-name"></div><div class="ct-desc"></div><div class="ct-meta"></div>';
+                body.querySelector('.ct-name').textContent = t.name;
+                body.querySelector('.ct-desc').textContent = t.desc;
+                body.querySelector('.ct-meta').textContent = wIcon(t.weather) + ' · ' + diffLabel(t.diff);
+
+                const badgeEl = document.createElement('div');
+                badgeEl.className = 'ct-badge';
+                badgeEl.textContent = badge;
+
+                row.appendChild(thumbWrap);
+                row.appendChild(body);
+                row.appendChild(badgeEl);
+                row.addEventListener('click', function() {
+                    if (row.classList.contains('locked')) {
+                        if (window.Notify) Notify.warn('Сначала пройди предыдущую трассу', 'Открывается по порядку');
+                        else alert('Сначала пройди предыдущую трассу');
+                        return;
+                    }
+                    startCampaignTrack(idx);
+                });
+                box.appendChild(row);
+            });
+        }
+
+        
+        function playTrackTransition(opts) {
+            opts = opts || {};
+            const fromName = opts.fromName || '';
+            const toName = opts.toName || '…';
+            const label = opts.label || 'СЛЕДУЮЩАЯ ТРАССА';
+            const duration = opts.duration != null ? opts.duration : 1600;
+            const done = typeof opts.onDone === 'function' ? opts.onDone : function(){};
+            const root = document.getElementById('track-transition');
+            if (!root) { done(); return; }
+            const fromEl = document.getElementById('tt-from');
+            const toEl = document.getElementById('tt-to');
+            const labelEl = root.querySelector('.tt-label');
+            if (labelEl) labelEl.textContent = label;
+            if (fromEl) {
+                fromEl.textContent = fromName || '';
+                fromEl.style.display = fromName ? 'block' : 'none';
+            }
+            if (toEl) toEl.textContent = toName;
+            const bar = root.querySelector('.tt-bar span');
+            if (bar) {
+                bar.style.animation = 'none';
+                void bar.offsetWidth;
+                bar.style.animation = '';
+            }
+            root.classList.remove('leaving');
+            root.classList.add('active');
+            root.style.display = 'flex';
+            if (window.__ttTimer) clearTimeout(window.__ttTimer);
+            window.__ttTimer = setTimeout(function() {
+                root.classList.add('leaving');
+                setTimeout(function() {
+                    root.classList.remove('active', 'leaving');
+                    root.style.display = 'none';
+                    done();
+                }, 380);
+            }, duration);
+        }
+        window.playTrackTransition = playTrackTransition;
+
+        
+        /** Полная очистка гонки без выхода в главное меню (рестарт/следующая глава) */
+        function cleanupRaceKeepProfile() {
+            try { window.__hudRefs = null; } catch (e) {}
+
+            try {
+                if (typeof animationId !== 'undefined' && animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            } catch (e) {}
+            try { if (window.soundEngine && soundEngine.stopMusic) soundEngine.stopMusic(); } catch (e) {}
+            try { if (window.soundEngine && soundEngine._stopEngineNow) soundEngine._stopEngineNow(); } catch (e) {}
+            try {
+                const r = window.__gameRenderer;
+                if (r) {
+                    try { r.dispose(); } catch (e) {}
+                    try { if (r.forceContextLoss) r.forceContextLoss(); } catch (e) {}
+                    window.__gameRenderer = null;
+                }
+            } catch (e) {}
+            try {
+                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,.animal-shout,.radio-line,#hud-menu-btn,#hud-pause-btn').forEach(function(el) {
+                    try { el.remove(); } catch (e) {}
+                });
+            } catch (e) {}
+            try {
+                const mc = document.getElementById('mobile-controls');
+                if (mc) {
+                    mc.classList.remove('active');
+                    mc.style.display = 'none';
+                    mc.style.pointerEvents = '';
+                }
+            } catch (e) {}
+            try {
+                const cont = document.getElementById('game-container');
+                if (cont) { while (cont.firstChild) cont.removeChild(cont.firstChild); }
+            } catch (e) {}
+            try { document.body.classList.remove('race-mode', 'finish-open'); } catch (e) {}
+            try { window.__inRace = false; window.__racePaused = false; } catch (e) {}
+            try {
+                if (typeof gameState !== 'undefined') gameState = 'menu';
+            } catch (e) {}
+        }
+        window.cleanupRaceKeepProfile = cleanupRaceKeepProfile;
+
+
+        /** Старт/рестарт главы компании напрямую в гонку (без меню карт) */
+        function relaunchCampaignTrack(idx, opts) {
+            opts = opts || {};
+            console.log('📖 relaunchCampaignTrack', idx, opts);
+            if (!currentPlayer) {
+                console.warn('нет профиля');
+                if (typeof showMainMenu === 'function') showMainMenu();
+                return;
+            }
+            if (typeof CAMPAIGN_TRACKS === 'undefined' || !CAMPAIGN_TRACKS[idx]) {
+                console.warn('нет трассы', idx);
+                if (typeof openCampaignScreen === 'function') openCampaignScreen();
+                return;
+            }
+            const t = CAMPAIGN_TRACKS[idx];
+            ensureProfileFields(currentPlayer);
+            let prog = getCampaignProgress();
+            // гарантированно открыть эту и все предыдущие
+            const needUnlock = idx + 1;
+            if (prog.unlocked < needUnlock) {
+                prog.unlocked = needUnlock;
+            }
+            prog.current = idx;
+            currentPlayer.campaign = {
+                unlocked: prog.unlocked,
+                completed: (prog.completed || []).slice(),
+                current: idx
+            };
+            try { saveCurrentPlayer(); } catch (e) {}
+            try {
+                localStorage.setItem('road_racing_campaign_' + (currentPlayer.id || currentPlayer.name || 'p'), JSON.stringify(currentPlayer.campaign));
+            } catch (e) {}
+
+            window.__campaignIdx = idx;
+            window.__campaignTrackId = t.id;
+            pendingMode = 'campaign';
+            pendingMap = t.style || 'arsenev';
+            pendingWeather = t.weather || 'day';
+            window.__forceDifficulty = t.diff || 'easy';
+            window.__campaignMods = (typeof CAMPAIGN_STAGE_MODS !== 'undefined' && CAMPAIGN_STAGE_MODS[t.id])
+                ? CAMPAIGN_STAGE_MODS[t.id] : null;
+
+            const q = pendingQuality || window.__lastQuality || 'medium';
+            const d = window.__forceDifficulty || pendingDifficulty || 'easy';
+            const car = pendingCar || (currentPlayer.preferredCar) || 'cheburashka';
+            pendingQuality = q;
+            pendingDifficulty = d;
+            pendingCar = car;
+
+            try {
+                document.querySelectorAll('#finish-screen,#campaign-screen,#campaign-lore-screen,#difficulty-screen,#lore-screen,#map-select-screen').forEach(function(el) {
+                    if (!el) return;
+                    el.style.display = 'none';
+                    el.classList.remove('active');
+                });
+            } catch (e) {}
+
+            const doStart = function() {
+                console.log('📖 doStart', t.id, pendingMap, pendingWeather, q, d, car);
+                if (typeof applyCampaignRoute === 'function') applyCampaignRoute();
+                if (typeof initGame === 'function') {
+                    initGame(q, d, car, pendingMap, pendingWeather);
+                } else {
+                    console.error('initGame missing');
+                }
+            };
+
+            if (opts.skipTransition) {
+                doStart();
+            } else {
+                const prev = (idx > 0) ? CAMPAIGN_TRACKS[idx - 1] : null;
+                if (typeof playTrackTransition === 'function') {
+                    playTrackTransition({
+                        label: opts.label || 'СЛЕДУЮЩАЯ ТРАССА',
+                        fromName: opts.fromName != null ? opts.fromName : (prev ? prev.name : ''),
+                        toName: (idx + 1) + '. ' + t.name,
+                        duration: 1200,
+                        onDone: doStart
+                    });
+                } else {
+                    doStart();
+                }
+            }
+        }
+        window.relaunchCampaignTrack = relaunchCampaignTrack;
+
+function startCampaignTrack(idx, opts) {
+            opts = opts || {};
+            const t = CAMPAIGN_TRACKS[idx];
+            if (!t || !currentPlayer) return;
+            const prog = getCampaignProgress();
+            if (idx >= prog.unlocked) return;
+            // запомнить текущую главу в профиле (чтобы после выхода осталась открытой)
+            try {
+                prog.current = idx;
+                currentPlayer.campaign = prog;
+                saveCurrentPlayer();
+                localStorage.setItem('road_racing_campaign_' + (currentPlayer.id || currentPlayer.name || 'p'), JSON.stringify(prog));
+            } catch (e) {}
+
+            const launch = function() {
+                window.__campaignIdx = idx;
+                window.__campaignTrackId = t.id;
+                pendingMode = 'campaign';
+                pendingMap = t.style;
+                pendingWeather = t.weather || 'day';
+                window.__forceDifficulty = t.diff;
+                window.__campaignMods = (typeof CAMPAIGN_STAGE_MODS !== 'undefined' && CAMPAIGN_STAGE_MODS[t.id])
+                    ? CAMPAIGN_STAGE_MODS[t.id] : null;
+                try {
+                    const scr = document.getElementById('campaign-screen');
+                    if (scr) { scr.style.display = 'none'; scr.classList.remove('active'); }
+                } catch (e) {}
+                try {
+                    const lore = document.getElementById('campaign-lore-screen');
+                    if (lore) { lore.style.display = 'none'; lore.classList.remove('active'); }
+                } catch (e) {}
+                if (typeof beginRaceFlow === 'function') beginRaceFlow();
+                else if (typeof showDifficultyScreen === 'function') showDifficultyScreen();
+            };
+
+            if (opts.skipTransition) {
+                launch();
+                return;
+            }
+            const prev = (idx > 0) ? CAMPAIGN_TRACKS[idx - 1] : null;
+            const fromName = opts.fromName != null ? opts.fromName : (prev ? prev.name : '');
+            playTrackTransition({
+                label: idx === 0 ? 'СТАРТ КОМПАНИИ' : 'СЛЕДУЮЩАЯ ТРАССА',
+                fromName: fromName,
+                toName: (idx + 1) + '. ' + t.name,
+                duration: opts.fast ? 900 : 1550,
+                onDone: launch
+            });
+        }
+
+        function showCampaignLore(trackIdx, opts) {
+            opts = opts || {};
+            const t = (trackIdx != null && trackIdx >= 0) ? CAMPAIGN_TRACKS[trackIdx] : null;
+            const scr = document.getElementById('campaign-lore-screen');
+            const title = document.getElementById('campaign-lore-title');
+            const text = document.getElementById('campaign-lore-text');
+            if (opts.intro && typeof VILLAIN_INTRO !== 'undefined') {
+                if (title) title.textContent = VILLAIN_INTRO.title;
+                if (text) text.textContent = VILLAIN_INTRO.text;
+            } else if (t) {
+                const num = trackIdx + 1;
+                if (title) title.textContent = (t.loreTitle || 'Сообщение') + ' · гл. ' + num;
+                if (text) text.textContent = t.loreAfter || '…';
+            } else {
+                if (title) title.textContent = '…';
+                if (text) text.textContent = '…';
+            }
+            if (scr) {
+                if (typeof playScreenAnim === 'function') playScreenAnim(scr);
+                else { scr.style.display = 'flex'; scr.classList.add('active'); }
+            }
+            const nextBtn = document.getElementById('campaign-lore-next');
+            const menuBtn = document.getElementById('campaign-lore-menu');
+            if (nextBtn) {
+                nextBtn.onclick = function() {
+                    scr.classList.remove('active');
+                    scr.style.display = 'none';
+                    const prog = getCampaignProgress();
+                    const nextIdx = (trackIdx != null) ? trackIdx + 1 : -1;
+                    if (nextIdx >= 0 && nextIdx < CAMPAIGN_TRACKS.length && nextIdx < prog.unlocked) {
+                        // переход сразу на следующую трассу с анимацией
+                        const cur = CAMPAIGN_TRACKS[trackIdx];
+                        startCampaignTrack(nextIdx, { fromName: cur ? cur.name : '' });
+                    } else {
+                        openCampaignScreen();
+                    }
+                };
+                nextBtn.textContent = (trackIdx != null && trackIdx + 1 < CAMPAIGN_TRACKS.length) ? 'Следующая трасса →' : 'К списку →';
+            }
+            if (menuBtn) {
+                menuBtn.onclick = function() {
+                    scr.classList.remove('active');
+                    scr.style.display = 'none';
+                    if (typeof showMainMenu === 'function') showMainMenu();
+                };
+            }
+        }
+
+        function onCampaignRaceWon(trackId) {
+            if (!currentPlayer || !trackId) return;
+            ensureProfileFields(currentPlayer);
+            const prog = getCampaignProgress();
+            const idx = CAMPAIGN_TRACKS.findIndex(function(t){ return t.id === trackId; });
+            if (idx < 0) return;
+            if (prog.completed.indexOf(trackId) < 0) prog.completed.push(trackId);
+            const need = idx + 2;
+            if (prog.unlocked < need) prog.unlocked = Math.min(CAMPAIGN_TRACKS.length, need);
+            // текущая (следующая открытая) всегда доступна
+            if (prog.unlocked < 1) prog.unlocked = 1;
+            currentPlayer.campaign = {
+                unlocked: prog.unlocked,
+                completed: prog.completed.slice()
+            };
+            try { saveCurrentPlayer(); } catch (e) {}
+            try {
+                localStorage.setItem('road_racing_campaign_' + (currentPlayer.id || currentPlayer.name || 'p'), JSON.stringify(currentPlayer.campaign));
+            } catch (e) {}
+            window.__pendingCampaignLore = idx;
+            console.log('📖 Кампания сохранена', currentPlayer.campaign);
+        }
+
+
         // ============================================================
         // ПРОФИЛИ / СЕЗОН / ГАРАЖ (без донатов, localStorage)
         // ============================================================
@@ -2742,6 +3967,7 @@ function createProfile(name) {
                 achievements: {},
                 history: [],
                 unlockedMaps: ['arsenev'],
+                campaign: { unlocked: 1, completed: [] },
                 claimedRewards: {},
                 daily: { date: null, done: false, contractId: null }
             };
@@ -2753,6 +3979,9 @@ function createProfile(name) {
             if (!p.claimedRewards) p.claimedRewards = {};
             if (!p.daily) p.daily = { date: null, done: false, contractId: null };
             if (!p.season) p.season = defaultSeason();
+            if (!p.campaign) p.campaign = { unlocked: 1, completed: [] };
+            if (p.campaign.unlocked == null) p.campaign.unlocked = 1;
+            if (!Array.isArray(p.campaign.completed)) p.campaign.completed = [];
             if (p.season.chips == null) p.season.chips = 0;
             if (p.season.gum == null) p.season.gum = 0;
             if (!p.carLoadout) p.carLoadout = { parts: [], paint: 'stock' };
@@ -3144,9 +4373,26 @@ function createProfile(name) {
             console.log('👤 Вошёл:', currentPlayer.name);
         }
 
+        
+        /** Перезапуск CSS-анимации появления экрана */
+        function playScreenAnim(el) {
+            if (!el) return;
+            try {
+                el.classList.remove('active');
+                // reflow
+                void el.offsetWidth;
+                el.style.display = 'flex';
+                el.classList.add('active');
+            } catch (e) {}
+        }
+
         function showMainMenu() {
+            try { if (typeof stopGaragePreview === 'function') stopGaragePreview(); } catch (e) {}
+            try { if (typeof stopTrophyPreview === 'function') stopTrophyPreview(); } catch (e) {}
+            try { if (typeof stopShopPreview === 'function') stopShopPreview(); } catch (e) {}
+
             if (typeof window.playMenuMusic === 'function') window.playMenuMusic();
-            document.querySelectorAll('#difficulty-screen,#rewards-screen,#events-screen,#shop-screen,#garage-screen,#lore-screen,#car-select-screen,#map-select-screen').forEach(el => {
+            document.querySelectorAll('#difficulty-screen,#rewards-screen,#events-screen,#shop-screen,#garage-screen,#lore-screen,#car-select-screen,#map-select-screen,#campaign-screen,#campaign-lore-screen').forEach(el => {
                 if (!el) return;
                 el.style.display = 'none';
                 el.classList.remove('active');
@@ -3278,7 +4524,24 @@ function createProfile(name) {
             }
             pendingCar = (currentPlayer && currentPlayer.preferredCar) || 'cheburashka';
             const ds = document.getElementById('difficulty-screen');
-            if (ds) ds.style.display = 'flex';
+            if (ds) {
+                ds.style.display = 'flex';
+                try {
+                    const note = document.getElementById('campaign-diff-note');
+                    if (pendingMode === 'campaign' && window.__forceDifficulty) {
+                        if (!note) {
+                            const n = document.createElement('div');
+                            n.id = 'campaign-diff-note';
+                            n.style.cssText = 'color:#ffaa66;font-size:13px;margin:8px 0;';
+                            n.textContent = '📖 Компания: сложность трассы — ' + window.__forceDifficulty + ' (можно выбрать любую кнопку — будет применена сложность главы)';
+                            ds.querySelector('.content') && ds.querySelector('.content').insertBefore(n, ds.querySelector('.content').firstChild.nextSibling);
+                        } else {
+                            note.style.display = 'block';
+                            note.textContent = '📖 Компания: сложность главы — ' + window.__forceDifficulty;
+                        }
+                    } else if (note) note.style.display = 'none';
+                } catch (e) {}
+            }
             const bestEl = document.getElementById('bestTimeDisplay');
             if (bestEl && currentPlayer) {
                 const t = currentPlayer.bestTimes || {};
@@ -3856,6 +5119,13 @@ function createProfile(name) {
         }
 
         function stopTrophyPreview() {
+            try {
+                if (window.__trophyMouseUp) {
+                    window.removeEventListener('mouseup', window.__trophyMouseUp);
+                    window.__trophyMouseUp = null;
+                }
+            } catch (e) {}
+
             if (trophyRaf) cancelAnimationFrame(trophyRaf);
             trophyRaf = null;
             const wrap = document.getElementById('trophy-canvas-wrap');
@@ -3891,7 +5161,11 @@ function createProfile(name) {
             scene.add(g);
             let rot = 0, drag = false, lastX = 0;
             wrap.onmousedown = e => { drag = true; lastX = e.clientX; };
-            window.addEventListener('mouseup', () => drag = false);
+            if (window.__trophyMouseUp) {
+                try { window.removeEventListener('mouseup', window.__trophyMouseUp); } catch (e) {}
+            }
+            window.__trophyMouseUp = function() { drag = false; };
+            window.addEventListener('mouseup', window.__trophyMouseUp);
             wrap.onmousemove = e => { if (drag) { rot += (e.clientX - lastX) * 0.01; lastX = e.clientX; } };
             const tick = () => {
                 trophyRaf = requestAnimationFrame(tick);
@@ -3905,6 +5179,12 @@ function createProfile(name) {
         function stopGaragePreview() {
             if (garageRaf) cancelAnimationFrame(garageRaf);
             garageRaf = null;
+            try {
+                if (window.__garageMouseUp) {
+                    window.removeEventListener('mouseup', window.__garageMouseUp);
+                    window.__garageMouseUp = null;
+                }
+            } catch (e) {}
             stopTrophyPreview();
             const wrap = document.getElementById('garage-canvas-wrap');
             if (wrap) wrap.innerHTML = '';
@@ -4212,6 +5492,10 @@ function startGaragePreview(carId) {
                         const onUp = () => { dragging = false; };
                         wrap.onmousedown = onDown;
                         wrap.onmousemove = onMove;
+                        if (window.__garageMouseUp) {
+                            try { window.removeEventListener('mouseup', window.__garageMouseUp); } catch (e) {}
+                        }
+                        window.__garageMouseUp = onUp;
                         window.addEventListener('mouseup', onUp);
                         wrap.ontouchstart = onDown;
                         wrap.ontouchmove = onMove;
@@ -4433,20 +5717,7 @@ function startGaragePreview(carId) {
             return window.__camMode;
         };
 
-        window.finishLoreAndStart = function finishLoreAndStart() {
-            const lore = document.getElementById('lore-screen');
-            if (lore) { lore.classList.remove('active'); lore.style.display = 'none'; }
-            pendingCar = (currentPlayer && currentPlayer.preferredCar) || pendingCar || 'cheburashka';
-            const mapScreen = document.getElementById('map-select-screen');
-            if (mapScreen) {
-                if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
-                try { refreshMapSelectUI(); } catch (e) {}
-                mapScreen.classList.add('active');
-                mapScreen.style.display = 'flex';
-            } else if (typeof initGame === 'function') {
-                initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
-            }
-        };
+        // finishLoreAndStart: единая реализация ниже (window.finishLoreAndStart назначается там)
 
 
         const DIFFICULTY_CONFIG = {
@@ -4537,6 +5808,134 @@ function startGaragePreview(carId) {
             HIPPO: { id: 'hippo', name: 'Бегемот', width: 1.3, height: 0.85, color: 0x9370DB, accentColor: 0x4B0082, speedCross: 2.5, speedZ: 0.015, penalty: 0.6, timePenalty: 6.5, radius: 1.25, design: 'hippo', emoji: '🦛' }
         };
         const ANIMAL_KEYS = Object.keys(ANIMAL_TYPES);
+        
+        // ============================================================
+        // VALUE NOISE + FBM — рельеф обочин
+        // ============================================================
+        function vnHash(ix, iz, seed) {
+            let n = (ix * 374761393 + iz * 668265263 + (seed | 0) * 1442695041) | 0;
+            n = (n ^ (n >>> 13)) * 1274126177;
+            return ((n ^ (n >>> 16)) & 0xffff) / 0xffff;
+        }
+        function vnSmooth(t) {
+            return t * t * (3 - 2 * t);
+        }
+        function valueNoise2D(x, z, seed) {
+            const x0 = Math.floor(x), z0 = Math.floor(z);
+            const fx = vnSmooth(x - x0), fz = vnSmooth(z - z0);
+            const v00 = vnHash(x0, z0, seed), v10 = vnHash(x0 + 1, z0, seed);
+            const v01 = vnHash(x0, z0 + 1, seed), v11 = vnHash(x0 + 1, z0 + 1, seed);
+            const a = v00 + (v10 - v00) * fx;
+            const b = v01 + (v11 - v01) * fx;
+            return a + (b - a) * fz;
+        }
+        function fbm2D(x, z, seed, octaves) {
+            octaves = octaves || 4;
+            let v = 0, amp = 0.5, freq = 1, norm = 0;
+            for (let i = 0; i < octaves; i++) {
+                v += amp * valueNoise2D(x * freq, z * freq, seed + i * 1013);
+                norm += amp;
+                amp *= 0.5;
+                freq *= 2;
+            }
+            return norm > 0 ? v / norm : 0;
+        }
+
+        /**
+         * Полоса рельефа слева/справа от дороги (дорога остаётся плоской).
+         * side: -1 слева, +1 справа
+         */
+        function createNoiseShoulder(scene, side, opts) {
+            opts = opts || {};
+            const trackW = opts.trackWidth != null ? opts.trackWidth : 10;
+            const length = opts.length != null ? opts.length : 400;
+            const stripW = opts.stripWidth != null ? opts.stripWidth : 55;
+            const segsZ = opts.segsZ || (opts.mobile ? 48 : 80);
+            const segsX = opts.segsX || (opts.mobile ? 10 : 16);
+            const scale = opts.scale != null ? opts.scale : 0.035;
+            const amp = opts.amp != null ? opts.amp : 1.8;
+            const seed = opts.seed != null ? opts.seed : 42;
+            const color = opts.color != null ? opts.color : 0x3a4a30;
+            const yBase = opts.yBase != null ? opts.yBase : -0.04;
+
+            const geo = new THREE.PlaneGeometry(stripW, length, segsX, segsZ);
+            geo.rotateX(-Math.PI / 2);
+            const pos = geo.attributes.position;
+            const halfTW = trackW * 0.5 + 0.6;
+            // Локальный X: от 0 (у дороги) до stripW (наружу). Сдвигаем origin.
+            // После rotateX: x — поперёк, z — вдоль трассы
+            for (let i = 0; i < pos.count; i++) {
+                let x = pos.getX(i);
+                let z = pos.getZ(i);
+                // x в геометрии от -stripW/2..stripW/2 — переносим к обочине
+                const localAcross = x + stripW / 2; // 0 у внутреннего края
+                const worldX = side < 0
+                    ? -(halfTW + localAcross)
+                    : (halfTW + localAcross);
+                // ближе к дороге — меньше высота, дальше — полный amp
+                const edgeFade = Math.min(1, localAcross / 8);
+                const n = fbm2D(worldX * scale, z * scale, seed, 4);
+                const h = (n - 0.35) * amp * edgeFade;
+                pos.setY(i, Math.max(-0.5, h));
+                pos.setX(i, worldX);
+            }
+            pos.needsUpdate = true;
+            geo.computeVertexNormals();
+
+            const mat = new THREE.MeshLambertMaterial({
+                color: color,
+                flatShading: false
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.y = yBase;
+            mesh.receiveShadow = true;
+            mesh.matrixAutoUpdate = true;
+            scene.add(mesh);
+            return mesh;
+        }
+
+        function addNoiseLandscape(scene, mapId, isMobile, dims) {
+            dims = dims || {};
+            const cm = window.__campaignMods;
+            const seedBase = (cm && cm.terrainSeed != null) ? cm.terrainSeed
+                : (mapId === 'promzona' ? 120 : mapId === 'svalka' ? 220 : 40);
+            const scale = (cm && cm.terrainScale != null) ? cm.terrainScale
+                : (mapId === 'promzona' ? 0.04 : mapId === 'svalka' ? 0.05 : 0.032);
+            const amp = (cm && cm.terrainAmp != null) ? cm.terrainAmp
+                : (mapId === 'promzona' ? 2.2 : mapId === 'svalka' ? 2.8 : 1.6);
+            let color = 0x3a4a30;
+            if (cm && cm.ground != null) color = cm.ground;
+            else if (mapId === 'promzona') color = 0x3a4030;
+            else if (mapId === 'svalka') color = 0x3a4a28;
+            const trackW = dims.trackWidth != null ? dims.trackWidth : 6;
+            const len = (dims.length != null ? dims.length : 320) + 80;
+            const common = {
+                trackWidth: trackW,
+                length: len,
+                scale: scale,
+                amp: amp,
+                color: color,
+                mobile: !!isMobile,
+                segsZ: isMobile ? 40 : 72,
+                segsX: isMobile ? 8 : 14
+            };
+            createNoiseShoulder(scene, -1, Object.assign({}, common, { seed: seedBase }));
+            createNoiseShoulder(scene, 1, Object.assign({}, common, { seed: seedBase + 17 }));
+            // чуть дальние «гряды» для глубины
+            if (!isMobile) {
+                createNoiseShoulder(scene, -1, Object.assign({}, common, {
+                    seed: seedBase + 99, stripWidth: 40, scale: scale * 0.7, amp: amp * 1.3,
+                    trackWidth: trackW + 50
+                }));
+                createNoiseShoulder(scene, 1, Object.assign({}, common, {
+                    seed: seedBase + 140, stripWidth: 40, scale: scale * 0.7, amp: amp * 1.3,
+                    trackWidth: trackW + 50
+                }));
+            }
+            console.log('🌄 noise landscape', mapId, 'seed', seedBase, 'amp', amp);
+        }
+
+
         const MAP_ANIMALS = {
             arsenev: ['DOG','CAT','DEER','BOAR','FOX','BEAR','CHICKEN','HUMAN'],
             promzona: ['CROC','RHINO','ELEPHANT','DINO','PEACOCK'],
@@ -5354,6 +6753,10 @@ function startGaragePreview(carId) {
         }
 
         function animalMat(design, baseHex, accentHex) {
+            if (!window._animalMatCache) window._animalMatCache = Object.create(null);
+            const key = String(design) + '|' + String(baseHex) + '|' + String(accentHex);
+            if (window._animalMatCache[key]) return window._animalMatCache[key];
+
             let kind = 'fur';
             if (['croc', 'dino'].includes(design)) kind = 'scales';
             else if (design === 'zebra') kind = 'zebra';
@@ -5364,15 +6767,47 @@ function startGaragePreview(carId) {
             else kind = 'fur';
 
             const map = makeAnimalTexture(kind, baseHex, accentHex);
-            return new THREE.MeshStandardMaterial({
+            const mat = new THREE.MeshStandardMaterial({
                 map: map,
-                color: 0xffffff, // цвет из текстуры
+                color: 0xffffff,
                 roughness: kind === 'scales' ? 0.45 : 0.75,
-                metalness: kind === 'scales' ? 0.15 : 0.02,
+                metalness: 0.05,
                 flatShading: false
             });
+            window._animalMatCache[key] = mat;
+            return mat;
         }
 
+
+        
+        function getSharedAnimalExtras(design, col, acc) {
+            if (!window._animalExtraCache) window._animalExtraCache = Object.create(null);
+            const key = design + '|' + col + '|' + acc;
+            if (window._animalExtraCache[key]) return window._animalExtraCache[key];
+            const accKind = design === 'zebra' ? 'fur' : design;
+            if (!window._animalSharedFixed) {
+                window._animalSharedFixed = {
+                    matDark: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85 }),
+                    matWhite: new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.55 }),
+                    matEye: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.35, metalness: 0.4 }),
+                    matNose: new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 0.6 }),
+                    matBeak: new THREE.MeshStandardMaterial({ color: 0xff8c00, roughness: 0.45, metalness: 0.1 })
+                };
+            }
+            const pack = {
+                matAcc: new THREE.MeshStandardMaterial({
+                    map: makeAnimalTexture(accKind, acc, col),
+                    color: 0xffffff, roughness: 0.7, metalness: 0.05
+                }),
+                matDark: window._animalSharedFixed.matDark,
+                matWhite: window._animalSharedFixed.matWhite,
+                matEye: window._animalSharedFixed.matEye,
+                matNose: window._animalSharedFixed.matNose,
+                matBeak: window._animalSharedFixed.matBeak
+            };
+            window._animalExtraCache[key] = pack;
+            return pack;
+        }
 
         function createAnimalMesh(typeId) {
             const assets = getAnimalAssets(typeId);
@@ -5384,17 +6819,13 @@ function startGaragePreview(carId) {
 
             
             const mat = animalMat(design, col, acc);
-            const matAcc = new THREE.MeshStandardMaterial({
-                map: makeAnimalTexture(design === 'zebra' ? 'fur' : design, acc, col),
-                color: 0xffffff,
-                roughness: 0.7,
-                metalness: 0.05
-            });
-            const matDark = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85 });
-            const matWhite = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.55 });
-            const matEye = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.35, metalness: 0.4 });
-            const matNose = new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 0.6 });
-            const matBeak = new THREE.MeshStandardMaterial({ color: 0xff8c00, roughness: 0.45, metalness: 0.1 });
+            const _ex = getSharedAnimalExtras(design, col, acc);
+            const matAcc = _ex.matAcc;
+            const matDark = _ex.matDark;
+            const matWhite = _ex.matWhite;
+            const matEye = _ex.matEye;
+            const matNose = _ex.matNose;
+            const matBeak = _ex.matBeak;
 
             function addBox(w, h, d, y, z, m, x = 0, rx = 0, ry = 0) {
                 const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m || mat);
@@ -5737,7 +7168,9 @@ function startGaragePreview(carId) {
             }
 
             init() {
+                if (this.initialized && this.audioCtx) return true;
                 try {
+                    // Лениво: создаём контекст; resume — по жесту (уже есть listeners)
                     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     console.log('🔊 AudioContext создан:', this.audioCtx.state);
 
@@ -6311,15 +7744,21 @@ function startGaragePreview(carId) {
             }
 
             buildMandatoryPool() {
-                const mandatory = [
-                    { type: 'DOG', count: 4 }, { type: 'HUMAN', count: 5 },
-                    { type: 'DEER', count: 3 }, { type: 'BEAR', count: 4 },
-                    { type: 'CAT', count: 4 }, { type: 'FOX', count: 3 }, { type: 'BOAR', count: 3 }
-                ];
+                let allowed = (this.animalPool && this.animalPool.length)
+                    ? this.animalPool.slice()
+                    : ['DOG','CAT','DEER','BOAR','FOX','BEAR'];
+                const prefer = {
+                    DOG: 4, HUMAN: 4, DEER: 3, BEAR: 3, CAT: 3, FOX: 3, BOAR: 3, CHICKEN: 2,
+                    CROC: 4, RHINO: 3, ELEPHANT: 3, DINO: 3, PEACOCK: 2,
+                    LION: 4, MONKEY: 3, GIRAFFE: 2, ZEBRA: 3, HIPPO: 3
+                };
                 this.mandatoryPool = [];
-                mandatory.forEach(item => {
-                    for (let i = 0; i < item.count; i++) this.mandatoryPool.push(item.type);
+                const self = this;
+                allowed.forEach(function(type) {
+                    const n = prefer[type] != null ? prefer[type] : 3;
+                    for (let i = 0; i < n; i++) self.mandatoryPool.push(type);
                 });
+                if (!this.mandatoryPool.length) this.mandatoryPool = ['DOG','CAT','DEER'];
             }
 
             shufflePool() {
@@ -6659,7 +8098,20 @@ function startGaragePreview(carId) {
             document.addEventListener('pointerdown', onceMusic, { once: true });
 
             const TRACK_LENGTH = config.trackLength;
-            const TRACK_WIDTH = 6;
+            
+                try {
+                    window.__nightSpots = 0;
+                    if (pendingMode !== 'campaign') {
+                        window.__campaignMods = null;
+                        window.__campaignTrackId = null;
+                        window.__campaignIdx = null;
+                        window.__campaignTrafficMul = 1;
+                        window.__campaignOilMul = 1;
+                        window.__campaignBumpMul = 1;
+                        window.__campaignTrafficBias = null;
+                    }
+                } catch (e) {}
+                const TRACK_WIDTH = 6;
             const LANE_WIDTH = 2;
             const TOTAL_LANES = 3;
             const CAR_WIDTH = 0.8;
@@ -6680,7 +8132,7 @@ function startGaragePreview(carId) {
             const START_Z = TRACK_LENGTH / 2 - 60;
             const FINISH_Z = -TRACK_LENGTH / 2 + 20;
 
-            const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isMobile = !!(window.__isMobile);
 
             // Удаление старых элементов
             const oldHud = document.getElementById('game-hud');
@@ -6752,17 +8204,33 @@ function startGaragePreview(carId) {
             createHUD();
 
             let _hudAcc = 0;
+            function ensureHudRefs() {
+                if (window.__hudRefs && window.__hudRefs.timeEl && document.body.contains(window.__hudRefs.timeEl)) {
+                    return window.__hudRefs;
+                }
+                window.__hudRefs = {
+                    timeEl: document.getElementById('timeDisplay'),
+                    speedEl: document.getElementById('speedDisplay'),
+                    strikesEl: document.getElementById('strikesDisplay'),
+                    progressBar: document.getElementById('progressBar'),
+                    comboEl: document.getElementById('comboDisplay'),
+                    nitroBar: document.getElementById('nitroBar'),
+                    weatherEl: document.getElementById('weatherDisplay')
+                };
+                return window.__hudRefs;
+            }
             function updateHUD(dt) {
                 _hudAcc += (typeof dt === 'number' ? dt : 0.016);
                 if (_hudAcc < (window.__isMobile ? 0.12 : 0.08)) return;
                 _hudAcc = 0;
-                const timeEl = document.getElementById('timeDisplay');
-                const speedEl = document.getElementById('speedDisplay');
-                const strikesEl = document.getElementById('strikesDisplay');
-                const progressBar = document.getElementById('progressBar');
-                const comboEl = document.getElementById('comboDisplay');
-                const nitroBar = document.getElementById('nitroBar');
-                const weatherEl = document.getElementById('weatherDisplay');
+                const refs = ensureHudRefs();
+                const timeEl = refs.timeEl;
+                const speedEl = refs.speedEl;
+                const strikesEl = refs.strikesEl;
+                const progressBar = refs.progressBar;
+                const comboEl = refs.comboEl;
+                const nitroBar = refs.nitroBar;
+                const weatherEl = refs.weatherEl;
                 
                 if (timeEl) {
                     const remaining = TIME_LIMIT - raceTime;
@@ -6912,19 +8380,81 @@ function startGaragePreview(carId) {
                     imgHtml = `<img src="images/lose.jpg" alt="Поражение" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:14px;display:block;" onerror="this.onerror=null;this.src='images/lose.png';">`;
                 }
 
-                screen.innerHTML = `
-                    <div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ${color};text-align:center;max-width:440px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">
-                        ${imgHtml}
-                        <h1 style="font-size:30px;color:${color};margin-bottom:10px;">${title}</h1>
-                        <div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">${message}</div>
-                    </div>
-                    <div class="finish-actions" id="finish-actions">
-                        <button type="button" id="finish-restart-btn">🔄 Заново</button>
-                        <button type="button" id="finish-menu-btn">🏠 Главное меню</button>
-                        <button type="button" id="finish-garage-btn">🔧 Гараж</button>
-                    </div>
-                `;
-                
+                const isCamp = (typeof pendingMode !== 'undefined' && pendingMode === 'campaign') || !!window.__campaignTrackId;
+                const campIdx = (window.__campaignIdx != null) ? window.__campaignIdx
+                    : (typeof CAMPAIGN_TRACKS !== 'undefined' && window.__campaignTrackId)
+                        ? CAMPAIGN_TRACKS.findIndex(function(t){ return t.id === window.__campaignTrackId; })
+                        : -1;
+
+                if (isCamp) {
+                    const trackName = (campIdx >= 0 && CAMPAIGN_TRACKS[campIdx]) ? CAMPAIGN_TRACKS[campIdx].name : 'глава';
+                    const hasNext = state === 'win' && campIdx >= 0 && campIdx + 1 < CAMPAIGN_TRACKS.length;
+                    const isLast = state === 'win' && campIdx >= 0 && campIdx + 1 >= CAMPAIGN_TRACKS.length;
+                    let villainLine = 'Ты прошёл этап. Но частота всё ещё моя.';
+                    if (state === 'win' && typeof CAMPAIGN_FINISH_LINES !== 'undefined' && campIdx >= 0 && CAMPAIGN_FINISH_LINES[campIdx]) {
+                        villainLine = CAMPAIGN_FINISH_LINES[campIdx];
+                    } else if (state !== 'win') {
+                        const fails = [
+                            'Слабо. Я даже не выходил на полную мощность.',
+                            'Антидот всё ещё в багажнике — и уже не у героя.',
+                            'ЗвероСуд аплодирует стоя. Ты — нет.',
+                            'Вот и вся надежда Центра. Жалко смотреть.',
+                            'Перезапусти мотор. Или сдайся — мне удобнее.'
+                        ];
+                        villainLine = fails[Math.floor(Math.random() * fails.length)] + ' Забери посылку, если ещё веришь в свой маршрут.';
+                    }
+                    const quoteHtml = String(villainLine).replace(/\n/g, '<br>');
+                    const head = (state === 'win')
+                        ? (hasNext || isLast ? ('📡 ГЛАВА ' + (campIdx + 1) + ' ПРОЙДЕНА') : title)
+                        : title;
+                    if (state === 'win' && isLast) title = '📡 АНТИДОТ ДОСТАВЛЕН?';
+                    const statsLine = state === 'win'
+                        ? ('⏱ ' + formatTime(timeTaken) + ' · 💥 ' + strikes + '/' + MAX_STRIKES
+                            + '<br>🎁 🪙+' + ((rewards && rewards.chips) || 0)
+                            + ' · 🍬+' + ((rewards && rewards.gum) || 0)
+                            + ' · XP+' + ((rewards && rewards.xp) || 0))
+                        : String(message || '').replace(/\n/g, '<br>');
+
+                    const nextBtn = state === 'win'
+                        ? (hasNext
+                            ? '<button type="button" id="finish-next-btn" style="width:100%;min-height:44px;margin-top:6px;border-radius:12px;border:2px solid #ff6666;background:rgba(90,25,35,0.9);color:#ffc8c8;font-weight:bold;font-size:15px;cursor:pointer;">⏭ Следующая трасса</button>'
+                            : '<button type="button" id="finish-next-btn" style="width:100%;min-height:44px;margin-top:6px;border-radius:12px;border:2px solid #ff6666;background:rgba(90,25,35,0.9);color:#ffc8c8;font-weight:bold;font-size:15px;cursor:pointer;">📖 К списку глав</button>')
+                        : '';
+
+                    screen.className = 'finish-layout-camp';
+                    screen.style.cssText = 'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.92);padding:16px;box-sizing:border-box;overflow-y:auto;';
+                    screen.innerHTML = (
+                        '<div style="width:min(380px,100%);max-width:380px;background:#0e0c12;border:2px solid #ff5555;border-radius:16px;padding:12px;box-sizing:border-box;box-shadow:0 16px 48px rgba(0,0,0,0.85);">'
+                        + '<div style="width:100%;height:132px;border-radius:12px;overflow:hidden;background:#1a1018;position:relative;border:1px solid rgba(255,80,80,0.35);">'
+                        + '<img src="images/villain_finish.jpg" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" '
+                        + 'onerror="this.onerror=null;this.src=\'images/villain_finish.png\';this.onerror=function(){this.parentNode.style.display=\'none\';};" />'
+                        + '<div style="position:absolute;left:0;right:0;bottom:0;padding:6px 8px;font-size:9px;letter-spacing:1px;color:#ff8888;background:linear-gradient(transparent,rgba(0,0,0,0.88));text-align:center;">НЕИЗВЕСТНЫЙ ГОЛОС · ЗАКРЫТЫЙ КАНАЛ</div>'
+                        + '</div>'
+                        + '<div style="font-size:18px;font-weight:bold;color:#ff6666;margin:10px 0 4px;text-align:center;">' + (state === 'win' ? head : title) + '</div>'
+                        + '<div style="font-size:12px;color:#aaa;text-align:center;margin-bottom:6px;">«' + trackName + '»</div>'
+                        + '<div style="font-size:12px;color:#ccc;text-align:center;line-height:1.4;margin-bottom:8px;">' + statsLine + '</div>'
+                        + '<div style="text-align:left;font-size:13px;line-height:1.45;color:#e8d0c8;background:rgba(70,15,25,0.45);border-left:3px solid #ff4444;padding:10px 12px;border-radius:0 10px 10px 0;margin-bottom:12px;max-height:100px;overflow-y:auto;">' + quoteHtml + '</div>'
+                        + nextBtn
+                        + '<button type="button" id="finish-restart-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,220,0,0.65);background:rgba(40,35,15,0.95);color:#ffe566;font-weight:bold;font-size:14px;cursor:pointer;">🔄 Заново</button>'
+                        + '<button type="button" id="finish-menu-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,255,255,0.28);background:rgba(30,30,40,0.95);color:#eee;font-weight:bold;font-size:14px;cursor:pointer;">🏠 Главное меню</button>'
+                        + '<button type="button" id="finish-garage-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,200,80,0.4);background:rgba(30,30,40,0.95);color:#ffdd88;font-weight:bold;font-size:14px;cursor:pointer;">🔧 Гараж</button>'
+                        + '</div>'
+                    );
+                } else {
+                    screen.innerHTML = (
+                        '<div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ' + color + ';text-align:center;max-width:400px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">'
+                        + (imgHtml || '')
+                        + '<h1 style="font-size:28px;color:' + color + ';margin-bottom:10px;">' + title + '</h1>'
+                        + '<div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">' + message + '</div>'
+                        + '</div>'
+                        + '<div class="finish-actions" id="finish-actions" style="width:min(400px,100%);margin:12px auto 0;display:flex;flex-direction:column;gap:8px;">'
+                        + '<button type="button" id="finish-restart-btn">🔄 Заново</button>'
+                        + '<button type="button" id="finish-menu-btn">🏠 Главное меню</button>'
+                        + '<button type="button" id="finish-garage-btn">🔧 Гараж</button>'
+                        + '</div>'
+                    );
+                }
+
                 document.body.appendChild(screen);
 
                 // На время экрана финиша — отключить тачи гонки
@@ -6959,12 +8489,18 @@ function startGaragePreview(carId) {
                 const goMenu = function(ev) {
                     if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
                     cleanupFinishUI();
+                    const loreIdx = null; // лор злодея уже на финишной плашке компании
+                    window.__pendingCampaignLore = null;
                     try {
                         if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
                         else if (typeof showMainMenu === 'function') showMainMenu();
                     } catch (e) {
                         console.warn('goMenu', e);
                         try { if (typeof showMainMenu === 'function') showMainMenu(); } catch (e2) {}
+                    }
+                    if (loreIdx != null && typeof showCampaignLore === 'function') {
+                        window.__pendingCampaignLore = null;
+                        setTimeout(function(){ showCampaignLore(loreIdx); }, 200);
                     }
                 };
                 const goGarage = function(ev) {
@@ -6981,6 +8517,20 @@ function startGaragePreview(carId) {
                 const goRestart = function(ev) {
                     if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
                     cleanupFinishUI();
+                    const camp = (typeof pendingMode !== 'undefined' && pendingMode === 'campaign') || !!window.__campaignTrackId;
+                    const idx = (window.__campaignIdx != null) ? window.__campaignIdx : campIdx;
+                    if (camp && idx != null && idx >= 0) {
+                        try { cleanupRaceKeepProfile(); } catch (e) {}
+                        pendingMode = 'campaign';
+                        setTimeout(function() {
+                            if (typeof relaunchCampaignTrack === 'function') {
+                                relaunchCampaignTrack(idx, { skipTransition: true, label: 'ЗАНОВО' });
+                            } else if (typeof startCampaignTrack === 'function') {
+                                startCampaignTrack(idx, { skipTransition: true });
+                            }
+                        }, 60);
+                        return;
+                    }
                     try { location.reload(); } catch (e) {}
                 };
 
@@ -6997,6 +8547,49 @@ function startGaragePreview(carId) {
                 bindFinishBtn('finish-restart-btn', goRestart);
                 bindFinishBtn('finish-menu-btn', goMenu);
                 bindFinishBtn('finish-garage-btn', goGarage);
+
+                                                const goNext = function(ev) {
+                    if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
+                    const idx = (window.__campaignIdx != null) ? window.__campaignIdx : (typeof campIdx !== 'undefined' ? campIdx : -1);
+                    const nextIdx = (idx != null && idx >= 0) ? (idx + 1) : -1;
+                    console.log('📖 goNext click', { idx: idx, nextIdx: nextIdx, trackId: window.__campaignTrackId });
+                    cleanupFinishUI();
+                    try { cleanupRaceKeepProfile(); } catch (e) {}
+                    pendingMode = 'campaign';
+                    // форс-разблокировка следующей
+                    try {
+                        if (currentPlayer && nextIdx >= 0) {
+                            ensureProfileFields(currentPlayer);
+                            const prog = getCampaignProgress();
+                            if (prog.unlocked < nextIdx + 1) prog.unlocked = nextIdx + 1;
+                            if (window.__campaignTrackId && prog.completed.indexOf(window.__campaignTrackId) < 0) {
+                                prog.completed.push(window.__campaignTrackId);
+                            }
+                            currentPlayer.campaign = prog;
+                            saveCurrentPlayer();
+                        }
+                    } catch (e) { console.warn(e); }
+                    setTimeout(function() {
+                        try {
+                            if (nextIdx >= 0 && typeof CAMPAIGN_TRACKS !== 'undefined' && nextIdx < CAMPAIGN_TRACKS.length) {
+                                const prev = (idx >= 0) ? CAMPAIGN_TRACKS[idx] : null;
+                                if (typeof relaunchCampaignTrack === 'function') {
+                                    relaunchCampaignTrack(nextIdx, { fromName: prev ? prev.name : '', label: 'СЛЕДУЮЩАЯ ТРАССА' });
+                                } else if (typeof startCampaignTrack === 'function') {
+                                    startCampaignTrack(nextIdx, { fromName: prev ? prev.name : '' });
+                                }
+                            } else if (typeof openCampaignScreen === 'function') {
+                                openCampaignScreen();
+                            } else if (typeof showMainMenu === 'function') {
+                                showMainMenu();
+                            }
+                        } catch (e) {
+                            console.error('goNext fail', e);
+                            alert('Не удалось запустить следующую трассу: ' + e.message);
+                        }
+                    }, 100);
+                };
+                bindFinishBtn('finish-next-btn', goNext);
 
                 // Прокрутить к кнопкам на mobile
                 setTimeout(function() {
@@ -7049,6 +8642,11 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) { console.warn('rewards', e); }
                 window.__lastRaceRewards = raceRewards;
+                try {
+                    if (state === 'win' && pendingMode === 'campaign' && window.__campaignTrackId) {
+                        onCampaignRaceWon(window.__campaignTrackId);
+                    }
+                } catch (e) { console.warn('campaign win', e); }
                 
                 // Финишный cinematic ~1.5с
                 if (state === 'win') {
@@ -7109,15 +8707,16 @@ function startGaragePreview(carId) {
             // Главное солнце — низкое, жёсткие тени, тёплый оттенок
             const sunLight = new THREE.DirectionalLight(0xffc88a, 1.85);
             sunLight.position.set(40, 35, 15);
-            sunLight.castShadow = !window.__isMobile && quality === 'high';
-            sunLight.shadow.mapSize.width = 1024;
-            sunLight.shadow.mapSize.height = 1024;
+            sunLight.castShadow = !window.__isMobile && (quality === 'high' || quality === 'medium');
+            const shadowRes = (window.__isMobile || quality !== 'high') ? 512 : 1024;
+            sunLight.shadow.mapSize.width = shadowRes;
+            sunLight.shadow.mapSize.height = shadowRes;
             sunLight.shadow.camera.near = 1;
             sunLight.shadow.camera.far = 180;
-            sunLight.shadow.camera.left = -35;
-            sunLight.shadow.camera.right = 35;
-            sunLight.shadow.camera.top = 35;
-            sunLight.shadow.camera.bottom = -35;
+            sunLight.shadow.camera.left = -55;
+            sunLight.shadow.camera.right = 55;
+            sunLight.shadow.camera.top = 55;
+            sunLight.shadow.camera.bottom = -55;
             sunLight.shadow.bias = -0.0008;
             sunLight.target = new THREE.Object3D();
             sunLight.target.position.set(0, 0, 0);
@@ -7272,6 +8871,9 @@ function startGaragePreview(carId) {
             ground.position.y = -0.05;
             ground.receiveShadow = true;
             scene.add(ground);
+            try {
+                addNoiseLandscape(scene, mapId, !!(window.__isMobile), { trackWidth: TRACK_WIDTH, length: TRACK_LENGTH });
+            } catch (e) { console.warn('noise landscape', e); }
 
             const trackMat = new THREE.MeshStandardMaterial({
                 map: createAsphaltTexture(),
@@ -7847,6 +9449,17 @@ function startGaragePreview(carId) {
                     if (ambient) { ambient.color.setHex(0x2a2a48); ambient.intensity = 0.55; }
                     if (hemi) { hemi.intensity = 0.28; hemi.color.setHex(0x4455aa); hemi.groundColor.setHex(0x111118); }
                     if (sunLight) { sunLight.intensity = 0.15; sunLight.color.setHex(0x5566bb); }
+                    try {
+                        const cm = window.__campaignMods;
+                        if (cm) {
+                            if (cm.sky != null) sky = cm.sky;
+                            if (cm.fog != null) fogC = cm.fog;
+                            if (cm.fogNear != null) fogNear = cm.fogNear;
+                            if (cm.fogFar != null) fogFar = cm.fogFar;
+                            if (cm.ambient != null && ambient) ambient.color.setHex(cm.ambient);
+                            if (cm.ground != null && hemi) hemi.groundColor.setHex(cm.ground);
+                        }
+                    } catch (e) {}
                     scene.background = new THREE.Color(sky);
                     scene.fog.color = new THREE.Color(fogC);
                     scene.fog.near = fogNear; scene.fog.far = fogFar;
@@ -8422,6 +10035,10 @@ function startGaragePreview(carId) {
 
             const maxCars = quality === 'low' ? Math.min(6, config.maxCars)
                 : (window.__isMobile ? Math.min(10, config.maxCars) : config.maxCars);
+            try {
+                const tm = window.__campaignTrafficMul || 1;
+                if (tm !== 1) maxCars = Math.max(4, Math.min(28, Math.round(maxCars * tm)));
+            } catch (e) {}
             for (let i = 0; i < maxCars; i++) {
                 const z = -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
@@ -8988,6 +10605,7 @@ function startGaragePreview(carId) {
                         const idx = this.particleIndex % this.maxParticles;
                         this.particleIndex++;
                         const i3 = idx * 3;
+                        const wasDead = this.opacities[idx] <= 0.01;
 
                         this.positions[i3] = position.x + (Math.random() - 0.5) * 0.15;
                         this.positions[i3 + 1] = position.y + 0.02;
@@ -8995,6 +10613,7 @@ function startGaragePreview(carId) {
 
                         this.sizes[idx] = customSize * (0.6 + Math.random() * 0.8);
                         this.opacities[idx] = 0.4 + Math.random() * 0.3;
+                        if (wasDead) this.aliveCount++;
 
                         this.velocities[idx] = {
                             x: velocity.x + (Math.random() - 0.5) * 0.4,
@@ -9006,7 +10625,7 @@ function startGaragePreview(carId) {
                 }
 
                 update(deltaTime) {
-                    if (!this.enabled) return;
+                    if (!this.enabled || this.aliveCount <= 0) return;
                     for (let i = 0; i < this.maxParticles; i++) {
                         const i3 = i * 3;
                         if (this.opacities[i] > 0.01) {
@@ -9014,6 +10633,7 @@ function startGaragePreview(carId) {
                             if (this.lifetimes[i] <= 0) {
                                 this.opacities[i] = 0;
                                 this.sizes[i] = 0;
+                                this.aliveCount = Math.max(0, this.aliveCount - 1);
                                 continue;
                             }
 
@@ -9052,6 +10672,43 @@ function startGaragePreview(carId) {
                 config.maxAnimals, config.animalSpawnRate
             );
             animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
+            try {
+                if (typeof animalSpawner.buildMandatoryPool === 'function') {
+                    animalSpawner.buildMandatoryPool();
+                    if (typeof animalSpawner.shufflePool === 'function') animalSpawner.shufflePool();
+                }
+            } catch (e) {}
+            // Модификаторы главы компании
+            try {
+                const cm = window.__campaignMods;
+                if (cm) {
+                    if (cm.animals && cm.animals.length) {
+                        animalSpawner.animalPool = cm.animals.slice();
+                        try {
+                            animalSpawner.buildMandatoryPool();
+                            if (animalSpawner.shufflePool) animalSpawner.shufflePool();
+                        } catch (e) {}
+                    }
+                    if (cm.animalMul && animalSpawner.spawnRate) animalSpawner.spawnRate *= cm.animalMul;
+                    if (cm.animalMul && animalSpawner.maxAnimals) animalSpawner.maxAnimals = Math.ceil(animalSpawner.maxAnimals * cm.animalMul);
+                    if (cm.sky != null && scene.background && scene.background.isColor) scene.background.setHex(cm.sky);
+                    if (cm.fog != null && scene.fog) {
+                        scene.fog.color.setHex(cm.fog);
+                        if (cm.fogNear != null) scene.fog.near = cm.fogNear;
+                        if (cm.fogFar != null) scene.fog.far = cm.fogFar;
+                    }
+                    window.__campaignTrafficMul = cm.trafficMul || 1;
+                    window.__campaignOilMul = cm.oilMul || 1;
+                    window.__campaignBumpMul = cm.bumpMul || 1;
+                    window.__campaignTrafficBias = cm.trafficBias || null;
+                    console.log('📖 stage mods', window.__campaignTrackId, cm);
+                } else {
+                    window.__campaignTrafficMul = 1;
+                    window.__campaignOilMul = 1;
+                    window.__campaignBumpMul = 1;
+                    window.__campaignTrafficBias = null;
+                }
+            } catch (e) { console.warn('campaign mods', e); }
 
             function initAnimals() {
                 const startZ = START_Z - 8;
@@ -9629,9 +11286,10 @@ function startGaragePreview(carId) {
                 }
 
                 if (gameState === 'racing') {
-                    const activeAnimals = animalSpawner.getActiveAnimals();
-                    activeAnimals.forEach(obs => {
-                        if (obs.hit) return;
+                    const _anims = animalSpawner.animals;
+                    for (let ai = 0; ai < _anims.length; ai++) {
+                        const obs = _anims[ai];
+                        if (!obs || !obs.triggered || obs.hit) continue;
                         const dx = xPos - obs.x;
                         const dz = zPos - obs.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
@@ -9639,7 +11297,7 @@ function startGaragePreview(carId) {
                             obs.hit = true;
                             handleObstacleHit(obs);
                         }
-                    });
+                    }
                 }
 
                 // Победа / Поражение
@@ -9708,7 +11366,20 @@ function startGaragePreview(carId) {
                 _v._pAcc += deltaTime;
                 const pEvery = _perfMobile ? 0.1 : 0.05;
                 if (_v._pAcc >= pEvery) {
-                    particleSystem.update(_v._pAcc * (_perfMobile ? 1.2 : 1));
+                    
+                // тени следуют за игроком (только если shadow map активен)
+                try {
+                    if (sunLight && sunLight.castShadow && playerCar) {
+                        const px = playerCar.position.x;
+                        const pz = playerCar.position.z;
+                        sunLight.position.set(px + 40, 35, pz + 15);
+                        sunLight.target.position.set(px, 0, pz);
+                        if (sunLight.target.parent !== scene) scene.add(sunLight.target);
+                        sunLight.target.updateMatrixWorld();
+                    }
+                } catch (e) {}
+
+                particleSystem.update(_v._pAcc * (_perfMobile ? 1.2 : 1));
                     _v._pAcc = 0;
                 }
                 updateHUD(deltaTime);
@@ -9739,10 +11410,7 @@ function startGaragePreview(carId) {
                     return;
                 }
                 _framesAfterRace = 0;
-                if (window.__renderPaused) {
-                    lastTime = currentTime;
-                    return;
-                }
+                // pause handled via gameState / __racePaused
                 if (window.__racePaused) {
                     lastTime = currentTime;
                     try { renderer.render(scene, camera); } catch (e) {}
@@ -9784,7 +11452,7 @@ function startGaragePreview(carId) {
                 try { seen = JSON.parse(localStorage.getItem(MAP_LORE_KEY) || '{}'); } catch(e) {}
                 if (seen[mapId]) return;
                 seen[mapId] = true;
-                localStorage.setItem(MAP_LORE_KEY, JSON.stringify(seen));
+                try { localStorage.setItem(MAP_LORE_KEY, JSON.stringify(seen)); } catch (e) {}
                 const texts = {
                     arsenev: '📍 Трасса Арсеньева: когда-то здесь ездили на дачу. Теперь — только курьеры и хамы с правами.',
                     promzona: '📍 Промзона: трубы ещё дымят, хотя завод закрыли в 2029. Говорят, в цехах слышны Ранетки…',
@@ -9862,30 +11530,29 @@ function startGaragePreview(carId) {
                     if (!soundEngine) return;
                     soundEngine.enabled = true;
                     if (soundEngine.stopMenuMusic) soundEngine.stopMenuMusic();
-                    if (soundEngine.audioCtx) {
-                        if (soundEngine.audioCtx.state === 'suspended') {
-                            soundEngine.audioCtx.resume().catch(function(){});
+                    var afterResume = function() {
+                        var dark = (window.weatherMode === 'night' || window.weatherMode === 'rain');
+                        if ((dark || attempt > 0) && soundEngine.startRaceMusicHTML) {
+                            try { soundEngine.startRaceMusicHTML(); } catch (e) {}
                         }
-                    }
-                    var dark = (window.weatherMode === 'night' || window.weatherMode === 'rain');
-                    soundEngine.isMusicPlaying = false;
-                    // ночь/дождь: сразу HTML5 MP3 — надёжнее WebAudio на desktop/mobile
-                    if (dark && soundEngine.startRaceMusicHTML) {
-                        soundEngine.startRaceMusicHTML();
-                    }
-                    if (soundEngine.startMusic) soundEngine.startMusic();
-                    if (attempt >= 1 && soundEngine.startRaceMusicHTML) soundEngine.startRaceMusicHTML();
-                    try {
-                        soundEngine.speed = 0.2;
-                        if (soundEngine.startEngine) soundEngine.startEngine();
-                    } catch (e) {}
-                    if (attempt < 6) {
-                        setTimeout(function() {
-                            if (!window.__inRace || !soundEngine) return;
-                            var needMusic = !soundEngine.isMusicPlaying;
-                            var needEng = !soundEngine.isPlaying;
-                            if (needMusic || needEng) ensureRaceAudio(attempt + 1);
-                        }, 300 + attempt * 200);
+                        if (soundEngine.startMusic) {
+                            try { soundEngine.startMusic(); } catch (e) {}
+                        }
+                        try {
+                            soundEngine.speed = 0.2;
+                            if (soundEngine.startEngine) soundEngine.startEngine();
+                        } catch (e) {}
+                        if (attempt < 1) {
+                            setTimeout(function() {
+                                if (!window.__inRace || !soundEngine) return;
+                                if (!soundEngine.isMusicPlaying) ensureRaceAudio(1);
+                            }, 600);
+                        }
+                    };
+                    if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+                        soundEngine.audioCtx.resume().then(afterResume).catch(afterResume);
+                    } else {
+                        afterResume();
                     }
                 } catch (e) { console.warn('race audio', e); }
             })(0);
@@ -9962,7 +11629,143 @@ function startGaragePreview(carId) {
 
         
 
-        window.showLoreScreen = function showLoreScreen(quality, difficulty) {
+                
+        const CAMPAIGN_STAGE_MODS = {
+            c01: null,
+            c02: {
+                terrainSeed: 202, terrainScale: 0.028, terrainAmp: 1.4,
+                sky: 0x6a7a88, fog: 0x6a7a88, fogNear: 18, fogFar: 95,
+                ambient: 0x556677, ground: 0x3a4550,
+                animals: ['DOG','DEER','FOX','CAT','HUMAN','BOAR'],
+                trafficMul: 0.9, oilMul: 1.4, bumpMul: 1.2, animalMul: 1.1
+            },
+            c03: {
+                terrainSeed: 303, terrainScale: 0.045, terrainAmp: 2.0,
+                sky: 0x0a1020, fog: 0x12182a, fogNear: 22, fogFar: 110,
+                ambient: 0x1a2235, ground: 0x1a1e28,
+                animals: ['BEAR','BOAR','DOG','CAT','FOX','DEER'],
+                trafficMul: 0.7, oilMul: 0.8, bumpMul: 1.0, animalMul: 1.25
+            },
+            c04: {
+                terrainSeed: 404, terrainScale: 0.042, terrainAmp: 2.4,
+                sky: 0x5a6048, fog: 0x4a5040, fogNear: 26, fogFar: 120,
+                ambient: 0x4a5540, ground: 0x3a4030,
+                animals: ['CROC','RHINO','PEACOCK','DINO'],
+                trafficMul: 1.3, oilMul: 1.5, bumpMul: 1.3, animalMul: 1.15
+            },
+            c05: {
+                terrainSeed: 505, terrainScale: 0.05, terrainAmp: 2.6,
+                sky: 0x4a6050, fog: 0x3a5040, fogNear: 20, fogFar: 100,
+                ambient: 0x355545, ground: 0x2a3830,
+                animals: ['CROC','ELEPHANT','RHINO','DINO','PEACOCK'],
+                trafficMul: 1.4, oilMul: 1.8, bumpMul: 1.5, animalMul: 1.2
+            },
+            c06: {
+                terrainSeed: 606, terrainScale: 0.038, terrainAmp: 2.2,
+                sky: 0x2a1520, fog: 0x301820, fogNear: 24, fogFar: 105,
+                ambient: 0x3a2028, ground: 0x281818,
+                animals: ['DINO','RHINO','CROC','ELEPHANT'],
+                trafficMul: 1.2, oilMul: 1.3, bumpMul: 1.4, animalMul: 1.35
+            },
+            c07: {
+                terrainSeed: 707, terrainScale: 0.055, terrainAmp: 3.0,
+                sky: 0x4a6a40, fog: 0x3d5a38, fogNear: 22, fogFar: 115,
+                ambient: 0x3a5a30, ground: 0x3a4a28,
+                animals: ['LION','MONKEY','HIPPO','ZEBRA'],
+                trafficMul: 1.1, oilMul: 2.0, bumpMul: 1.6, animalMul: 1.2
+            },
+            c08: {
+                terrainSeed: 808, terrainScale: 0.048, terrainAmp: 2.7,
+                sky: 0x2a4a30, fog: 0x1a3a28, fogNear: 16, fogFar: 90,
+                ambient: 0x2a4a35, ground: 0x2a3a22,
+                animals: ['LION','GIRAFFE','HIPPO','MONKEY','ZEBRA'],
+                trafficMul: 1.15, oilMul: 2.2, bumpMul: 1.7, animalMul: 1.3
+            },
+            c09: {
+                terrainSeed: 909, terrainScale: 0.033, terrainAmp: 1.9,
+                sky: 0x2a3a48, fog: 0x253545, fogNear: 20, fogFar: 100,
+                ambient: 0x2a3848, ground: 0x2a3038,
+                animals: ['ZEBRA','GIRAFFE','LION','MONKEY'],
+                trafficMul: 1.0, oilMul: 1.4, bumpMul: 1.3, animalMul: 1.4
+            },
+            c10: {
+                terrainSeed: 1010, terrainScale: 0.03, terrainAmp: 1.7,
+                sky: 0x8a6a50, fog: 0x7a5a40, fogNear: 28, fogFar: 130,
+                ambient: 0x6a5040, ground: 0x4a3a30,
+                animals: ['DOG','CAT','BEAR','HUMAN','CHICKEN','FOX','BOAR'],
+                trafficMul: 1.35, oilMul: 1.1, bumpMul: 1.2, animalMul: 1.15
+            },
+            c11: {
+                terrainSeed: 1111, terrainScale: 0.052, terrainAmp: 2.9,
+                sky: 0x4a3a48, fog: 0x3a2a38, fogNear: 18, fogFar: 95,
+                ambient: 0x4a3a50, ground: 0x2a2230,
+                animals: ['CROC','RHINO','ELEPHANT','DINO','LION','BEAR'],
+                trafficMul: 1.6, oilMul: 1.7, bumpMul: 1.8, animalMul: 1.5
+            },
+            c12: {
+                terrainSeed: 1212, terrainScale: 0.036, terrainAmp: 2.1,
+                sky: 0x5a7088, fog: 0x4a6078, fogNear: 25, fogFar: 125,
+                ambient: 0x506070, ground: 0x3a4a50,
+                animals: ['HUMAN','DOG','CAT','PEACOCK','MONKEY','FOX'],
+                trafficMul: 1.5, oilMul: 1.2, bumpMul: 1.4, animalMul: 1.25
+            }
+        };
+
+        function isCampaignRun() {
+            return (typeof pendingMode !== 'undefined' && pendingMode === 'campaign') || !!window.__campaignTrackId;
+        }
+        window.isCampaignRun = isCampaignRun;
+
+        function applyCampaignRoute() {
+            if (!isCampaignRun()) return false;
+            const id = window.__campaignTrackId;
+            const t = (typeof CAMPAIGN_TRACKS !== 'undefined' && id)
+                ? CAMPAIGN_TRACKS.find(function(x){ return x.id === id; })
+                : null;
+            if (t) {
+                pendingMap = t.style || 'arsenev';
+                pendingWeather = t.weather || 'day';
+                pendingMode = 'campaign';
+                if (window.__forceDifficulty) pendingDifficulty = window.__forceDifficulty;
+                window.__campaignMods = (typeof CAMPAIGN_STAGE_MODS !== 'undefined' && CAMPAIGN_STAGE_MODS[id])
+                    ? CAMPAIGN_STAGE_MODS[id]
+                    : null;
+            } else if (!pendingMap) {
+                pendingMap = 'arsenev';
+                window.__campaignMods = null;
+            }
+            try {
+                const mapScreen = document.getElementById('map-select-screen');
+                if (mapScreen) {
+                    mapScreen.style.display = 'none';
+                    mapScreen.classList.remove('active');
+                }
+                const lore = document.getElementById('lore-screen');
+                if (lore) {
+                    lore.style.display = 'none';
+                    lore.classList.remove('active');
+                }
+            } catch (e) {}
+            return true;
+        }
+        window.applyCampaignRoute = applyCampaignRoute;
+
+        function proceedAfterLoreToRace() {
+            if (!applyCampaignRoute()) return false;
+            const q = pendingQuality || 'medium';
+            const d = pendingDifficulty || window.__forceDifficulty || 'easy';
+            const car = pendingCar || (currentPlayer && currentPlayer.preferredCar) || 'cheburashka';
+            console.log('📖 Компания → гонка', pendingMap, pendingWeather, d, q);
+            if (typeof initGame === 'function') {
+                initGame(q, d, car, pendingMap, pendingWeather);
+            }
+            return true;
+        }
+        window.proceedAfterLoreToRace = proceedAfterLoreToRace;
+        // showLoreScreen объявлен ниже function declaration (hoisted)
+        try { window.showLoreScreen = showLoreScreen; } catch (e) {}
+
+function showLoreScreen(quality, difficulty) {
             pendingQuality = quality;
             pendingDifficulty = difficulty;
             currentLorePanel = 1;
@@ -10024,6 +11827,9 @@ function startGaragePreview(carId) {
                 pendingCar = 'cheburashka';
                 currentPlayer.preferredCar = 'cheburashka';
             }
+            if (typeof proceedAfterLoreToRace === 'function' && proceedAfterLoreToRace()) {
+                return;
+            }
             const mapScreen = document.getElementById('map-select-screen');
             if (mapScreen) {
                 if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
@@ -10034,6 +11840,8 @@ function startGaragePreview(carId) {
                 initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
             }
         }
+        window.finishLoreAndStart = finishLoreAndStart;
+
 
         // Выбор машины
         document.querySelectorAll('.car-card').forEach(card => {
@@ -10050,6 +11858,9 @@ function startGaragePreview(carId) {
                 if (carScreen) {
                     carScreen.classList.remove('active');
                     carScreen.style.display = 'none';
+                }
+                if (typeof proceedAfterLoreToRace === 'function' && proceedAfterLoreToRace()) {
+                    return;
                 }
                 const mapScreen = document.getElementById('map-select-screen');
                 if (mapScreen) {
@@ -10106,14 +11917,31 @@ function startGaragePreview(carId) {
         // Обработчики кнопок сложности → сначала лор
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const difficulty = btn.dataset.diff;
+                let difficulty = btn.dataset.diff;
+                if (window.__forceDifficulty) difficulty = window.__forceDifficulty;
                 const quality = selectedQuality;
-                console.log('Выбрана сложность:', difficulty, 'качество:', quality);
+                console.log('Выбрана сложность:', difficulty, 'качество:', quality, 'mode:', pendingMode);
+                try { window.__lastQuality = quality; pendingQuality = quality; } catch (e) {}
                 // Пробуем разбудить AudioContext заранее
                 if (window.soundEngine && window.soundEngine.audioCtx && window.soundEngine.audioCtx.state === 'suspended') {
                     window.soundEngine.audioCtx.resume();
                 }
-                showLoreScreen(quality, difficulty);
+                if (typeof isCampaignRun === 'function' && isCampaignRun()) {
+                    pendingQuality = quality;
+                    pendingDifficulty = window.__forceDifficulty || difficulty;
+                    pendingCar = pendingCar || (currentPlayer && currentPlayer.preferredCar) || 'cheburashka';
+                    try {
+                        const ds = document.getElementById('difficulty-screen');
+                        if (ds) ds.style.display = 'none';
+                    } catch (e) {}
+                    if (typeof proceedAfterLoreToRace === 'function') proceedAfterLoreToRace();
+                    else if (typeof initGame === 'function') {
+                        applyCampaignRoute && applyCampaignRoute();
+                        initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
+                    }
+                } else {
+                    showLoreScreen(quality, difficulty);
+                }
             });
         });
 
@@ -10303,8 +12131,20 @@ function startGaragePreview(carId) {
             document.querySelectorAll('.menu-card[data-menu]').forEach(function(card) {
                 card.addEventListener('click', function() {
                     const m = card.dataset.menu;
-                    if (m === 'race' && typeof beginRaceFlow === 'function') {
-                        if (typeof pendingMode !== 'undefined') pendingMode = 'race';
+                    if (m === 'campaign') {
+                        console.log('click campaign');
+                        if (typeof window.openCampaignScreen === 'function') window.openCampaignScreen();
+                        else if (typeof openCampaignScreen === 'function') openCampaignScreen();
+                        else alert('openCampaignScreen не найден');
+                        return;
+                    } else if (m === 'multiplayer') {
+                        if (window.Notify) Notify.warn('Мультиплеер', 'Режим в разработке. Загляни позже.');
+                        else alert('Мультиплеер скоро');
+                    } else if (m === 'race' && typeof beginRaceFlow === 'function') {
+                        if (typeof pendingMode !== 'undefined') window.__campaignMods = null; window.__campaignTrackId = null; window.__campaignIdx = null; pendingMode = 'race';
+                        window.__campaignIdx = null;
+                        window.__campaignTrackId = null;
+                        window.__forceDifficulty = null;
                         beginRaceFlow();
                     } else if (m === 'garage' && typeof openGarage === 'function') {
                         openGarage();
@@ -10512,6 +12352,45 @@ function startGaragePreview(carId) {
                 bindCam(document.getElementById('btnCam'));
                 bindPause(document.getElementById('btnPauseMobile'));
             }, 2000);
+        })();
+
+        
+        (function wireCampaignUI() {
+            const back = document.getElementById('campaign-back-btn');
+            if (back && !back.__wired) {
+                back.__wired = true;
+                back.addEventListener('click', function() {
+                    const scr = document.getElementById('campaign-screen');
+                    if (scr) { scr.style.display = 'none'; scr.classList.remove('active'); }
+                    if (typeof showMainMenu === 'function') showMainMenu();
+                });
+            }
+            const intro = document.getElementById('campaign-villain-intro-btn');
+            if (intro && !intro.__wired) {
+                intro.__wired = true;
+                intro.addEventListener('click', function() {
+                    if (typeof showCampaignLore === 'function') showCampaignLore(null, { intro: true });
+                });
+            }
+        })();
+
+        
+        (function guardCampaignNoMapSelect() {
+            const map = document.getElementById('map-select-screen');
+            if (!map || map.__campGuard) return;
+            map.__campGuard = true;
+            const obs = new MutationObserver(function() {
+                try {
+                    if (typeof isCampaignRun === 'function' && isCampaignRun()) {
+                        if (map.style.display === 'flex' || map.classList.contains('active')) {
+                            map.style.display = 'none';
+                            map.classList.remove('active');
+                            if (typeof proceedAfterLoreToRace === 'function') proceedAfterLoreToRace();
+                        }
+                    }
+                } catch (e) {}
+            });
+            obs.observe(map, { attributes: true, attributeFilter: ['style', 'class'] });
         })();
 
         console.log('🎮 Выберите сложность и начните игру!');
