@@ -1572,6 +1572,217 @@
             border-radius: 10px;
         }
 
+        
+        
+        body.finish-open #mobile-controls,
+        body.finish-open #hud-pause-btn,
+        body.finish-open #hud-menu-btn {
+            display: none !important;
+            pointer-events: none !important;
+        }
+        body.finish-open #ach-plaque-root {
+            pointer-events: none !important;
+        }
+        #finish-screen .finish-actions {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: min(420px, 100%);
+            margin: 16px auto 0;
+            padding: 12px 0 max(12px, env(safe-area-inset-bottom, 0px) + 8px);
+            background: linear-gradient(180deg, transparent, rgba(0,0,0,0.95) 20%);
+            z-index: 2;
+        }
+        #finish-screen .finish-actions button {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(30,30,40,0.95);
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(255,220,0,0.3);
+            pointer-events: auto !important;
+        }
+        #finish-screen .finish-actions #finish-restart-btn {
+            border-color: #ffdd00;
+            color: #ffdd00;
+        }
+        #finish-screen .finish-actions #finish-garage-btn {
+            border-color: rgba(255,220,0,0.45);
+            color: #ffdd00;
+        }
+
+        /* === Громкость ПК: справа сбоку === */
+        #volume-controls {
+            position: fixed !important;
+            top: 50% !important;
+            right: 16px !important;
+            left: auto !important;
+            bottom: auto !important;
+            transform: translateY(-50%) !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            padding: 12px 14px !important;
+            z-index: 160 !important;
+            max-width: none !important;
+            background: rgba(0,0,0,0.7) !important;
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        #volume-controls .slider-group {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 5px !important;
+        }
+        #volume-controls input[type="range"] {
+            width: 80px !important;
+            height: 4px !important;
+        }
+        #volume-controls .slider-group label {
+            font-size: 11px !important;
+        }
+        #volume-controls .volume-value,
+        #volume-controls #music-status {
+            font-size: 10px !important;
+        }
+
+        /* === MOBILE UX FINAL: громкость сверху (только тач/узкий экран) === */
+        @media screen and (max-width: 900px), screen and (pointer: coarse) {
+            #volume-controls {
+                top: max(6px, env(safe-area-inset-top, 0px) + 4px) !important;
+                left: 50% !important;
+                right: auto !important;
+                bottom: auto !important;
+                transform: translateX(-50%) !important;
+                flex-direction: row !important;
+                gap: 6px !important;
+                padding: 3px 8px !important;
+                max-width: 70vw !important;
+                background: rgba(0,0,0,0.55) !important;
+            }
+            #volume-controls .slider-group {
+                flex-direction: row !important;
+                gap: 3px !important;
+            }
+            #volume-controls input[type="range"] {
+                width: 56px !important;
+                height: 16px !important;
+            }
+            #volume-controls .slider-group label,
+            #volume-controls .volume-value,
+            #volume-controls #music-status {
+                font-size: 9px !important;
+            }
+        }
+
+        /* Камера — всегда видна в гонке */
+        body.race-mode #mobile-controls .mc-cam,
+        #mobile-controls.active .mc-cam {
+            display: block !important;
+            position: fixed !important;
+            top: max(8px, env(safe-area-inset-top, 0px) + 6px) !important;
+            left: max(8px, env(safe-area-inset-left, 0px) + 6px) !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: none !important;
+            z-index: 170 !important;
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        #mobile-controls .mc-cam .cam-btn,
+        #btnCam {
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 20px !important;
+            display: flex !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            background: rgba(0,0,0,0.55) !important;
+            border: 2px solid rgba(255,255,255,0.35) !important;
+        }
+
+        /* Пауза в колонке справа над тормозом; скрыть верхнюю системную */
+        body.race-mode #hud-pause-btn {
+            display: none !important;
+        }
+        #btnPauseMobile,
+        .control-btn.pause-inline {
+            width: 52px !important;
+            height: 48px !important;
+            font-size: 18px !important;
+            border-radius: 14px !important;
+            background: rgba(40,40,60,0.55) !important;
+            border: 2px solid rgba(255,255,255,0.35) !important;
+            color: #fff !important;
+            display: flex !important;
+            margin: 0 !important;
+        }
+
+        /* Финиш: скролл до кнопок на iOS */
+        #finish-screen {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 100dvh !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior: contain !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            z-index: 9500 !important;
+            padding: max(12px, env(safe-area-inset-top, 0px) + 10px)
+                     max(12px, env(safe-area-inset-right, 0px) + 8px)
+                     max(80px, env(safe-area-inset-bottom, 0px) + 70px)
+                     max(12px, env(safe-area-inset-left, 0px) + 8px) !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+        }
+        #finish-screen .finish-inner {
+            width: min(420px, 100%) !important;
+            margin: 0 auto 40px !important;
+            flex-shrink: 0 !important;
+            max-height: none !important;
+        }
+        #finish-screen button {
+            min-height: 48px !important;
+            width: 100% !important;
+            touch-action: manipulation !important;
+        }
+
+        
+        /* ПК: громкость справа, гарантированно */
+        @media screen and (min-width: 901px) and (pointer: fine) {
+            #volume-controls {
+                position: fixed !important;
+                top: 50% !important;
+                right: 18px !important;
+                left: auto !important;
+                bottom: auto !important;
+                transform: translateY(-50%) !important;
+                flex-direction: column !important;
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                z-index: 200 !important;
+                pointer-events: auto !important;
+            }
+        }
+
         </style>
 </head>
 <body>
@@ -1970,6 +2181,7 @@
         <div class="mc-right" aria-label="Газ и тормоз">
             <div class="control-btn gas" id="btnGas" role="button" aria-label="Газ">▲</div>
             <div class="control-btn brake" id="btnBrake" role="button" aria-label="Тормоз">▼</div>
+            <button type="button" class="control-btn pause-inline" id="btnPauseMobile" aria-label="Пауза">⏸</button>
         </div>
     </div>
 
@@ -2882,6 +3094,7 @@ function createProfile(name) {
 
 
         function updatePlayerBar() {
+            try { if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI(); } catch (e) {}
             const bar = document.getElementById('player-bar');
             if (!bar || !currentPlayer) return;
             bar.classList.add('visible');
@@ -4063,16 +4276,61 @@ function startGaragePreview(carId) {
             } catch (e) { return ['arsenev']; }
         }
         function unlockMap(id) {
-            const list = getUnlockedMaps();
-            if (list.includes(id)) return false;
+            if (!id) return false;
+            let list = getUnlockedMaps();
+            if (!Array.isArray(list)) list = ['arsenev'];
+            if (list.includes(id)) {
+                // всё равно синхронизируем UI
+                try { if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI(); } catch (e) {}
+                return false;
+            }
+            list = list.slice();
             list.push(id);
             if (currentPlayer) {
                 currentPlayer.unlockedMaps = list;
                 if (typeof saveCurrentPlayer === 'function') saveCurrentPlayer();
             }
             try { localStorage.setItem(MAP_UNLOCK_KEY, JSON.stringify(list)); } catch (e) {}
+            try { if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI(); } catch (e) {}
             return true;
         }
+
+        function refreshMapSelectUI() {
+            try {
+                const unlocked = getUnlockedMaps();
+                console.log('🗺️ refreshMapSelectUI', unlocked);
+                document.querySelectorAll('.map-card[data-map]').forEach(function(card) {
+                    const id = card.getAttribute('data-map');
+                    const badge = card.querySelector('.lock-badge');
+                    if (unlocked.indexOf(id) >= 0) {
+                        card.classList.remove('locked');
+                        if (badge) {
+                            badge.style.display = 'none';
+                            badge.textContent = '';
+                        }
+                    } else {
+                        card.classList.add('locked');
+                        if (badge) {
+                            badge.style.display = '';
+                            if (!badge.textContent) badge.textContent = '🔒 Закрыто';
+                        }
+                    }
+                });
+                // если выбранная карта заблокирована — сбросить на arsenev
+                try {
+                    if (typeof pendingMap !== 'undefined' && unlocked.indexOf(pendingMap) < 0) {
+                        pendingMap = 'arsenev';
+                        document.querySelectorAll('.map-card').forEach(function(c) {
+                            c.classList.remove('selected');
+                            if (c.getAttribute('data-map') === 'arsenev') c.classList.add('selected');
+                        });
+                    }
+                } catch (e) {}
+            } catch (e) {
+                console.warn('refreshMapSelectUI', e);
+            }
+        }
+        window.refreshMapSelectUI = refreshMapSelectUI;
         function tryUnlockNextMap(mapId, difficulty) {
             if (difficulty !== 'hard') return null;
             const idx = MAP_ORDER.indexOf(mapId);
@@ -4182,6 +4440,7 @@ function startGaragePreview(carId) {
             const mapScreen = document.getElementById('map-select-screen');
             if (mapScreen) {
                 if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
+                try { refreshMapSelectUI(); } catch (e) {}
                 mapScreen.classList.add('active');
                 mapScreen.style.display = 'flex';
             } else if (typeof initGame === 'function') {
@@ -6581,10 +6840,13 @@ function startGaragePreview(carId) {
                 const screen = document.createElement('div');
                 screen.id = 'finish-screen';
                 screen.style.cssText = `
-                    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0,0,0,0.9); display: flex;
-                    justify-content: center; align-items: center; z-index: 500;
-                    backdrop-filter: blur(10px); font-family: 'Segoe UI', Arial, sans-serif;
+                    position: fixed; inset: 0; width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.92); display: flex;
+                    justify-content: center; align-items: flex-start; z-index: 9500;
+                    overflow-y: auto; -webkit-overflow-scrolling: touch;
+                    padding: max(12px, env(safe-area-inset-top, 0px) + 10px) 12px max(90px, env(safe-area-inset-bottom, 0px) + 80px);
+                    box-sizing: border-box;
+                    font-family: system-ui, 'Segoe UI', Arial, sans-serif;
                 `;
 
                 let title, color, message, isBest = false;
@@ -6655,46 +6917,94 @@ function startGaragePreview(carId) {
                         ${imgHtml}
                         <h1 style="font-size:30px;color:${color};margin-bottom:10px;">${title}</h1>
                         <div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">${message}</div>
-                        <button type="button" id="finish-restart-btn" style="padding:12px 30px;border:2px solid ${color};border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;margin-top:14px;width:100%;">
-                            🔄 Заново
-                        </button>
-                        <button type="button" id="finish-menu-btn" style="padding:12px 30px;border:2px solid rgba(255,255,255,0.25);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;margin-top:10px;display:block;width:100%;">
-                            🏠 Главное меню
-                        </button>
-                        <button type="button" id="finish-garage-btn" style="padding:10px 30px;border:2px solid rgba(255,220,0,0.35);border-radius:10px;background:rgba(255,220,0,0.08);color:#ffdd00;font-size:14px;cursor:pointer;margin-top:8px;display:block;width:100%;">
-                            🔧 Гараж
-                        </button>
+                    </div>
+                    <div class="finish-actions" id="finish-actions">
+                        <button type="button" id="finish-restart-btn">🔄 Заново</button>
+                        <button type="button" id="finish-menu-btn">🏠 Главное меню</button>
+                        <button type="button" id="finish-garage-btn">🔧 Гараж</button>
                     </div>
                 `;
                 
                 document.body.appendChild(screen);
-                const goMenu = (ev) => {
-                    if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch(e){} }
+
+                // На время экрана финиша — отключить тачи гонки
+                try {
+                    const mc = document.getElementById('mobile-controls');
+                    if (mc) { mc.classList.remove('active'); mc.style.pointerEvents = 'none'; mc.style.display = 'none'; }
+                    const vc = document.getElementById('volume-controls');
+                    if (vc) { vc.style.pointerEvents = 'none'; vc.style.opacity = '0.3'; }
+                    const ar = document.getElementById('ach-plaque-root');
+                    if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
+                    window.__achQueue = [];
+                    window.__achShowing = false;
+                    window.__racePaused = false;
+                    document.body.classList.add('finish-open');
+                } catch (e) {}
+
+                const cleanupFinishUI = function() {
                     try {
-                        window.__achQueue = [];
-                        window.__achShowing = false;
+                        document.body.classList.remove('finish-open');
+                        const vc = document.getElementById('volume-controls');
+                        if (vc) { vc.style.pointerEvents = ''; vc.style.opacity = ''; }
                         const ar = document.getElementById('ach-plaque-root');
                         if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
+                        window.__achQueue = [];
+                        window.__achShowing = false;
+                        document.querySelectorAll('#finish-screen,#hud-menu-btn,#hud-pause-btn').forEach(function(el) {
+                            try { el.remove(); } catch (e) {}
+                        });
                     } catch (e) {}
-                    try { screen.remove(); } catch (e) {}
-                    const hb = document.getElementById('hud-menu-btn');
-                    if (hb) hb.remove();
-                    const pb = document.getElementById('hud-pause-btn');
-                    if (pb) pb.style.display = 'none';
-                    if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
-                    else if (typeof showMainMenu === 'function') showMainMenu();
                 };
-                const fr = document.getElementById('finish-restart-btn');
-                if (fr) fr.onclick = () => { try { location.reload(); } catch(e){} };
-                const fm = document.getElementById('finish-menu-btn');
-                if (fm) fm.onclick = goMenu;
-                const fg = document.getElementById('finish-garage-btn');
-                if (fg) fg.onclick = () => {
-                    screen.remove();
-                    const hb = document.getElementById('hud-menu-btn');
-                    if (hb) hb.remove();
-                    if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(true);
+
+                const goMenu = function(ev) {
+                    if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
+                    cleanupFinishUI();
+                    try {
+                        if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
+                        else if (typeof showMainMenu === 'function') showMainMenu();
+                    } catch (e) {
+                        console.warn('goMenu', e);
+                        try { if (typeof showMainMenu === 'function') showMainMenu(); } catch (e2) {}
+                    }
                 };
+                const goGarage = function(ev) {
+                    if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
+                    cleanupFinishUI();
+                    try {
+                        if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(true);
+                        else {
+                            if (typeof showMainMenu === 'function') showMainMenu();
+                            setTimeout(function(){ if (typeof openGarage === 'function') openGarage(); }, 80);
+                        }
+                    } catch (e) { console.warn('goGarage', e); }
+                };
+                const goRestart = function(ev) {
+                    if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
+                    cleanupFinishUI();
+                    try { location.reload(); } catch (e) {}
+                };
+
+                function bindFinishBtn(id, handler) {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.style.pointerEvents = 'auto';
+                    el.onclick = handler;
+                    el.addEventListener('touchend', function(e) {
+                        e.preventDefault();
+                        handler(e);
+                    }, { passive: false });
+                }
+                bindFinishBtn('finish-restart-btn', goRestart);
+                bindFinishBtn('finish-menu-btn', goMenu);
+                bindFinishBtn('finish-garage-btn', goGarage);
+
+                // Прокрутить к кнопкам на mobile
+                setTimeout(function() {
+                    try {
+                        const actions = document.getElementById('finish-actions');
+                        if (actions) actions.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    } catch (e) {}
+                }, 300);
             }
 
 
@@ -9717,6 +10027,7 @@ function startGaragePreview(carId) {
             const mapScreen = document.getElementById('map-select-screen');
             if (mapScreen) {
                 if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
+                try { refreshMapSelectUI(); } catch (e) {}
                 mapScreen.classList.add('active');
                 mapScreen.style.display = 'flex';
             } else {
@@ -9819,23 +10130,85 @@ function startGaragePreview(carId) {
 
         if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
         
-        // Чит-код: РАНЕТКИ
+        // Чит-коды: РАНЕТКИ / RANETKI / АРСЕНАЛ / ARSENAL — все карты + достижения + трофеи
+        function unlockEverythingCheat(source) {
+            try {
+                if (!currentPlayer) {
+                    if (window.Notify) Notify.warn('Сначала войди в профиль', '');
+                    else alert('Сначала войди в профиль');
+                    return false;
+                }
+                ensureProfileFields(currentPlayer);
+                // Все карты — жёстко
+                const allMaps = (typeof MAP_ORDER !== 'undefined') ? MAP_ORDER.slice() : ['arsenev', 'promzona', 'svalka'];
+                currentPlayer.unlockedMaps = allMaps.slice();
+                allMaps.forEach(function(id) {
+                    try { if (typeof unlockMap === 'function') unlockMap(id); } catch (e) {}
+                });
+                currentPlayer.unlockedMaps = allMaps.slice();
+                try {
+                    localStorage.setItem(MAP_UNLOCK_KEY, JSON.stringify(allMaps));
+                } catch (e) {}
+                try { refreshMapSelectUI(); } catch (e) {}
+                // повторно через кадр — DOM мог не быть готов
+                setTimeout(function(){ try { refreshMapSelectUI(); } catch (e) {} }, 100);
+                setTimeout(function(){ try { refreshMapSelectUI(); } catch (e) {} }, 500);
+                // Все достижения + трофеи
+                if (typeof ACHIEVEMENTS !== 'undefined') {
+                    ACHIEVEMENTS.forEach(function(a) {
+                        if (!currentPlayer.achievements[a.id]) {
+                            currentPlayer.achievements[a.id] = Date.now();
+                        }
+                    });
+                }
+                if (typeof TROPHIES !== 'undefined') {
+                    if (!currentPlayer.trophies) currentPlayer.trophies = {};
+                    TROPHIES.forEach(function(t) {
+                        if (!currentPlayer.trophies[t.id]) {
+                            currentPlayer.trophies[t.id] = Date.now();
+                        }
+                    });
+                }
+                // Немного валюты для тестов
+                currentPlayer.season.chips = (currentPlayer.season.chips || 0) + 50;
+                currentPlayer.season.gum = (currentPlayer.season.gum || 0) + 20;
+                if (currentPlayer.season.level < 5) currentPlayer.season.level = 5;
+                try { saveCurrentPlayer(); } catch (e) {}
+                try { if (typeof updatePlayerBar === 'function') updatePlayerBar(); } catch (e) {}
+                try { if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI(); } catch (e) {}
+                try { if (typeof renderGarageTrophies === 'function') renderGarageTrophies(); } catch (e) {}
+                const msg = '🎤 ' + (source || 'ЧИТ') + ': все карты, достижения и трофеи открыты (+50🪙 +20🍬)';
+                if (window.Notify) Notify.success(msg, 'Медведь доволен');
+                else {
+                    const el = document.createElement('div');
+                    el.className = 'radio-line';
+                    el.textContent = msg;
+                    el.style.color = '#ff66aa';
+                    document.body.appendChild(el);
+                    setTimeout(function(){ try { el.remove(); } catch(e){} }, 4000);
+                }
+                console.log(msg, currentPlayer.unlockedMaps, currentPlayer.achievements);
+                return true;
+            } catch (e) {
+                console.warn('cheat', e);
+                return false;
+            }
+        }
+        window.unlockEverythingCheat = unlockEverythingCheat;
+
         let cheatBuffer = '';
         document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT') return;
-            cheatBuffer += (e.key || '').toLowerCase();
-            if (cheatBuffer.length > 20) cheatBuffer = cheatBuffer.slice(-20);
-            if (cheatBuffer.includes('ранетки') || cheatBuffer.includes('ranetki')) {
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+            const k = (e.key || '').toLowerCase();
+            if (k.length !== 1) return;
+            cheatBuffer += k;
+            if (cheatBuffer.length > 32) cheatBuffer = cheatBuffer.slice(-32);
+            const buf = cheatBuffer;
+            if (buf.includes('ранетки') || buf.includes('ranetki') ||
+                buf.includes('арсенал') || buf.includes('arsenal') ||
+                buf.includes('всекарты') || buf.includes('vsekarty')) {
                 cheatBuffer = '';
-                unlockMap('promzona');
-                unlockMap('svalka');
-                if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
-                const el = document.createElement('div');
-                el.className = 'radio-line';
-                el.textContent = '🎤 РАНЕТКИ: все карты открыты. Медведь доволен.';
-                el.style.color = '#ff66aa';
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 3500);
+                unlockEverythingCheat('РАНЕТКИ');
             }
         });
 
@@ -10105,6 +10478,41 @@ function startGaragePreview(carId) {
             if (window.__inRace) return;
             if (typeof window.playMenuMusic === 'function') window.playMenuMusic();
         }, { passive: true });
+
+        
+        (function wireMobileCamPause() {
+            function bindCam(el) {
+                if (!el || el.__camBound) return;
+                el.__camBound = true;
+                const go = function(e) {
+                    if (e) { e.preventDefault(); e.stopPropagation(); }
+                    if (typeof window.__cycleCamera === 'function') window.__cycleCamera();
+                };
+                el.addEventListener('click', go);
+                el.addEventListener('touchend', go, { passive: false });
+            }
+            function bindPause(el) {
+                if (!el || el.__pauseBound) return;
+                el.__pauseBound = true;
+                const go = function(e) {
+                    if (e) { e.preventDefault(); e.stopPropagation(); }
+                    if (typeof window.toggleRacePause === 'function') window.toggleRacePause();
+                };
+                el.addEventListener('click', go);
+                el.addEventListener('touchend', go, { passive: false });
+            }
+            bindCam(document.getElementById('btnCam'));
+            bindPause(document.getElementById('btnPauseMobile'));
+            // на случай если DOM пересоздают
+            document.addEventListener('click', function(e) {
+                const t = e.target && e.target.closest && e.target.closest('#btnCam, #btnPauseMobile');
+                if (!t) return;
+            }, true);
+            setInterval(function() {
+                bindCam(document.getElementById('btnCam'));
+                bindPause(document.getElementById('btnPauseMobile'));
+            }, 2000);
+        })();
 
         console.log('🎮 Выберите сложность и начните игру!');
 
