@@ -2441,6 +2441,11 @@
              BL: steer   BR: gas/brake
            ============================================================ */
         :root {
+            --accent-info: #66ccff;
+            --accent-ok: #9fdf9f;
+            --accent-warn: #ffaa44;
+            --h1: clamp(18px, 4vw, 26px);
+            --h2: clamp(14px, 3vw, 18px);
             --ui-safe-t: env(safe-area-inset-top, 0px);
             --ui-safe-b: env(safe-area-inset-bottom, 0px);
             --ui-safe-l: env(safe-area-inset-left, 0px);
@@ -2504,7 +2509,7 @@
             box-sizing: border-box !important;
         }
 
-        /* ---- Shouts / radio / plaques: bottom band, above controls ---- */
+        /* ---- Shouts / radio: ВЕРХ экрана, не поверх машины ---- */
         .animal-shout,
         .radio-line,
         .story-plaque,
@@ -2512,35 +2517,49 @@
             position: fixed !important;
             left: 50% !important;
             right: auto !important;
-            top: auto !important;
-            bottom: var(--shout-bottom) !important;
+            bottom: auto !important;
+            top: calc(env(safe-area-inset-top, 0px) + 52px) !important;
             transform: translateX(-50%) !important;
-            max-width: min(88vw, 420px) !important;
+            max-width: min(70vw, 380px) !important;
             width: max-content !important;
-            max-height: 20vh !important;
+            max-height: 12vh !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
             white-space: nowrap !important;
             pointer-events: none !important;
-            z-index: 140 !important;
+            z-index: 130 !important;
             box-sizing: border-box !important;
             text-align: center !important;
+            margin: 0 !important;
         }
         .animal-shout {
-            font-size: clamp(11px, 2.4vw, 15px) !important;
-            padding: 6px 14px !important;
+            font-size: clamp(11px, 2.2vw, 14px) !important;
+            padding: 5px 12px !important;
             border-color: rgba(255, 100, 40, 0.55) !important;
+            top: calc(env(safe-area-inset-top, 0px) + 52px) !important;
+        }
+        .animal-shout.boss-shout {
+            top: calc(env(safe-area-inset-top, 0px) + 52px) !important;
+            border-color: rgba(255, 80, 40, 0.7) !important;
         }
         .radio-line {
-            bottom: calc(var(--shout-bottom) + 36px) !important;
-            font-size: clamp(10px, 2vw, 13px) !important;
-            padding: 4px 12px !important;
-            z-index: 139 !important;
+            top: calc(env(safe-area-inset-top, 0px) + 86px) !important;
+            font-size: clamp(10px, 1.9vw, 12px) !important;
+            padding: 4px 10px !important;
+            z-index: 129 !important;
         }
         .story-plaque {
-            bottom: calc(var(--shout-bottom) + 56px) !important;
-            font-size: clamp(10px, 2vw, 12px) !important;
-            z-index: 138 !important;
+            top: calc(env(safe-area-inset-top, 0px) + 112px) !important;
+            font-size: clamp(10px, 1.8vw, 12px) !important;
+            z-index: 128 !important;
+        }
+        @media (max-height: 500px) {
+            .animal-shout, .radio-line, .story-plaque, #cheburashkaWarn {
+                top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+                font-size: 10px !important;
+                padding: 3px 8px !important;
+            }
+            .radio-line { top: calc(env(safe-area-inset-top, 0px) + 32px) !important; }
         }
 
         /* ---- Mobile controls: clear corners ---- */
@@ -2788,7 +2807,7 @@
 
         /* ---------- MAIN MENU ---------- */
         #main-menu-screen .content {
-            grid-template-rows: auto auto 1fr auto auto;
+            grid-template-rows: auto auto minmax(120px, 1fr) auto auto auto auto;
             max-width: min(520px, 96vw);
         }
         #main-menu-screen h1 {
@@ -2856,13 +2875,12 @@
             object-fit: cover;
         }
         #difficulty-screen .diff-main {
-            grid-area: main;
-            display: grid;
-            grid-template-rows: auto auto auto auto auto auto auto;
+            display: flex;
+            flex-direction: column;
             gap: 6px;
-            align-content: start;
-            min-width: 0;
-            justify-items: center;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         #difficulty-screen h1 {
             margin: 0;
@@ -3381,6 +3399,19 @@
         }
 
         body.race-mode #hud-pause-btn { display: block !important; }
+        
+        /* camp-card-compact */
+        @media (max-height: 700px) {
+            #campaign-track-list button, #campaign-track-list .camp-card {
+                padding: 8px 10px !important;
+                min-height: 0 !important;
+            }
+            #campaign-track-list .camp-desc { display: none !important; }
+        }
+        #shop-canvas-wrap {
+            height: min(24vh, 180px) !important;
+            min-height: 120px !important;
+        }
         </style>
 </head>
 <body>
@@ -4612,6 +4643,16 @@
                 if (typeof gameState !== 'undefined') gameState = 'menu';
             } catch (e) {}
         }
+        function clearCampaignGlobals() {
+            try {
+                window.__campaignMods = null;
+                window.__campaignTrackId = null;
+                window.__campaignIdx = null;
+                window.__forceDifficulty = null;
+            } catch (e) {}
+            try { if (typeof pendingMode !== 'undefined') pendingMode = 'race'; } catch (e) {}
+        }
+        window.clearCampaignGlobals = clearCampaignGlobals;
         window.cleanupRaceKeepProfile = cleanupRaceKeepProfile;
 
 
@@ -5873,7 +5914,7 @@ function createProfile(name) {
                         contractTitle = c.title;
                     }
                 } catch (e) { console.warn('contract', e); }
-                try { pendingMode = 'race'; } catch (e) {}
+                // НЕ сбрасываем pendingMode здесь — endGame / меню сами решают
 
                 addSeasonXp(xp);
                 const levelAfter = currentPlayer.season.level;
@@ -7007,7 +7048,10 @@ function startGaragePreview(carId) {
             if (mc) mc.classList.remove('active');
             const cont = document.getElementById('game-container');
             if (cont) { while (cont.firstChild) cont.removeChild(cont.firstChild); }
-            try { if (typeof pendingMode !== 'undefined') pendingMode = 'race'; } catch (e) {}
+            try {
+                if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
+                else if (typeof pendingMode !== 'undefined') pendingMode = 'race';
+            } catch (e) {}
             window.__inRace = false;
             window.__waitingLandscape = false;
             try { document.body.classList.remove('race-mode'); } catch (e) {}
@@ -7033,50 +7077,53 @@ function startGaragePreview(carId) {
 
 
         const DIFFICULTY_CONFIG = {
+            // triggerLookahead: дистанция (юниты) когда зверь СТАРТУЕТ перебежку — меньше = внезапнее
+            // animalCrossMul: скорость перебегания (>1 чуть быстрее). Должны быть ещё НА дороге, когда подъезжаешь
+            // animalSpawnRate: интервал спавна в секундах (больше = реже)
             easy: {
                 label: '🟢 Лёгкий',
                 trackLength: 1000,
-                timeLimit: 120,
-                maxAnimals: 10,
+                timeLimit: 125,
+                maxAnimals: 14,
                 maxCars: 6,
                 maxObstacles: 12,
                 trees: 16,
-                animalSpawnRate: 2.8,
+                animalSpawnRate: 2.2,
                 hasNightZone: false,
-                triggerLookahead: 28,
-                animalCrossMul: 2.4,
-                laneChangeMul: 0.35,
-                timePenaltyMul: 0.55
+                triggerLookahead: 15,
+                animalCrossMul: 0.95,
+                timePenaltyMul: 0.75,
+                laneChangeMul: 0.4
             },
             medium: {
                 label: '🟡 Средний',
                 trackLength: 1600,
                 timeLimit: 130,
-                maxAnimals: 18,
+                maxAnimals: 22,
                 maxCars: 12,
                 maxObstacles: 24,
                 trees: 28,
-                animalSpawnRate: 1.6,
+                animalSpawnRate: 1.45,
                 hasNightZone: false,
-                triggerLookahead: 20,
-                animalCrossMul: 1.55,
-                laneChangeMul: 0.7,
-                timePenaltyMul: 0.8
+                triggerLookahead: 12,
+                animalCrossMul: 1.15,
+                timePenaltyMul: 1.0,
+                laneChangeMul: 0.75
             },
             hard: {
                 label: '🔴 Сложный',
                 trackLength: 2200,
                 timeLimit: 140,
                 maxAnimals: 32,
-                maxCars: 22,
-                maxObstacles: 45,
-                trees: 45,
-                animalSpawnRate: 0.85,
+                maxCars: 20,
+                maxObstacles: 40,
+                trees: 42,
+                animalSpawnRate: 0.95,
                 hasNightZone: false,
-                triggerLookahead: 14,
-                animalCrossMul: 1.0,
-                laneChangeMul: 1.15,
-                timePenaltyMul: 1.0
+                triggerLookahead: 9,
+                animalCrossMul: 1.4,
+                timePenaltyMul: 1.15,
+                laneChangeMul: 1.1
             }
         };
 
@@ -8433,7 +8480,21 @@ function startGaragePreview(carId) {
         // ============================================================
         let soundEngine = null;
 
-        class SoundEngine {
+        
+        window.__unlockAudio = function() {
+            try {
+                if (window.soundEngine && soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+                    soundEngine.audioCtx.resume();
+                }
+            } catch (e) {}
+            try {
+                if (window.soundEngine && soundEngine.startMusic) {
+                    // soft nudge only
+                }
+            } catch (e) {}
+        };
+
+class SoundEngine {
             constructor() {
                 this.audioCtx = null;
                 this.engineNode = null;
@@ -9052,8 +9113,9 @@ function startGaragePreview(carId) {
                 this.triggerLookahead = triggerLookahead;
                 this.animals = [];
                 this.spawnTimer = 0;
-                this.minSpawnInterval = spawnRate * 0.75;
-                this.maxSpawnInterval = spawnRate * 1.6;
+                this.spawnRate = (typeof spawnRate === 'number' && spawnRate > 0) ? spawnRate : 1.5;
+                this.minSpawnInterval = this.spawnRate * 0.75;
+                this.maxSpawnInterval = this.spawnRate * 1.6;
                 this.nextSpawnTime = this.getRandomInterval();
                 this.totalSpawned = 0;
                 this.maxAnimals = maxAnimals;
@@ -9181,8 +9243,14 @@ function startGaragePreview(carId) {
                     x: startX,
                     startX: startX,
                     endX: endX,
-                    // было 0.6–1.0с — слишком резко; теперь зависит от сложности
-                    duration: (1.15 + Math.random() * 0.55) * (this.crossMul || 1.0),
+                    // Перебежка: зверь должен быть на полосе, когда подъезжает игрок
+                    // easy ~1.1–1.4с, medium ~0.9–1.2с, hard ~0.7–1.0с
+                    duration: (function() {
+                        const base = 1.2 + Math.random() * 0.35; // 1.2–1.55 при mul=1
+                        const mul = Math.max(0.75, this.crossMul || 1.0);
+                        const sp = Math.max(0.85, Math.min(1.25, (type.speedCross || 4) / 4));
+                        return Math.max(0.65, Math.min(1.7, base / (mul * sp)));
+                    }.call(this)),
                     elapsed: 0,
                     triggered: false,
                     aliveTime: 0,
@@ -9207,7 +9275,8 @@ function startGaragePreview(carId) {
                     this.nextSpawnTime = this.getRandomInterval();
 
                     // План из Web Worker (если готов) — меньше Math.random в кадре
-                    let spawnZ = playerZ - 12 - Math.random() * 8;
+                    // Чуть впереди игрока: успеют «зарядиться» и стартовать близко
+                    let spawnZ = playerZ - (this.triggerLookahead + 4 + Math.random() * 6);
                     const plan = window.__spawnPlan;
                     if (plan && plan.length && this.totalSpawned < plan.length) {
                         const item = plan[this.totalSpawned];
@@ -9245,15 +9314,20 @@ function startGaragePreview(carId) {
             updateAnimal(animal, deltaTime, playerZ) {
                 if (!animal.triggered) {
                     const distanceAhead = playerZ - animal.z;
-                    if (distanceAhead > 0.5 && distanceAhead <= this.triggerLookahead) {
+                    // Персональный порог: ±20% от lookahead — не все стартуют в одной точке
+                    if (animal._trigDist == null) {
+                        const base = this.triggerLookahead || 12;
+                        animal._trigDist = base * (0.82 + Math.random() * 0.36);
+                    }
+                    if (distanceAhead > 0.4 && distanceAhead <= animal._trigDist) {
                         animal.triggered = true;
                         animal.mesh.visible = true;
-                        // нарастание сложности к концу трассы (не жёстко)
                         try {
                             if (typeof START_Z !== 'undefined' && typeof FINISH_Z !== 'undefined') {
                                 const prog = Math.min(1, Math.max(0, (START_Z - playerZ) / (START_Z - FINISH_Z)));
-                                const late = 1 - prog * 0.28; // к финишу до −28% к длительности
-                                animal.duration = Math.max(0.7, animal.duration * late);
+                                // к финишу чуть резче, но без «уже убежали»
+                                const late = 1 - prog * 0.12;
+                                animal.duration = Math.max(0.6, animal.duration * late);
                             }
                         } catch (e) {}
                         if (typeof showAnimalShout === 'function') {
@@ -9386,6 +9460,7 @@ function startGaragePreview(carId) {
             const carPreset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
             
             const config = DIFFICULTY_CONFIG[difficulty];
+            window.__timePenaltyMul = (config && config.timePenaltyMul != null) ? config.timePenaltyMul : 1;
             
             // Не уничтожаем существующий SoundEngine — иначе музыка умирает
             if (!soundEngine || !soundEngine.initialized) {
@@ -9518,7 +9593,7 @@ function startGaragePreview(carId) {
                     padding: 12px 20px;
                     border-radius: 10px;
                     border: 1px solid rgba(255,255,255,0.1);
-                    backdrop-filter: blur(5px);
+                    backdrop-filter: none;
                     min-width: 200px;
                     z-index: 100;
                 `;
@@ -9545,7 +9620,7 @@ function startGaragePreview(carId) {
 
             let _hudAcc = 0;
             function ensureHudRefs() {
-                if (window.__hudRefs && window.__hudRefs.timeEl && document.body.contains(window.__hudRefs.timeEl)) {
+                if (window.__hudRefs && window.__hudRefs.timeEl && window.__hudRefs.timeEl.isConnected) {
                     return window.__hudRefs;
                 }
                 window.__hudRefs = {
@@ -9737,7 +9812,8 @@ function startGaragePreview(carId) {
                     if (state === 'win') {
                         title = isLast ? '🏆 ТВОЯ ПОБЕДА' : ('✅ ТВОЯ ПОБЕДА · гл. ' + (campIdx + 1));
                         if (typeof CAMPAIGN_FINISH_LINES !== 'undefined' && campIdx >= 0 && CAMPAIGN_FINISH_LINES[campIdx]) {
-                            villainLine = CAMPAIGN_FINISH_LINES[campIdx];
+                            const fl = CAMPAIGN_FINISH_LINES[campIdx];
+                            villainLine = Array.isArray(fl) ? fl[Math.floor(Math.random() * fl.length)] : fl;
                         }
                     } else if (state !== 'win') {
                         title = '❌ ТЫ ПРОИГРАЛ';
@@ -9951,6 +10027,9 @@ function startGaragePreview(carId) {
             function endGame(state) {
                 if (gameState !== 'racing') return;
                 gameState = state;
+                // Запомнить кампанию ДО любых сбросов pendingMode
+                const wasCampaign = (typeof pendingMode !== 'undefined' && pendingMode === 'campaign') || !!window.__campaignTrackId;
+                const campaignTrackId = window.__campaignTrackId || null;
                 try { soundEngine.stopEngineSmooth(); } catch(e) {}
                 try { soundEngine._stopEngineNow(); } catch(e) {}
                 // музыку не рвём сразу — пусть доиграет на экране
@@ -9990,8 +10069,8 @@ function startGaragePreview(carId) {
                 } catch (e) { console.warn('rewards', e); }
                 window.__lastRaceRewards = raceRewards;
                 try {
-                    if (state === 'win' && pendingMode === 'campaign' && window.__campaignTrackId) {
-                        onCampaignRaceWon(window.__campaignTrackId);
+                    if (state === 'win' && wasCampaign && campaignTrackId) {
+                        onCampaignRaceWon(campaignTrackId);
                     }
                 } catch (e) { console.warn('campaign win', e); }
                 
@@ -10044,15 +10123,15 @@ function startGaragePreview(carId) {
             // ============================================================
             // ОСВЕЩЕНИЕ (реалистичный закатный/пыльный день)
             // ============================================================
-            const ambient = new THREE.AmbientLight(0x8a7a68, 0.62);
+            const ambient = new THREE.AmbientLight(0x9a8a78, 0.72);
             scene.add(ambient);
             
             // Небо — тёплый, земля — холоднее/серее
-            const hemi = new THREE.HemisphereLight(0xd4b894, 0x4a4035, 0.72);
+            const hemi = new THREE.HemisphereLight(0xe0c8a0, 0x5a4a38, 0.82);
             scene.add(hemi);
 
             // Главное солнце — ярче днём
-            const sunLight = new THREE.DirectionalLight(0xffd8a8, 2.15);
+            const sunLight = new THREE.DirectionalLight(0xffe0b8, 2.4);
             sunLight.position.set(40, 35, 15);
             sunLight.castShadow = !window.__isMobile && (quality === 'high' || quality === 'medium');
             const shadowRes = (window.__isMobile || quality !== 'high') ? 512 : 1024;
@@ -10757,7 +10836,7 @@ function startGaragePreview(carId) {
 
             // Тон карты + погода
             function applyMapAndWeather() {
-                let sky = 0xc9a878, fogC = 0xc9a878, fogNear = 40, fogFar = 170;
+                let sky = 0xd4b48a, fogC = 0xd4b48a, fogNear = 48, fogFar = 185;
                 if (mapId === 'promzona') {
                     sky = 0x4a5540; fogC = 0x4a5540; fogNear = 28; fogFar = 125;
                     if (ambient) ambient.color.setHex(0x3a4a38);
@@ -10791,11 +10870,11 @@ function startGaragePreview(carId) {
                 }
 
                 if (weatherMode === 'night') {
-                    // ярче ambient — иначе машина «пропадает» и кажется, что дергается
-                    sky = 0x0a0a1c; fogC = 0x0a0a1c; fogNear = 28; fogFar = 110;
-                    if (ambient) { ambient.color.setHex(0x2a2a48); ambient.intensity = 0.55; }
-                    if (hemi) { hemi.intensity = 0.28; hemi.color.setHex(0x4455aa); hemi.groundColor.setHex(0x111118); }
-                    if (sunLight) { sunLight.intensity = 0.15; sunLight.color.setHex(0x5566bb); }
+                    // Читаемая ночь: силуэты + фары, не «чёрный экран»
+                    sky = 0x12182a; fogC = 0x151c30; fogNear = 45; fogFar = 145;
+                    if (ambient) { ambient.color.setHex(0x3a4568); ambient.intensity = 0.85; }
+                    if (hemi) { hemi.intensity = 0.55; hemi.color.setHex(0x6677aa); hemi.groundColor.setHex(0x1a1a28); }
+                    if (sunLight) { sunLight.intensity = 0.35; sunLight.color.setHex(0x7788bb); }
                     try {
                         const cm = window.__campaignMods;
                         if (cm) {
@@ -10810,23 +10889,26 @@ function startGaragePreview(carId) {
                     scene.background = new THREE.Color(sky);
                     scene.fog.color = new THREE.Color(fogC);
                     scene.fog.near = fogNear; scene.fog.far = fogFar;
-                    // луна
                     const moon = new THREE.Mesh(
-                        new THREE.SphereGeometry(2.5, 12, 12),
-                        new THREE.MeshBasicMaterial({ color: 0xccddff })
+                        new THREE.SphereGeometry(2.8, 12, 12),
+                        new THREE.MeshBasicMaterial({ color: 0xdde8ff })
                     );
                     moon.position.set(40, 50, -80);
                     scene.add(moon);
-                    const moonLight = new THREE.DirectionalLight(0x8899cc, 0.35);
-                    moonLight.position.set(30, 40, 10);
+                    const moonLight = new THREE.DirectionalLight(0xaabbdd, 0.65);
+                    moonLight.position.set(30, 45, 10);
                     scene.add(moonLight);
+                    // мягкая заливка дороги
+                    try {
+                        const roadFill = new THREE.HemisphereLight(0x334466, 0x111118, 0.35);
+                        scene.add(roadFill);
+                    } catch (e) {}
                 } else if (weatherMode === 'rain') {
-                    // ярче дождь (было слишком тускло)
-                    sky = mapId === 'svalka' ? 0x2a3a30 : 0x4a5a58;
-                    fogC = sky; fogNear = 22; fogFar = 115;
-                    if (ambient) { ambient.intensity = 0.55; ambient.color.setHex(0x6a7a88); }
-                    if (hemi) { hemi.intensity = 0.5; }
-                    if (sunLight) { sunLight.intensity = 0.95; sunLight.color.setHex(0xaabbcc); }
+                    sky = mapId === 'svalka' ? 0x3a4a40 : 0x5a6a68;
+                    fogC = sky; fogNear = 30; fogFar = 130;
+                    if (ambient) { ambient.intensity = 0.72; ambient.color.setHex(0x7a8a98); }
+                    if (hemi) { hemi.intensity = 0.62; hemi.color.setHex(0x9aa0aa); }
+                    if (sunLight) { sunLight.intensity = 1.25; sunLight.color.setHex(0xb8c8d8); }
                     scene.background = new THREE.Color(sky);
                     scene.fog.color = new THREE.Color(fogC);
                     scene.fog.near = fogNear; scene.fog.far = fogFar;
@@ -11290,6 +11372,7 @@ function startGaragePreview(carId) {
             }
             let zPos = START_Z;
             let xPos = 0;
+            let carYOffset = 0;
             let xVelocity = 0;
             playerCar.position.set(xPos, 0, zPos);
             playerCar.userData.dynamic = true;
@@ -11742,7 +11825,15 @@ function startGaragePreview(carId) {
                 const eyeCol = def.eye != null ? def.eye : 0x44ff66;
                 const style = def.style || 'default';
 
-                // Перекраска меха / кожи
+                // Перекраска меха / кожи — ярче, чтобы босс читался на дороге
+                const furBright = new THREE.Color(furCol);
+                furBright.r = Math.min(1, furBright.r * 1.35 + 0.08);
+                furBright.g = Math.min(1, furBright.g * 1.35 + 0.08);
+                furBright.b = Math.min(1, furBright.b * 1.35 + 0.08);
+                const accBright = new THREE.Color(accCol);
+                accBright.r = Math.min(1, accBright.r * 1.25 + 0.06);
+                accBright.g = Math.min(1, accBright.g * 1.25 + 0.06);
+                accBright.b = Math.min(1, accBright.b * 1.25 + 0.06);
                 group.traverse(function(o) {
                     if (!o.isMesh || !o.material) return;
                     if (o.userData && o.userData.isEye) return;
@@ -11750,12 +11841,16 @@ function startGaragePreview(carId) {
                         o.material = o.material.clone();
                         const c = o.material.color;
                         if (!c) return;
-                        // тёмные части → accent, светлые → fur
                         const lum = (c.r + c.g + c.b) / 3;
-                        if (lum < 0.25) o.material.color.setHex(accCol);
-                        else o.material.color.setHex(furCol);
-                        o.material.roughness = 0.82;
-                        o.material.metalness = 0.05;
+                        if (lum < 0.25) o.material.color.copy(accBright);
+                        else o.material.color.copy(furBright);
+                        o.material.roughness = 0.55;
+                        o.material.metalness = 0.08;
+                        // лёгкое самосвечение — силуэт в дожде/тумане
+                        if (o.material.emissive) {
+                            o.material.emissive.copy(furBright);
+                            o.material.emissiveIntensity = 0.22;
+                        }
                     } catch (e) {}
                 });
 
@@ -11924,14 +12019,35 @@ function startGaragePreview(carId) {
                     hardhat.position.set(0, 1.12, 0.12); group.add(hardhat);
                 }
 
-                // лёгкое свечение «ауры» босса (кольцо под ногами)
+                // Аура + подсветка — босс всегда заметен
                 const aura = new THREE.Mesh(
-                    new THREE.RingGeometry(0.55, 0.85, 24),
-                    new THREE.MeshBasicMaterial({ color: trimCol, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+                    new THREE.RingGeometry(0.5, 1.05, 28),
+                    new THREE.MeshBasicMaterial({ color: trimCol, transparent: true, opacity: 0.55, side: THREE.DoubleSide })
                 );
                 aura.rotation.x = -Math.PI / 2;
-                aura.position.y = 0.04;
+                aura.position.y = 0.05;
                 group.add(aura);
+                const aura2 = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.55, 20),
+                    new THREE.MeshBasicMaterial({ color: trimCol, transparent: true, opacity: 0.22, side: THREE.DoubleSide })
+                );
+                aura2.rotation.x = -Math.PI / 2;
+                aura2.position.y = 0.04;
+                group.add(aura2);
+                try {
+                    const bossLight = new THREE.PointLight(trimCol, 1.4, 12, 2);
+                    bossLight.position.set(0, 1.4, 0.3);
+                    group.add(bossLight);
+                } catch (e) {}
+                // Контур куртки чуть ярче
+                try {
+                    jacket.traverse(function(o) {
+                        if (o.isMesh && o.material && o.material.emissive) {
+                            o.material.emissive.setHex(trimCol);
+                            o.material.emissiveIntensity = Math.max(o.material.emissiveIntensity || 0, 0.35);
+                        }
+                    });
+                } catch (e) {}
 
                 const side = Math.random() > 0.5 ? 1 : -1;
                 const startZ = zPos - 32 - Math.random() * 8;
@@ -12070,6 +12186,8 @@ function startGaragePreview(carId) {
 
             function radioSay(text) {
                 if (radioCooldown > 0) return;
+                // на узком экране / мобиле не перекрываем HUD
+                if (window.__isMobile || window.innerWidth < 700 || window.innerHeight < 420) return;
                 radioCooldown = 2.2;
                 const el = document.createElement('div');
                 el.className = 'radio-line';
@@ -12079,7 +12197,7 @@ function startGaragePreview(carId) {
             }
 
             function showStory(text) {
-                if (window.__inRace && window.innerHeight < 360) return;
+                if (window.__inRace && (window.innerHeight < 360 || (window.__isMobile && window.innerHeight < 500))) return;
                 const el = document.createElement('div');
                 el.className = 'story-plaque';
                 el.textContent = text;
@@ -12164,21 +12282,33 @@ function startGaragePreview(carId) {
             function showTimePenaltyPopup(seconds, animalName = '') {
                 const timeEl = document.getElementById('timeDisplay');
                 if (!timeEl) return;
+                if (!window.__penaltyPool) window.__penaltyPool = [];
+                let popup = null;
+                for (let i = 0; i < window.__penaltyPool.length; i++) {
+                    if (!window.__penaltyPool[i].__busy) { popup = window.__penaltyPool[i]; break; }
+                }
+                if (!popup) {
+                    popup = document.createElement('div');
+                    popup.style.cssText = 'position:fixed;color:#ff3333;font-weight:bold;font-size:18px;font-family:Segoe UI,Arial,sans-serif;pointer-events:none;z-index:200;';
+                    document.body.appendChild(popup);
+                    window.__penaltyPool.push(popup);
+                    while (window.__penaltyPool.length > 3) {
+                        const oldP = window.__penaltyPool.shift();
+                        try { oldP.remove(); } catch (e) {}
+                    }
+                }
                 const rect = timeEl.getBoundingClientRect();
-                const popup = document.createElement('div');
-                const text = animalName ? `${animalName}: -${seconds}с` : `-${seconds}с`;
-                popup.textContent = text;
-                popup.style.cssText = `
-                    position: fixed; left: ${rect.right + 10}px; top: ${rect.top - 2}px;
-                    color: #ff3333; font-weight: bold; font-size: 18px;
-                    font-family: 'Segoe UI', Arial, sans-serif;
-                    pointer-events: none; z-index: 200;
-                    animation: timePenaltyFloat 1s ease-out forwards;
-                `;
-                document.body.appendChild(popup);
-                setTimeout(() => popup.remove(), 1000);
+                popup.textContent = animalName ? (animalName + ': -' + seconds + 'с') : ('-' + seconds + 'с');
+                popup.style.left = (rect.right + 10) + 'px';
+                popup.style.top = (rect.top - 2) + 'px';
+                popup.style.opacity = '1';
+                popup.style.animation = 'none';
+                void popup.offsetWidth;
+                popup.style.animation = 'timePenaltyFloat 1s ease-out forwards';
+                popup.__busy = true;
+                setTimeout(function(){ popup.__busy = false; popup.style.opacity = '0'; }, 1000);
                 timeEl.classList.add('time-hit-flash');
-                setTimeout(() => timeEl.classList.remove('time-hit-flash'), 350);
+                setTimeout(function(){ timeEl.classList.remove('time-hit-flash'); }, 350);
             }
 
             function handleObstacleHit(obs) {
@@ -12346,7 +12476,7 @@ function startGaragePreview(carId) {
             // ============================================================
             const animalSpawner = new AnimalSpawner(
                 scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD,
-                config.maxAnimals, config.animalSpawnRate
+                config.maxAnimals, config.animalSpawnRate, config.animalCrossMul
             );
             animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
             try {
@@ -12366,7 +12496,11 @@ function startGaragePreview(carId) {
                             if (animalSpawner.shufflePool) animalSpawner.shufflePool();
                         } catch (e) {}
                     }
-                    if (cm.animalMul && animalSpawner.spawnRate) animalSpawner.spawnRate *= cm.animalMul;
+                    if (cm.animalMul && animalSpawner.spawnRate) {
+                        animalSpawner.spawnRate *= cm.animalMul;
+                        animalSpawner.minSpawnInterval = animalSpawner.spawnRate * 0.75;
+                        animalSpawner.maxSpawnInterval = animalSpawner.spawnRate * 1.6;
+                    }
                     if (cm.animalMul && animalSpawner.maxAnimals) animalSpawner.maxAnimals = Math.ceil(animalSpawner.maxAnimals * cm.animalMul);
                     if (cm.sky != null && scene.background && scene.background.isColor) scene.background.setHex(cm.sky);
                     if (cm.fog != null && scene.fog) {
@@ -12408,20 +12542,20 @@ function startGaragePreview(carId) {
             // ============================================================
             // ФАРЫ
             // ============================================================
-            const headlight1 = new THREE.SpotLight(0xfff0dd, 0);
-            headlight1.angle = 0.55;
-            headlight1.penumbra = 0.4;
-            headlight1.decay = 1.2;
-            headlight1.distance = 75;
+            const headlight1 = new THREE.SpotLight(0xfff5e8, 0);
+            headlight1.angle = 0.72;
+            headlight1.penumbra = 0.55;
+            headlight1.decay = 1.0;
+            headlight1.distance = 95;
             scene.add(headlight1);
             headlight1.target = new THREE.Object3D();
             scene.add(headlight1.target);
 
-            const headlight2 = new THREE.SpotLight(0xfff0dd, 0);
-            headlight2.angle = 0.55;
-            headlight2.penumbra = 0.4;
-            headlight2.decay = 1.2;
-            headlight2.distance = 75;
+            const headlight2 = new THREE.SpotLight(0xfff5e8, 0);
+            headlight2.angle = 0.72;
+            headlight2.penumbra = 0.55;
+            headlight2.decay = 1.0;
+            headlight2.distance = 95;
             scene.add(headlight2);
             headlight2.target = new THREE.Object3D();
             scene.add(headlight2.target);
@@ -12604,7 +12738,7 @@ function startGaragePreview(carId) {
                     }
                 }
 
-                playerCar.position.set(xPos, 0, zPos);
+                playerCar.position.set(xPos, carYOffset, zPos);
                 // лёгкий self-light кузова ночью
                 if (isNight && playerCar.userData && !playerCar.userData._nightEmissive) {
                     playerCar.traverse(function(o) {
@@ -12618,30 +12752,34 @@ function startGaragePreview(carId) {
                 playerCar.rotation.z = lerp(playerCar.rotation.z, -xVelocity * 0.028, 0.08);
 
                 headlight1.position.copy(playerCar.position);
-                headlight1.position.x -= 0.3;
-                headlight1.position.y += 0.3;
-                headlight1.position.z -= 0.8;
+                headlight1.position.x -= 0.35;
+                headlight1.position.y += 0.45;
+                headlight1.position.z -= 0.9;
                 headlight1.target.position.copy(playerCar.position);
-                headlight1.target.position.z -= 22;
+                headlight1.target.position.y = 0.2;
+                headlight1.target.position.z -= 28;
                 
                 headlight2.position.copy(playerCar.position);
-                headlight2.position.x += 0.3;
-                headlight2.position.y += 0.3;
-                headlight2.position.z -= 0.8;
+                headlight2.position.x += 0.35;
+                headlight2.position.y += 0.45;
+                headlight2.position.z -= 0.9;
                 headlight2.target.position.copy(playerCar.position);
-                headlight2.target.position.z -= 22;
+                headlight2.target.position.y = 0.2;
+                headlight2.target.position.z -= 28;
 
                 // Освещение: выставляем intensity каждый кадр дёшево, небо НЕ трогаем
                 if (weatherMode === 'night') {
-                    nightOverlay.material.opacity = 0.04;
-                    headlight1.intensity = 3.2;
-                    headlight2.intensity = 3.2;
+                    if (nightOverlay && nightOverlay.material) nightOverlay.material.opacity = 0.02;
+                    headlight1.intensity = 7.5;
+                    headlight2.intensity = 7.5;
+                    headlight1.distance = 100;
+                    headlight2.distance = 100;
                 } else if (weatherMode === 'rain') {
-                    nightOverlay.material.opacity = 0;
-                    headlight1.intensity = 1.4;
-                    headlight2.intensity = 1.4;
+                    if (nightOverlay && nightOverlay.material) nightOverlay.material.opacity = 0;
+                    headlight1.intensity = 2.2;
+                    headlight2.intensity = 2.2;
                 } else {
-                    nightOverlay.material.opacity = 0;
+                    if (nightOverlay && nightOverlay.material) nightOverlay.material.opacity = 0;
                     headlight1.intensity = 0;
                     headlight2.intensity = 0;
                 }
@@ -12762,27 +12900,48 @@ function startGaragePreview(carId) {
                             obs.active = false;
                             obs.mesh.visible = false;
                         } else if (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') {
-                            // Скользкое пятно — масло / кислота / лёд / смола
-                            const slideMul = obs.type === 'acid' ? 1.6 : (obs.type === 'ice' ? 1.8 : (obs.type === 'tar' ? 1.3 : 1.4));
-                            oilSlideTimer = 1.2 * slideMul;
+                            // Разные эффекты поверхностей
                             stats.oilHits++;
-                            if (Math.random() < 0.4 && RADIO_LINES.oil) radioSay(RADIO_LINES.oil[0]);
-                            speed *= obs.type === 'tar' ? 0.7 : 0.85;
-                            xVelocity += (Math.random() - 0.5) * 0.8 * slideMul;
-                            soundEngine.playCrashSound(0.15);
                             const labels = { oil: 'Масло!', acid: 'Кислота!', ice: 'Гололёд!', tar: 'Смола!' };
-                            showTimePenaltyPopup(obs.type === 'acid' ? 2 : 1, labels[obs.type] || 'Скользко!');
+                            if (obs.type === 'ice') {
+                                // сильное скольжение по X, слабое замедление
+                                oilSlideTimer = 1.8;
+                                xVelocity += (Math.random() - 0.5) * 1.6;
+                                speed *= 0.92;
+                                showTimePenaltyPopup(1, labels.ice);
+                            } else if (obs.type === 'acid') {
+                                // замедление + штраф времени
+                                oilSlideTimer = 0.9;
+                                speed *= 0.55;
+                                raceTime += 1.5;
+                                xVelocity += (Math.random() - 0.5) * 0.4;
+                                showTimePenaltyPopup(2.5, labels.acid);
+                            } else if (obs.type === 'tar') {
+                                // торможение + потеря управления
+                                oilSlideTimer = 1.5;
+                                speed *= 0.45;
+                                xVelocity *= 0.3;
+                                showTimePenaltyPopup(1.5, labels.tar);
+                            } else {
+                                // oil — классика
+                                oilSlideTimer = 1.4;
+                                speed *= 0.82;
+                                xVelocity += (Math.random() - 0.5) * 0.9;
+                                showTimePenaltyPopup(1, labels.oil);
+                            }
+                            if (Math.random() < 0.35 && RADIO_LINES.oil) radioSay(RADIO_LINES.oil[Math.floor(Math.random() * RADIO_LINES.oil.length)] || RADIO_LINES.oil[0]);
+                            soundEngine.playCrashSound(0.15);
                             obs.mesh.scale.multiplyScalar(0.92);
                             if (obs.mesh.scale.x < 0.5) {
                                 obs.active = false;
                                 obs.mesh.visible = false;
                             }
                         } else {
-                            // Кочка + искры
+                            // Кочка + искры (carYOffset — update не затирает прыжок)
                             speed *= 0.55;
-                            playerCar.position.y = 0.22;
+                            carYOffset = 0.28;
                             shakeTime = 0.15;
-                            setTimeout(() => { if (playerCar) playerCar.position.y = 0; }, 140);
+                            setTimeout(function(){ carYOffset = 0; }, 180);
                             soundEngine.playCrashSound(0.2);
                             showTimePenaltyPopup(1.5, 'Кочка');
                             for (let s = 0; s < 6; s++) {
@@ -12897,7 +13056,7 @@ function startGaragePreview(carId) {
                         boss.mesh.position.z = boss.z;
                         boss.mesh.position.y = 0.05 + Math.abs(Math.sin(boss.phase * 7)) * 0.05;
                         // голова медведя в +Z — на игрока; лёгкий поворот к полосе
-                        boss.mesh.rotation.y = (xPos - boss.x) * 0.12;
+                        boss.mesh.rotation.y = 0; // лицом к игроку (+Z)
                     }
 
                     // Крик
@@ -13188,8 +13347,7 @@ function startGaragePreview(carId) {
             let animationId = null;
 
             let _framesAfterRace = 0;
-            let _renderSkip = 0;
-            const _perfMobile = !!(window.__isMobile);
+                        const _perfMobile = !!(window.__isMobile);
 
             function animate(currentTime) {
                 animationId = requestAnimationFrame(animate);
@@ -13320,9 +13478,9 @@ function startGaragePreview(carId) {
                 const pauseBtn = document.getElementById('hud-menu-btn');
                 const pauseOnly = document.getElementById('hud-pause-btn');
                 if (pauseOnly) {
-                    pauseOnly.style.display = 'block';
-                    pauseOnly.style.visibility = 'visible';
-                    pauseOnly.style.opacity = '1';
+                    pauseOnly.style.display = '';
+                    pauseOnly.style.visibility = '';
+                    pauseOnly.style.opacity = '';
                 }
                 if (pauseBtn) pauseBtn.style.display = 'block';
             } catch (e) {}
@@ -13952,10 +14110,14 @@ function showLoreScreen(quality, difficulty) {
                         if (window.Notify) Notify.warn('Мультиплеер', 'Режим в разработке. Загляни позже.');
                         else alert('Мультиплеер скоро');
                     } else if (m === 'race' && typeof beginRaceFlow === 'function') {
-                        if (typeof pendingMode !== 'undefined') window.__campaignMods = null; window.__campaignTrackId = null; window.__campaignIdx = null; pendingMode = 'race';
-                        window.__campaignIdx = null;
-                        window.__campaignTrackId = null;
-                        window.__forceDifficulty = null;
+                        if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
+                        else {
+                            window.__campaignMods = null;
+                            window.__campaignTrackId = null;
+                            window.__campaignIdx = null;
+                            window.__forceDifficulty = null;
+                            try { pendingMode = 'race'; } catch (e) {}
+                        }
                         beginRaceFlow();
                     } else if (m === 'garage' && typeof openGarage === 'function') {
                         openGarage();
