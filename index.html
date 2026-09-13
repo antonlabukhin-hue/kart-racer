@@ -2677,7 +2677,18 @@
             .profile-btn, .garage-btn, .difficulty-btn, .map-card, .shop-car-btn, .lore-btn {
                 min-height: 44px !important;
             }
+            /* пауза только на узких телефонах прячем — на ПК/планшете видна */
+            body.race-mode #hud-pause-btn {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            z-index: 140 !important;
+        }
+        @media screen and (max-width: 700px) and (pointer: coarse) and (orientation: landscape) {
+            /* на узком landscape телефон — пауза через Меню */
             body.race-mode #hud-pause-btn { display: none !important; }
+        }
         }
 
         /* ---- Finish / modal buttons full width on narrow ---- */
@@ -2738,7 +2749,6 @@
         #map-select-screen .content,
         #car-select-screen .content,
         #shop-screen .content,
-        #garage-screen .content,
         #rewards-screen .content,
         #events-screen .content,
         #campaign-screen .content,
@@ -3126,20 +3136,123 @@
 
         /* ---------- GARAGE ---------- */
         #garage-screen .content {
-            width: min(640px, 96vw);
-            max-width: min(640px, 96vw);
-            grid-template-rows: auto auto auto 1fr auto;
+            width: min(640px, 96vw) !important;
+            max-width: min(640px, 96vw) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 12px) !important;
+            padding: 12px !important;
+            grid-template-rows: none !important;
+        }
+        #garage-canvas-wrap {
+            width: 100% !important;
+            height: min(28vh, 220px) !important;
+            min-height: 160px !important;
+            flex-shrink: 0 !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            background: #0e0e16 !important;
+        }
+        #garage-canvas-wrap canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block !important;
+        }
+        .garage-tabs {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+            position: relative !important;
+            z-index: 5 !important;
+        }
+        .garage-tab {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative !important;
+            z-index: 6 !important;
         }
         .garage-panel {
-            max-height: min(42vh, 320px);
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            min-height: 0;
+            display: none !important;
+            text-align: left !important;
+            margin-top: 4px !important;
+            max-height: none !important;
+            min-height: 80px !important;
+            overflow: visible !important;
+            flex-shrink: 0 !important;
+            position: relative !important;
+            z-index: 4 !important;
+            pointer-events: auto !important;
+        }
+        .garage-panel.active {
+            display: block !important;
+        }
+        #garage-panel-parts .color-swatches {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            margin: 8px 0 !important;
+            justify-content: flex-start !important;
+        }
+        #garage-panel-parts .color-swatch {
+            width: 28px !important;
+            height: 28px !important;
+            border-radius: 50% !important;
+            border: 2px solid rgba(255,255,255,0.25) !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+        }
+        #garage-panel-parts .color-swatch.active {
+            border-color: #ffdd00 !important;
+            box-shadow: 0 0 0 2px rgba(255,220,0,0.35) !important;
+        }
+        #garage-panel-parts .part-row {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 8px 10px !important;
+            margin: 4px 0 !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(255,255,255,0.12) !important;
+            background: rgba(255,255,255,0.04) !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            font-size: 13px !important;
+            color: #eee !important;
+        }
+        #garage-panel-parts .part-row.owned {
+            border-color: rgba(255,220,0,0.35) !important;
+            background: rgba(255,220,0,0.08) !important;
+        }
+        #garage-panel-parts .part-row:hover {
+            border-color: rgba(255,220,0,0.5) !important;
+        }
+        .trophy-grid, .ach-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+            gap: 8px !important;
+            pointer-events: auto !important;
+        }
+        .trophy-slot, .ach-chip {
+            pointer-events: auto !important;
+            cursor: pointer !important;
         }
         #garage-car-list {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 8px;
+        }
+        #garage-car-pick {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
         }
 
         /* ---------- CAMPAIGN ---------- */
@@ -3201,6 +3314,70 @@
 
         @media screen and (orientation: landscape) and (max-height: 360px) {
             #main-menu-screen .menu-hero { display: none; }
+        }
+
+
+        /* --- Difficulty polish: hero fills column, less empty dark --- */
+        #difficulty-screen .content {
+            width: min(920px, 96vw) !important;
+            max-width: min(920px, 96vw) !important;
+            padding: 0 !important;
+            gap: 0 !important;
+            overflow: hidden !important;
+            align-items: stretch !important;
+        }
+        @media screen and (orientation: landscape) {
+            #difficulty-screen .content {
+                grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.9fr) !important;
+                grid-template-rows: 1fr !important;
+                grid-template-areas: "hero main" !important;
+                min-height: min(420px, 78vh) !important;
+                max-height: min(520px, 88vh) !important;
+            }
+            #difficulty-screen .diff-hero {
+                grid-area: hero !important;
+                width: 100% !important;
+                height: 100% !important;
+                max-height: none !important;
+                min-height: 100% !important;
+                aspect-ratio: unset !important;
+                object-fit: cover !important;
+                object-position: center center !important;
+                border-radius: 14px 0 0 14px !important;
+                display: block !important;
+            }
+            #difficulty-screen .diff-main {
+                grid-area: main !important;
+                padding: 14px 16px 12px !important;
+                gap: 8px !important;
+                justify-content: center !important;
+                align-content: center !important;
+                box-sizing: border-box !important;
+            }
+        }
+        @media screen and (orientation: portrait), screen and (max-width: 700px) {
+            #difficulty-screen .content {
+                grid-template-columns: 1fr !important;
+                grid-template-areas:
+                    "hero"
+                    "main" !important;
+                min-height: 0 !important;
+            }
+            #difficulty-screen .diff-hero {
+                width: 100% !important;
+                height: auto !important;
+                max-height: 32vh !important;
+                aspect-ratio: 16 / 9 !important;
+                object-fit: cover !important;
+                border-radius: 14px 14px 0 0 !important;
+            }
+            #difficulty-screen .diff-main {
+                padding: 10px 12px 12px !important;
+            }
+        }
+        /* только одна пара Назад/Меню — внутри diff-main */
+        #difficulty-screen .diff-nav {
+            margin-top: 4px !important;
         }
 
         body.race-mode #hud-pause-btn { display: block !important; }
@@ -4758,8 +4935,13 @@ function createProfile(name) {
             if (!Array.isArray(p.campaign.completed)) p.campaign.completed = [];
             if (p.season.chips == null) p.season.chips = 0;
             if (p.season.gum == null) p.season.gum = 0;
-            if (!p.carLoadout) p.carLoadout = { parts: [], paint: 'stock' };
+            if (!p.carLoadout) p.carLoadout = { parts: [], paint: 'stock', paintByCar: {} };
             if (!p.carLoadout.parts) p.carLoadout.parts = [];
+            if (!p.carLoadout.paintByCar || typeof p.carLoadout.paintByCar !== 'object') p.carLoadout.paintByCar = {};
+            // миграция: общий paint → текущей машине
+            if (p.carLoadout.paint && p.preferredCar && !p.carLoadout.paintByCar[p.preferredCar]) {
+                p.carLoadout.paintByCar[p.preferredCar] = p.carLoadout.paint;
+            }
             if (!p.trophies) p.trophies = {};
             return p;
         }
@@ -5734,6 +5916,10 @@ function createProfile(name) {
             window.__forcePBR = true;
             if (!currentPlayer) return;
             ensureProfileFields(currentPlayer);
+            // Нива — убрать багажник на крышу из лоадаута
+            if (currentPlayer.preferredCar === 'kirpich' && currentPlayer.carLoadout && Array.isArray(currentPlayer.carLoadout.parts)) {
+                currentPlayer.carLoadout.parts = currentPlayer.carLoadout.parts.filter(function(id){ return id !== 'roof_rack'; });
+            }
             const gs = document.getElementById('garage-screen');
             if (!gs) return;
             gs.classList.add('active');
@@ -5748,25 +5934,59 @@ function createProfile(name) {
             const fill = document.getElementById('garage-season-fill');
             if (fill) fill.style.width = Math.min(100, (se.xp / need) * 100) + '%';
 
-            // tabs
-            document.querySelectorAll('.garage-tab').forEach(tab => {
-                tab.onclick = () => {
-                    document.querySelectorAll('.garage-tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.garage-panel').forEach(p => p.classList.remove('active'));
+            // tabs — всегда переназначаем, панели гарантированно переключаются
+            document.querySelectorAll('.garage-tab').forEach(function(tab) {
+                tab.onclick = function(ev) {
+                    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+                    document.querySelectorAll('.garage-tab').forEach(function(t) { t.classList.remove('active'); });
+                    document.querySelectorAll('.garage-panel').forEach(function(p) { p.classList.remove('active'); });
                     tab.classList.add('active');
-                    const panel = document.getElementById('garage-panel-' + tab.dataset.gtab);
-                    if (panel) panel.classList.add('active');
-                    if (tab.dataset.gtab === 'parts') startGaragePreview(currentPlayer.preferredCar || 'cheburashka');
+                    const key = tab.getAttribute('data-gtab') || tab.dataset.gtab;
+                    const panel = document.getElementById('garage-panel-' + key);
+                    if (panel) {
+                        panel.classList.add('active');
+                        panel.style.display = 'block';
+                    }
+                    document.querySelectorAll('.garage-panel').forEach(function(p) {
+                        if (!p.classList.contains('active')) p.style.display = 'none';
+                    });
+                    if (key === 'parts') {
+                        try { startGaragePreview(currentPlayer.preferredCar || 'cheburashka'); } catch (e) {}
+                        try { renderGaragePartsPanel(); } catch (e) { console.warn('parts', e); }
+                    }
+                    if (key === 'trophies') {
+                        try { renderGarageTrophies(); } catch (e) { console.warn('trophies', e); }
+                    }
+                    if (key === 'achs') {
+                        const achBox = document.getElementById('garage-achs');
+                        if (achBox && typeof ACHIEVEMENTS !== 'undefined') {
+                            achBox.innerHTML = ACHIEVEMENTS.map(function(a) {
+                                const on = !!(currentPlayer.achievements && currentPlayer.achievements[a.id]);
+                                return '<span class="ach-chip ' + (on ? 'on' : '') + '" title="' + (a.desc || '') + '">' + (on ? '✓ ' : '🔒 ') + a.name + '</span>';
+                            }).join('');
+                        }
+                    }
                 };
             });
 
-            renderGaragePartsPanel();
-            renderGarageTrophies();
+            // стартовая вкладка — Кастом
+            document.querySelectorAll('.garage-tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.garage-panel').forEach(function(p) {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            });
+            const partsTab = document.querySelector('.garage-tab[data-gtab="parts"]');
+            const partsPanel = document.getElementById('garage-panel-parts');
+            if (partsTab) partsTab.classList.add('active');
+            if (partsPanel) { partsPanel.classList.add('active'); partsPanel.style.display = 'block'; }
+
+            try { renderGaragePartsPanel(); } catch (e) { console.warn('renderGaragePartsPanel', e); }
+            try { renderGarageTrophies(); } catch (e) { console.warn('renderGarageTrophies', e); }
             const achBox = document.getElementById('garage-achs');
-            if (achBox) {
-                achBox.innerHTML = ACHIEVEMENTS.map(a => {
-                    const on = !!currentPlayer.achievements[a.id];
-                    return '<span class="ach-chip ' + (on?'on':'') + '" title="' + a.desc + '">' + (on?'✓ ':'🔒 ') + a.name + '</span>';
+            if (achBox && typeof ACHIEVEMENTS !== 'undefined') {
+                achBox.innerHTML = ACHIEVEMENTS.map(function(a) {
+                    const on = !!(currentPlayer.achievements && currentPlayer.achievements[a.id]);
+                    return '<span class="ach-chip ' + (on ? 'on' : '') + '" title="' + (a.desc || '') + '">' + (on ? '✓ ' : '🔒 ') + a.name + '</span>';
                 }).join('');
             }
 
@@ -5822,9 +6042,29 @@ function createProfile(name) {
             }
         }
 
-        function renderGaragePartsPanel() {
+        
+        function getPaintForCar(carId) {
+            if (!currentPlayer) return 'stock';
+            ensureProfileFields(currentPlayer);
+            const lo = currentPlayer.carLoadout;
+            const id = carId || currentPlayer.preferredCar || 'cheburashka';
+            if (lo.paintByCar && lo.paintByCar[id]) return lo.paintByCar[id];
+            return lo.paint || 'stock';
+        }
+        function setPaintForCar(carId, paintId) {
+            if (!currentPlayer) return;
+            ensureProfileFields(currentPlayer);
+            const id = carId || currentPlayer.preferredCar || 'cheburashka';
+            if (!currentPlayer.carLoadout.paintByCar) currentPlayer.carLoadout.paintByCar = {};
+            currentPlayer.carLoadout.paintByCar[id] = paintId;
+            currentPlayer.carLoadout.paint = paintId; // совместимость
+        }
+
+function renderGaragePartsPanel() {
             const box = document.getElementById('garage-panel-parts');
             if (!box || !currentPlayer) return;
+            box.classList.add('active');
+            box.style.display = 'block';
             ensureProfileFields(currentPlayer);
             const owned = currentPlayer.carLoadout.parts || [];
             let html = '<div style="font-size:11px;color:#888;margin-bottom:6px;">Наведи — примерка · клик — купить/снять · фишки: ' + currentPlayer.season.chips + '</div>';
@@ -5832,7 +6072,7 @@ function createProfile(name) {
             CAR_PAINTS.forEach(p => {
                 const col = p.color != null ? p.color : (CAR_PRESETS[currentPlayer.preferredCar]||{}).color || 0xff2200;
                 const hex = '#' + (col >>> 0).toString(16).padStart(6, '0');
-                const active = currentPlayer.carLoadout.paint === p.id ? ' active' : '';
+                const active = getPaintForCar(currentPlayer.preferredCar || 'cheburashka') === p.id ? ' active' : '';
                 html += '<div class="color-swatch' + active + '" data-paint="' + p.id + '" style="background:' + hex + '" title="' + p.name + (p.price?(' 🪙'+p.price):' бесплатно') + '"></div>';
             });
             html += '</div>';
@@ -5863,13 +6103,14 @@ function createProfile(name) {
             const p = CAR_PAINTS.find(x => x.id === paintId);
             if (!p || !currentPlayer) return;
             ensureProfileFields(currentPlayer);
-            if (currentPlayer.carLoadout.paint === paintId) return;
+            const carId = currentPlayer.preferredCar || 'cheburashka';
+            if (getPaintForCar(carId) === paintId) return;
             if (p.price > 0 && currentPlayer.season.chips < p.price) {
                 if (window.Notify) Notify.warn('Мало фишек', 'Нужно 🪙' + p.price);
                 return;
             }
             if (p.price > 0) currentPlayer.season.chips -= p.price;
-            currentPlayer.carLoadout.paint = paintId;
+            setPaintForCar(carId, paintId);
             saveCurrentPlayer();
             if (window.Notify) Notify.success('🎨 Покраска', p.name);
             renderGaragePartsPanel();
@@ -5933,8 +6174,9 @@ function createProfile(name) {
         function applyGarageLoadoutVisual() {
             if (!currentPlayer || !window.__garageCar) return;
             ensureProfileFields(currentPlayer);
-            const paint = CAR_PAINTS.find(x => x.id === currentPlayer.carLoadout.paint) || CAR_PAINTS[0];
-            const base = (CAR_PRESETS[currentPlayer.preferredCar]||{}).color || 0xff2200;
+            const carIdPaint = currentPlayer.preferredCar || 'cheburashka';
+            const paint = CAR_PAINTS.find(x => x.id === getPaintForCar(carIdPaint)) || CAR_PAINTS[0];
+            const base = (CAR_PRESETS[carIdPaint]||{}).color || 0xff2200;
             const col = paint.color != null ? paint.color : base;
             window.__garageCar.traverse(o => {
                 if (o.isMesh && o.userData && o.userData.bodyPaint) {
@@ -5950,7 +6192,6 @@ function createProfile(name) {
                     const mesh = window.__garageParts[id];
                     if (!mesh) return;
                     if (id === 'xenon') { mesh.visible = false; return; }
-                    // У Нивы нет багажника на крышу — джип
                     if (isNiva && id === 'roof_rack') { mesh.visible = false; return; }
                     mesh.visible = currentPlayer.carLoadout.parts.includes(id);
                 });
@@ -6171,12 +6412,13 @@ function createProfile(name) {
                 trunk.userData.bodyPaint = true; group.add(trunk);
             }
             // Кабина / стекла
-            const cabinH = isJeep ? 0.55 : 0.4;
+            const cabinH = isJeep ? 0.58 : 0.4;
             const cabin = new THREE_REF.Mesh(
-                new THREE_REF.BoxGeometry(bodyW * 0.82, cabinH, isJeep ? 1.1 : 0.95),
+                new THREE_REF.BoxGeometry(bodyW * 0.82, cabinH, isJeep ? 0.95 : 0.95),
                 isJeep ? glassMat.clone() : glassMat
             );
-            cabin.position.set(0, bodyY + bodyH * 0.55 + cabinH * 0.45, isSport ? 0.1 : 0.05);
+            // Нива: кабина ближе к центру, без «седанного» заднего свеса
+            cabin.position.set(0, bodyY + bodyH * 0.55 + cabinH * 0.45, isJeep ? -0.05 : (isSport ? 0.1 : 0.05));
             if (isJeep) { cabin.material.opacity = 0.35; cabin.material.color.setHex(0x334455); }
             group.add(cabin);
             // Крыша (непрозрачная полоса)
@@ -6380,25 +6622,24 @@ function createProfile(name) {
                     stripe.position.set(side * bodyW * 0.51, bodyY + 0.05, 0);
                     group.add(stripe);
                 });
-                // Вертикальные задние фонари «Волга» (высокие, красные)
+                // Горизонтальные задние фонари «Волга» (широкие, красные + янтарь сбоку)
                 [-0.48, 0.48].forEach(function(x) {
                     const tlM = tailMat.clone();
                     tlM.emissiveIntensity = 1.8;
-                    const tallStop = new THREE_REF.Mesh(
-                        new THREE_REF.BoxGeometry(0.12, 0.42, 0.1),
+                    const stop = new THREE_REF.Mesh(
+                        new THREE_REF.BoxGeometry(0.32, 0.12, 0.08),
                         tlM
                     );
-                    tallStop.position.set(x * (bodyW / 1.15), 0.58, bodyL * 0.53);
-                    tallStop.userData.isLight = true;
-                    group.add(tallStop);
-                    // нижняя янтарная секция поворотника
+                    stop.position.set(x * (bodyW / 1.15), 0.52, bodyL * 0.53);
+                    stop.userData.isLight = true;
+                    group.add(stop);
                     const amber = new THREE_REF.Mesh(
-                        new THREE_REF.BoxGeometry(0.12, 0.12, 0.09),
+                        new THREE_REF.BoxGeometry(0.12, 0.12, 0.08),
                         new THREE_REF.MeshStandardMaterial({
                             color: 0xffaa00, emissive: 0xff8800, emissiveIntensity: 0.9, roughness: 0.4
                         })
                     );
-                    amber.position.set(x * (bodyW / 1.15), 0.32, bodyL * 0.53);
+                    amber.position.set(x * (bodyW / 1.15 + 0.12), 0.52, bodyL * 0.53);
                     amber.userData.isLight = true;
                     group.add(amber);
                 });
@@ -6460,6 +6701,8 @@ function createProfile(name) {
             );
             crate.position.set(0, roofTopY + 0.22, cabin.position.z); roofRack.add(crate);
             roofRack.visible = false; group.add(roofRack); parts.roof_rack = roofRack;
+            // Нива — джип, багажник на крышу не ставим (меш не показываем никогда)
+            if (isJeep) { roofRack.visible = false; delete parts.roof_rack; }
 
             const lip = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.95, 0.07, 0.26), partBlack.clone());
             lip.position.set(0, 0.18, -bodyL * 0.55); lip.visible = false; group.add(lip); parts.lip = lip;
@@ -8456,7 +8699,9 @@ function startGaragePreview(carId) {
                         this.isMusicPlaying = true;
                         return;
                     }
+                    // флаг true после прошлого заезда, но audio на паузе — перезапуск
                     if (this.isMusicPlaying && this.currentMusicSource) return;
+                    this.isMusicPlaying = false;
                     // остановить WebAudio-копию, чтобы не двоилось
                     try {
                         if (this.currentMusicSource) {
@@ -9149,31 +9394,46 @@ function startGaragePreview(carId) {
                 window.soundEngine = soundEngine;
             }
             
-            // Гарантированно запускаем музыку (ночь/дождь тоже)
+            // Гарантированно запускаем музыку на КАЖДОМ заезде (в т.ч. 2-я трасса компании)
             soundEngine.musicStarted = true;
-            const ensureMusic = () => {
-                if (!soundEngine || !soundEngine.audioCtx) return;
-                const run = () => {
-                    // если флаг висит, а источника нет — сбросить и перезапустить
-                    if (soundEngine.isMusicPlaying && !soundEngine.currentMusicSource) {
+            soundEngine.enabled = true;
+            const ensureMusic = function() {
+                if (!soundEngine) return;
+                try {
+                    // сброс «ложного» playing после паузы/финиша предыдущего заезда
+                    const htmlPaused = !soundEngine.raceAudio || soundEngine.raceAudio.paused;
+                    const noWA = !soundEngine.currentMusicSource && !soundEngine.musicInterval;
+                    if (soundEngine.isMusicPlaying && htmlPaused && noWA) {
                         soundEngine.isMusicPlaying = false;
                     }
-                    if (!soundEngine.isMusicPlaying) {
-                        soundEngine.startMusic();
+                    const run = function() {
+                        try {
+                            if (soundEngine.startRaceMusicHTML) soundEngine.startRaceMusicHTML();
+                        } catch (e) {}
+                        try {
+                            if (soundEngine.startMusic) soundEngine.startMusic();
+                        } catch (e) {}
+                        // если HTML5 на паузе — play ещё раз
+                        try {
+                            if (soundEngine.raceAudio && soundEngine.raceAudio.paused) {
+                                soundEngine.isMusicPlaying = false;
+                                const p = soundEngine.raceAudio.play();
+                                if (p && p.then) p.then(function(){ soundEngine.isMusicPlaying = true; }).catch(function(){});
+                            }
+                        } catch (e) {}
+                    };
+                    if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+                        soundEngine.audioCtx.resume().then(run).catch(run);
+                    } else {
+                        run();
                     }
-                };
-                if (soundEngine.audioCtx.state === 'suspended') {
-                    soundEngine.audioCtx.resume().then(run).catch(run);
-                } else {
-                    run();
-                }
+                } catch (e) { console.warn('ensureMusic', e); }
             };
             ensureMusic();
-            // Повтор через 0.5с и 1.5с — если MP3 ещё грузился
-            setTimeout(ensureMusic, 500);
-            setTimeout(ensureMusic, 1500);
-            // Любой жест во время гонки тоже поднимает аудио
-            const onceMusic = () => { ensureMusic(); };
+            setTimeout(ensureMusic, 400);
+            setTimeout(ensureMusic, 1200);
+            setTimeout(ensureMusic, 2500);
+            const onceMusic = function() { ensureMusic(); };
             document.addEventListener('keydown', onceMusic, { once: true });
             document.addEventListener('pointerdown', onceMusic, { once: true });
 
@@ -9784,15 +10044,15 @@ function startGaragePreview(carId) {
             // ============================================================
             // ОСВЕЩЕНИЕ (реалистичный закатный/пыльный день)
             // ============================================================
-            const ambient = new THREE.AmbientLight(0x6b5a48, 0.45);
+            const ambient = new THREE.AmbientLight(0x8a7a68, 0.62);
             scene.add(ambient);
             
             // Небо — тёплый, земля — холоднее/серее
-            const hemi = new THREE.HemisphereLight(0xc4a574, 0x3d3428, 0.55);
+            const hemi = new THREE.HemisphereLight(0xd4b894, 0x4a4035, 0.72);
             scene.add(hemi);
 
-            // Главное солнце — низкое, жёсткие тени, тёплый оттенок
-            const sunLight = new THREE.DirectionalLight(0xffc88a, 1.85);
+            // Главное солнце — ярче днём
+            const sunLight = new THREE.DirectionalLight(0xffd8a8, 2.15);
             sunLight.position.set(40, 35, 15);
             sunLight.castShadow = !window.__isMobile && (quality === 'high' || quality === 'medium');
             const shadowRes = (window.__isMobile || quality !== 'high') ? 512 : 1024;
@@ -10497,7 +10757,7 @@ function startGaragePreview(carId) {
 
             // Тон карты + погода
             function applyMapAndWeather() {
-                let sky = 0xb89060, fogC = 0xb89060, fogNear = 35, fogFar = 155;
+                let sky = 0xc9a878, fogC = 0xc9a878, fogNear = 40, fogFar = 170;
                 if (mapId === 'promzona') {
                     sky = 0x4a5540; fogC = 0x4a5540; fogNear = 28; fogFar = 125;
                     if (ambient) ambient.color.setHex(0x3a4a38);
@@ -10561,10 +10821,12 @@ function startGaragePreview(carId) {
                     moonLight.position.set(30, 40, 10);
                     scene.add(moonLight);
                 } else if (weatherMode === 'rain') {
+                    // ярче дождь (было слишком тускло)
                     sky = mapId === 'svalka' ? 0x2a3a30 : 0x4a5a58;
-                    fogC = sky; fogNear = 20; fogFar = 100;
-                    if (ambient) ambient.intensity = 0.35;
-                    if (sunLight) sunLight.intensity = 0.5;
+                    fogC = sky; fogNear = 22; fogFar = 115;
+                    if (ambient) { ambient.intensity = 0.55; ambient.color.setHex(0x6a7a88); }
+                    if (hemi) { hemi.intensity = 0.5; }
+                    if (sunLight) { sunLight.intensity = 0.95; sunLight.color.setHex(0xaabbcc); }
                     scene.background = new THREE.Color(sky);
                     scene.fog.color = new THREE.Color(fogC);
                     scene.fog.near = fogNear; scene.fog.far = fogFar;
@@ -10968,10 +11230,16 @@ function startGaragePreview(carId) {
                         o.receiveShadow = true;
                     }
                 });
-                // Покраска + тюнинг как в гараже
-                const ld = (currentPlayer && currentPlayer.carLoadout) ? currentPlayer.carLoadout : { parts: [], paint: 'stock' };
+                // Покраска + тюнинг как в гараже (цвет — у каждой машины свой)
+                const ld = (currentPlayer && currentPlayer.carLoadout) ? currentPlayer.carLoadout : { parts: [], paint: 'stock', paintByCar: {} };
                 const paints = (typeof CAR_PAINTS !== 'undefined') ? CAR_PAINTS : [];
-                const paint = paints.find(function(x){ return x.id === ld.paint; }) || paints[0] || { id: 'stock', color: null };
+                let paintId = 'stock';
+                try {
+                    if (typeof getPaintForCar === 'function') paintId = getPaintForCar(carId || 'cheburashka');
+                    else if (ld.paintByCar && ld.paintByCar[carId]) paintId = ld.paintByCar[carId];
+                    else if (ld.paint) paintId = ld.paint;
+                } catch (e) { paintId = ld.paint || 'stock'; }
+                const paint = paints.find(function(x){ return x.id === paintId; }) || paints[0] || { id: 'stock', color: null };
                 const baseCol = (carPreset && carPreset.color) || 0xff2200;
                 const col = (paint && paint.color != null) ? paint.color : baseCol;
                 playerCar.traverse(function(o) {
@@ -11315,18 +11583,18 @@ function startGaragePreview(carId) {
             // МИНИ-БОСС (компания: свой на главу; иначе — по карте)
             // ============================================================
             const CAMPAIGN_BOSSES = [
-                { name: 'Кабан «Бригада»', color: 0x5a3a20, weapon: 'bat', shout: 'Я вас Арсеньевских знаю!' },
-                { name: 'Медведь-байкер', color: 0x4a3020, weapon: 'shotgun', shout: 'Куда прешь, курьер!' },
-                { name: 'Волк ночной', color: 0x3a3a48, weapon: 'rifle', shout: 'Частота закрыта!' },
-                { name: 'Крокодил-охранник', color: 0x2a5a30, weapon: 'shotgun', shout: 'Промзона — мой двор!' },
-                { name: 'Носорог-штурмовик', color: 0x6a6a70, weapon: 'bazooka', shout: 'Цех №7 не для вас!' },
-                { name: 'Дино-бригадир', color: 0x4a6a3a, weapon: 'pipe', shout: 'Красные трубы помнят!' },
-                { name: 'Лев-свалщик', color: 0xc8a030, weapon: 'chain', shout: 'Надежда кончилась!' },
-                { name: 'Бегемот-токсик', color: 0x5a7a50, weapon: 'barrel', shout: 'Зелёный дым — мой духи!' },
-                { name: 'Гиена-рассвет', color: 0x8a7a50, weapon: 'pistol', shout: 'Холодный приговор!' },
-                { name: 'Медведь VHS', color: 0x5a4030, weapon: 'shotgun', shout: 'Кассету не отдашь!' },
-                { name: 'Тигр у Центра', color: 0xc86020, weapon: 'rifle', shout: 'Антидот — мне!' },
-                { name: 'Альфа-хищник', color: 0x2a2a35, weapon: 'bazooka', shout: 'Мир останется моим!' }
+                { name: 'Кабан «Бригада»', animal: 'BOAR', color: 0x5a3a20, weapon: 'bat', shout: 'Я вас Арсеньевских знаю!' },
+                { name: 'Волк-байкер', animal: 'DOG', color: 0x4a4038, weapon: 'shotgun', shout: 'Куда прешь, курьер!' },
+                { name: 'Медведь ночной', animal: 'BEAR', color: 0x3a2a20, weapon: 'rifle', shout: 'Частота закрыта!' },
+                { name: 'Крокодил-охранник', animal: 'CROC', color: 0x2a5a30, weapon: 'shotgun', shout: 'Промзона — мой двор!' },
+                { name: 'Носорог-штурмовик', animal: 'RHINO', color: 0x6a6a70, weapon: 'bazooka', shout: 'Цех №7 не для вас!' },
+                { name: 'Дино-бригадир', animal: 'DINO', color: 0x4a6a3a, weapon: 'pipe', shout: 'Красные трубы помнят!' },
+                { name: 'Лев-свалщик', animal: 'LION', color: 0xc8a030, weapon: 'chain', shout: 'Надежда кончилась!' },
+                { name: 'Бегемот-токсик', animal: 'HIPPO', color: 0x5a7a50, weapon: 'barrel', shout: 'Зелёный дым — мой духи!' },
+                { name: 'Гиена-рассвет', animal: 'FOX', color: 0x8a7a50, weapon: 'pistol', shout: 'Холодный приговор!' },
+                { name: 'Медведь VHS', animal: 'BEAR', color: 0x5a4030, weapon: 'shotgun', shout: 'Кассету не отдашь!' },
+                { name: 'Тигр у Центра', animal: 'LION', color: 0xc86020, weapon: 'rifle', shout: 'Антидот — мне!' },
+                { name: 'Альфа-хищник', animal: 'BEAR', color: 0x2a2a35, weapon: 'bazooka', shout: 'Мир останется моим!' }
             ];
             // createMiniBoss удалён — босс через spawnBoss (createAnimalMesh)
 
@@ -11441,52 +11709,233 @@ function startGaragePreview(carId) {
             let boss = null;
             let bossSpawned = false;
             let bossShouted = false;
+            const bossBullets = []; // медленные крупные «пули» босса
 
             function spawnBoss() {
                 if (bossSpawned) return;
                 bossSpawned = true;
 
-                const bossIdx = (typeof window.__campaignIdx === 'number' && window.__campaignIdx >= 0)
-                    ? window.__campaignIdx % CAMPAIGN_BOSSES.length
-                    : (mapId === 'promzona' ? 3 : mapId === 'svalka' ? 6 : 1);
-                const def = CAMPAIGN_BOSSES[bossIdx] || CAMPAIGN_BOSSES[1];
+                let bossIdx = 0;
+                if (typeof window.__campaignIdx === 'number' && window.__campaignIdx >= 0) {
+                    bossIdx = window.__campaignIdx;
+                } else if (window.__campaignTrackId && typeof CAMPAIGN_TRACKS !== 'undefined') {
+                    const fi = CAMPAIGN_TRACKS.findIndex(function(t){ return t.id === window.__campaignTrackId; });
+                    if (fi >= 0) bossIdx = fi;
+                } else if (mapId === 'promzona') bossIdx = 3;
+                else if (mapId === 'svalka') bossIdx = 6;
+                else bossIdx = 0;
+                bossIdx = bossIdx % CAMPAIGN_BOSSES.length;
+                const def = CAMPAIGN_BOSSES[bossIdx] || CAMPAIGN_BOSSES[0];
+                console.log('🐻 boss chapter', bossIdx, def.name, def.animal);
 
-                // Всегда детальный медведь (лучший mesh) — масштаб чуть больше обычного
-                const group = createAnimalMesh('BEAR');
-                group.scale.set(1.75, 1.75, 1.75);
+                // === Уникальный визуал мини-босса ===
+                let typeId = def.animal || 'BEAR';
+                if (typeof ANIMAL_TYPES !== 'undefined' && !ANIMAL_TYPES[typeId]) typeId = 'BEAR';
+                const group = createAnimalMesh(typeId);
+                const sc = def.scale || 1.75;
+                group.scale.set(sc, sc, sc);
 
-                // Оружие компактно справа (не «летящие квадраты»)
-                const gunMat = new THREE.MeshStandardMaterial({ color: 0x2a2a30, metalness: 0.75, roughness: 0.3 });
-                const woodMat = new THREE.MeshStandardMaterial({ color: 0x5a3a20, roughness: 0.65 });
+                const furCol = def.fur != null ? def.fur : 0x5a4030;
+                const accCol = def.accent != null ? def.accent : 0x2a1810;
+                const jackCol = def.jacket != null ? def.jacket : 0x1a1210;
+                const trimCol = def.trim != null ? def.trim : 0xc0a050;
+                const eyeCol = def.eye != null ? def.eye : 0x44ff66;
+                const style = def.style || 'default';
+
+                // Перекраска меха / кожи
+                group.traverse(function(o) {
+                    if (!o.isMesh || !o.material) return;
+                    if (o.userData && o.userData.isEye) return;
+                    try {
+                        o.material = o.material.clone();
+                        const c = o.material.color;
+                        if (!c) return;
+                        // тёмные части → accent, светлые → fur
+                        const lum = (c.r + c.g + c.b) / 3;
+                        if (lum < 0.25) o.material.color.setHex(accCol);
+                        else o.material.color.setHex(furCol);
+                        o.material.roughness = 0.82;
+                        o.material.metalness = 0.05;
+                    } catch (e) {}
+                });
+
+                // Глаза босса — фирменный цвет
+                group.traverse(function(o) {
+                    if (o.userData && o.userData.isEye) {
+                        try {
+                            o.material = new THREE.MeshBasicMaterial({ color: eyeCol });
+                            o.scale.setScalar(1.5);
+                        } catch (e) {}
+                    }
+                });
+
+                const leather = new THREE.MeshStandardMaterial({ color: jackCol, roughness: 0.72, metalness: 0.18 });
+                const chrome = new THREE.MeshStandardMaterial({ color: trimCol, metalness: 0.9, roughness: 0.22 });
+                const gunMetal = new THREE.MeshStandardMaterial({ color: 0x2a2a32, metalness: 0.85, roughness: 0.28 });
+                const wood = new THREE.MeshStandardMaterial({ color: 0x5a3a18, roughness: 0.7 });
+                const neon = new THREE.MeshStandardMaterial({
+                    color: trimCol, emissive: trimCol, emissiveIntensity: 0.55, roughness: 0.4
+                });
+
+                // --- Куртка 90-х (общая база + стиль) ---
+                const jacket = new THREE.Group();
+                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.42, 0.55), leather);
+                torso.position.set(0, 0.55, 0.02); jacket.add(torso);
+                const collar = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.22), leather);
+                collar.position.set(0, 0.78, 0.18); jacket.add(collar);
+                // молния
+                const zip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.36, 0.04), chrome);
+                zip.position.set(0, 0.55, 0.28); jacket.add(zip);
+                // наплечники
+                [-1, 1].forEach(function(side) {
+                    const pad = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.28), leather);
+                    pad.position.set(side * 0.42, 0.72, 0.05); jacket.add(pad);
+                });
+                // стиль-декор куртки
+                if (style === 'biker' || style === 'brigade' || style === 'alpha') {
+                    // заклёпки
+                    for (let i = 0; i < 5; i++) {
+                        const riv = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), chrome);
+                        riv.position.set(-0.25 + i * 0.12, 0.72, 0.3); jacket.add(riv);
+                    }
+                }
+                if (style === 'vhs') {
+                    // розовая полоса VHS
+                    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.06), neon);
+                    stripe.position.set(0, 0.5, 0.3); jacket.add(stripe);
+                    const cass = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.06), new THREE.MeshStandardMaterial({ color: 0x222228, roughness: 0.5 }));
+                    cass.position.set(0.35, 0.55, 0.32); jacket.add(cass);
+                }
+                if (style === 'toxic') {
+                    const slime = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.08), neon);
+                    slime.position.set(0, 0.4, 0.3); jacket.add(slime);
+                }
+                if (style === 'night' || style === 'alpha') {
+                    const band = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.08), neon);
+                    band.position.set(0, 0.85, 0.2); jacket.add(band);
+                }
+                if (style === 'tiger') {
+                    // полосы
+                    for (let i = 0; i < 3; i++) {
+                        const st = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.04), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }));
+                        st.position.set(-0.2 + i * 0.2, 0.55, 0.3); jacket.add(st);
+                    }
+                }
+                if (style === 'guard' || style === 'foreman') {
+                    // бейдж / каска-планка
+                    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.14, 0.05), chrome);
+                    badge.position.set(0.28, 0.6, 0.3); jacket.add(badge);
+                }
+                if (style === 'assault') {
+                    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.28, 0.1), gunMetal);
+                    plate.position.set(0, 0.55, 0.32); jacket.add(plate);
+                }
+                group.add(jacket);
+
+                // --- Оружие ---
                 const wpn = new THREE.Group();
                 const wt = def.weapon || 'shotgun';
                 if (wt === 'shotgun' || wt === 'rifle') {
-                    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 0.75, 8), gunMat);
+                    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, wt === 'rifle' ? 0.95 : 0.72, 8), gunMetal);
                     barrel.rotation.x = Math.PI / 2;
-                    barrel.position.set(0, 0.02, -0.1);
-                    wpn.add(barrel);
-                    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.28), woodMat);
-                    stock.position.set(0, 0, 0.35);
-                    wpn.add(stock);
+                    barrel.position.set(0, 0.02, -0.15); wpn.add(barrel);
+                    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.12, 0.3), wood);
+                    stock.position.set(0, 0, 0.38); wpn.add(stock);
+                    const sight = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.08), chrome);
+                    sight.position.set(0, 0.08, -0.2); wpn.add(sight);
                 } else if (wt === 'bazooka') {
-                    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.7, 8), gunMat);
-                    tube.rotation.x = Math.PI / 2;
-                    wpn.add(tube);
+                    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.9, 10), gunMetal);
+                    tube.rotation.x = Math.PI / 2; wpn.add(tube);
+                    const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.1, 0.12, 10), chrome);
+                    tip.rotation.x = Math.PI / 2; tip.position.z = -0.45; wpn.add(tip);
+                    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.04, 0.2), gunMetal);
+                    fin.position.set(0, 0, 0.35); wpn.add(fin);
                 } else if (wt === 'barrel') {
-                    wpn.add(new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.32, 10), new THREE.MeshStandardMaterial({ color: 0x3a6a30 })));
+                    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.42, 12), new THREE.MeshStandardMaterial({ color: 0x3a6a30, roughness: 0.6, metalness: 0.3 }));
+                    bar.position.y = 0.05; wpn.add(bar);
+                    const tox = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.08), neon);
+                    tox.position.set(0, 0.2, 0.12); wpn.add(tox);
+                } else if (wt === 'chain') {
+                    for (let i = 0; i < 5; i++) {
+                        const link = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.025, 6, 10), chrome);
+                        link.position.set(0, -i * 0.11, 0); wpn.add(link);
+                    }
+                    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.2), leather);
+                    handle.position.set(0, 0.15, 0); wpn.add(handle);
+                } else if (wt === 'pistol') {
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.32), gunMetal);
+                    wpn.add(body);
+                    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.12), wood);
+                    grip.position.set(0, -0.12, 0.08); wpn.add(grip);
+                } else if (wt === 'pipe') {
+                    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.85, 8), gunMetal);
+                    pipe.rotation.x = Math.PI / 2; wpn.add(pipe);
+                    const rust = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), new THREE.MeshStandardMaterial({ color: 0x8a4020, roughness: 0.85 }));
+                    rust.position.z = 0.35; wpn.add(rust);
                 } else {
-                    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.55, 6), wt === 'pistol' ? gunMat : woodMat);
-                    stick.rotation.x = Math.PI / 2;
-                    wpn.add(stick);
+                    // бита
+                    const bat = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.85, 8), wood);
+                    bat.rotation.x = Math.PI / 2; wpn.add(bat);
+                    const tape = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.2, 8), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+                    tape.rotation.x = Math.PI / 2; tape.position.z = 0.3; wpn.add(tape);
+                    // гвозди
+                    for (let i = 0; i < 4; i++) {
+                        const nail = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.01, 0.12, 5), chrome);
+                        nail.position.set(0.05, 0, -0.15 + i * 0.08); wpn.add(nail);
+                    }
                 }
-                // Локальные координаты медведя: голова ≈ +Z; оружие сбоку
-                wpn.position.set(0.48, 0.5, 0.1);
+                wpn.position.set(0.52, 0.52, 0.12);
                 group.add(wpn);
+
+                // --- Аксессуары по стилю ---
+                if (style === 'biker' || style === 'brigade') {
+                    const helm = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), leather);
+                    helm.scale.set(1.1, 0.7, 1.0);
+                    helm.position.set(0, 1.05, 0.15); group.add(helm);
+                }
+                if (style === 'toxic') {
+                    // противогаз
+                    const mask = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.25), gunMetal);
+                    mask.position.set(0, 0.9, 0.35); group.add(mask);
+                    const filter = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.18, 8), chrome);
+                    filter.rotation.x = Math.PI / 2;
+                    filter.position.set(0.2, 0.85, 0.45); group.add(filter);
+                }
+                if (style === 'dawn') {
+                    const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.12, 12), leather);
+                    hat.position.set(0, 1.1, 0.1); group.add(hat);
+                }
+                if (style === 'alpha') {
+                    // корона-шип
+                    for (let i = 0; i < 5; i++) {
+                        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.18, 5), chrome);
+                        const a = (i / 5) * Math.PI * 2;
+                        spike.position.set(Math.cos(a) * 0.18, 1.15, 0.15 + Math.sin(a) * 0.12);
+                        group.add(spike);
+                    }
+                }
+                if (style === 'vhs') {
+                    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.45, 5), gunMetal);
+                    ant.position.set(-0.25, 1.2, 0.1); group.add(ant);
+                }
+                if (style === 'foreman') {
+                    const hardhat = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.4, roughness: 0.4 }));
+                    hardhat.scale.set(1.15, 0.65, 1.05);
+                    hardhat.position.set(0, 1.12, 0.12); group.add(hardhat);
+                }
+
+                // лёгкое свечение «ауры» босса (кольцо под ногами)
+                const aura = new THREE.Mesh(
+                    new THREE.RingGeometry(0.55, 0.85, 24),
+                    new THREE.MeshBasicMaterial({ color: trimCol, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+                );
+                aura.rotation.x = -Math.PI / 2;
+                aura.position.y = 0.04;
+                group.add(aura);
 
                 const side = Math.random() > 0.5 ? 1 : -1;
                 const startZ = zPos - 32 - Math.random() * 8;
                 group.position.set(side * (TRACK_WIDTH / 2 + 0.15), 0, startZ);
-                // Голова медведя в +Z → смотрит на игрока (игрок с большим Z)
                 group.rotation.y = 0;
                 group.visible = true;
                 scene.add(group);
@@ -11503,30 +11952,23 @@ function startGaragePreview(carId) {
                     active: true,
                     phase: 0,
                     shoutTimer: 2.5,
-                    shotTimer: 2.0,
-                    radius: 1.2,
+                    shotTimer: 2.8,
+                    radius: 1.2 * (sc / 1.75),
                     name: def.name,
                     shout: def.shout,
                     weapon: wt,
+                    style: style,
+                    trim: trimCol,
                     invuln: 0
                 };
 
-                showBossShout(def.shout || 'Я вас Арсеньевских знаю!');
+                showBossShout(def.shout || def.name);
+                setTimeout(function(){ try { showBossShout('💥 Таран×3 или обгони!'); } catch (e) {} }, 2800);
                 bossShouted = true;
                 try {
                     if (typeof radioSay === 'function') radioSay('📡 ' + def.name + ': «' + def.shout + '»');
                 } catch (e) {}
-                if (window.weatherMode === 'night' && group) {
-                    group.traverse(function(obj) {
-                        if (obj.userData && obj.userData.isEye) {
-                            try {
-                                obj.material = new THREE.MeshBasicMaterial({ color: 0x44ff66 });
-                                obj.scale.setScalar(1.6);
-                            } catch (e) {}
-                        }
-                    });
-                }
-                console.log('🐻 БОСС:', def.name, wt);
+                console.log('🐻 БОСС:', def.name, def.animal, wt, style);
             }
 
             function showBossShout(text) {
@@ -12466,54 +12908,140 @@ function startGaragePreview(carId) {
                         try { if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ': «' + boss.shout + '»'); } catch (e) {}
                     }
 
-                    // Стрельба
+                    // Стрельба — редко, крупная медленная пуля (можно увернуться)
                     boss.shotTimer -= deltaTime;
-                    if (boss.shotTimer <= 0 && Math.abs(zPos - boss.z) < 32 && Math.abs(xPos - boss.x) < TRACK_WIDTH * 0.6) {
-                        boss.shotTimer = 2.0 + Math.random() * 1.4;
-                        showTimePenaltyPopup(2.5, (boss.name || 'Босс') + ' стреляет!');
+                    if (boss.shotTimer <= 0 && Math.abs(zPos - boss.z) < 36 && Math.abs(xPos - boss.x) < TRACK_WIDTH * 0.7) {
+                        boss.shotTimer = 3.8 + Math.random() * 2.2; // нечасто
                         showBossShout(boss.shout || 'Получай!');
-                        shakeTime = Math.max(shakeTime, 0.12);
-                        try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.25); } catch (e) {}
-                        // вспышка «выстрела»
+                        try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.2); } catch (e) {}
                         try {
+                            const bulletMat = new THREE.MeshStandardMaterial({
+                                color: 0xff4400, emissive: 0xff2200, emissiveIntensity: 1.2, roughness: 0.4
+                            });
+                            const ball = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), bulletMat);
+                            const muzzleX = boss.x + 0.45;
+                            const muzzleY = 0.85;
+                            const muzzleZ = boss.z + 0.2;
+                            ball.position.set(muzzleX, muzzleY, muzzleZ);
+                            scene.add(ball);
+                            // летит к игроку медленно вдоль +Z (навстречу)
+                            const dx = (xPos - muzzleX);
+                            const dz = (zPos - muzzleZ);
+                            const len = Math.max(0.01, Math.sqrt(dx * dx + dz * dz));
+                            const speed = 7.5; // м/с примерно — успеть сместиться
+                            bossBullets.push({
+                                mesh: ball,
+                                x: muzzleX, y: muzzleY, z: muzzleZ,
+                                vx: (dx / len) * speed * 0.35,
+                                vz: (dz / len) * speed,
+                                life: 3.5,
+                                hit: false
+                            });
                             particleSystem.emit(
-                                _v.p1.set(boss.x + 0.4, 0.8, boss.z - 0.3),
-                                _v.vel.set((xPos - boss.x) * 0.3, 0.2, (zPos - boss.z) * 0.2),
-                                6, 0.2
+                                _v.p1.set(muzzleX, muzzleY, muzzleZ),
+                                _v.vel.set(dx * 0.1, 0.3, dz * 0.1),
+                                5, 0.15
                             );
-                        } catch (e) {}
+                        } catch (e) { console.warn('boss bullet', e); }
                     }
 
-                    // Таран
+                    // Таран босса: НЕ считается аварией (strikes не растут).
+                    // Урон: 1 обычный / 2 на нитро. 3 HP → победа. Обгон → босс уходит.
                     const bdx = xPos - boss.x;
                     const bdz = zPos - boss.z;
                     if (boss.invuln <= 0 && Math.abs(bdx) < boss.radius && Math.abs(bdz) < boss.radius * 0.95) {
-                        boss.hp -= 1;
-                        boss.invuln = 0.9;
-                        handleObstacleHit({ penalty: 0.25, timePenalty: 5, type: 'animal', speciesKey: 'BEAR' });
-                        shakeTime = 0.3;
-                        fovPunch = 14;
-                        boss.x += (bdx >= 0 ? -1.6 : 1.6);
-                        showBossShout(boss.hp <= 0 ? (boss.name + ' отступил!') : (boss.shout || 'Ещё!'));
+                        const nitroHit = (typeof nitroTimer !== 'undefined' && nitroTimer > 0);
+                        const dmg = nitroHit ? 2 : 1;
+                        boss.hp -= dmg;
+                        boss.invuln = nitroHit ? 0.7 : 1.0;
+                        // только подброс/замедление — без handleObstacleHit
+                        speed *= nitroHit ? 0.85 : 0.65;
+                        xVelocity *= 0.5;
+                        shakeTime = Math.max(shakeTime, nitroHit ? 0.35 : 0.22);
+                        fovPunch = nitroHit ? 16 : 10;
+                        boss.x += (bdx >= 0 ? -1.8 : 1.8);
+                        boss.z -= 3;
+                        try {
+                            particleSystem.emit(
+                                _v.p1.set(boss.x, 0.6, boss.z),
+                                _v.vel.set((Math.random()-0.5)*2, 1.2, -1),
+                                nitroHit ? 14 : 8, 0.25
+                            );
+                        } catch (e) {}
                         if (boss.hp <= 0) {
                             boss.active = false;
                             if (boss.mesh) {
                                 try { scene.remove(boss.mesh); } catch (e) { boss.mesh.visible = false; }
                             }
+                            showBossShout('💥 ' + (boss.name || 'Босс') + ' сбит!');
                             try {
                                 if (currentPlayer && currentPlayer.season) {
-                                    currentPlayer.season.chips = (currentPlayer.season.chips || 0) + 3;
+                                    const reward = nitroHit ? 5 : 4;
+                                    currentPlayer.season.chips = (currentPlayer.season.chips || 0) + reward;
                                     if (typeof saveCurrentPlayer === 'function') saveCurrentPlayer();
                                 }
                             } catch (e) {}
-                            try { if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ' сброшен с трассы! +3🪙'); } catch (e) {}
+                            try {
+                                if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ' сброшен! +фишки');
+                                if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, '💥 Босс повержен');
+                            } catch (e) {}
+                        } else {
+                            showBossShout((boss.name || 'Босс') + ' HP ' + Math.max(0, boss.hp) + '/' + (boss.maxHp || 3));
                         }
+                    }
+                    // Обгон: уехали вперёд от босса — он сдаётся
+                    if (boss.active && zPos < boss.z - 22) {
+                        boss._overtakeT = (boss._overtakeT || 0) + deltaTime;
+                        if (boss._overtakeT > 1.2) {
+                            boss.active = false;
+                            if (boss.mesh) {
+                                try { scene.remove(boss.mesh); } catch (e) { boss.mesh.visible = false; }
+                            }
+                            showBossShout('🏁 ' + (boss.name || 'Босс') + ' отстал!');
+                            try {
+                                if (currentPlayer && currentPlayer.season) {
+                                    currentPlayer.season.chips = (currentPlayer.season.chips || 0) + 2;
+                                    if (typeof saveCurrentPlayer === 'function') saveCurrentPlayer();
+                                }
+                                if (typeof radioSay === 'function') radioSay('📡 Обогнал босса! +2🪙');
+                            } catch (e) {}
+                        }
+                    } else if (boss.active) {
+                        boss._overtakeT = 0;
                     }
 
                     // Ушёл далеко — деспавн
                     if (boss.z < zPos - 90 || boss.z > zPos + 120) {
                         try { scene.remove(boss.mesh); } catch (e) {}
                         boss.active = false;
+                    }
+                }
+
+                // Пули босса — медленные, крупные
+                for (let bi = bossBullets.length - 1; bi >= 0; bi--) {
+                    const bu = bossBullets[bi];
+                    if (!bu || bu.hit) { bossBullets.splice(bi, 1); continue; }
+                    bu.life -= deltaTime;
+                    bu.x += bu.vx * deltaTime;
+                    bu.z += bu.vz * deltaTime;
+                    if (bu.mesh) {
+                        bu.mesh.position.set(bu.x, bu.y, bu.z);
+                        bu.mesh.rotation.x += deltaTime * 4;
+                    }
+                    // попадание в игрока — только время, без аварии
+                    if (Math.abs(bu.x - xPos) < 0.85 && Math.abs(bu.z - zPos) < 0.95) {
+                        bu.hit = true;
+                        raceTime += 2.0;
+                        showTimePenaltyPopup(2, (boss && boss.name ? boss.name : 'Босс') + ': попадание!');
+                        shakeTime = Math.max(shakeTime, 0.2);
+                        try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.35); } catch (e) {}
+                        try { scene.remove(bu.mesh); } catch (e) {}
+                        bossBullets.splice(bi, 1);
+                        continue;
+                    }
+                    if (bu.life <= 0 || bu.z > zPos + 25 || bu.z < zPos - 40) {
+                        try { if (bu.mesh) scene.remove(bu.mesh); } catch (e) {}
+                        bossBullets.splice(bi, 1);
                     }
                 }
 
@@ -12789,6 +13317,16 @@ function startGaragePreview(carId) {
             } catch (e) {}
             try { document.body.classList.add('race-mode'); } catch (e) {}
             try {
+                const pauseBtn = document.getElementById('hud-menu-btn');
+                const pauseOnly = document.getElementById('hud-pause-btn');
+                if (pauseOnly) {
+                    pauseOnly.style.display = 'block';
+                    pauseOnly.style.visibility = 'visible';
+                    pauseOnly.style.opacity = '1';
+                }
+                if (pauseBtn) pauseBtn.style.display = 'block';
+            } catch (e) {}
+            try {
                 const pb = document.getElementById('player-bar');
                 if (pb && window.__isMobile) pb.style.display = 'none';
             } catch (e) {}
@@ -12799,8 +13337,13 @@ function startGaragePreview(carId) {
                     soundEngine.enabled = true;
                     if (soundEngine.stopMenuMusic) soundEngine.stopMenuMusic();
                     var afterResume = function() {
-                        var dark = (window.weatherMode === 'night' || window.weatherMode === 'rain');
-                        if ((dark || attempt > 0) && soundEngine.startRaceMusicHTML) {
+                        // всегда пробуем HTML5 + WebAudio (не только ночь)
+                        try {
+                            if (soundEngine.raceAudio && soundEngine.raceAudio.paused) {
+                                soundEngine.isMusicPlaying = false;
+                            }
+                        } catch (e) {}
+                        if (soundEngine.startRaceMusicHTML) {
                             try { soundEngine.startRaceMusicHTML(); } catch (e) {}
                         }
                         if (soundEngine.startMusic) {
