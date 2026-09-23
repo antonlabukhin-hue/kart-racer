@@ -12721,7 +12721,7 @@ class SoundEngine {
                 };
             }
 
-            const maxCars = quality === 'low' ? Math.min(6, config.maxCars)
+             let maxCars = quality === 'low' ? Math.min(6, config.maxCars)
                 : (window.__isMobile ? Math.min(10, config.maxCars) : config.maxCars);
             try {
                 const tm = window.__campaignTrafficMul || 1;
