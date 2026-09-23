@@ -4263,19 +4263,19 @@
             <div class="sub">От выбора зависят скорость, прочность и поведение на масле</div>
             <div class="car-options">
                 <div class="car-card selected" data-car="cheburashka">
-                    <img class="car-img" src="images/car_cheburashka.jpg" alt="Чебурашка"
+                    <img class="car-img" src="images/car_cheburashka.png" alt="Чебурашка"
                          onerror="this.onerror=null;this.src='images/car_cheburashka.png';this.style.background='#331108';">
                     <div class="car-name">Чебурашка</div>
                     <div class="car-desc">Баланс<br>Скорость ★★★<br>Прочность ★★★</div>
                 </div>
                 <div class="car-card" data-car="kirpich">
-                    <img class="car-img" src="images/car_kirpich.jpg" alt="Нива"
+                    <img class="car-img" src="images/car_kirpich.png" alt="Нива"
                          onerror="this.onerror=null;this.src='images/car_kirpich.png';this.style.background='#1a2230';">
                     <div class="car-name">Нива</div>
                     <div class="car-desc">Танк<br>Скорость ★★<br>Прочность ★★★★</div>
                 </div>
                 <div class="car-card" data-car="turbo">
-                    <img class="car-img" src="images/car_turbo.jpg" alt="Волга"
+                    <img class="car-img" src="images/car_turbo.png" alt="Волга"
                          onerror="this.onerror=null;this.src='images/car_turbo.png';this.style.background='#332a00';">
                     <div class="car-name">Волга</div>
                     <div class="car-desc">Ракета<br>Скорость ★★★★<br>Масло скользкое</div>
@@ -4764,10 +4764,6 @@
             'race-music.mp3'
         ];
         const MENU_MUSIC_PATH = 'music/menu-music.mp3';
-        // не блокируем старт
-        setTimeout(() => {
-            try { AssetHub.preloadImages(UI_ASSETS); } catch (e) {}
-        }, 100);
 
 
         window.THREE = THREE;
