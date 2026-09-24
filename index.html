@@ -13002,7 +13002,7 @@ function createBossHpBar(maxHp) {
             // ============================================================
             const animalSpawner = new AnimalSpawner(
                 scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD,
-                config.maxAnimals, config.animalSpawnRate, config.animalCrossMul
+                config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
             animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
             try {

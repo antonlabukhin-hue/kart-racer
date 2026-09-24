@@ -13,7 +13,7 @@ function meshFactory(typeId) {
 }
 
 class AnimalSpawner {
-    constructor(scene, roadWidth, roadCenter, finishZ, triggerLookahead, maxAnimals, spawnRate, crossMul) {
+    constructor(scene, roadWidth, roadCenter, finishZ, triggerLookahead, maxAnimals, spawnRate, crossMul, startZ) {
         this.scene = scene;
         this.roadWidth = roadWidth;
         this.roadCenter = roadCenter;
@@ -28,6 +28,7 @@ class AnimalSpawner {
         this.totalSpawned = 0;
         this.maxAnimals = maxAnimals;
         this.crossMul = (typeof crossMul === 'number' && crossMul > 0) ? crossMul : 1.0;
+        this.startZ = startZ;
         this.enabled = true;
         
         this.mandatoryPool = [];
@@ -232,8 +233,8 @@ class AnimalSpawner {
                 animal.triggered = true;
                 animal.mesh.visible = true;
                 try {
-                    if (typeof START_Z !== 'undefined' && typeof FINISH_Z !== 'undefined') {
-                        const prog = Math.min(1, Math.max(0, (START_Z - playerZ) / (START_Z - FINISH_Z)));
+                    if (typeof this.startZ === 'number' && typeof this.finishZ === 'number') {
+                        const prog = Math.min(1, Math.max(0, (this.startZ - playerZ) / (this.startZ - this.finishZ)));
                         // к финишу чуть резче, но без «уже убежали»
                         const late = 1 - prog * 0.08;
                         animal.duration = Math.max(0.7, animal.duration * late);
