@@ -21,3 +21,8 @@ import { ParticleSystem } from './src/particles.js';
 - `boss.js` — createArcadeBossMesh
 - единый teardown, XSS-escape имён
 - по желанию: полный вынос `initGame` в `game.js`
+
+
+## Фаза 3a — безопасность (сделано)
+- `escapeHtml` + экранирование имени в `renderProfileList`
+- `setInterval` мобильных кнопок: один id, работа только при `__inRace`

@@ -4396,124 +4396,15 @@
             return tex;
         };
 
-        // Патч CanvasTexture: все canvas-текстуры по умолчанию без mipmaps
-        (function patchCanvasTexture() {
-            try {
-                if (!THREE || !THREE.CanvasTexture || THREE.CanvasTexture.__optPatched) return;
-                const Orig = THREE.CanvasTexture;
-                function OptCanvasTexture(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy) {
-                    const tex = new Orig(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
-                    try {
-                        tex.generateMipmaps = false;
-                        tex.minFilter = THREE.LinearFilter;
-                        tex.magFilter = THREE.LinearFilter;
-                        if (tex.anisotropy !== undefined) tex.anisotropy = window.__isMobile ? 1 : 2;
-                        if (THREE.SRGBColorSpace && tex.colorSpace !== undefined) tex.colorSpace = THREE.SRGBColorSpace;
-                    } catch (e) {}
-                    return tex;
-                }
-                OptCanvasTexture.prototype = Orig.prototype;
-                OptCanvasTexture.__optPatched = true;
-                OptCanvasTexture.__original = Orig;
-                try {
-                    THREE.CanvasTexture = OptCanvasTexture;
-                } catch (eAssign) {
-                    // ES-module export read-only — патч не критичен
-                    window.__OptCanvasTexture = OptCanvasTexture;
-                    console.info('CanvasTexture: using original (module read-only)');
-                }
-                console.log('🖼️ CanvasTexture optimized (no mipmaps, low aniso)');
-            } catch (e) {
-                console.warn('CanvasTexture patch failed', e);
-            }
-        })();
-
-
-
-        // ============================================================
-        // ОПТИМИЗАЦИЯ ШЕЙДЕРОВ (ПК / WebGL)
-        // MeshStandard (PBR) считает light×material дорого на forward-рендере.
-        // Для окружения → Lambert/Phong; PBR оставляем для гаража и кузова игрока.
-        // ============================================================
+        // === Удалены два неработающих патча THREE ===
+        // 1) patchCanvasTexture() — пытался подменить THREE.CanvasTexture своей обёрткой.
+        //    В ES-модулях THREE экспортирует read-only binding, присваивание бросает
+        //    TypeError, ловилось в catch и код продолжал работать с оригиналом.
+        // 2) patchMaterialsForPerf() — то же самое с THREE.MeshStandardMaterial.
+        // Реальная оптимизация текстур — через window.optimizeTexture() (см. ниже),
+        // оптимизация материалов — через явные фабрики в коде (createAsphaltTexture и т.п.).
+        // Флаг window.__forcePBR оставлен как нейтральный (используется в openGarage).
         window.__forcePBR = false;
-        (function patchMaterialsForPerf() {
-            try {
-                if (!THREE || !THREE.MeshStandardMaterial || THREE.MeshStandardMaterial.__patchedLite) return;
-                const OrigStd = THREE.MeshStandardMaterial;
-                function LiteStandard(parameters) {
-                    parameters = parameters || {};
-                    if (window.__forcePBR || parameters.__pbr === true) {
-                        const m = new OrigStd(parameters);
-                        return m;
-                    }
-                    // Phong даёт блик дешевле PBR; Lambert — ещё легче для «матовых» пропов
-                    const shiny = (parameters.metalness != null && parameters.metalness > 0.2)
-                        || (parameters.roughness != null && parameters.roughness < 0.45);
-                    const color = parameters.color != null ? parameters.color : 0xffffff;
-                    const common = {
-                        color: color,
-                        map: parameters.map || null,
-                        lightMap: parameters.lightMap || null,
-                        aoMap: parameters.aoMap || null,
-                        alphaMap: parameters.alphaMap || null,
-                        envMap: null, // envMap PBR-кубы отключаем
-                        emissive: parameters.emissive != null ? parameters.emissive : 0x000000,
-                        emissiveMap: parameters.emissiveMap || null,
-                        emissiveIntensity: parameters.emissiveIntensity != null ? parameters.emissiveIntensity : 1,
-                        transparent: !!parameters.transparent,
-                        opacity: parameters.opacity != null ? parameters.opacity : 1,
-                        side: parameters.side != null ? parameters.side : THREE.FrontSide,
-                        flatShading: !!parameters.flatShading,
-                        wireframe: !!parameters.wireframe,
-                        depthTest: parameters.depthTest !== false,
-                        depthWrite: parameters.depthWrite !== false,
-                        fog: parameters.fog !== false,
-                        name: parameters.name || ''
-                    };
-                    let mat;
-                    if (shiny && THREE.MeshPhongMaterial) {
-                        mat = new THREE.MeshPhongMaterial(Object.assign({}, common, {
-                            specular: new THREE.Color(0x333333),
-                            shininess: Math.max(8, (1 - (parameters.roughness != null ? parameters.roughness : 0.5)) * 80),
-                            reflectivity: 0.1
-                        }));
-                    } else {
-                        mat = new THREE.MeshLambertMaterial(common);
-                    }
-                    // Совместимость с кодом, который пишет material.metalness / roughness
-                    try {
-                        Object.defineProperty(mat, 'metalness', {
-                            get: function () { return 0; },
-                            set: function () {},
-                            configurable: true
-                        });
-                        Object.defineProperty(mat, 'roughness', {
-                            get: function () { return 1; },
-                            set: function () {},
-                            configurable: true
-                        });
-                        Object.defineProperty(mat, 'envMapIntensity', {
-                            get: function () { return 0; },
-                            set: function () {},
-                            configurable: true
-                        });
-                    } catch (e) {}
-                    return mat;
-                }
-                LiteStandard.prototype = OrigStd.prototype;
-                LiteStandard.__patchedLite = true;
-                LiteStandard.__original = OrigStd;
-                try {
-                    THREE.MeshStandardMaterial = LiteStandard;
-                } catch (eAssign) {
-                    window.__LiteStandardMaterial = LiteStandard;
-                    console.info('MeshStandard: using original (module read-only)');
-                }
-                console.info('🧱 Lite materials active (or original if module locked)');
-            } catch (e) {
-                console.warn('material patch failed', e);
-            }
-        })();
 
         // mediump для кастомных шейдеров частиц (меньше ALU на GPU)
         window.__shaderPrecision = 'mediump';
@@ -4922,6 +4813,17 @@
         };
 
 
+        /**
+         * Возвращает прогресс кампании для currentPlayer.
+         *
+         * ВНИМАНИЕ: функция МУТИРУЕТ currentPlayer.campaign — синхронизирует его
+         * с бэкапом в localStorage ('road_racing_campaign_<id>'). Логика слияния:
+         *   unlocked = max(inMemory, backup)
+         *   completed = union(inMemory, backup)
+         * Это осознанный side-effect: защита от потерянных глав при обрыве сессии.
+         * Если когда-нибудь понадобится чистый геттер — читайте loadAllProfiles()
+         * напрямую, не вызывая эту функцию.
+         */
         function getCampaignProgress() {
             if (!currentPlayer) return { unlocked: 1, completed: [] };
             ensureProfileFields(currentPlayer);
@@ -5937,8 +5839,8 @@ function createProfile(name) {
                 ' · 🪙' + se.chips + ' · 🍬' + se.gum +
                 (claimableCount ? (' · можно забрать: ' + claimableCount) : '');
             const list = document.getElementById('rewards-list');
-            // DocumentFragment — меньше перерисовок
-            const frag = document.createDocumentFragment();
+            // Отдельный div-обёртка вместо прямых appendChild — один reflow
+            // (DocumentFragment был создан, но не использовался; удалён).
             const wrap = document.createElement('div');
             if (claimableCount > 0) {
                 const allBtn = document.createElement('button');
@@ -6000,7 +5902,7 @@ function createProfile(name) {
             document.getElementById('events-body').innerHTML = `
                 <div class="event-card">
                     <h3>📅 Смена дня${done ? ' ✓' : ''}</h3>
-                    <p><b>${c.title}</b><br>${c.desc}</p>
+                    <p><b>${escapeHtml(c.title)}</b><br>${escapeHtml(c.desc)}</p>
                     <p>Награда: <b>+${c.xp} XP</b> сезона · 🍬${c.gum} · 🪙${c.chips}</p>
                     <p style="color:#888;">Один контракт в сутки. Сброс в полночь.</p>
                 </div>
@@ -6334,8 +6236,9 @@ function createProfile(name) {
                 ensureProfileFields(currentPlayer);
                 const st = currentPlayer.stats;
                 const levelBefore = currentPlayer.season.level;
-                const gumBefore = currentPlayer.season.gum;
-                const chipsBefore = currentPlayer.season.chips;
+                // gumBefore / chipsBefore удалены — не использовались:
+                // прирост считается через gumGain / chipsGain (с нуля),
+                // а финальные значения читаются из currentPlayer.season.* после всех add.
                 const newAchs = [];
 
                 st.totalRaces = (st.totalRaces || 0) + 1;
@@ -6633,13 +6536,13 @@ function renderGaragePartsPanel() {
             box.style.display = 'block';
             ensureProfileFields(currentPlayer);
             const owned = currentPlayer.carLoadout.parts || [];
-            let html = '<div style="font-size:11px;color:#888;margin-bottom:6px;">Наведи — примерка · клик — купить/снять · фишки: ' + currentPlayer.season.chips + '</div>';
+            let html = '<div style="font-size:11px;color:#888;margin-bottom:6px;">Наведи — примерка · клик — купить/снять · фишки: ' + Number(currentPlayer.season.chips || 0) + '</div>';
             html += '<div class="color-swatches">';
             CAR_PAINTS.forEach(p => {
                 const col = p.color != null ? p.color : (CAR_PRESETS[currentPlayer.preferredCar]||{}).color || 0xff2200;
                 const hex = '#' + (col >>> 0).toString(16).padStart(6, '0');
                 const active = getPaintForCar(currentPlayer.preferredCar || 'cheburashka') === p.id ? ' active' : '';
-                html += '<div class="color-swatch' + active + '" data-paint="' + p.id + '" style="background:' + hex + '" title="' + p.name + (p.price?(' 🪙'+p.price):' бесплатно') + '"></div>';
+                html += '<div class="color-swatch' + active + '" data-paint="' + p.id + '" style="background:' + hex + '" title="' + escapeHtml(p.name) + (p.price?(' 🪙'+p.price):' бесплатно') + '"></div>';
             });
             html += '</div>';
             const carId = currentPlayer.preferredCar || 'cheburashka';
@@ -6649,7 +6552,7 @@ function renderGaragePartsPanel() {
                 if (isNiva && part.id === 'roof_rack') return;
                 const isOwned = owned.includes(part.id);
                 html += '<div class="part-row' + (isOwned?' owned':'') + '" data-part="' + part.id + '">' +
-                    '<span>' + part.name + '</span>' +
+                    '<span>' + escapeHtml(part.name) + '</span>' +
                     '<span class="part-price">' + (isOwned ? '✓ стоит' : ('🪙 ' + part.price)) + '</span></div>';
             });
             box.innerHTML = html;
@@ -7635,20 +7538,8 @@ function startGaragePreview(carId) {
         let pendingWeather = 'day';
 
         
-        function showDifficultyScreen() {
-            if (!currentPlayer) {
-                const ps = document.getElementById('profile-screen');
-                if (ps) { ps.style.display = 'flex'; ps.classList.add('active'); }
-                return;
-            }
-            if (typeof showMainMenu === 'function') {
-                showMainMenu();
-                return;
-            }
-            const ds = document.getElementById('difficulty-screen');
-            if (ds) ds.style.display = 'flex';
-        }
-        window.showDifficultyScreen = showDifficultyScreen;
+        // showDifficultyScreen — единая реализация ниже (window.showDifficultyScreen)
+        // Здесь намеренно ничего не определяем, чтобы не было двух разных версий.
 
         
         window.playMenuMusic = function() {
@@ -9590,7 +9481,8 @@ function startGaragePreview(carId) {
                         : -1;
 
                 if (isCamp) {
-                    const trackName = (campIdx >= 0 && CAMPAIGN_TRACKS[campIdx]) ? CAMPAIGN_TRACKS[campIdx].name : 'глава';
+                    const trackNameRaw = (campIdx >= 0 && CAMPAIGN_TRACKS[campIdx]) ? CAMPAIGN_TRACKS[campIdx].name : 'глава';
+                    const trackName = escapeHtml(trackNameRaw);
                     const hasNext = state === 'win' && campIdx >= 0 && campIdx + 1 < CAMPAIGN_TRACKS.length;
                     const isLast = state === 'win' && campIdx >= 0 && campIdx + 1 >= CAMPAIGN_TRACKS.length;
                     let villainLine = 'Ты прошёл этап. Но частота всё ещё моя.';
@@ -9611,7 +9503,7 @@ function startGaragePreview(carId) {
                         ];
                         villainLine = fails[Math.floor(Math.random() * fails.length)] + ' Забери посылку, если ещё веришь в свой маршрут.';
                     }
-                    const quoteHtml = String(villainLine).replace(/\n/g, '<br>');
+                    const quoteHtml = escapeHtml(String(villainLine)).replace(/\n/g, '<br>');
                     const head = (state === 'win')
                         ? (hasNext || isLast ? ('📡 ГЛАВА ' + (campIdx + 1) + ' ПРОЙДЕНА') : title)
                         : title;
@@ -9638,7 +9530,7 @@ function startGaragePreview(carId) {
                         + 'onerror="this.onerror=null;this.src=\'images/villain_finish.png\';this.onerror=function(){this.parentNode.style.display=\'none\';};" />'
                         + '<div style="position:absolute;left:0;right:0;bottom:0;padding:6px 8px;font-size:9px;letter-spacing:1px;color:#ff8888;background:linear-gradient(transparent,rgba(0,0,0,0.88));text-align:center;">НЕИЗВЕСТНЫЙ ГОЛОС · ЗАКРЫТЫЙ КАНАЛ</div>'
                         + '</div>'
-                        + '<div style="font-size:18px;font-weight:bold;color:#ff6666;margin:10px 0 4px;text-align:center;">' + (state === 'win' ? head : title) + '</div>'
+                        + '<div style="font-size:18px;font-weight:bold;color:#ff6666;margin:10px 0 4px;text-align:center;">' + escapeHtml(state === 'win' ? head : title) + '</div>'
                         + '<div style="font-size:12px;color:#aaa;text-align:center;margin-bottom:6px;">«' + trackName + '»</div>'
                         + '<div style="font-size:12px;color:#ccc;text-align:center;line-height:1.4;margin-bottom:8px;">' + statsLine + '</div>'
                         + '<div style="text-align:left;font-size:13px;line-height:1.45;color:#e8d0c8;background:rgba(70,15,25,0.45);border-left:3px solid #ff4444;padding:10px 12px;border-radius:0 10px 10px 0;margin-bottom:12px;max-height:100px;overflow-y:auto;">' + quoteHtml + '</div>'
@@ -9652,8 +9544,8 @@ function startGaragePreview(carId) {
                     screen.innerHTML = (
                         '<div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ' + color + ';text-align:center;max-width:400px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">'
                         + (imgHtml || '')
-                        + '<h1 style="font-size:28px;color:' + color + ';margin-bottom:10px;">' + title + '</h1>'
-                        + '<div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">' + message + '</div>'
+                        + '<h1 style="font-size:28px;color:' + color + ';margin-bottom:10px;">' + escapeHtml(title) + '</h1>'
+                        + '<div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">' + escapeHtml(message) + '</div>'
                         + '</div>'
                         + '<div class="finish-actions" id="finish-actions" style="width:min(400px,100%);margin:12px auto 0;display:flex;flex-direction:column;gap:8px;">'
                         + '<button type="button" id="finish-restart-btn">🔄 Заново</button>'
@@ -12761,9 +12653,9 @@ function createBossHpBar(maxHp) {
             let finishNarrow = false;
 
             function radioSay(text) {
-                if (radioCooldown > 0) return;
-                // на узком экране / мобиле не перекрываем HUD
+                // на узком экране / мобиле радио отключено
                 if (window.__isMobile || window.innerWidth < 700 || window.innerHeight < 420) return;
+                if (radioCooldown > 0) return;
                 radioCooldown = 2.2;
                 const el = document.createElement('div');
                 el.className = 'radio-line';
@@ -13760,6 +13652,7 @@ function createBossHpBar(maxHp) {
                                 else if (pr.shape === 'barrel') geo = new THREE.CylinderGeometry(pr.size * 0.6, pr.size * 0.6, pr.size * 1.2, 8);
                                 else geo = new THREE.SphereGeometry(pr.size, 10, 10);
                                 const ball = new THREE.Mesh(geo, bulletMat);
+                                ball.userData.sharedMat = true; // материал будет переиспользован клонами
                                 if (pr.shape === 'rocket') ball.rotation.x = Math.PI / 2;
                                 // точка вылета: пасть крока / морда / рука
                                 const fromMouth = !!pr.fromMouth;
@@ -14043,11 +13936,8 @@ function createBossHpBar(maxHp) {
                     try {
                         if (old && old.mesh) {
                             scene.remove(old.mesh);
-                            // geometry shared при clone — dispose только material если unique
-                            if (old.mesh.material && !old.mesh.userData.sharedMat) {
-                                const mats = Array.isArray(old.mesh.material) ? old.mesh.material : [old.mesh.material];
-                                mats.forEach(function(m) { try { m.dispose(); } catch (e2) {} });
-                            }
+                            // Материал и geometry могут шариться между клонами — не dispose-им,
+                            // пусть GC разберётся при отсутствии ссылок.
                         }
                     } catch (e) {}
                 }
@@ -14100,13 +13990,7 @@ function createBossHpBar(maxHp) {
                     }
                     if (bu.life <= 0 || bu.z > zPos + 25 || bu.z < zPos - 40) {
                         try {
-                            if (bu.mesh) {
-                                scene.remove(bu.mesh);
-                                if (bu.mesh.material && !bu.mesh.userData.sharedMat) {
-                                    const mats = Array.isArray(bu.mesh.material) ? bu.mesh.material : [bu.mesh.material];
-                                    mats.forEach(function(m) { try { m.dispose(); } catch (e2) {} });
-                                }
-                            }
+                            if (bu.mesh) scene.remove(bu.mesh);
                         } catch (e) {}
                         bossBullets.splice(bi, 1);
                     }
@@ -14496,6 +14380,34 @@ function createBossHpBar(maxHp) {
                         });
                     });
                 }
+                // Анимируемое окружение (парящий мусор, мигающие лампы) — не морозить!
+                if (typeof envAnim !== 'undefined' && Array.isArray(envAnim)) {
+                    envAnim.forEach(function(a) {
+                        if (a && a.mesh) {
+                            a.mesh.userData.dynamic = true;
+                            a.mesh.matrixAutoUpdate = true;
+                            if (a.mesh.traverse) {
+                                a.mesh.traverse(function(o) {
+                                    if (o.isObject3D) { o.userData.dynamic = true; o.matrixAutoUpdate = true; }
+                                });
+                            }
+                        }
+                    });
+                }
+                // Коллектиблы (нитро-стрелки, жвачки) — тоже анимируются
+                if (typeof collectibles !== 'undefined' && Array.isArray(collectibles)) {
+                    collectibles.forEach(function(c) {
+                        if (c && c.mesh) {
+                            c.mesh.userData.dynamic = true;
+                            c.mesh.matrixAutoUpdate = true;
+                            if (c.mesh.traverse) {
+                                c.mesh.traverse(function(o) {
+                                    if (o.isObject3D) { o.userData.dynamic = true; o.matrixAutoUpdate = true; }
+                                });
+                            }
+                        }
+                    });
+                }
             } catch (e) {}
             (function freezeStaticScene() {
                 try {
@@ -14868,8 +14780,7 @@ function showLoreScreen(quality, difficulty) {
             } else {
                 initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
             }
-        }
-        window.finishLoreAndStart = finishLoreAndStart;
+        };
 
 
         // Выбор машины
@@ -15218,9 +15129,9 @@ function showLoreScreen(quality, difficulty) {
         })();
 
         
-        document.getElementById('btnCam') && document.getElementById('btnCam').addEventListener('click', function() {
-            if (typeof window.__cycleCamera === 'function') window.__cycleCamera();
-        });
+        // #btnCam / #btnPauseMobile обрабатываются делегированием в wireMobileCamPause()
+        // (capture-фаза, stopPropagation) — прямой листенер здесь был бы мёртвым кодом.
+        // KeyC оставлен для переключения камеры с клавиатуры на ПК.
         window.addEventListener('keydown', function(e) {
             if (e.code === 'KeyC' && !e.repeat && typeof window.__cycleCamera === 'function') window.__cycleCamera();
         });
@@ -15366,41 +15277,27 @@ function showLoreScreen(quality, difficulty) {
 
         
         (function wireMobileCamPause() {
-            function bindCam(el) {
-                if (!el || el.__camBound) return;
-                el.__camBound = true;
-                const go = function(e) {
-                    if (e) { e.preventDefault(); e.stopPropagation(); }
-                    if (typeof window.__cycleCamera === 'function') window.__cycleCamera();
-                };
-                el.addEventListener('click', go);
-                el.addEventListener('touchend', go, { passive: false });
+            // Обработчики на #btnCam / #btnPauseMobile через делегирование на document —
+            // работает и после пересоздания DOM, без setInterval-опроса каждые 2 секунды.
+            function handleCam(e) {
+                if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (err) {} }
+                if (typeof window.__cycleCamera === 'function') window.__cycleCamera();
             }
-            function bindPause(el) {
-                if (!el || el.__pauseBound) return;
-                el.__pauseBound = true;
-                const go = function(e) {
-                    if (e) { e.preventDefault(); e.stopPropagation(); }
-                    if (typeof window.toggleRacePause === 'function') window.toggleRacePause();
-                };
-                el.addEventListener('click', go);
-                el.addEventListener('touchend', go, { passive: false });
+            function handlePause(e) {
+                if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (err) {} }
+                if (typeof window.toggleRacePause === 'function') window.toggleRacePause();
             }
-            bindCam(document.getElementById('btnCam'));
-            bindPause(document.getElementById('btnPauseMobile'));
-            // на случай если DOM пересоздают
+            function hit(el, id) {
+                return !!(el && el.closest && el.closest('#' + id));
+            }
             document.addEventListener('click', function(e) {
-                const t = e.target && e.target.closest && e.target.closest('#btnCam, #btnPauseMobile');
-                if (!t) return;
+                if (hit(e.target, 'btnCam')) handleCam(e);
+                else if (hit(e.target, 'btnPauseMobile')) handlePause(e);
             }, true);
-            if (window.__mobileCamPauseInterval) {
-                try { clearInterval(window.__mobileCamPauseInterval); } catch (e) {}
-            }
-            window.__mobileCamPauseInterval = setInterval(function() {
-                if (!window.__inRace) return;
-                bindCam(document.getElementById('btnCam'));
-                bindPause(document.getElementById('btnPauseMobile'));
-            }, 2000);
+            document.addEventListener('touchend', function(e) {
+                if (hit(e.target, 'btnCam')) handleCam(e);
+                else if (hit(e.target, 'btnPauseMobile')) handlePause(e);
+            }, { passive: false });
         })();
 
         
