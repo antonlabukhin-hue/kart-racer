@@ -74,7 +74,8 @@ class ParticleSystem {
 emit(position, velocity, count = 2, customSize = 0.15) {
     if (!this.enabled || !position) return;
     velocity = velocity || { x: 0, y: 0.2, z: 0 };
-    const density = quality === 'high' ? 2 : quality === 'medium' ? 1 : 0.5;
+    const q = (typeof quality !== 'undefined' && quality) || (typeof window !== 'undefined' && window.__lastQuality) || 'medium';
+    const density = q === 'high' ? 2 : q === 'medium' ? 1 : 0.5;
     const actualCount = Math.max(1, Math.floor(count * density));
     for (let i = 0; i < actualCount; i++) {
         const idx = this.particleIndex % this.maxParticles;

@@ -9166,6 +9166,7 @@ function startGaragePreview(carId) {
         // ОСНОВНАЯ ИГРА
         // ============================================================
         function initGame(quality, difficulty, carId = 'cheburashka', mapId = 'arsenev', weatherId = 'day') {
+            try { window.__lastQuality = quality || 'medium'; } catch (e) {}
             // Мобильные: гонка только в landscape
             if (window.__isMobile && typeof isPortrait === 'function' && isPortrait()) {
                 console.log('📱 Ждём горизонтальную ориентацию...');
