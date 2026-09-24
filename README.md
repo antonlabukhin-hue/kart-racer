@@ -68,6 +68,20 @@ npm run preview  # локальный просмотр сборки
 
 ---
 
+## Модули (фаза 1 разбиения)
+
+Исходники постепенно выносятся из монолита `index.html` в `src/`:
+
+- `audio.js` — SoundEngine  
+- `animals.js` — AnimalSpawner  
+- `particles.js` — ParticleSystem  
+- `data.js` — кампания, машины, животные  
+- `storage.js` — профили / localStorage  
+- `boss.js` — заглушка (меши ещё в initGame)  
+
+Подробный план: [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md).  
+**Сейчас игра запускается как раньше через `index.html`** — модули подключим на фазе 2 без ломки геймплея.
+
 ## Структура репозитория
 
 ```text
