@@ -42,14 +42,6 @@
 
 ## Быстрый старт
 
-### Вариант A — просто открыть
-
-1. Скачай репозиторий  
-2. Открой корневой `index.html` в браузере  
-   (удобнее через локальный сервер, см. ниже)
-
-### Вариант B — Vite (рекомендуется)
-
 ```bash
 git clone https://github.com/antonlabukhin-hue/kart-racer.git
 cd kart-racer
@@ -57,9 +49,11 @@ npm install
 npm run dev
 ```
 
-Сборка не нужна: GitHub Pages отдаёт `index.html` и `src/` как есть.
+Сайт собирается сам: на каждый пуш в `main` GitHub Actions запускает `npm run build` и публикует папку `dist/` на GitHub Pages (`.github/workflows/deploy.yml`). Если сборка упала, сайт не обновится, а у коммита в GitHub будет красный крестик.
 
-**Требования:** Node.js 18+, современный браузер с WebGL.
+Версии библиотек (three, vite) записаны только в `package.json`.
+
+**Требования:** Node.js 20.19+ или 22.12+, современный браузер с WebGL.
 
 ---
 
@@ -82,13 +76,15 @@ npm run dev
 kart-racer/
 ├── index.html          # основной билд игры (монолит + Three.js)
 ├── src/                # модули (audio, animals, particles, data)
-├── images/             # меню, карты, трофеи, спрайты машин
-├── music/              # menu-music.mp3, race-music.mp3
-├── package.json        # three, vite
+├── public/images/      # меню, карты, трофеи, спрайты машин
+├── public/music/       # menu-music.mp3, race-music.mp3
+├── package.json        # версии three и vite
+├── vite.config.js      # настройки сборки
+├── .github/workflows/  # сборка и публикация на GitHub Pages
 └── README.md
 ```
 
-Ассеты (`images/`, `music/`) должны лежать рядом с `index.html`, иначе в консоли будут CORS/404 (особенно в `file://` и песочницах).
+Картинки и музыка лежат в `public/`: Vite копирует их в сборку как есть. В коде адреса без `public/`: `images/menu.jpg`, `music/race-music.mp3`.
 
 ---
 
@@ -139,7 +135,7 @@ npm run dev
 
 ## Лицензия
 
-ISC (см. `package.json`). Ассеты в `images/` и `music/` — для этого проекта; при переиспользовании уточняй происхождение файлов.
+ISC (см. `package.json`). Ассеты в `public/images/` и `public/music/` — для этого проекта; при переиспользовании уточняй происхождение файлов.
 
 ---
 
