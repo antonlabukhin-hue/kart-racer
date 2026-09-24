@@ -1,8 +1,10 @@
+import * as THREE from 'three';
+
 /**
  * ParticleSystem — пыль, искры, взрывы
  */
 class ParticleSystem {
-constructor(scene) {
+  constructor(scene) {
     this.scene = scene;
     this.maxParticles = 180;
     this.enabled = true;

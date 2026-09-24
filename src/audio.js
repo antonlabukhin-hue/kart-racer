@@ -910,11 +910,5 @@ class SoundEngine {
 }
 
 
-// Ранняя инициализация звука (чтобы MP3 начал грузиться сразу)
-soundEngine = new SoundEngine();
-soundEngine.init();
-window.soundEngine = soundEngine;
-console.log('🔊 SoundEngine создан заранее');
-
 export { SoundEngine };
 export default SoundEngine;

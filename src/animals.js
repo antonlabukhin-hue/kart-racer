@@ -1,8 +1,16 @@
 /**
- * AnimalSpawner — пул и спавн перебегающих животных.
- * Зависит от глобальных (пока из index.html): createAnimalMesh, ANIMAL_TYPES / map pool.
- * После выноса mesh-фабрик — import { createAnimalMesh } from "./animalMeshes.js".
+ * AnimalSpawner — пул и спавн перебегающих животных
  */
+import * as THREE from 'three';
+import { ANIMAL_TYPES } from './data.js';
+
+const ANIMAL_KEYS = Object.keys(ANIMAL_TYPES);
+
+function meshFactory(typeId) {
+  const fn = (typeof window !== 'undefined' && window.createAnimalMesh) || (typeof createAnimalMesh === 'function' ? createAnimalMesh : null);
+  if (!fn) throw new Error('createAnimalMesh не найден — задайте window.createAnimalMesh');
+  return fn(typeId);
+}
 
 class AnimalSpawner {
     constructor(scene, roadWidth, roadCenter, finishZ, triggerLookahead, maxAnimals, spawnRate, crossMul) {
@@ -72,7 +80,7 @@ class AnimalSpawner {
         if (!this.meshPool[typeId]) this.meshPool[typeId] = [];
         let mesh = this.meshPool[typeId].pop();
         if (!mesh) {
-            mesh = createAnimalMesh(typeId);
+            mesh = meshFactory(typeId);
             this.scene.add(mesh);
         }
         mesh.visible = false;

@@ -1,34 +1,23 @@
-# Архитектура модулей (фаза 1)
+# Архитектура модулей
 
-## Сделано
-| Файл | Содержимое |
-|------|------------|
-| `audio.js` | `SoundEngine` |
-| `animals.js` | `AnimalSpawner` |
-| `particles.js` | `ParticleSystem` (+ `aliveCount = 0`) |
-| `data.js` | `CAMPAIGN_TRACKS`, `CAR_PRESETS`, `ANIMAL_TYPES`, `MAP_ANIMALS`, `CAMPAIGN_STAGE_MODS`, `CAMPAIGN_BOSSES` |
-| `storage.js` | профили / кампания (часть функций) |
-| `boss.js` | заглушка (меши ещё в initGame) |
-| `index.js` | re-export |
+## Фаза 1 — нарезка файлов
+Модули в `src/` как отдельные файлы.
 
-## Ещё в `index.html` (initGame closure)
-- `initGame` / `update` / `animate` / `endGame`
-- `createArcadeBossMesh`, `spawnBoss`
-- `_buildShowroomCar`, трафик, ландшафт
-- `showEndScreen`, меню, UI bootstrap
-- `recordRaceResult`, `loginAs` (сильная связь с DOM)
+## Фаза 2 — подключено (текущее)
+Корневой `index.html` импортирует:
 
-## Фаза 2 (следующий шаг)
-1. Подключить модули из Vite-entry без удаления монолита (dual-run).
-2. `game/RaceSession.js` — тонкая обёртка над initGame.
-3. Вынести boss mesh + car builder.
-4. Удалить дубли из `index.html`.
+```js
+import { SoundEngine } from './src/audio.js';
+import { AnimalSpawner } from './src/animals.js';
+import { ParticleSystem } from './src/particles.js';
+```
 
-## Фаза 3
-- `menu.js` — профили, кампания UI
-- `ui.js` — end screen, lore, achievements  
-- XSS-escape имён, единый teardown гонки
+Классы из монолита удалены. `window.createAnimalMesh` задаётся после объявления фабрики мешей в HTML.
 
-## Запуск сейчас
-Игра по-прежнему работает через корневой **index.html** (монолит не сломан).
-Модули в `src/` — готовая нарезка для импорта, когда подключим entry.
+Игра по-прежнему один HTML + ES modules (importmap three + relative `./src/*`).
+
+## Фаза 3 — дальше
+- `data.js` / `storage.js` вместо дублей констант и профилей в HTML
+- `boss.js` — createArcadeBossMesh
+- единый teardown, XSS-escape имён
+- по желанию: полный вынос `initGame` в `game.js`
