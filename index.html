@@ -3984,40 +3984,6 @@
     })();
     </script>
 
-    <script>
-    (function () {
-        function tryLogin() {
-            var input = document.getElementById('profile-name-input');
-            var name = (input && input.value || '').trim();
-            if (name.length < 2) { if (window.Notify && Notify.warn) Notify.warn('Имя', 'Минимум 2 символа'); else console.warn('Имя минимум 2 символа'); return; }
-            if (typeof loginAs === 'function' && typeof createProfile === 'function' && typeof loadAllProfiles === 'function') {
-                var existing = loadAllProfiles().find(function (p) {
-                    return p.name.toLowerCase() === name.toLowerCase();
-                });
-                if (existing) loginAs(existing);
-                else loginAs(createProfile(name));
-            } else {
-                // модуль ещё не загрузился
-                alert('Подожди секунду — игра ещё загружается, затем нажми «Войти» снова.');
-            }
-        }
-        function bindLogin() {
-            var btn = document.getElementById('profile-login-btn');
-            if (!btn || btn.dataset.boundLogin) return;
-            btn.dataset.boundLogin = '1';
-            btn.addEventListener('click', tryLogin);
-            var input = document.getElementById('profile-name-input');
-            if (input) {
-                input.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') tryLogin();
-                });
-            }
-        }
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindLogin);
-        else bindLogin();
-        setTimeout(bindLogin, 800);
-    })();
-    </script>
 
 
     <!-- ГЛАВНОЕ МЕНЮ -->
@@ -4100,7 +4066,7 @@
             <h1>🪪 КУРЬЕРСКИЙ ЖУРНАЛ</h1>
             <div class="sub">Войди под именем — прогресс сохранится на этом устройстве</div>
             <input id="profile-name-input" type="text" maxlength="16" placeholder="Твоё имя / позывной" autocomplete="off" />
-            <button class="profile-btn" id="profile-login-btn">ВОЙТИ / СОЗДАТЬ</button>
+            <button class="profile-btn" id="profile-login-btn" disabled>ЗАГРУЗКА…</button>
             <div class="sub" style="margin-top:12px;">Уже были на смене:</div>
             <div class="profile-list" id="profile-list"></div>
         </div>
@@ -15231,6 +15197,8 @@ function showLoreScreen(quality, difficulty) {
                     else loginAs(createProfile(name));
                     if (typeof window.__unlockAudio === 'function') window.__unlockAudio();
                 });
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'ВОЙТИ / СОЗДАТЬ';
             }
             const nameInput = document.getElementById('profile-name-input');
             if (nameInput) {
