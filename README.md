@@ -57,12 +57,7 @@ npm install
 npm run dev
 ```
 
-Сборка продакшена:
-
-```bash
-npm run build    # → папка dist/
-npm run preview  # локальный просмотр сборки
-```
+Сборка не нужна: GitHub Pages отдаёт `index.html` и `src/` как есть.
 
 **Требования:** Node.js 18+, современный браузер с WebGL.
 
@@ -75,22 +70,20 @@ npm run preview  # локальный просмотр сборки
 - `audio.js` — SoundEngine  
 - `animals.js` — AnimalSpawner  
 - `particles.js` — ParticleSystem  
-- `data.js` — кампания, машины, животные  
-- `storage.js` — профили / localStorage  
+- `data.js` — кампания, машины, животные (пока используется только в `animals.js`)  
 - `boss.js` — заглушка (меши ещё в initGame)  
 
 Подробный план: [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md).  
-**Сейчас игра запускается как раньше через `index.html`** — модули подключим на фазе 2 без ломки геймплея.
+Модули подключены из `index.html` как ES modules.
 
 ## Структура репозитория
 
 ```text
 kart-racer/
 ├── index.html          # основной билд игры (монолит + Three.js)
-├── src/main.js         # точка входа для Vite (если используется)
+├── src/                # модули (audio, animals, particles, data)
 ├── images/             # меню, карты, трофеи, спрайты машин
 ├── music/              # menu-music.mp3, race-music.mp3
-├── dist/               # production-сборка Vite
 ├── package.json        # three, vite
 └── README.md
 ```
@@ -136,8 +129,8 @@ kart-racer/
 Имеет смысл править один «источник правды» (корневой `index.html` *или* модули под Vite) и не плодить расхождения. Перед пушем:
 
 ```bash
-npm run build
-# проверить dist/ локально через npm run preview
+npm run dev
+# пройти заезд и проверить консоль браузера на ошибки
 ```
 
 Коммиты лучше с коротким смыслом: `fix: traffic maxCars in campaign`, `perf: compress menu JPEGs`.

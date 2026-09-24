@@ -105,7 +105,8 @@ emit(position, velocity, count = 2, customSize = 0.15) {
 explode(position, power) {
     if (!this.enabled || !position) return;
     const p = power != null ? power : 1;
-    const dens = (typeof quality !== 'undefined' && quality === 'low') ? 0.45 : ((typeof quality !== 'undefined' && quality === 'medium') ? 0.7 : 1);
+    const q = (typeof quality !== 'undefined' && quality) || (typeof window !== 'undefined' && window.__lastQuality) || 'medium';
+    const dens = q === 'low' ? 0.45 : (q === 'medium' ? 0.7 : 1);
     const spawn = (count, sizeMin, sizeMax, lifeMin, lifeMax, speed, yBias, r, g, b, r2, g2, b2) => {
         const n = Math.max(2, Math.floor(count * dens));
         for (let i = 0; i < n; i++) {

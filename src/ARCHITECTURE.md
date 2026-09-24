@@ -12,12 +12,12 @@ import { AnimalSpawner } from './src/animals.js';
 import { ParticleSystem } from './src/particles.js';
 ```
 
-Классы из монолита удалены. `window.createAnimalMesh` задаётся после объявления фабрики мешей в HTML.
+Классы из монолита удалены. `window.createAnimalMesh` и `window.showAnimalShout` задаются в HTML после объявления функций: модули не видят функций из `index.html` напрямую.
 
 Игра по-прежнему один HTML + ES modules (importmap three + relative `./src/*`).
 
 ## Фаза 3 — дальше
-- `data.js` / `storage.js` вместо дублей констант и профилей в HTML
+- `data.js` вместо дублей констант в HTML
 - `boss.js` — createArcadeBossMesh
 - единый teardown, XSS-escape имён
 - по желанию: полный вынос `initGame` в `game.js`
