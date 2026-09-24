@@ -14,7 +14,7 @@ import { ParticleSystem } from './src/particles.js';
 
 Классы из монолита удалены. `window.createAnimalMesh` и `window.showAnimalShout` задаются в HTML после объявления функций: модули не видят функций из `index.html` напрямую.
 
-Игра по-прежнему один HTML + ES modules (importmap three + relative `./src/*`).
+Vite собирает `index.html`, `src/*` и three из `node_modules` в один файл в `dist/assets/`.
 
 ## Фаза 3 — дальше
 - `data.js` вместо дублей констант в HTML
