@@ -4354,6 +4354,16 @@
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
 
+        function escapeHtml(str) {
+            return String(str == null ? '' : str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        window.escapeHtml = escapeHtml;
+
         // ============================================================
         // ОПТИМИЗАЦИЯ ТЕКСТУР Three.js
         // ============================================================
@@ -5846,7 +5856,7 @@ function createProfile(name) {
             box.innerHTML = list.map(p => `
                 <div class="profile-item" data-id="${p.id}">
                     <div>
-                        <div class="pname">${p.name}</div>
+                        <div class="pname">${escapeHtml(p.name)}</div>
                         <div class="pmeta">Побед: ${p.stats.wins || 0} · Заездов: ${p.stats.totalRaces || 0} · Сезон ур.${p.season?.level || 1}</div>
                     </div>
                     <div class="pmeta">→</div>
@@ -15383,7 +15393,11 @@ function showLoreScreen(quality, difficulty) {
                 const t = e.target && e.target.closest && e.target.closest('#btnCam, #btnPauseMobile');
                 if (!t) return;
             }, true);
-            setInterval(function() {
+            if (window.__mobileCamPauseInterval) {
+                try { clearInterval(window.__mobileCamPauseInterval); } catch (e) {}
+            }
+            window.__mobileCamPauseInterval = setInterval(function() {
+                if (!window.__inRace) return;
                 bindCam(document.getElementById('btnCam'));
                 bindPause(document.getElementById('btnPauseMobile'));
             }, 2000);
