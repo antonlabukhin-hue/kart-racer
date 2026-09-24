@@ -6902,19 +6902,33 @@ function renderGaragePartsPanel() {
             const cabinZ = isJeep ? (bodyL * 0.5 - cabinLen * 0.5 - 0.01) : (isSport ? 0.1 : 0.05);
             const cabinY = bodyY + bodyH * 0.5 + cabinH * 0.5;
 
-            // Непрозрачный каркас (цвет кузова) — бока без «чёрных плит»
+            // Кабина: стекло как у остальных машин (прозрачное), каркас — тонкие стойки
             const cabinShell = new THREE_REF.Mesh(
                 new THREE_REF.BoxGeometry(bodyW * 0.88, cabinH, cabinLen),
-                isJeep ? bodyMat2.clone() : glassMat.clone()
+                glassMat.clone()
             );
             cabinShell.position.set(0, cabinY, cabinZ);
-            if (isJeep) cabinShell.userData.bodyPaint = true;
-            else {
-                cabinShell.material.transparent = true;
-                cabinShell.material.opacity = 0.55;
-            }
+            cabinShell.material.transparent = true;
+            cabinShell.material.opacity = isJeep ? 0.38 : 0.55;
+            cabinShell.material.color.setHex(isJeep ? 0x88b0cc : 0x1a3048);
+            cabinShell.material.depthWrite = false;
+            cabinShell.material.metalness = 0.35;
+            cabinShell.material.roughness = 0.12;
             group.add(cabinShell);
             const cabin = cabinShell; // alias для antenna / roof_rack
+            // Стойки кабины (Нива и седаны) — чёрная рамка, не перекрывает стёкла
+            {
+                const postMat = new THREE_REF.MeshStandardMaterial({ color: 0x111111, roughness: 0.85, metalness: 0.2 });
+                const postW = 0.045;
+                const postH = cabinH * 0.92;
+                const zf = cabinZ - cabinLen * 0.48;
+                const zr = cabinZ + cabinLen * 0.48;
+                [[-1, zf], [1, zf], [-1, zr], [1, zr]].forEach(function(p) {
+                    const post = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(postW, postH, postW), postMat);
+                    post.position.set(p[0] * bodyW * 0.42, cabinY, p[1]);
+                    group.add(post);
+                });
+            }
 
             // Крыша (у Волги тоже — иначе «кабриолет»)
             {
@@ -6930,9 +6944,11 @@ function renderGaragePartsPanel() {
             {
                 const gMat = glassMat.clone();
                 gMat.transparent = true;
-                gMat.opacity = 0.55;
+                gMat.opacity = isJeep ? 0.36 : 0.48;
                 gMat.color.setHex(0xa8c8e0);
                 gMat.depthWrite = false;
+                gMat.metalness = 0.4;
+                gMat.roughness = 0.1;
 
                 // Лобовое (передняя стенка кабины, -Z)
                 const wind = new THREE_REF.Mesh(
@@ -6954,9 +6970,11 @@ function renderGaragePartsPanel() {
                 if (isJeep) {
                     const sideMat = glassMat.clone();
                     sideMat.transparent = true;
-                    sideMat.opacity = 0.65;
-                    sideMat.color.setHex(0x3a4a5a);
+                    sideMat.opacity = 0.36;
+                    sideMat.color.setHex(0xa8c8e0);
                     sideMat.depthWrite = false;
+                    sideMat.metalness = 0.4;
+                    sideMat.roughness = 0.1;
                     // боковые окна: высота как лобовое (0.7), длина соразмерно кабине
                     const winLen = cabinLen * 0.48;
                     const winZ = cabinZ + cabinLen * 0.02;
@@ -11680,6 +11698,18 @@ function startGaragePreview(carId) {
                     depthWrite: true, depthTest: true
                 });
             }
+            function ensureToonGradient() {
+                if (window.__toonGradient) return window.__toonGradient;
+                try {
+                    const data = new Uint8Array([60, 120, 190, 255]);
+                    const tex = new THREE.DataTexture(data, 4, 1, THREE.RedFormat);
+                    tex.minFilter = THREE.NearestFilter;
+                    tex.magFilter = THREE.NearestFilter;
+                    tex.needsUpdate = true;
+                    window.__toonGradient = tex;
+                } catch (e) { window.__toonGradient = null; }
+                return window.__toonGradient;
+            }
             function bossMat(color, opts) {
                 opts = opts || {};
                 let c = (typeof color === 'number') ? (color >>> 0) : color;
@@ -11687,6 +11717,7 @@ function startGaragePreview(carId) {
                 const e = opts.emissive != null ? opts.emissive : 0x000000;
                 const ei = opts.emissiveIntensity != null ? opts.emissiveIntensity : 0;
                 const glow = (ei > 0.05) || (e !== 0 && e !== 0x000000);
+                try { ensureToonGradient(); } catch (e) {}
                 const low = !!(window.__isMobile || window.__lastQuality === 'low' ||
                     (window.__renderOpt && window.__renderOpt.quality === 'low'));
                 const mode = glow ? 'basic' : (low ? 'basic' : (window.__toonGradient ? 'toon' : 'lambert'));
@@ -11929,8 +11960,8 @@ function createBossHpBar(maxHp) {
                 const matGun = M(0x3a3a45, { metalness: 0.75, roughness: 0.3 });
                 const matGunL = M(0x6a6a78, { metalness: 0.7, roughness: 0.28 });
                 const matWood = M(0x6a4420);
-                const matEye = M(eyeC, { emissive: eyeC, emissiveIntensity: 0.75, roughness: 0.3 });
-                const matEyeW = M(0xfff8f0);
+                const matEye = M(eyeC, { emissive: eyeC, emissiveIntensity: 1.15, roughness: 0.25 });
+                const matEyeW = M(0xffffff, { emissive: 0x334455, emissiveIntensity: 0.15 });
                 const matPants = M(0x1a1a22);
                 const matShoe = M(0xc01820);
                 const matTooth = M(0xfff5e0, { roughness: 0.4 });
@@ -11974,8 +12005,13 @@ function createBossHpBar(maxHp) {
                 let torsoCore = null;
                 if (fat) {
                     torsoCore = px(root, matFur, 0, 0.85, 0, 0.58, 0.5, 0.42);
-                    add(root, new THREE.CylinderGeometry(0.32, 0.36, 0.42, 10), matFurL, 0, 0.78, 0.08);
+                    add(root, new THREE.CylinderGeometry(0.32, 0.36, 0.42, 12), matFurL, 0, 0.78, 0.08);
                     px(root, matFur, 0, 1.18, 0, 0.54, 0.28, 0.36);
+                    // дельты / погоны
+                    add(root, new THREE.SphereGeometry(0.14, 8, 8), matJack, -0.32, 1.15, 0.05);
+                    add(root, new THREE.SphereGeometry(0.14, 8, 8), matJack, 0.32, 1.15, 0.05);
+                    px(root, matTrim, -0.32, 1.22, 0.05, 0.12, 0.04, 0.1);
+                    px(root, matTrim, 0.32, 1.22, 0.05, 0.12, 0.04, 0.1);
                 } else if (thin) {
                     torsoCore = px(root, matFur, 0, 0.88, 0, 0.38, 0.52, 0.30);
                     px(root, matFurL, 0, 1.14, 0.04, 0.36, 0.22, 0.28);
@@ -12050,23 +12086,31 @@ function createBossHpBar(maxHp) {
                     px(root, matGold, Math.sin(a)*0.18, 0.95+Math.cos(a)*0.05, 0.22, 0.05, 0.05, 0.05);
                 }
 
-                // --- руки ---
+                // --- руки (плечо / бицепс / предплечье / кисть) ---
                 function arm(side) {
                     const g = new THREE.Group();
-                    px(g, matFur, 0, -0.08, 0, 0.16, 0.34, 0.16);
-                    px(g, matFurD, 0, -0.36, 0.03, 0.14, 0.30, 0.14);
-                    px(g, matShoe, 0, -0.58, 0.05, 0.18, 0.15, 0.2);
+                    const sg = (window.__isMobile || window.__lastQuality === 'low') ? 6 : 10;
+                    // плечо
+                    add(g, new THREE.SphereGeometry(0.11, sg, sg), matJack, 0, 0.02, 0);
+                    // бицепс
+                    add(g, new THREE.CylinderGeometry(0.09, 0.1, 0.22, sg), matFur, 0, -0.14, 0);
+                    // локоть
+                    add(g, new THREE.SphereGeometry(0.08, sg, sg), matFurD, 0, -0.28, 0.02);
+                    // предплечье
+                    add(g, new THREE.CylinderGeometry(0.07, 0.085, 0.22, sg), matFurD, 0, -0.42, 0.03);
+                    // кисть / перчатка
+                    px(g, matShoe, 0, -0.58, 0.05, 0.14, 0.12, 0.16);
+                    px(g, matShoe, 0, -0.62, 0.1, 0.1, 0.08, 0.1); // пальцы
                     if (id === 'GORILLA_MECH' && side < 0) {
                         px(g, matGunL, 0, -0.2, 0, 0.16, 0.45, 0.16);
-                        add(g, new THREE.TorusGeometry(0.07, 0.02, 5, 8), matGold, 0, -0.32, 0);
-                    } else {
-                        px(g, matFur, 0, -0.52, 0.03, 0.12, 0.12, 0.12);
+                        add(g, new THREE.TorusGeometry(0.07, 0.02, 5, 10), matGold, 0, -0.32, 0);
                     }
-                    // тонкие (волк) — руки ближе к торсу, не «оторваны»
-                    const ax = fat ? 0.40 : (thin ? 0.24 : 0.32);
-                    const ay = fat ? 1.12 : (thin ? 1.02 : 1.10);
+                    // погон
+                    px(g, matTrim, 0, 0.06, 0, 0.16, 0.05, 0.12);
+                    const ax = fat ? 0.42 : (thin ? 0.26 : 0.34);
+                    const ay = fat ? 1.14 : (thin ? 1.04 : 1.12);
                     g.position.set(side * ax, ay, 0.02);
-                    g.rotation.z = side * (thin ? 0.12 : 0.18);
+                    g.rotation.z = side * (thin ? 0.12 : 0.16);
                     g.userData.isBossArm = true;
                     root.add(g);
                     return g;
@@ -12077,13 +12121,17 @@ function createBossHpBar(maxHp) {
                 // --- оружие ---
                 const weap = new THREE.Group();
                 if (wt === 'bat' || wt === 'crowbar') {
-                    px(weap, matWood, 0, 0, 0.25, 0.08, 0.08, 0.55);
-                    px(weap, matGun, 0, 0, 0.5, 0.12, 0.12, 0.12);
-                    // проволока
-                    for (let i = 0; i < 4; i++) px(weap, matGunL, 0, 0.05, 0.2+i*0.08, 0.1, 0.03, 0.03);
+                    add(weap, new THREE.CylinderGeometry(0.035, 0.045, 0.55, 8), matWood, 0, 0, 0.28, Math.PI/2, 0, 0);
+                    add(weap, new THREE.SphereGeometry(0.09, 8, 8), matWood, 0, 0, 0.58);
+                    px(weap, matGun, 0, 0, 0.05, 0.06, 0.06, 0.12); // рукоять
+                    // изолента + проволока
+                    for (let i = 0; i < 5; i++) px(weap, matGunL, 0, 0.04, 0.18+i*0.07, 0.09, 0.025, 0.03);
+                    px(weap, matAcc, 0, 0, 0.4, 0.1, 0.02, 0.1);
                 } else if (wt === 'rpg') {
-                    add(weap, new THREE.CylinderGeometry(0.08, 0.1, 0.7, 8), matGun, 0, 0, 0.2, Math.PI/2, 0, 0);
-                    add(weap, new THREE.ConeGeometry(0.12, 0.2, 8), matGunL, 0, 0, 0.6, Math.PI/2, 0, 0);
+                    add(weap, new THREE.CylinderGeometry(0.09, 0.11, 0.75, 10), matGun, 0, 0, 0.22, Math.PI/2, 0, 0);
+                    add(weap, new THREE.ConeGeometry(0.13, 0.22, 10), matGunL, 0, 0, 0.65, Math.PI/2, 0, 0);
+                    px(weap, matAcc, 0, 0.08, 0.15, 0.06, 0.06, 0.12); // прицел
+                    px(weap, matGold, 0, -0.1, 0.2, 0.05, 0.05, 0.08);
                 } else if (wt === 'rifle' || wt === 'ppsh') {
                     px(weap, matGun, 0, 0, 0.15, 0.1, 0.12, 0.55);
                     if (wt === 'ppsh') add(weap, new THREE.TorusGeometry(0.1, 0.03, 6, 10), matGunL, 0, -0.05, 0.05, Math.PI/2, 0, 0);
@@ -12142,157 +12190,221 @@ function createBossHpBar(maxHp) {
                 weap.userData.baseRot = { x: 0, y: 0, z: 0 };
                 rightArm.add(weap);
 
-                // --- голова ---
+                // --- голова (HD arcade: сферы + много деталей) ---
                 const head = new THREE.Group();
                 let jaw = null;
+                const seg = (window.__isMobile || window.__lastQuality === 'low') ? 8 : 12;
 
-                if (typeId === 'BOAR') {
-                    px(head, matFur, 0, 0.05, 0, 0.4, 0.38, 0.36);
-                    // бакенбарды седые
-                    px(head, M(0xc0c0c0), -0.22, -0.05, 0.1, 0.1, 0.2, 0.12);
-                    px(head, M(0xc0c0c0), 0.22, -0.05, 0.1, 0.1, 0.2, 0.12);
-                    px(head, matFurL, 0, -0.08, 0.28, 0.2, 0.14, 0.16);
-                    px(head, matNose, 0, -0.06, 0.42, 0.1, 0.08, 0.06);
-                    add(head, new THREE.ConeGeometry(0.04, 0.14, 5), matTooth, -0.1, -0.16, 0.35, 0.4, 0, 0);
-                    add(head, new THREE.ConeGeometry(0.04, 0.14, 5), matTooth, 0.1, -0.16, 0.35, 0.4, 0, 0);
-                    px(head, matFur, -0.22, 0.22, -0.02, 0.12, 0.14, 0.08); // ухо
-                    px(head, matFurD, 0.22, 0.18, -0.02, 0.1, 0.08, 0.06); // порванное
-                    // кепка
-                    px(head, matJack, 0, 0.28, 0.05, 0.42, 0.08, 0.38);
-                    px(head, matJackD, 0.08, 0.22, 0.15, 0.2, 0.1, 0.2); // сдвинута
-                } else if (typeId === 'RHINO') {
-                    px(head, matFur, 0, 0.05, 0, 0.36, 0.34, 0.34);
-                    add(head, new THREE.ConeGeometry(0.07, 0.4, 6), matFurL, 0, 0.1, 0.4, Math.PI/2.3, 0, 0);
-                    px(head, matFurD, 0, 0.12, 0.35, 0.04, 0.04, 0.15); // трещина
-                    // каска
-                    px(head, matGun, 0, 0.28, 0, 0.45, 0.14, 0.4);
-                    px(head, matGunL, 0, 0.2, 0.2, 0.3, 0.06, 0.1); // очки
-                } else if (typeId === 'WOLF' || typeId === 'DOG') {
-                    px(head, matFur, 0, 0.05, 0, thin ? 0.32 : 0.38, 0.34, 0.34);
-                    px(head, matFurL, 0, -0.04, 0.3, 0.18, 0.14, 0.28);
-                    px(head, matNose, 0, -0.05, 0.48, 0.07, 0.05, 0.05);
-                    px(head, matFur, -0.18, 0.28, -0.02, 0.1, 0.16, 0.06);
-                    px(head, matFur, 0.18, 0.28, -0.02, 0.1, 0.16, 0.06);
-                    // хвост
-                    px(root, matFurD, 0, 0.75, -0.45, 0.1, 0.1, 0.35);
-                    if (id === 'WOLF_NIGHT') {
-                        px(head, M(0xff0000, { emissive: 0xff0000, emissiveIntensity: 0.9 }), -0.12, 0.08, 0.22, 0.08, 0.08, 0.05); // протез
-                        px(head, matJack, 0, 0.2, -0.05, 0.4, 0.15, 0.35); // капюшон
-                    }
-                } else if (typeId === 'CROC') {
-                    px(head, matFur, 0, 0.05, 0, 0.34, 0.28, 0.3);
-                    px(head, matFur, 0, 0, 0.35, 0.28, 0.16, 0.4);
-                    jaw = new THREE.Group();
-                    px(jaw, matFurD, 0, 0, 0.2, 0.26, 0.1, 0.4);
-                    for (let t = 0; t < 5; t++) px(jaw, matTooth, -0.1+t*0.05, 0.05, 0.35, 0.03, 0.05, 0.03);
-                    jaw.position.set(0, -0.1, 0.15);
-                    jaw.userData.isBossJaw = true;
-                    head.add(jaw);
-                    px(head, M(0xffdd44), 0, -0.15, 0.1, 0.3, 0.12, 0.25); // брюхо-жёлтое на шее
-                    // шипы + хвост
-                    for (let i = 0; i < 4; i++) px(root, matFurD, 0, 1.1+i*0.02, -0.15-i*0.08, 0.06, 0.1, 0.06);
-                    px(root, matFurD, 0, 0.65, -0.55, 0.14, 0.12, 0.5);
-                    px(root, matFurD, 0, 0.5, -0.95, 0.1, 0.08, 0.35);
-                    // кепка охрана
-                    px(head, matJack, 0, 0.28, 0, 0.36, 0.08, 0.32);
-                } else if (typeId === 'BEAR') {
-                    px(head, matFur, 0, 0.05, 0, 0.42, 0.4, 0.38);
-                    px(head, matFurL, 0, -0.06, 0.28, 0.26, 0.18, 0.18);
-                    px(head, matNose, 0, -0.08, 0.4, 0.1, 0.08, 0.08);
-                    px(head, matFur, -0.24, 0.24, 0, 0.14, 0.14, 0.1);
-                    px(head, matFur, 0.24, 0.24, 0, 0.14, 0.14, 0.1);
-                    if (id === 'BEAR_VETERAN') {
-                        // седина, зашитый глаз, папаха
-                        px(head, M(0xc0c0b0), -0.2, 0.15, 0.1, 0.12, 0.2, 0.1);
-                        px(head, matJack, 0.12, 0.08, 0.22, 0.1, 0.04, 0.06); // шов
-                        px(head, matJack, 0, 0.32, 0, 0.45, 0.18, 0.4); // папаха
-                        px(root, matGold, 0.15, 1.05, 0.22, 0.1, 0.1, 0.04); // медаль
-                    }
-                } else if (typeId === 'DINO') {
-                    px(head, matFur, 0, 0.1, 0.1, 0.36, 0.32, 0.45);
-                    px(head, matFurD, 0, -0.05, 0.35, 0.3, 0.14, 0.35);
-                    for (let i = 0; i < 5; i++) px(root, matFurD, 0, 1.15, -0.1-i*0.1, 0.08, 0.12, 0.08);
-                    px(root, matFurD, 0, 0.7, -0.55, 0.12, 0.12, 0.5);
-                    px(head, matGun, 0, 0.32, 0, 0.38, 0.12, 0.35); // каска
-                } else if (typeId === 'LION' || typeId === 'TIGER') {
-                    px(head, matFur, 0, 0.05, 0, 0.36, 0.34, 0.34);
-                    if (typeId === 'LION') {
-                        for (let i = 0; i < 12; i++) {
-                            const a = (i/12)*Math.PI*2;
-                            px(head, matFurD, Math.sin(a)*0.28, Math.cos(a)*0.14, Math.cos(a)*0.08, 0.12, 0.12, 0.1);
-                        }
-                        px(head, matAcc, -0.14, 0.08, 0.22, 0.12, 0.06, 0.05); // повязка на глаз
-                    } else {
-                        for (let i = 0; i < 4; i++) {
-                            px(head, M(0xf5f5f5), -0.15, -0.05+i*0.1, 0.18, 0.06, 0.08, 0.2);
-                            px(head, M(0xf5f5f5), 0.15, -0.05+i*0.1, 0.18, 0.06, 0.08, 0.2);
-                        }
-                    }
-                    px(head, matFurL, 0, -0.04, 0.28, 0.2, 0.16, 0.18);
-                    px(head, matNose, 0, -0.05, 0.4, 0.08, 0.06, 0.05);
-                } else if (typeId === 'HIPPO') {
-                    px(head, matFur, 0, 0.05, 0, 0.45, 0.38, 0.4);
-                    jaw = new THREE.Group();
-                    px(jaw, matFurD, 0, 0, 0.15, 0.35, 0.14, 0.3);
-                    jaw.position.set(0, -0.15, 0.1);
-                    jaw.userData.isBossJaw = true;
-                    head.add(jaw);
-                    // противогаз
-                    px(head, matJack, 0, 0.05, 0.25, 0.4, 0.28, 0.25);
-                    add(head, new THREE.SphereGeometry(0.08, 6, 5), matEye, -0.12, 0.08, 0.38);
-                    add(head, new THREE.SphereGeometry(0.08, 6, 5), matEye, 0.12, 0.08, 0.38);
-                    add(head, new THREE.CylinderGeometry(0.06, 0.08, 0.15, 6), matGun, 0, -0.05, 0.45, Math.PI/2, 0, 0);
-                } else if (typeId === 'SHARK') {
-                    px(head, matFur, 0, 0.05, 0.1, 0.32, 0.28, 0.5);
-                    px(head, M(0xffffff), 0, -0.1, 0.15, 0.28, 0.14, 0.4);
-                    for (let t = 0; t < 6; t++) px(head, matTooth, -0.12+t*0.05, -0.05, 0.45, 0.03, 0.06, 0.03);
-                    px(root, matFur, 0, 1.2, -0.1, 0.08, 0.35, 0.12); // плавник
-                    add(head, new THREE.TorusGeometry(0.04, 0.01, 4, 6), matGold, 0, -0.05, 0.4); // кольцо в носу
-                } else if (typeId === 'BULL') {
-                    px(head, matFur, 0, 0.05, 0, 0.4, 0.36, 0.36);
-                    add(head, new THREE.ConeGeometry(0.05, 0.35, 5), matFurD, -0.25, 0.25, 0.1, 0, 0, 0.6);
-                    add(head, new THREE.ConeGeometry(0.05, 0.35, 5), matFurD, 0.25, 0.25, 0.1, 0, 0, -0.6);
-                    px(head, matGun, 0, 0.3, 0, 0.4, 0.12, 0.35); // каска
-                    px(head, M(0xffdd00, { emissive: 0xffaa00, emissiveIntensity: 0.6 }), 0, 0.35, 0.15, 0.08, 0.08, 0.08); // фонарь
-                    add(head, new THREE.TorusGeometry(0.05, 0.015, 4, 6), matGold, 0, -0.08, 0.35);
-                } else if (typeId === 'PANTHER') {
-                    px(head, matFur, 0, 0.05, 0, 0.34, 0.32, 0.34);
-                    px(head, matFurL, 0, -0.04, 0.28, 0.18, 0.14, 0.22);
-                    px(head, matAcc, -0.1, 0.15, 0.15, 0.2, 0.03, 0.03);
-                    px(head, M(0x00ffff, { emissive: 0x00ffff, emissiveIntensity: 0.5 }), 0.1, 0.1, 0.15, 0.2, 0.03, 0.03);
-                    px(head, matGunL, 0, 0.08, 0.3, 0.28, 0.06, 0.08); // очки-мухи
-                } else if (typeId === 'GORILLA') {
-                    px(head, matFur, 0, 0.05, 0, 0.4, 0.38, 0.36);
-                    px(head, matFurL, 0, -0.08, 0.22, 0.28, 0.16, 0.16);
-                    px(head, matGun, 0, 0.25, 0.1, 0.42, 0.2, 0.3); // сварочная маска
-                } else if (typeId === 'LIZARD') {
-                    px(head, matFur, 0, 0.05, 0, 0.3, 0.28, 0.4);
-                    for (let i = 0; i < 8; i++) {
-                        add(root, new THREE.ConeGeometry(0.04, 0.1, 4), M(0x00ffff, { emissive: 0x00ffff, emissiveIntensity: 0.5 }), 0, 1.1+i*0.02, -0.1-i*0.08);
-                    }
-                    px(head, M(0x00ff88, { emissive: 0x00ff88, emissiveIntensity: 0.4 }), 0, 0.08, 0.28, 0.3, 0.08, 0.08); // очки
-                } else if (typeId === 'MONKEY') {
-                    px(head, matFur, 0, 0.1, 0, 0.42, 0.42, 0.4); // большая голова
-                    px(head, matFurL, 0, -0.05, 0.25, 0.28, 0.2, 0.2);
-                    px(head, matAcc, -0.1, 0.1, 0.28, 0.16, 0.1, 0.06); // моно-очки
-                } else if (typeId === 'ALPHA') {
-                    px(head, matFur, 0, 0.08, 0, 0.44, 0.42, 0.4);
-                    px(head, matFurL, 0, -0.05, 0.28, 0.28, 0.18, 0.22);
-                    px(head, M(0x8a7a5a), 0, 0.32, 0, 0.5, 0.2, 0.42); // парик
-                    px(head, matGunL, 0.12, 0.08, 0.28, 0.08, 0.08, 0.05); // монокль
-                } else {
-                    px(head, matFur, 0, 0.05, 0, 0.38, 0.36, 0.36);
-                    px(head, matFurL, 0, -0.04, 0.28, 0.22, 0.16, 0.18);
+                function skull(p, mat, x, y, z, r) {
+                    return add(p, new THREE.SphereGeometry(r, seg, seg), mat, x, y, z);
+                }
+                function eyePair(p, y, z, gap, sEye) {
+                    sEye = sEye || 0.055;
+                    // белок + зрачок + блик
+                    [[-gap, 1], [gap, 1]].forEach(function(sp) {
+                        const side = sp[0];
+                        px(p, matEyeW, side, y, z, sEye * 1.55, sEye * 1.45, sEye * 0.7);
+                        px(p, matEye, side, y, z + sEye * 0.55, sEye * 0.95, sEye * 0.95, sEye * 0.55);
+                        px(p, matEyeW, side - sEye * 0.2, y + sEye * 0.25, z + sEye * 0.9, sEye * 0.28, sEye * 0.28, sEye * 0.2);
+                    });
+                }
+                function brow(p, y, z, w) {
+                    px(p, matFurD, 0, y, z, w, 0.04, 0.05);
                 }
 
-                // глаза (если не перекрыты)
-                if (typeId !== 'HIPPO') {
-                    px(head, matEyeW, -0.12, 0.08, 0.22, 0.09, 0.09, 0.05);
-                    px(head, matEye, -0.12, 0.08, 0.26, 0.055, 0.055, 0.04);
-                    if (id !== 'BEAR_VETERAN' && id !== 'LION_DUMP') {
-                        px(head, matEyeW, 0.12, 0.08, 0.22, 0.09, 0.09, 0.05);
-                        px(head, matEye, 0.12, 0.08, 0.26, 0.055, 0.055, 0.04);
+                if (typeId === 'BOAR') {
+                    skull(head, matFur, 0, 0.06, 0.02, 0.22);
+                    px(head, matFur, 0, 0.02, 0.02, 0.42, 0.36, 0.38);
+                    // бакенбарды
+                    px(head, M(0xc8c8c8), -0.24, -0.04, 0.08, 0.12, 0.22, 0.14);
+                    px(head, M(0xc8c8c8), 0.24, -0.04, 0.08, 0.12, 0.22, 0.14);
+                    // рыло
+                    add(head, new THREE.CylinderGeometry(0.09, 0.12, 0.2, seg), matFurL, 0, -0.06, 0.32, Math.PI/2, 0, 0);
+                    px(head, matNose, 0, -0.05, 0.46, 0.12, 0.09, 0.07);
+                    px(head, M(0x1a0a08), -0.03, -0.05, 0.5, 0.03, 0.03, 0.02);
+                    px(head, M(0x1a0a08), 0.03, -0.05, 0.5, 0.03, 0.03, 0.02);
+                    // клыки
+                    add(head, new THREE.ConeGeometry(0.035, 0.16, 6), matTooth, -0.1, -0.18, 0.38, 0.5, 0, 0.2);
+                    add(head, new THREE.ConeGeometry(0.035, 0.16, 6), matTooth, 0.1, -0.18, 0.38, 0.5, 0, -0.2);
+                    // уши
+                    px(head, matFur, -0.24, 0.24, -0.04, 0.12, 0.16, 0.08);
+                    px(head, matFurL, -0.24, 0.24, 0.0, 0.06, 0.1, 0.03);
+                    px(head, matFurD, 0.24, 0.2, -0.04, 0.1, 0.1, 0.07); // порванное
+                    // кепка-восьмиклинка
+                    add(head, new THREE.CylinderGeometry(0.22, 0.24, 0.1, 8), matJack, 0, 0.3, 0.02);
+                    px(head, matJackD, 0.1, 0.26, 0.18, 0.18, 0.06, 0.16);
+                    px(head, matGold, 0, 0.34, 0.02, 0.06, 0.03, 0.06); // кокарда
+                    brow(head, 0.14, 0.2, 0.28);
+                    eyePair(head, 0.08, 0.24, 0.12, 0.05);
+                } else if (typeId === 'RHINO') {
+                    skull(head, matFur, 0, 0.06, 0, 0.2);
+                    px(head, matFur, 0, 0.04, 0, 0.4, 0.36, 0.38);
+                    // рог с сегментами
+                    add(head, new THREE.ConeGeometry(0.08, 0.42, 8), matFurL, 0, 0.12, 0.42, Math.PI/2.2, 0, 0);
+                    px(head, matFurD, 0, 0.14, 0.38, 0.05, 0.05, 0.18);
+                    px(head, matFurD, 0.02, 0.1, 0.5, 0.03, 0.03, 0.08); // трещина
+                    // каска + подшлемник
+                    add(head, new THREE.SphereGeometry(0.24, seg, seg, 0, Math.PI*2, 0, Math.PI*0.55), matGun, 0, 0.22, 0);
+                    px(head, matGunL, 0, 0.18, 0.22, 0.34, 0.07, 0.12); // очки-капли
+                    px(head, M(0x111111), -0.1, 0.18, 0.28, 0.08, 0.05, 0.02);
+                    px(head, M(0x111111), 0.1, 0.18, 0.28, 0.08, 0.05, 0.02);
+                    // уши маленькие
+                    px(head, matFur, -0.2, 0.2, -0.06, 0.07, 0.08, 0.05);
+                    px(head, matFur, 0.2, 0.2, -0.06, 0.07, 0.08, 0.05);
+                    eyePair(head, 0.06, 0.22, 0.11, 0.048);
+                } else if (typeId === 'WOLF' || typeId === 'DOG') {
+                    skull(head, matFur, 0, 0.06, 0, thin ? 0.17 : 0.2);
+                    px(head, matFur, 0, 0.04, 0, thin ? 0.34 : 0.4, 0.34, 0.36);
+                    // морда
+                    add(head, new THREE.CylinderGeometry(0.07, 0.1, 0.26, seg), matFurL, 0, -0.04, 0.34, Math.PI/2, 0, 0);
+                    px(head, matNose, 0, -0.04, 0.5, 0.08, 0.06, 0.05);
+                    // уши стоячие
+                    add(head, new THREE.ConeGeometry(0.07, 0.18, 6), matFur, -0.16, 0.3, -0.04, 0, 0, -0.3);
+                    add(head, new THREE.ConeGeometry(0.07, 0.18, 6), matFur, 0.16, 0.3, -0.04, 0, 0, 0.3);
+                    px(head, matFurL, -0.16, 0.28, -0.02, 0.04, 0.1, 0.03);
+                    px(head, matFurL, 0.16, 0.28, -0.02, 0.04, 0.1, 0.03);
+                    // хвост
+                    px(root, matFurD, 0, 0.72, -0.48, 0.1, 0.1, 0.38);
+                    px(root, matFur, 0, 0.78, -0.62, 0.08, 0.08, 0.14);
+                    if (id === 'WOLF_NIGHT') {
+                        px(head, M(0xff2020, { emissive: 0xff0000, emissiveIntensity: 1.0 }), -0.12, 0.08, 0.24, 0.09, 0.09, 0.06);
+                        px(head, matJack, 0, 0.22, -0.06, 0.42, 0.16, 0.36);
+                        px(head, matJackD, 0, 0.12, 0.2, 0.2, 0.08, 0.1); // капюшон козырёк
                     }
+                    brow(head, 0.14, 0.18, 0.26);
+                    eyePair(head, 0.08, 0.22, 0.11, 0.05);
+                } else if (typeId === 'CROC' || typeId === 'CROCODILE') {
+                    // вытянутая пасть
+                    px(head, matFur, 0, 0.02, 0.05, 0.32, 0.26, 0.5);
+                    skull(head, matFur, 0, 0.08, -0.05, 0.16);
+                    jaw = new THREE.Group();
+                    px(jaw, matFurD, 0, -0.06, 0.12, 0.28, 0.1, 0.42);
+                    // зубы ряд
+                    for (let ti = 0; ti < 6; ti++) {
+                        const tx = -0.12 + ti * 0.05;
+                        add(jaw, new THREE.ConeGeometry(0.02, 0.07, 4), matTooth, tx, 0.02, 0.2 + (ti%2)*0.04, Math.PI, 0, 0);
+                        add(head, new THREE.ConeGeometry(0.02, 0.06, 4), matTooth, tx, -0.02, 0.22 + (ti%2)*0.03);
+                    }
+                    head.add(jaw);
+                    // глаза сверху
+                    px(head, matEyeW, -0.1, 0.16, 0.1, 0.08, 0.06, 0.06);
+                    px(head, matEye, -0.1, 0.16, 0.14, 0.05, 0.04, 0.04);
+                    px(head, matEyeW, 0.1, 0.16, 0.1, 0.08, 0.06, 0.06);
+                    px(head, matEye, 0.1, 0.16, 0.14, 0.05, 0.04, 0.04);
+                    // гребень
+                    for (let ci = 0; ci < 5; ci++) {
+                        add(head, new THREE.ConeGeometry(0.03, 0.08, 4), matFurL, 0, 0.18, -0.1 + ci * 0.06);
+                    }
+                } else if (typeId === 'BEAR') {
+                    skull(head, matFur, 0, 0.08, 0, 0.22);
+                    px(head, matFur, 0, 0.06, 0, 0.44, 0.4, 0.4);
+                    // мордочка
+                    add(head, new THREE.SphereGeometry(0.12, seg, seg), matFurL, 0, -0.04, 0.28);
+                    px(head, matNose, 0, -0.02, 0.4, 0.08, 0.06, 0.05);
+                    // круглые уши
+                    add(head, new THREE.SphereGeometry(0.09, 8, 8), matFur, -0.22, 0.22, -0.05);
+                    add(head, new THREE.SphereGeometry(0.09, 8, 8), matFur, 0.22, 0.22, -0.05);
+                    px(head, matFurL, -0.22, 0.22, -0.02, 0.05, 0.05, 0.03);
+                    px(head, matFurL, 0.22, 0.22, -0.02, 0.05, 0.05, 0.03);
+                    if (id === 'BEAR_VETERAN' || String(id).indexOf('USHANKA') >= 0 || String(id).indexOf('BEAR') >= 0) {
+                        // ушанка
+                        px(head, matJack, 0, 0.28, 0, 0.48, 0.16, 0.42);
+                        px(head, matJackD, -0.28, 0.12, 0.05, 0.1, 0.22, 0.16);
+                        px(head, matJackD, 0.28, 0.12, 0.05, 0.1, 0.22, 0.16);
+                        px(head, matGold, 0, 0.32, 0.18, 0.08, 0.04, 0.02); // кокарда
+                    }
+                    brow(head, 0.14, 0.2, 0.3);
+                    eyePair(head, 0.08, 0.24, 0.12, 0.052);
+                } else if (typeId === 'HIPPO') {
+                    px(head, matFur, 0, 0.04, 0.05, 0.48, 0.36, 0.5);
+                    skull(head, matFur, 0, 0.1, -0.05, 0.18);
+                    // огромная пасть
+                    jaw = new THREE.Group();
+                    px(jaw, matFurD, 0, -0.1, 0.1, 0.42, 0.12, 0.4);
+                    px(jaw, matTooth, 0, 0, 0.25, 0.36, 0.04, 0.08);
+                    head.add(jaw);
+                    px(head, matNose, -0.1, 0.06, 0.42, 0.08, 0.06, 0.05);
+                    px(head, matNose, 0.1, 0.06, 0.42, 0.08, 0.06, 0.05);
+                    // крошечные уши
+                    px(head, matFur, -0.22, 0.2, -0.1, 0.08, 0.08, 0.05);
+                    px(head, matFur, 0.22, 0.2, -0.1, 0.08, 0.08, 0.05);
+                    eyePair(head, 0.14, 0.28, 0.14, 0.04);
+                } else if (typeId === 'BULL') {
+                    skull(head, matFur, 0, 0.06, 0, 0.2);
+                    px(head, matFur, 0, 0.04, 0, 0.4, 0.36, 0.38);
+                    // рога
+                    add(head, new THREE.ConeGeometry(0.04, 0.28, 6), matTooth, -0.22, 0.28, -0.05, 0.5, 0, -0.8);
+                    add(head, new THREE.ConeGeometry(0.04, 0.28, 6), matTooth, 0.22, 0.28, -0.05, 0.5, 0, 0.8);
+                    px(head, matFurL, 0, -0.02, 0.32, 0.2, 0.14, 0.2);
+                    px(head, matNose, 0, -0.04, 0.46, 0.1, 0.07, 0.06);
+                    add(head, new THREE.TorusGeometry(0.06, 0.015, 6, 12), matGold, 0, -0.08, 0.48, Math.PI/2, 0, 0);
+                    eyePair(head, 0.08, 0.22, 0.12, 0.05);
+                } else if (typeId === 'PANTHER') {
+                    skull(head, matFur, 0, 0.05, 0, 0.18);
+                    px(head, matFur, 0, 0.03, 0, 0.36, 0.32, 0.36);
+                    px(head, matFurL, 0, -0.04, 0.28, 0.16, 0.12, 0.22);
+                    px(head, matNose, 0, -0.04, 0.42, 0.06, 0.05, 0.04);
+                    add(head, new THREE.ConeGeometry(0.06, 0.14, 5), matFur, -0.14, 0.26, -0.04);
+                    add(head, new THREE.ConeGeometry(0.06, 0.14, 5), matFur, 0.14, 0.26, -0.04);
+                    // визор
+                    px(head, matAcc, -0.1, 0.12, 0.18, 0.18, 0.04, 0.04);
+                    px(head, M(0x00ffff, { emissive: 0x00ffff, emissiveIntensity: 0.6 }), 0.1, 0.1, 0.18, 0.18, 0.04, 0.04);
+                    px(head, matGunL, 0, 0.08, 0.3, 0.3, 0.06, 0.08);
+                    eyePair(head, 0.08, 0.2, 0.1, 0.045);
+                } else if (typeId === 'GORILLA') {
+                    skull(head, matFur, 0, 0.06, 0, 0.2);
+                    px(head, matFur, 0, 0.04, 0, 0.42, 0.38, 0.38);
+                    px(head, matFurL, 0, -0.08, 0.22, 0.3, 0.18, 0.18);
+                    // надбровные дуги
+                    px(head, matFurD, 0, 0.14, 0.18, 0.34, 0.08, 0.1);
+                    px(head, matGun, 0, 0.26, 0.08, 0.44, 0.2, 0.32); // сварочная маска
+                    px(head, matGunL, 0, 0.2, 0.26, 0.28, 0.1, 0.04); // стекло маски
+                    eyePair(head, 0.06, 0.2, 0.11, 0.048);
+                } else if (typeId === 'LIZARD') {
+                    px(head, matFur, 0, 0.04, 0.05, 0.3, 0.26, 0.42);
+                    skull(head, matFur, 0, 0.06, -0.02, 0.14);
+                    for (let li = 0; li < 8; li++) {
+                        add(root, new THREE.ConeGeometry(0.035, 0.09, 4), M(0x00ffff, { emissive: 0x00ffff, emissiveIntensity: 0.55 }), 0, 1.12 + li * 0.02, -0.12 - li * 0.07);
+                    }
+                    px(head, M(0x00ff88, { emissive: 0x00ff88, emissiveIntensity: 0.45 }), 0, 0.1, 0.28, 0.32, 0.08, 0.08);
+                    eyePair(head, 0.1, 0.22, 0.1, 0.045);
+                } else if (typeId === 'MONKEY') {
+                    skull(head, matFur, 0, 0.1, 0, 0.22);
+                    px(head, matFur, 0, 0.08, 0, 0.44, 0.42, 0.42);
+                    px(head, matFurL, 0, -0.04, 0.26, 0.3, 0.22, 0.22);
+                    px(head, matAcc, -0.12, 0.12, 0.3, 0.14, 0.1, 0.06);
+                    px(head, matGold, -0.12, 0.12, 0.34, 0.08, 0.08, 0.02); // линза
+                    // уши
+                    add(head, new THREE.SphereGeometry(0.08, 8, 8), matFur, -0.26, 0.1, -0.02);
+                    add(head, new THREE.SphereGeometry(0.08, 8, 8), matFur, 0.26, 0.1, -0.02);
+                    eyePair(head, 0.1, 0.24, 0.12, 0.05);
+                } else if (typeId === 'ALPHA') {
+                    skull(head, matFur, 0, 0.1, 0, 0.23);
+                    px(head, matFur, 0, 0.08, 0, 0.46, 0.42, 0.42);
+                    px(head, matFurL, 0, -0.04, 0.28, 0.3, 0.2, 0.24);
+                    // парик судьи
+                    px(head, M(0x8a7a5a), 0, 0.34, 0, 0.52, 0.22, 0.44);
+                    px(head, M(0x9a8a6a), -0.28, 0.15, 0.05, 0.12, 0.28, 0.14);
+                    px(head, M(0x9a8a6a), 0.28, 0.15, 0.05, 0.12, 0.28, 0.14);
+                    px(head, matGunL, 0.14, 0.1, 0.3, 0.09, 0.09, 0.05); // монокль
+                    px(head, matGold, 0.14, 0.02, 0.3, 0.02, 0.08, 0.02); // цепочка
+                    brow(head, 0.16, 0.2, 0.32);
+                    eyePair(head, 0.08, 0.24, 0.12, 0.055);
+                } else {
+                    // BEAR default / generic
+                    skull(head, matFur, 0, 0.06, 0, 0.2);
+                    px(head, matFur, 0, 0.04, 0, 0.4, 0.38, 0.38);
+                    px(head, matFurL, 0, -0.04, 0.28, 0.22, 0.16, 0.2);
+                    px(head, matNose, 0, -0.04, 0.42, 0.08, 0.06, 0.05);
+                    add(head, new THREE.SphereGeometry(0.08, 8, 8), matFur, -0.2, 0.22, -0.04);
+                    add(head, new THREE.SphereGeometry(0.08, 8, 8), matFur, 0.2, 0.22, -0.04);
+                    brow(head, 0.14, 0.2, 0.28);
+                    eyePair(head, 0.08, 0.22, 0.12, 0.05);
+                }
+
+                // глаза-fallback только если тип сам не нарисовал (HIPPO/CROC уже есть)
+                if (typeId !== 'HIPPO' && typeId !== 'CROC' && typeId !== 'CROCODILE' && typeId !== 'BOAR' && typeId !== 'RHINO' && typeId !== 'WOLF' && typeId !== 'DOG' && typeId !== 'BEAR' && typeId !== 'BULL' && typeId !== 'PANTHER' && typeId !== 'GORILLA' && typeId !== 'LIZARD' && typeId !== 'MONKEY' && typeId !== 'ALPHA') {
+                    eyePair(head, 0.08, 0.22, 0.12, 0.05);
                 }
 
                 head.position.set(0, 1.36, 0.04);
@@ -12331,9 +12443,51 @@ function createBossHpBar(maxHp) {
                     drone: { color: 0xff2244, emissive: 0xff0022, size: 0.16, shape: 'sphere', speed: 9 },
                     burst: { color: 0xffcc00, emissive: 0xffaa00, size: 0.12, shape: 'sphere', speed: 10, multi: 5 },
                     hammer: { color: 0x8a7a5a, emissive: 0x554433, size: 0.4, shape: 'box', speed: 6, heavy: true },
-                    default: { color: 0xff4400, emissive: 0xff2200, size: 0.26, shape: 'sphere', speed: 7.2 }
+                    default: { color: 0xff4400, emissive: 0xff2200, size: 0.34, shape: 'sphere', speed: 5.8 }
                 };
                 root.userData.projectile = PROJ[def.attack] || PROJ.default;
+
+                // --- аркадный контур + читаемость силуэта ---
+                try {
+                    const outlineMat = new THREE.MeshBasicMaterial({
+                        color: 0x08060c, side: THREE.BackSide, depthWrite: false
+                    });
+                    const outlines = [];
+                    root.traverse(function(o) {
+                        if (!o.isMesh || !o.geometry) return;
+                        // только крупные части (не глаза/декор)
+                        const g = o.geometry;
+                        if (!g.boundingBox) g.computeBoundingBox();
+                        const bb = g.boundingBox;
+                        if (!bb) return;
+                        const size = bb.max.clone().sub(bb.min);
+                        if (size.x * size.y * size.z < 0.004) return;
+                        const om = o.clone();
+                        om.material = outlineMat;
+                        om.scale.multiplyScalar(1.08);
+                        om.castShadow = false;
+                        outlines.push({ parent: o.parent, mesh: om, src: o });
+                    });
+                    outlines.forEach(function(item) {
+                        // local outline as child so it follows bones/groups
+                        item.src.add(item.mesh);
+                        item.mesh.position.set(0, 0, 0);
+                        item.mesh.rotation.set(0, 0, 0);
+                        item.mesh.scale.set(1.1, 1.1, 1.1);
+                    });
+                } catch (eOut) {}
+
+                // лёгкий «подсвет» шерсти — ночью босс не тонет в фоне
+                try {
+                    root.traverse(function(o) {
+                        if (!o.isMesh || !o.material) return;
+                        const m = o.material;
+                        if (m.emissive && m.emissiveIntensity != null && m.emissiveIntensity < 0.08) {
+                            m.emissiveIntensity = Math.max(m.emissiveIntensity, 0.06);
+                        }
+                    });
+                } catch (eEm) {}
+
                 return root;
             }
 
@@ -12362,8 +12516,10 @@ function createBossHpBar(maxHp) {
 
                 // Аркадный персонаж: куртка + оружие + видовая голова
                 const group = createArcadeBossMesh(def);
-                const sc = (def.scale || 2.0) * 0.95;
+                // крупнее и читаемее на дороге
+                const sc = (def.scale || 2.15) * 1.05;
                 group.scale.set(sc, sc, sc);
+                group.userData._baseScale = sc;
 
                 const furCol = def.fur != null ? def.fur : 0x5a4030;
                 const jackCol = def.jacket != null ? def.jacket : 0x1a1210;
@@ -12379,18 +12535,33 @@ function createBossHpBar(maxHp) {
                 group.visible = true;
                 scene.add(group);
 
+                // HP растёт по главам; фаза 0 = «вход», давление на полосы
+                const chapterHp = Math.min(6, 3 + Math.floor(bossIdx / 3));
+                try {
+                    if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('boss', 1.0);
+                } catch (eSfx) {}
+                try {
+                    if (typeof particleSystem !== 'undefined' && particleSystem && particleSystem.emit) {
+                        particleSystem.emit(
+                            { x: group.position.x, y: 1.2, z: startZ },
+                            { x: 0, y: 0.8, z: 0.2 },
+                            14, 0.28
+                        );
+                    }
+                } catch (ePart) {}
+
                 boss = {
                     mesh: group,
                     x: group.position.x,
                     z: startZ,
                     side: side,
                     laneTarget: Math.floor(Math.random() * 3),
-                    speed: 0.20,
-                    hp: 3,
-                    maxHp: 3,
+                    speed: 0.22 + Math.min(0.06, bossIdx * 0.004),
+                    hp: chapterHp,
+                    maxHp: chapterHp,
                     active: true,
                     phase: 0,
-                    shoutTimer: 2.5,
+                    shoutTimer: 3.2,
                     shotTimer: 2.2,
                     attackState: 'idle',
                     attackT: 0,
