@@ -3189,6 +3189,7 @@ function startGaragePreview(carId) {
                 if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
             } catch (e) {}
             try {
+                if (window.__onboardStop) window.__onboardStop();
                 const tip = document.getElementById('onboarding-tip');
                 if (tip) { tip.classList.remove('show'); tip.innerHTML = ''; }
             } catch (e) {}
@@ -3206,23 +3207,25 @@ function startGaragePreview(carId) {
                 ? '<b>Как играть</b><div class="ob-keys">Кнопки внизу — газ и полосы<br>Не больше <b>5 аварий</b> · собирай нитро</div>'
                 : '<b>Как играть</b><div class="ob-keys"><span>W</span>/<span>↑</span> газ · <span>A</span><span>D</span> полосы<br><span>P</span> пауза · <span>C</span> камера<br>Лимит: <b>5 аварий</b> · нитро ускоряет</div>';
             el.classList.add('show');
-            clearTimeout(window.__onboardTimer);
-            window.__onboardTimer = setTimeout(function() {
-                try {
-                    el.classList.remove('show');
-                    localStorage.setItem('road_racing_onboarded_v1', '1');
-                } catch (e2) {}
-            }, 12000);
-            // скрыть раньше по любому вводу
+            if (window.__onboardStop) window.__onboardStop();
+            // снять таймеры и слушатели; teardownRaceUI зовёт это при выходе из заезда
+            const stop = function() {
+                clearTimeout(window.__onboardTimer);
+                clearTimeout(window.__onboardListenTimer);
+                window.removeEventListener('keydown', hide);
+                window.removeEventListener('pointerdown', hide);
+            };
+            // скрыть через 12 с или раньше по любому вводу
             const hide = function() {
+                stop();
                 try {
                     el.classList.remove('show');
                     localStorage.setItem('road_racing_onboarded_v1', '1');
                 } catch (e3) {}
-                window.removeEventListener('keydown', hide);
-                window.removeEventListener('pointerdown', hide);
             };
-            setTimeout(function() {
+            window.__onboardStop = stop;
+            window.__onboardTimer = setTimeout(hide, 12000);
+            window.__onboardListenTimer = setTimeout(function() {
                 window.addEventListener('keydown', hide, { once: true });
                 window.addEventListener('pointerdown', hide, { once: true });
             }, 900);
