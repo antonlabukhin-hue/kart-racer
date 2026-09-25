@@ -59,23 +59,25 @@ npm run dev
 
 ## Модули (фаза 1 разбиения)
 
-Исходники постепенно выносятся из монолита `index.html` в `src/`:
+В `index.html` только разметка экранов и скрипт заставки. Стили — в `css/style.css`, код игры — в `src/`:
 
+- `main.js` — вся игра: меню, профили, гараж, кампания, `initGame` (перенесено из `index.html` как было)  
 - `audio.js` — SoundEngine  
 - `animals.js` — AnimalSpawner  
 - `particles.js` — ParticleSystem  
-- `data.js` — кампания, машины, животные (пока используется только в `animals.js`)  
+- `data.js` — кампания, машины, животные (общие для `main.js` и `animals.js`)  
 - `boss.js` — заглушка (меши ещё в initGame)  
 
 Подробный план: [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md).  
-Модули подключены из `index.html` как ES modules.
+`index.html` подключает `src/main.js`, остальные модули он импортирует сам.
 
 ## Структура репозитория
 
 ```text
 kart-racer/
-├── index.html          # основной билд игры (монолит + Three.js)
-├── src/                # модули (audio, animals, particles, data)
+├── index.html          # разметка экранов и заставка
+├── css/style.css       # все стили
+├── src/                # код игры: main.js и модули (audio, animals, particles, data)
 ├── tests/unit/         # быстрые тесты модулей из src/ (Vitest)
 ├── tests/e2e/          # тесты игры в браузере: вход, заезд, кампания, пауза (Playwright)
 ├── public/images/      # меню, карты, трофеи, спрайты машин
@@ -124,7 +126,7 @@ kart-racer/
 
 ## Разработка
 
-Имеет смысл править один «источник правды» (корневой `index.html` *или* модули под Vite) и не плодить расхождения. Перед пушем:
+Код игры правится в `src/main.js` и модулях рядом, стили в `css/style.css`, разметка экранов в `index.html`. Перед пушем:
 
 ```bash
 npm run dev
