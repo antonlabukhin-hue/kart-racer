@@ -12841,10 +12841,10 @@ function createBossHpBar(maxHp) {
 
             const keydownHandler = (e) => {
                 const k = e.key.toLowerCase();
-                if (k === 'w' || k === 'ц') { keys.w = true; e.preventDefault(); }
-                if (k === 's' || k === 'ы') { keys.s = true; e.preventDefault(); }
-                if (k === 'a' || k === 'ф') { keys.a = true; e.preventDefault(); }
-                if (k === 'd' || k === 'в') { keys.d = true; e.preventDefault(); }
+                if (k === 'w' || k === 'ц' || k === 'arrowup') { keys.w = true; e.preventDefault(); }
+                if (k === 's' || k === 'ы' || k === 'arrowdown') { keys.s = true; e.preventDefault(); }
+                if (k === 'a' || k === 'ф' || k === 'arrowleft') { keys.a = true; e.preventDefault(); }
+                if (k === 'd' || k === 'в' || k === 'arrowright') { keys.d = true; e.preventDefault(); }
                 if (k === 'q') {
                     if (gameState === 'racing') {
                         if (confirm('Выйти из заезда и начать заново?')) location.reload();
@@ -12861,10 +12861,10 @@ function createBossHpBar(maxHp) {
 
             const keyupHandler = (e) => {
                 const k = e.key.toLowerCase();
-                if (k === 'w' || k === 'ц') { keys.w = false; e.preventDefault(); }
-                if (k === 's' || k === 'ы') { keys.s = false; e.preventDefault(); }
-                if (k === 'a' || k === 'ф') { keys.a = false; e.preventDefault(); }
-                if (k === 'd' || k === 'в') { keys.d = false; e.preventDefault(); }
+                if (k === 'w' || k === 'ц' || k === 'arrowup') { keys.w = false; e.preventDefault(); }
+                if (k === 's' || k === 'ы' || k === 'arrowdown') { keys.s = false; e.preventDefault(); }
+                if (k === 'a' || k === 'ф' || k === 'arrowleft') { keys.a = false; e.preventDefault(); }
+                if (k === 'd' || k === 'в' || k === 'arrowright') { keys.d = false; e.preventDefault(); }
             };
 
             document.addEventListener('keydown', keydownHandler);
