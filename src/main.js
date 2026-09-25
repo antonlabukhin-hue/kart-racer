@@ -621,9 +621,6 @@
             } catch (e) {}
             try { document.body.classList.remove('race-mode', 'finish-open'); } catch (e) {}
             try { window.__inRace = false; window.__racePaused = false; } catch (e) {}
-            try {
-                if (typeof gameState !== 'undefined') gameState = 'menu';
-            } catch (e) {}
         }
         function clearCampaignGlobals() {
             try {
@@ -5150,7 +5147,7 @@ function startGaragePreview(carId) {
                 const goMenu = function(ev) {
                     if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
                     cleanupFinishUI();
-                    const loreIdx = null; // лор злодея уже на финишной плашке компании
+                    // лор злодея уже на финишной плашке компании
                     window.__pendingCampaignLore = null;
                     try {
                         if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
@@ -5158,10 +5155,6 @@ function startGaragePreview(carId) {
                     } catch (e) {
                         console.warn('goMenu', e);
                         try { if (typeof showMainMenu === 'function') showMainMenu(); } catch (e2) {}
-                    }
-                    if (loreIdx != null && typeof showCampaignLore === 'function') {
-                        window.__pendingCampaignLore = null;
-                        setTimeout(function(){ showCampaignLore(loreIdx); }, 200);
                     }
                 };
                 const goGarage = function(ev) {
