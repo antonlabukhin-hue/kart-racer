@@ -215,6 +215,27 @@
         .ach-chip.on { border-color: rgba(255,220,0,0.5); color: #ffdd00; background: rgba(255,220,0,0.1); }
 
         
+
+        /* P0: онбординг первого заезда */
+        #onboarding-tip {
+            position: fixed; left: 50%; bottom: 18%; transform: translateX(-50%);
+            z-index: 4500; max-width: min(420px, 92vw);
+            background: rgba(0,0,0,0.88); border: 2px solid rgba(255,220,0,0.45);
+            border-radius: 14px; padding: 14px 18px; color: #eee;
+            font-size: 14px; line-height: 1.45; text-align: center;
+            pointer-events: none; opacity: 0; transition: opacity 0.35s ease;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+        }
+        #onboarding-tip.show { opacity: 1; }
+        #onboarding-tip b { color: #ffdd00; }
+        #onboarding-tip .ob-keys { margin-top: 8px; font-size: 13px; color: #ccc; }
+        #onboarding-tip .ob-keys span {
+            display: inline-block; margin: 2px 4px; padding: 3px 8px;
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06); color: #fff; font-weight: bold;
+        }
+        /* P0: telegraph-кольцо босса (DOM не нужен — mesh в scene) */
+
         #notify-root {
             position: fixed; top: 12px; right: 12px; z-index: 8000;
             display: flex; flex-direction: column; gap: 8px; max-width: min(320px, 92vw);
@@ -3900,6 +3921,7 @@
     </div>
 
     <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <div id="onboarding-tip" aria-live="polite"></div>
     <div id="loading">
         <div class="spinner"></div>
         <p>Загрузка игры...</p>
@@ -4962,6 +4984,7 @@
         
         /** Полная очистка гонки без выхода в главное меню (рестарт/следующая глава) */
         function cleanupRaceKeepProfile() {
+            try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { window.__hudRefs = null; } catch (e) {}
 
             try {
@@ -7540,7 +7563,77 @@ function startGaragePreview(carId) {
             } catch (e) {}
         };
 
-        window.exitRaceToMenu = function exitRaceToMenu(openGarageAfter) {
+        window.exitRaceToMenu = 
+        // P0: единая очистка UI гонки (финиш / пауза / выход в меню)
+        window.teardownRaceUI = function teardownRaceUI() {
+            try { document.body.classList.remove('finish-open', 'race-paused'); } catch (e) {}
+            try { window.__racePaused = false; } catch (e) {}
+            try { window.__inRace = false; } catch (e) {}
+            const kill = '#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn,#hud-pause-btn,#pause-overlay,#cheburashkaWarn,#onboarding-tip';
+            try {
+                document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque').forEach(function(el) {
+                    try { el.remove(); } catch (e2) {}
+                });
+            } catch (e) {}
+            try {
+                const mc = document.getElementById('mobile-controls');
+                if (mc) {
+                    mc.classList.remove('active');
+                    mc.style.pointerEvents = '';
+                    mc.style.display = '';
+                }
+            } catch (e) {}
+            try {
+                const ov = document.getElementById('pause-overlay');
+                if (ov) ov.classList.remove('show');
+            } catch (e) {}
+            try {
+                const ar = document.getElementById('ach-plaque-root');
+                if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
+            } catch (e) {}
+            try {
+                const tip = document.getElementById('onboarding-tip');
+                if (tip) { tip.classList.remove('show'); tip.innerHTML = ''; }
+            } catch (e) {}
+        };
+
+
+        function showFirstRaceOnboarding() {
+            try {
+                if (localStorage.getItem('road_racing_onboarded_v1') === '1') return;
+            } catch (e) {}
+            const el = document.getElementById('onboarding-tip');
+            if (!el) return;
+            const mobile = !!(window.__isMobile || window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+            el.innerHTML = mobile
+                ? '<b>Как играть</b><div class="ob-keys">Кнопки внизу — газ и полосы<br>Не больше <b>5 аварий</b> · собирай нитро</div>'
+                : '<b>Как играть</b><div class="ob-keys"><span>W</span>/<span>↑</span> газ · <span>A</span><span>D</span> полосы<br><span>P</span> пауза · <span>C</span> камера<br>Лимит: <b>5 аварий</b> · нитро ускоряет</div>';
+            el.classList.add('show');
+            clearTimeout(window.__onboardTimer);
+            window.__onboardTimer = setTimeout(function() {
+                try {
+                    el.classList.remove('show');
+                    localStorage.setItem('road_racing_onboarded_v1', '1');
+                } catch (e2) {}
+            }, 12000);
+            // скрыть раньше по любому вводу
+            const hide = function() {
+                try {
+                    el.classList.remove('show');
+                    localStorage.setItem('road_racing_onboarded_v1', '1');
+                } catch (e3) {}
+                window.removeEventListener('keydown', hide);
+                window.removeEventListener('pointerdown', hide);
+            };
+            setTimeout(function() {
+                window.addEventListener('keydown', hide, { once: true });
+                window.addEventListener('pointerdown', hide, { once: true });
+            }, 900);
+        }
+        window.showFirstRaceOnboarding = showFirstRaceOnboarding;
+
+        function exitRaceToMenu(openGarageAfter) {
+            try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try {
                 if (typeof animationId !== 'undefined' && animationId) {
                     cancelAnimationFrame(animationId);
@@ -9623,6 +9716,10 @@ function startGaragePreview(carId) {
                     // не ставим display:none inline — иначе 2-я трасса без кнопок
                 }
                 
+                try {
+                    const tip = document.getElementById('onboarding-tip');
+                    if (tip) { tip.classList.remove('show'); tip.innerHTML = ''; }
+                } catch (eTip) {}
                 const hud = document.getElementById('game-hud');
                 if (hud) hud.remove();
                 const cheb = document.getElementById('cheburashkaWarn');
@@ -13669,20 +13766,73 @@ function createBossHpBar(maxHp) {
                     if (boss.attackState === 'idle' && boss.shotTimer <= 0 && Math.abs(zPos - boss.z) < 38 && Math.abs(xPos - boss.x) < TRACK_WIDTH * 0.9) {
                         boss.attackState = 'windup';
                         boss.attackT = 0;
-                        try { if (window.soundEngine) window.soundEngine.playSfx('boss_windup', 0.75); } catch (e) {}
+                        try { if (window.soundEngine) window.soundEngine.playSfx('boss_windup', 0.85); } catch (e) {}
                         const atk = boss.attack || 'default';
                         boss.shotTimer = (atk === 'rocket' || atk === 'hammer') ? 4.2 : (atk === 'snipe' ? 3.8 : 3.0 + Math.random() * 1.5);
-                        boss._windupNeed = (atk === 'snipe') ? 1.15 : (atk === 'hammer' ? 1.0 : 0.4);
-                        // сигнатура уже сказана при появлении — не повторяем
-                        try { if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ': «' + (boss.shout || 'Получай!') + '»'); } catch (e) {}
+                        // P0: дольше telegraph — игрок успевает увернуться
+                        boss._windupNeed = (atk === 'snipe') ? 1.25 : (atk === 'hammer' || atk === 'rocket') ? 0.95 : 0.65;
+                        // визуальный telegraph: подсветка + кольцо на земле
+                        try {
+                            if (boss.mesh) {
+                                boss.mesh.scale.setScalar((boss._baseScale || boss.mesh.scale.x || 1) * 1.08);
+                                boss._telegraphPulse = true;
+                            }
+                            if (boss._telegraphRing && scene) {
+                                try { scene.remove(boss._telegraphRing); } catch (eR) {}
+                            }
+                            if (typeof THREE !== 'undefined' && scene) {
+                                const ring = new THREE.Mesh(
+                                    new THREE.RingGeometry(0.9, 1.25, 24),
+                                    new THREE.MeshBasicMaterial({
+                                        color: 0xff3344, transparent: true, opacity: 0.55,
+                                        side: THREE.DoubleSide, depthWrite: false
+                                    })
+                                );
+                                ring.rotation.x = -Math.PI / 2;
+                                ring.position.set(boss.x || 0, 0.06, boss.z || 0);
+                                scene.add(ring);
+                                boss._telegraphRing = ring;
+                            }
+                        } catch (eTel) {}
+                        // не спамим shout каждый выстрел — только изредка
+                        if (Math.random() < 0.35) {
+                            try { if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ': «' + (boss.shout || 'Получай!') + '»'); } catch (e) {}
+                        }
                     }
 
                     if (boss.attackState === 'windup') {
                         boss.attackT += deltaTime;
-                        const needW = boss._windupNeed || 0.4;
-                        // лазер снайпера отключён
+                        const needW = boss._windupNeed || 0.65;
+                        // кольцо предупреждения пульсирует и следует за боссом
+                        try {
+                            if (boss._telegraphRing) {
+                                const u = Math.min(1, boss.attackT / needW);
+                                const sc = 0.85 + u * 0.5 + Math.sin(boss.attackT * 10) * 0.05;
+                                boss._telegraphRing.scale.set(sc, sc, sc);
+                                boss._telegraphRing.position.x = boss.x;
+                                boss._telegraphRing.position.z = boss.z;
+                                if (boss._telegraphRing.material) {
+                                    boss._telegraphRing.material.opacity = 0.35 + u * 0.4;
+                                }
+                            }
+                            if (boss.mesh && boss._telegraphPulse && boss._baseScale) {
+                                const wob = 1.06 + Math.sin(boss.attackT * 12) * 0.03;
+                                boss.mesh.scale.setScalar(boss._baseScale * wob);
+                            }
+                        } catch (ePulse) {}
                         if (boss.attackT >= needW) {
-                            boss.attackState = 'attack'; try {
+                            boss.attackState = 'attack';
+                            try {
+                                if (boss._telegraphRing) {
+                                    try { scene.remove(boss._telegraphRing); } catch (eR2) {}
+                                    boss._telegraphRing = null;
+                                }
+                                if (boss.mesh && boss._baseScale) {
+                                    boss.mesh.scale.setScalar(boss._baseScale);
+                                }
+                                boss._telegraphPulse = false;
+                            } catch (eClr) {}
+                            try {
                             if (window.soundEngine) {
                                 const atk = boss.attack || '';
                                 const melee = (atk === 'sweep' || atk === 'ram' || atk === 'hammer' || atk === 'chain');
@@ -14280,6 +14430,7 @@ function createBossHpBar(maxHp) {
                             if (window.soundEngine) window.soundEngine.playSfx('go', 1.2);
                         } catch (e) {}
                         gameState = 'racing';
+                        try { showFirstRaceOnboarding(); } catch (eOnb) {}
                         try { if (typeof fovPunch !== 'undefined') fovPunch = 12; } catch (e) {}
                         try {
                             if (window.soundEngine) {
