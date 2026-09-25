@@ -5591,7 +5591,7 @@ function createProfile(name) {
                     }
                     return;
                 }
-                img.onerror = () => { i++; tryNext(); };
+                img.onerror = () => { tryNext(); };
                 img.onload = () => { img.style.display = 'block'; };
                 img.src = candidates[i++];
             };
