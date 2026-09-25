@@ -34,7 +34,7 @@ export async function countShouts(page) {
 }
 
 export async function login(page, name = 'Тестер') {
-    await page.goto('/');
+    await page.goto('./');
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
     await page.locator('#splash-screen').click();
     await page.locator('#profile-name-input').fill(name);

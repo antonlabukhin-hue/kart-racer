@@ -6,7 +6,7 @@ import { watchProblems, countShouts, login, startFreeRace, startCampaign, progre
 
 test('игра загружается, three из сборки', async ({ page }) => {
     const problems = watchProblems(page);
-    await page.goto('/');
+    await page.goto('./');
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
     expect(await page.evaluate(() => window.THREE && window.THREE.REVISION)).toBe('185');
     expect(problems).toEqual([]);
