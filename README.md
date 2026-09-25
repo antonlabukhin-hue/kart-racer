@@ -80,6 +80,7 @@ kart-racer/
 ├── src/                # код игры: main.js и модули (audio, animals, particles, data)
 ├── tests/unit/         # быстрые тесты модулей из src/ (Vitest)
 ├── tests/e2e/          # тесты игры в браузере: вход, заезд, кампания, пауза (Playwright)
+├── tests/e2e/scenarios/ # быстрые сценарии на тестовой сборке: босс, победа, открытие трасс
 ├── public/images/      # меню, карты, трофеи, спрайты машин
 ├── public/music/       # menu-music.mp3, race-music.mp3
 ├── package.json        # версии three и vite
@@ -136,6 +137,11 @@ npm test
 ```
 
 Перед первым `npm test` один раз скачать браузер для тестов: `npx playwright install chromium`. Если тест упал, в `test-results/` лежит скриншот момента падения. Тесты же запускаются в GitHub на каждый PR.
+
+Тесты в браузере идут на двух сборках:
+
+- `tests/e2e/` — обычная сборка, ровно та, что уходит на сайт;
+- `tests/e2e/scenarios/` — тестовая сборка (`npm run build:test`, папка `dist-test/`). В ней адрес `?start=0.97` начинает заезд с 97% трассы, чтобы тест за секунды доехал до босса или финиша. Этот кусок кода в `src/main.js` помечен `import.meta.env.MODE === 'test'` и в сборку для сайта не попадает (это тоже проверяет тест).
 
 Коммиты лучше с коротким смыслом: `fix: traffic maxCars in campaign`, `perf: compress menu JPEGs`.
 
