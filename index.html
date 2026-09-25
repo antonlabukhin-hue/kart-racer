@@ -4987,12 +4987,7 @@
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { window.__hudRefs = null; } catch (e) {}
 
-            try {
-                if (typeof animationId !== 'undefined' && animationId) {
-                    cancelAnimationFrame(animationId);
-                    animationId = null;
-                }
-            } catch (e) {}
+            try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
             try { if (window.soundEngine && soundEngine.stopMusic) soundEngine.stopMusic(); } catch (e) {}
             try { if (window.soundEngine && soundEngine._stopEngineNow) soundEngine._stopEngineNow(); } catch (e) {}
             try {
@@ -5004,7 +4999,7 @@
                 }
             } catch (e) {}
             try {
-                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,.animal-shout,.radio-line,#hud-menu-btn,#hud-pause-btn').forEach(function(el) {
+                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,.animal-shout,.radio-line,#hud-menu-btn').forEach(function(el) {
                     try { el.remove(); } catch (e) {}
                 });
             } catch (e) {}
@@ -5271,18 +5266,18 @@ function startCampaignTrack(idx, opts) {
         let garageRenderer = null;
 
         const ACHIEVEMENTS = [
-            { id: 'first_win', name: 'Первый финиш', desc: 'Доехать до конца', img: 'images/ach_first_win.png' },
-            { id: 'perfect', name: 'Идеал', desc: 'Финиш без аварий', img: 'images/ach_perfect.png' },
-            { id: 'night_rider', name: 'Ночной курьер', desc: 'Финиш ночью', img: 'images/ach_night_rider.png' },
-            { id: 'rain_man', name: 'Дождевик', desc: 'Финиш в дождь', img: 'images/ach_rain_man.png' },
-            { id: 'hard_win', name: 'ЗвероСуд', desc: 'Победа на сложном', img: 'images/ach_hard_win.png' },
-            { id: 'gum_2', name: 'Турбо-коллекционер', desc: '2 жвачки за заезд', img: 'images/ach_gum_2.png' },
-            { id: 'no_nitro', name: 'Без нитро', desc: 'Финиш без нитро', img: 'images/ach_no_nitro.png' },
-            { id: 'oil_lover', name: 'Масломан', desc: '5 масляных пятен за заезд', img: 'images/ach_oil_lover.png' },
-            { id: 'bear_friend', name: 'Друг медведя', desc: '5 ударов по зверям за заезд', img: 'images/ach_bear_friend.png' },
-            { id: 'season5', name: 'Смена открыта', desc: '5 уровень сезона', img: 'images/ach_season5.png' },
-            { id: 'races10', name: 'Стахановец', desc: '10 заездов', img: 'images/ach_races10.png' },
-            { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/ach_wins5.png' }
+            { id: 'first_win', name: 'Первый финиш', desc: 'Доехать до конца', img: 'images/trophy_first_win.png' },
+            { id: 'perfect', name: 'Идеал', desc: 'Финиш без аварий', img: 'images/trophy_first_perfect.png' },
+            { id: 'night_rider', name: 'Ночной курьер', desc: 'Финиш ночью', img: 'images/trophy_night_rider.png' },
+            { id: 'rain_man', name: 'Дождевик', desc: 'Финиш в дождь', img: 'images/trophy_rain_man.png' },
+            { id: 'hard_win', name: 'ЗвероСуд', desc: 'Победа на сложном', img: 'images/trophy_hard_win.png' },
+            { id: 'gum_2', name: 'Турбо-коллекционер', desc: '2 жвачки за заезд', img: 'images/trophy_gum_2.png' },
+            { id: 'no_nitro', name: 'Без нитро', desc: 'Финиш без нитро', img: 'images/trophy_no_nitro.png' },
+            { id: 'oil_lover', name: 'Масломан', desc: '5 масляных пятен за заезд', img: 'images/trophy_oil_lover.png' },
+            { id: 'bear_friend', name: 'Друг медведя', desc: '5 ударов по зверям за заезд', img: 'images/trophy_bear_friend.png' },
+            { id: 'season5', name: 'Смена открыта', desc: '5 уровень сезона', img: 'images/trophy_season5.png' },
+            { id: 'races10', name: 'Стахановец', desc: '10 заездов', img: 'images/trophy_races10.png' },
+            { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/trophy_wins5.png' }
         ];
 
         function defaultSeason() {
@@ -5563,6 +5558,9 @@ function createProfile(name) {
             const short = id.replace(/^t_/, '');
             const list = [];
             if (t && t.img) list.push(t.img);
+            // картинка трофея лежит под именем его ачивки: t_cheburashka → need first_win → trophy_first_win.png
+            const ach = t && ACHIEVEMENTS.find(a => a.id === t.need);
+            if (ach && ach.img) list.push(ach.img);
             list.push('images/trophy_' + short + '.png');
             list.push('images/trophy_' + id + '.png');
             list.push('images/' + id + '.png');
@@ -5596,7 +5594,7 @@ function createProfile(name) {
                     }
                     return;
                 }
-                img.onerror = () => { i++; tryNext(); };
+                img.onerror = () => { tryNext(); };
                 img.onload = () => { img.style.display = 'block'; };
                 img.src = candidates[i++];
             };
@@ -7633,12 +7631,7 @@ function startGaragePreview(carId) {
 
         function exitRaceToMenu(openGarageAfter) {
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
-            try {
-                if (typeof animationId !== 'undefined' && animationId) {
-                    cancelAnimationFrame(animationId);
-                    animationId = null;
-                }
-            } catch (e) {}
+            try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
             try { if (window.soundEngine && soundEngine.stopMusic) soundEngine.stopMusic(); } catch (e) {}
             try { if (window.soundEngine && soundEngine._stopEngineNow) soundEngine._stopEngineNow(); } catch (e) {}
             // dispose WebGL
@@ -9099,12 +9092,7 @@ function startGaragePreview(carId) {
             if (typeof window.stopMenuMusic === 'function') window.stopMenuMusic();
             try { if (window.soundEngine && soundEngine.stopMenuMusic) soundEngine.stopMenuMusic(); } catch (e) {}
             // Полная очистка предыдущего заезда (двойной animate = дёрганье)
-            try {
-                if (typeof animationId !== 'undefined' && animationId) {
-                    cancelAnimationFrame(animationId);
-                    animationId = null;
-                }
-            } catch (e) {}
+            try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
             try {
                 if (window.__gameAnimationId) {
                     cancelAnimationFrame(window.__gameAnimationId);
@@ -9576,7 +9564,7 @@ function startGaragePreview(carId) {
                         if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
                         window.__achQueue = [];
                         window.__achShowing = false;
-                        document.querySelectorAll('#finish-screen,#hud-menu-btn,#hud-pause-btn').forEach(function(el) {
+                        document.querySelectorAll('#finish-screen,#hud-menu-btn').forEach(function(el) {
                             try { el.remove(); } catch (e) {}
                         });
                     } catch (e) {}
@@ -9627,7 +9615,9 @@ function startGaragePreview(carId) {
                         }, 60);
                         return;
                     }
-                    try { location.reload(); } catch (e) {}
+                    // свободный заезд: те же настройки заново, без перезагрузки и повторного входа
+                    try { cleanupRaceKeepProfile(); } catch (e) {}
+                    setTimeout(function() { initGame(quality, difficulty, carId, mapId, weatherId); }, 60);
                 };
 
                 function bindFinishBtn(id, handler) {
@@ -12730,6 +12720,9 @@ function createBossHpBar(maxHp) {
             const btnLeft = document.getElementById('btnLeft');
             const btnRight = document.getElementById('btnRight');
             
+            // кнопки постоянные, а заездов много: __stopRace снимает обработчики этого заезда
+            const mobileAbort = new AbortController();
+            const signal = mobileAbort.signal;
             function setupMobileButton(el, onStart, onEnd) {
                 if (!el) return;
                 
@@ -12744,12 +12737,12 @@ function createBossHpBar(maxHp) {
                     if (onEnd) onEnd();
                 };
                 
-                el.addEventListener('touchstart', start, { passive: false });
-                el.addEventListener('touchend', end, { passive: false });
-                el.addEventListener('touchcancel', end, { passive: false });
-                el.addEventListener('mousedown', start);
-                el.addEventListener('mouseup', end);
-                el.addEventListener('mouseleave', end);
+                el.addEventListener('touchstart', start, { passive: false, signal });
+                el.addEventListener('touchend', end, { passive: false, signal });
+                el.addEventListener('touchcancel', end, { passive: false, signal });
+                el.addEventListener('mousedown', start, { signal });
+                el.addEventListener('mouseup', end, { signal });
+                el.addEventListener('mouseleave', end, { signal });
             }
 
             let mobileKeys = { w: false, s: false, a: false, d: false };
@@ -12851,10 +12844,10 @@ function createBossHpBar(maxHp) {
 
             const keydownHandler = (e) => {
                 const k = e.key.toLowerCase();
-                if (k === 'w' || k === 'ц') { keys.w = true; e.preventDefault(); }
-                if (k === 's' || k === 'ы') { keys.s = true; e.preventDefault(); }
-                if (k === 'a' || k === 'ф') { keys.a = true; e.preventDefault(); }
-                if (k === 'd' || k === 'в') { keys.d = true; e.preventDefault(); }
+                if (k === 'w' || k === 'ц' || k === 'arrowup') { keys.w = true; e.preventDefault(); }
+                if (k === 's' || k === 'ы' || k === 'arrowdown') { keys.s = true; e.preventDefault(); }
+                if (k === 'a' || k === 'ф' || k === 'arrowleft') { keys.a = true; e.preventDefault(); }
+                if (k === 'd' || k === 'в' || k === 'arrowright') { keys.d = true; e.preventDefault(); }
                 if (k === 'q') {
                     if (gameState === 'racing') {
                         if (confirm('Выйти из заезда и начать заново?')) location.reload();
@@ -12871,10 +12864,10 @@ function createBossHpBar(maxHp) {
 
             const keyupHandler = (e) => {
                 const k = e.key.toLowerCase();
-                if (k === 'w' || k === 'ц') { keys.w = false; e.preventDefault(); }
-                if (k === 's' || k === 'ы') { keys.s = false; e.preventDefault(); }
-                if (k === 'a' || k === 'ф') { keys.a = false; e.preventDefault(); }
-                if (k === 'd' || k === 'в') { keys.d = false; e.preventDefault(); }
+                if (k === 'w' || k === 'ц' || k === 'arrowup') { keys.w = false; e.preventDefault(); }
+                if (k === 's' || k === 'ы' || k === 'arrowdown') { keys.s = false; e.preventDefault(); }
+                if (k === 'a' || k === 'ф' || k === 'arrowleft') { keys.a = false; e.preventDefault(); }
+                if (k === 'd' || k === 'в' || k === 'arrowright') { keys.d = false; e.preventDefault(); }
             };
 
             document.addEventListener('keydown', keydownHandler);
@@ -14547,6 +14540,19 @@ function createBossHpBar(maxHp) {
                 }
             `;
             document.head.appendChild(style);
+
+            // Выход из заезда без финиша (меню, «Заново» в кампании): остановить цикл и снять клавиши,
+            // иначе старый заезд крутится в фоне, а Q в меню спрашивает «начать заново?»
+            window.__stopRace = function() {
+                gameState = 'exited';
+                if (animationId) cancelAnimationFrame(animationId);
+                animationId = null;
+                window.__gameAnimationId = null;
+                document.removeEventListener('keydown', keydownHandler);
+                document.removeEventListener('keyup', keyupHandler);
+                window.removeEventListener('resize', resizeHandler);
+                mobileAbort.abort();
+            };
 
             animate(performance.now());
             

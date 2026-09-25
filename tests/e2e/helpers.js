@@ -1,8 +1,7 @@
 import { expect } from '@playwright/test';
 
-// 404, которые сейчас штатные: браузер сам просит favicon, кампания перебирает camp_02…camp_17;
-// картинки трофеев ищутся не под теми именами (баг, чинится отдельно)
-const KNOWN_404 = [/\/favicon\.ico$/, /\/images\/camp_\d+\.(jpg|png)$/, /\/images\/(trophy_|t_)\w+\.png$/];
+// 404, которые сейчас штатные: браузер сам просит favicon, кампания перебирает camp_02…camp_17
+const KNOWN_404 = [/\/favicon\.ico$/, /\/images\/camp_\d+\.(jpg|png)$/];
 
 // Собирает всё, что должно ронять тест: исключения, console.error, alert/confirm, HTTP >= 400
 export function watchProblems(page) {
@@ -35,7 +34,7 @@ export async function countShouts(page) {
 }
 
 export async function login(page, name = 'Тестер') {
-    await page.goto('/');
+    await page.goto('./');
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
     await page.locator('#splash-screen').click();
     await page.locator('#profile-name-input').fill(name);

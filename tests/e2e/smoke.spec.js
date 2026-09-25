@@ -6,7 +6,7 @@ import { watchProblems, countShouts, login, startFreeRace, startCampaign, progre
 
 test('игра загружается, three из сборки', async ({ page }) => {
     const problems = watchProblems(page);
-    await page.goto('/');
+    await page.goto('./');
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
     expect(await page.evaluate(() => window.THREE && window.THREE.REVISION)).toBe('185');
     expect(problems).toEqual([]);
@@ -33,13 +33,13 @@ test('свободный заезд: машина едет, звери крич�
     expect(problems).toEqual([]);
 });
 
-test('кампания: первая трасса стартует', async ({ page }) => {
+test('кампания: первая трасса стартует, газ стрелкой', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
     await startCampaign(page);
-    await page.keyboard.down('w');
+    await page.keyboard.down('ArrowUp');
     await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
-    await page.keyboard.up('w');
+    await page.keyboard.up('ArrowUp');
     expect(problems).toEqual([]);
 });
 
@@ -63,6 +63,9 @@ test('пауза и выход в меню посреди заезда', async (
     await page.locator('#pause-menu').click();
     await expect(page.locator('#main-menu-screen')).toBeVisible();
     await expect(page.locator('#game-hud')).toHaveCount(0);
+    // старый заезд остановлен: цикл не крутится, клавиши заезда в меню не работают
+    await expect.poll(() => page.evaluate(() => window.__gameAnimationId)).toBeFalsy();
+    await page.keyboard.press('q');
     expect(problems).toEqual([]);
 });
 
@@ -86,3 +89,38 @@ test('экраны меню открываются без ошибок', async (
     await expect(page.locator('#main-menu-screen')).toBeVisible();
     expect(problems).toEqual([]);
 });
+
+test('трофеи в гараже с картинками', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="garage"]').click();
+    await page.locator('.garage-tab[data-gtab="trophies"]').click();
+    const imgs = page.locator('#trophy-grid img.trophy-img');
+    await expect(imgs).toHaveCount(10);
+    await expect.poll(() => imgs.evaluateAll(list => list.filter(i => i.complete && i.naturalWidth > 0).length)).toBe(10);
+    await page.locator('.trophy-slot').first().click();
+    await expect.poll(() => page.locator('#trophy-detail-img').evaluate(i => i.naturalWidth)).toBeGreaterThan(0);
+    expect(problems).toEqual([]);
+});
+
+// Едем прямо без руля до конца заезда (обычно 5 аварий: ~40 с дома, до 2–3 мин на сервере GitHub), потом «Заново»
+for (const mode of ['free', 'campaign']) {
+    test(`${mode === 'free' ? 'свободный заезд' : 'кампания'}: «Заново» в конце заезда перезапускает трассу`, async ({ page }) => {
+        test.setTimeout(360_000);
+        const problems = watchProblems(page);
+        await login(page);
+        if (mode === 'free') await startFreeRace(page, 'hard'); else await startCampaign(page);
+        await page.keyboard.down('w');
+        await expect(page.locator('#finish-restart-btn')).toBeVisible({ timeout: 240_000 });
+        await page.keyboard.up('w');
+        await page.locator('#finish-restart-btn').click();
+
+        await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator('#profile-screen')).toBeHidden();
+        await expect(page.locator('#hud-pause-btn')).toBeVisible();
+        await page.keyboard.down('w');
+        await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
+        await page.keyboard.up('w');
+        expect(problems).toEqual([]);
+    });
+}

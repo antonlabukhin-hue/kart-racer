@@ -169,6 +169,12 @@ update(deltaTime) {
             const lifeRatio = this.lifetimes[i] / 1.0;
             this.opacities[i] = Math.max(0, lifeRatio * 0.5);
             this.sizes[i] *= 1.02;
+            // погасла раньше конца жизни — тоже мёртвая, иначе aliveCount не доходит до 0
+            if (this.opacities[i] <= 0.01) {
+                this.opacities[i] = 0;
+                this.sizes[i] = 0;
+                this.aliveCount = Math.max(0, this.aliveCount - 1);
+            }
         }
     }
     this.geometry.attributes.position.needsUpdate = true;
