@@ -6795,6 +6795,12 @@ function startGaragePreview(carId) {
             }
             if (!raceCarParts) raceCarParts = {};
             let zPos = START_Z;
+            // Только в тестовой сборке (npm run build:test): ?start=0.4 — заезд начинается с 40% трассы,
+            // чтобы тесты быстро доезжали до босса и финиша. В сборку для сайта этот блок не попадает.
+            if (import.meta.env.MODE === 'test') {
+                const testStart = parseFloat(new URLSearchParams(location.search).get('start'));
+                if (testStart > 0 && testStart < 1) zPos = START_Z - (START_Z - FINISH_Z) * testStart;
+            }
             let xPos = 0;
             let carYOffset = 0;
             let carBumpTimer = 0;
