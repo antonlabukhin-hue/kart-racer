@@ -30,6 +30,105 @@ function getBossCombat(attack) {
     return BOSS_COMBAT[a] || BOSS_COMBAT.default;
 }
 
+
+/** Пиксельные canvas-текстуры (шерсть / ткань / металл / чешуя). */
+const __bossTexCache = {};
+function bossPixelTex(baseHex, kind) {
+    const key = kind + '|' + String(baseHex >>> 0);
+    if (__bossTexCache[key]) return __bossTexCache[key];
+    const size = 64;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const cx = cv.getContext('2d');
+    const c = new THREE.Color(baseHex);
+    const mid = '#' + c.getHexString();
+    const dark = '#' + c.clone().offsetHSL(0, 0, -0.18).getHexString();
+    const light = '#' + c.clone().offsetHSL(0, -0.05, 0.14).getHexString();
+    cx.imageSmoothingEnabled = false;
+    cx.fillStyle = mid;
+    cx.fillRect(0, 0, size, size);
+
+    if (kind === 'fur' || kind === 'tiger') {
+        for (let i = 0; i < 90; i++) {
+            const x = (Math.random() * size) | 0;
+            const y = (Math.random() * size) | 0;
+            const h = 2 + ((Math.random() * 5) | 0);
+            cx.fillStyle = Math.random() > 0.5 ? dark : light;
+            cx.fillRect(x, y, 1 + ((Math.random() * 2) | 0), h);
+        }
+        if (kind === 'tiger') {
+            cx.fillStyle = '#1a1008';
+            for (let i = 0; i < 8; i++) {
+                const x = 4 + i * 8;
+                cx.beginPath();
+                cx.moveTo(x, 0);
+                cx.lineTo(x + 3, size);
+                cx.lineTo(x + 6, size);
+                cx.lineTo(x + 2, 0);
+                cx.closePath();
+                cx.fill();
+            }
+        }
+    } else if (kind === 'cloth') {
+        for (let y = 0; y < size; y += 4) {
+            for (let x = 0; x < size; x += 4) {
+                cx.fillStyle = ((x + y) % 8 === 0) ? dark : mid;
+                cx.fillRect(x, y, 3, 3);
+            }
+        }
+        cx.strokeStyle = light;
+        cx.lineWidth = 1;
+        for (let y = 8; y < size; y += 16) {
+            cx.beginPath();
+            cx.moveTo(0, y);
+            cx.lineTo(size, y);
+            cx.stroke();
+        }
+    } else if (kind === 'metal') {
+        for (let i = 0; i < 12; i++) {
+            const y = (i * 5 + 2) % size;
+            cx.fillStyle = i % 2 ? light : dark;
+            cx.fillRect(0, y, size, 1);
+        }
+        cx.fillStyle = light;
+        for (let i = 0; i < 6; i++) {
+            const y = (Math.random() * size) | 0;
+            cx.fillRect(4, y, 20 + ((Math.random() * 20) | 0), 1);
+        }
+    } else if (kind === 'scale') {
+        for (let y = 0; y < size; y += 6) {
+            const off = (y % 12 === 0) ? 0 : 3;
+            for (let x = -3; x < size; x += 6) {
+                cx.fillStyle = ((x + y) % 12 === 0) ? light : dark;
+                cx.beginPath();
+                cx.arc(x + off + 3, y + 3, 3, 0, Math.PI * 2);
+                cx.fill();
+            }
+        }
+    } else if (kind === 'leather') {
+        for (let i = 0; i < 70; i++) {
+            const x = (Math.random() * size) | 0;
+            const y = (Math.random() * size) | 0;
+            cx.fillStyle = Math.random() > 0.6 ? dark : light;
+            cx.fillRect(x, y, 2 + ((Math.random() * 3) | 0), 2);
+        }
+    } else {
+        for (let i = 0; i < 50; i++) {
+            cx.fillStyle = Math.random() > 0.5 ? dark : light;
+            cx.fillRect((Math.random() * size) | 0, (Math.random() * size) | 0, 2, 2);
+        }
+    }
+
+    const tex = new THREE.CanvasTexture(cv);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    try { if (window.optimizeTexture) window.optimizeTexture(tex, { nearest: true, srgb: true }); } catch (e) {}
+    __bossTexCache[key] = tex;
+    return tex;
+}
+
 const CAMPAIGN_BOSSES = [
     { id: 'BOAR_BRIGADE', name: 'Кабан «Бригада»', animal: 'BOAR', fur: 0x6b4423, jacket: 0x2a1810, trim: 0xffcc00, eye: 0xff6644, accent: 0xff2244, weapon: 'bat', attack: 'sweep', hp: 3, scale: 2.15, shout: 'Я вас Арсеньевских знаю!' },
     { id: 'WOLF_NIGHT', name: 'Волк-снайпер «Ночной»', animal: 'WOLF', fur: 0x3a3a48, jacket: 0x1a1a2a, trim: 0xff0000, eye: 0xffdd00, accent: 0x00ff88, weapon: 'rifle', attack: 'snipe', hp: 3, scale: 2.05, shout: 'Частота закрыта!' },
@@ -66,19 +165,34 @@ function ensureToonGradient() {
 function bossMat(color, opts) {
     opts = opts || {};
     let c = (typeof color === 'number') ? (color >>> 0) : color;
-    if (typeof c === 'number') c = c & 0xfffff0;
+    if (typeof c === 'number') c = c & 0xffffff;
     const e = opts.emissive != null ? opts.emissive : 0x000000;
     const ei = opts.emissiveIntensity != null ? opts.emissiveIntensity : 0;
+    const rough = opts.roughness != null ? opts.roughness : 0.55;
+    const metal = opts.metalness != null ? opts.metalness : 0.08;
+    const map = opts.map || null;
+    const mapKey = map && map.uuid ? map.uuid : (opts.texKind || '0');
     const glow = (ei > 0.05) || (e !== 0 && e !== 0x000000);
-    try { ensureToonGradient(); } catch (e) {}
+    try { ensureToonGradient(); } catch (errTg) {}
     const low = !!(window.__isMobile || window.__lastQuality === 'low' ||
         (window.__renderOpt && window.__renderOpt.quality === 'low'));
-    const mode = glow ? 'basic' : (low ? 'basic' : (window.__toonGradient ? 'toon' : 'lambert'));
-    const key = mode + '|' + String(c) + '|' + (glow ? String(e) + '|' + Math.round(ei * 10) : '0');
+    const high = !low && (window.__lastQuality === 'high' ||
+        (window.__renderOpt && window.__renderOpt.quality === 'high') ||
+        window.__enableBossPBR === true);
+    let mode;
+    if (glow) mode = 'basic';
+    else if (low) mode = 'basic';
+    else if (high && window.__enableBossPBR !== false) mode = 'pbr';
+    else if (window.__toonGradient) mode = 'toon';
+    else mode = 'lambert';
+    const key = mode + '|' + String(c) + '|' + rough.toFixed(2) + '|' + metal.toFixed(2) +
+        '|' + mapKey + '|' + (glow ? String(e) + '|' + Math.round(ei * 10) : '0');
     if (!window.__bossMatCache) window.__bossMatCache = {};
     if (!window.__bossMatCache[key]) {
+        const base = { color: c, fog: true };
+        if (map) base.map = map;
         if (mode === 'basic') {
-            const mat = new THREE.MeshBasicMaterial({ color: c, fog: true });
+            const mat = new THREE.MeshBasicMaterial(base);
             if (glow) {
                 try {
                     const col = new THREE.Color(c);
@@ -87,30 +201,55 @@ function bossMat(color, opts) {
                 } catch (err) {}
             }
             window.__bossMatCache[key] = mat;
+        } else if (mode === 'pbr') {
+            window.__bossMatCache[key] = new THREE.MeshStandardMaterial(
+                Object.assign({}, base, { roughness: rough, metalness: metal })
+            );
         } else if (mode === 'toon') {
-            const mat = new THREE.MeshToonMaterial({
-                color: c, gradientMap: window.__toonGradient, fog: true
-            });
-            window.__bossMatCache[key] = mat;
+            window.__bossMatCache[key] = new THREE.MeshToonMaterial(
+                Object.assign({}, base, { gradientMap: window.__toonGradient })
+            );
         } else {
-            window.__bossMatCache[key] = new THREE.MeshLambertMaterial({
-                color: c, flatShading: true, fog: true
-            });
+            window.__bossMatCache[key] = new THREE.MeshLambertMaterial(
+                Object.assign({}, base, { flatShading: true })
+            );
         }
     }
     return window.__bossMatCache[key];
 }
+let _outlineMat = null;
+function getOutlineMat() {
+    if (_outlineMat) return _outlineMat;
+    _outlineMat = new THREE.MeshBasicMaterial({
+        color: 0x08060c, side: THREE.BackSide, depthWrite: false
+    });
+    window.__bossOutlineMat = _outlineMat;
+    return _outlineMat;
+}
+
 function addBossOutline(mesh, scaleMul) {
-    if (!mesh || !window.__bossOutlineMat) return null;
+    if (!mesh) return null;
     try {
         const outline = mesh.clone();
-        outline.material = window.__bossOutlineMat;
+        outline.material = getOutlineMat();
         outline.scale.multiplyScalar(scaleMul || 1.07);
         outline.renderOrder = -1;
         outline.castShadow = false;
+        outline.userData.isOutline = true;
         if (mesh.parent) mesh.parent.add(outline);
         return outline;
     } catch (e) { return null; }
+}
+
+/** Освобождает geometry босса (материалы — из кеша, не dispose). */
+function disposeBossMesh(root) {
+    if (!root) return;
+    try {
+        root.traverse(function(o) {
+            if (!o.isMesh) return;
+            try { if (o.geometry) o.geometry.dispose(); } catch (eG) {}
+        });
+    } catch (e) {}
 }
 
 
@@ -213,24 +352,32 @@ function createArcadeBossMesh(def) {
     const furD = new THREE.Color(fur).offsetHSL(0, 0, -0.15).getHex();
     const furL = new THREE.Color(fur).offsetHSL(0, -0.04, 0.12).getHex();
     const jackD = new THREE.Color(jack).offsetHSL(0, 0, -0.1).getHex();
-    const matFur = M(fur);
-    const matFurD = M(furD);
-    const matFurL = M(furL);
-    const matJack = M(jack, { roughness: 0.65, metalness: 0.15 });
-    const matJackD = M(jackD, { roughness: 0.7, metalness: 0.12 });
-    const matTrim = M(trim, { metalness: 0.55, roughness: 0.3, emissive: trim, emissiveIntensity: 0.15 });
+    const usePix = !(window.__isMobile && window.__lastQuality === 'low');
+    const furKind = (typeId === 'TIGER') ? 'tiger'
+        : (typeId === 'CROC' || typeId === 'CROCODILE' || typeId === 'LIZARD' || typeId === 'DINO' || typeId === 'SHARK') ? 'scale'
+        : 'fur';
+    const texFur = usePix ? bossPixelTex(fur, furKind) : null;
+    const texJack = usePix ? bossPixelTex(jack, (id.indexOf('RHINO') >= 0 || id.indexOf('BEAR') >= 0) ? 'leather' : 'cloth') : null;
+    const texMetal = usePix ? bossPixelTex(trim, 'metal') : null;
+    const texGun = usePix ? bossPixelTex(0x3a3a45, 'metal') : null;
+    const matFur = M(fur, texFur ? { map: texFur, texKind: furKind } : {});
+    const matFurD = M(furD, texFur ? { map: texFur, texKind: furKind + 'D' } : {});
+    const matFurL = M(furL, texFur ? { map: texFur, texKind: furKind + 'L' } : {});
+    const matJack = M(jack, Object.assign({ roughness: 0.65, metalness: 0.15 }, texJack ? { map: texJack, texKind: 'cloth' } : {}));
+    const matJackD = M(jackD, Object.assign({ roughness: 0.7, metalness: 0.12 }, texJack ? { map: texJack, texKind: 'clothD' } : {}));
+    const matTrim = M(trim, Object.assign({ metalness: 0.55, roughness: 0.3, emissive: trim, emissiveIntensity: 0.15 }, texMetal ? { map: texMetal, texKind: 'metal' } : {}));
     const matAcc = M(accent, { emissive: accent, emissiveIntensity: 0.25 });
-    const matGold = M(0xe8c040, { metalness: 0.85, roughness: 0.25 });
-    const matGun = M(0x3a3a45, { metalness: 0.75, roughness: 0.3 });
+    const matGold = M(0xe8c040, Object.assign({ metalness: 0.85, roughness: 0.25 }, texMetal ? { map: texMetal, texKind: 'gold' } : {}));
+    const matGun = M(0x3a3a45, Object.assign({ metalness: 0.75, roughness: 0.3 }, texGun ? { map: texGun, texKind: 'gun' } : {}));
     const matGunL = M(0x6a6a78, { metalness: 0.7, roughness: 0.28 });
-    const matWood = M(0x6a4420);
+    const matWood = M(0x6a4420, usePix ? { map: bossPixelTex(0x6a4420, 'fur'), texKind: 'wood' } : {});
     const matEye = M(eyeC, { emissive: eyeC, emissiveIntensity: 1.15, roughness: 0.25 });
     const matEyeW = M(0xffffff, { emissive: 0x334455, emissiveIntensity: 0.15 });
-    const matPants = M(0x1a1a22);
+    const matPants = M(0x1a1a22, usePix ? { map: bossPixelTex(0x1a1a22, 'cloth'), texKind: 'pants' } : {});
     const matShoe = M(0xc01820);
     const matTooth = M(0xfff5e0, { roughness: 0.4 });
     const matNose = M(0x2a1810);
-    const matTelnyash = M(0x1a3a6a);
+    const matTelnyash = M(0x1a3a6a, usePix ? { map: bossPixelTex(0x1a3a6a, 'cloth'), texKind: 'tel' } : {});
     const matTelStripe = M(0xf0f0f0);
 
     function add(p, geo, mat, x, y, z, rx, ry, rz) {
@@ -288,7 +435,6 @@ function createArcadeBossMesh(def) {
         px(root, matFur, -0.48, 1.22, 0, 0.22, 0.2, 0.26);
         px(root, matFur, 0.48, 1.22, 0, 0.22, 0.2, 0.26);
     }
-    if (torsoCore) addBossOutline(torsoCore, 1.06);
     // широкие плечи носорога
     if (typeId === 'RHINO' || typeId === 'GORILLA' || typeId === 'ALPHA') {
         px(root, matFur, -0.42, 1.15, 0, 0.28, 0.28, 0.32);
@@ -344,6 +490,17 @@ function createArcadeBossMesh(def) {
     vest.position.set(0, 0.98, 0.02);
     root.add(vest);
 
+    // пиксельные детали: ремень, пряжка, карманы, заклёпки, погоны
+    px(root, matGun, 0, 0.72, 0.16, 0.52, 0.07, 0.1);
+    px(root, matGold, 0, 0.72, 0.22, 0.1, 0.08, 0.04);
+    px(root, matJackD, -0.2, 0.88, 0.2, 0.14, 0.16, 0.06);
+    px(root, matJackD, 0.2, 0.88, 0.2, 0.14, 0.16, 0.06);
+    for (let bi = 0; bi < 4; bi++) {
+        px(root, matGold, -0.22 + bi * 0.15, 1.05, 0.2, 0.035, 0.035, 0.035);
+    }
+    px(root, matTrim, -0.38, 1.2, 0.08, 0.12, 0.06, 0.14);
+    px(root, matTrim, 0.38, 1.2, 0.08, 0.12, 0.06, 0.14);
+
     // цепь
     for (let i = 0; i < 6; i++) {
         const a = -0.5 + i * 0.2;
@@ -362,9 +519,14 @@ function createArcadeBossMesh(def) {
         add(g, new THREE.SphereGeometry(0.08, sg, sg), matFurD, 0, -0.28, 0.02);
         // предплечье
         add(g, new THREE.CylinderGeometry(0.07, 0.085, 0.22, sg), matFurD, 0, -0.42, 0.03);
-        // кисть / перчатка
-        px(g, matShoe, 0, -0.58, 0.05, 0.14, 0.12, 0.16);
-        px(g, matShoe, 0, -0.62, 0.1, 0.1, 0.08, 0.1); // пальцы
+        // кисть / перчатка + пальцы
+        px(g, matShoe, 0, -0.58, 0.05, 0.15, 0.13, 0.17);
+        px(g, matJackD, 0, -0.52, 0.02, 0.16, 0.06, 0.12);
+        for (let fi = 0; fi < 4; fi++) {
+            const fx = -0.05 + fi * 0.035;
+            px(g, matShoe, fx, -0.66, 0.1 + (fi % 2) * 0.02, 0.035, 0.09, 0.06);
+        }
+        px(g, matShoe, -0.08, -0.6, 0.08, 0.05, 0.07, 0.06);
         if (id === 'GORILLA_MECH' && side < 0) {
             px(g, matGunL, 0, -0.2, 0, 0.16, 0.45, 0.16);
             add(g, new THREE.TorusGeometry(0.07, 0.02, 5, 10), matGold, 0, -0.32, 0);
@@ -457,23 +619,26 @@ function createArcadeBossMesh(def) {
     // --- голова (HD arcade: сферы + много деталей) ---
     const head = new THREE.Group();
     let jaw = null;
-    const seg = (window.__isMobile || window.__lastQuality === 'low') ? 8 : 12;
+    const seg = (window.__isMobile || window.__lastQuality === 'low') ? 8 : (window.__lastQuality === 'high' ? 16 : 12);
 
     function skull(p, mat, x, y, z, r) {
         return add(p, new THREE.SphereGeometry(r, seg, seg), mat, x, y, z);
     }
     function eyePair(p, y, z, gap, sEye) {
         sEye = sEye || 0.055;
-        // белок + зрачок + блик
-        [[-gap, 1], [gap, 1]].forEach(function(sp) {
-            const side = sp[0];
-            px(p, matEyeW, side, y, z, sEye * 1.55, sEye * 1.45, sEye * 0.7);
-            px(p, matEye, side, y, z + sEye * 0.55, sEye * 0.95, sEye * 0.95, sEye * 0.55);
-            px(p, matEyeW, side - sEye * 0.2, y + sEye * 0.25, z + sEye * 0.9, sEye * 0.28, sEye * 0.28, sEye * 0.2);
+        [-gap, gap].forEach(function(side) {
+            px(p, matEyeW, side, y, z, sEye * 1.7, sEye * 1.55, sEye * 0.75);
+            px(p, matEye, side, y, z + sEye * 0.5, sEye * 1.05, sEye * 1.05, sEye * 0.6);
+            px(p, matNose, side, y, z + sEye * 0.75, sEye * 0.45, sEye * 0.45, sEye * 0.35);
+            px(p, matEyeW, side - sEye * 0.22, y + sEye * 0.28, z + sEye * 1.0, sEye * 0.32, sEye * 0.32, sEye * 0.22);
+            px(p, matEyeW, side + sEye * 0.12, y - sEye * 0.15, z + sEye * 0.85, sEye * 0.14, sEye * 0.14, sEye * 0.1);
         });
     }
     function brow(p, y, z, w) {
-        px(p, matFurD, 0, y, z, w, 0.04, 0.05);
+        const gap = w * 0.32;
+        const hw = w * 0.42;
+        px(p, matFurD, -gap, y, z, hw, 0.04, 0.05);
+        px(p, matFurD, gap, y, z, hw, 0.04, 0.05);
     }
 
     if (typeId === 'BOAR') {
@@ -654,6 +819,66 @@ function createArcadeBossMesh(def) {
         px(head, matGold, 0.14, 0.02, 0.3, 0.02, 0.08, 0.02); // цепочка
         brow(head, 0.16, 0.2, 0.32);
         eyePair(head, 0.08, 0.24, 0.12, 0.055);
+    } else if (typeId === 'TIGER') {
+        // Тигр: округлая морда, полоски, треугольные уши
+        skull(head, matFur, 0, 0.08, 0.02, 0.21);
+        px(head, matFur, 0, 0.06, 0.02, 0.42, 0.4, 0.4);
+        px(head, matFurL, 0, -0.02, 0.28, 0.28, 0.2, 0.24);
+        px(head, matNose, 0, -0.02, 0.42, 0.08, 0.06, 0.05);
+        // полоски на лбу и щеках
+        const stripe = M(0x1a1008);
+        px(head, stripe, -0.1, 0.16, 0.2, 0.05, 0.14, 0.04);
+        px(head, stripe, 0.1, 0.16, 0.2, 0.05, 0.14, 0.04);
+        px(head, stripe, 0, 0.2, 0.18, 0.06, 0.12, 0.04);
+        px(head, stripe, -0.18, 0.02, 0.22, 0.1, 0.05, 0.04);
+        px(head, stripe, 0.18, 0.02, 0.22, 0.1, 0.05, 0.04);
+        // треугольные уши
+        add(head, new THREE.ConeGeometry(0.09, 0.14, 6), matFur, -0.2, 0.28, -0.02).rotation.z = 0.35;
+        add(head, new THREE.ConeGeometry(0.09, 0.14, 6), matFur, 0.2, 0.28, -0.02).rotation.z = -0.35;
+        // усы
+        px(head, matFurD, -0.16, -0.06, 0.36, 0.18, 0.02, 0.02);
+        px(head, matFurD, 0.16, -0.06, 0.36, 0.18, 0.02, 0.02);
+        brow(head, 0.14, 0.22, 0.3);
+        eyePair(head, 0.09, 0.22, 0.12, 0.05);
+    } else if (typeId === 'SHARK') {
+        // Акула: вытянутая морда, жабры, плавник
+        skull(head, matFur, 0, 0.06, 0.08, 0.18);
+        px(head, matFur, 0, 0.04, 0.1, 0.36, 0.32, 0.5);
+        // нос-конус
+        add(head, new THREE.ConeGeometry(0.12, 0.28, seg), matFur, 0, 0.0, 0.42).rotation.x = -Math.PI / 2;
+        px(head, matFurL, 0, -0.06, 0.2, 0.22, 0.12, 0.28);
+        // жабры
+        for (let gi = 0; gi < 3; gi++) {
+            px(head, matFurD, -0.2, 0.02 - gi * 0.06, 0.05 + gi * 0.02, 0.04, 0.1, 0.08);
+            px(head, matFurD, 0.2, 0.02 - gi * 0.06, 0.05 + gi * 0.02, 0.04, 0.1, 0.08);
+        }
+        // зубы
+        for (let ti = 0; ti < 5; ti++) {
+            const tx = -0.12 + ti * 0.06;
+            add(head, new THREE.ConeGeometry(0.025, 0.07, 4), matEyeW, tx, -0.1, 0.32).rotation.x = Math.PI;
+        }
+        // плавник на затылке
+        add(head, new THREE.ConeGeometry(0.08, 0.22, 5), matFur, 0, 0.28, -0.06).rotation.x = 0.4;
+        eyePair(head, 0.06, 0.18, 0.14, 0.045);
+    } else if (typeId === 'DINO') {
+        // Дино: гребень, вытянутая пасть
+        skull(head, matFur, 0, 0.08, 0.04, 0.2);
+        px(head, matFur, 0, 0.06, 0.06, 0.4, 0.36, 0.48);
+        px(head, matFurL, 0, -0.04, 0.28, 0.24, 0.16, 0.3);
+        // пасть вперёд
+        px(head, matFur, 0, -0.06, 0.4, 0.2, 0.14, 0.28);
+        // зубы
+        for (let ti = 0; ti < 4; ti++) {
+            const tx = -0.09 + ti * 0.06;
+            add(head, new THREE.ConeGeometry(0.02, 0.06, 4), matEyeW, tx, -0.12, 0.48).rotation.x = Math.PI;
+        }
+        // гребень шипов
+        for (let si = 0; si < 4; si++) {
+            const sz = -0.08 + si * 0.08;
+            add(head, new THREE.ConeGeometry(0.05, 0.14 + (si % 2) * 0.04, 5), matAcc, 0, 0.28, sz);
+        }
+        brow(head, 0.14, 0.2, 0.26);
+        eyePair(head, 0.08, 0.16, 0.14, 0.05);
     } else {
         // BEAR default / generic
         skull(head, matFur, 0, 0.06, 0, 0.2);
@@ -673,7 +898,7 @@ function createArcadeBossMesh(def) {
 
     head.position.set(0, 1.36, 0.04);
     root.add(head);
-    try { if (head.children && head.children[0]) addBossOutline(head.children[0], 1.08); } catch (e) {}
+    // outline головы — через auto-traverse в конце (без дубля)
     // тень
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.55, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
     sh.rotation.x = -Math.PI / 2; sh.position.y = 0.02; root.add(sh);
@@ -713,12 +938,11 @@ function createArcadeBossMesh(def) {
 
     // --- аркадный контур + читаемость силуэта ---
     try {
-        const outlineMat = new THREE.MeshBasicMaterial({
-            color: 0x08060c, side: THREE.BackSide, depthWrite: false
-        });
+        const outlineMat = getOutlineMat();
         const outlines = [];
         root.traverse(function(o) {
             if (!o.isMesh || !o.geometry) return;
+            if (o.userData && o.userData.isOutline) return;
             // только крупные части (не глаза/декор)
             const g = o.geometry;
             if (!g.boundingBox) g.computeBoundingBox();
@@ -730,6 +954,8 @@ function createArcadeBossMesh(def) {
             om.material = outlineMat;
             om.scale.multiplyScalar(1.08);
             om.castShadow = false;
+            om.renderOrder = -1;
+            om.userData.isOutline = true;
             outlines.push({ parent: o.parent, mesh: om, src: o });
         });
         outlines.forEach(function(item) {
@@ -763,6 +989,8 @@ export {
     ensureToonGradient,
     bossMat,
     addBossOutline,
+    getOutlineMat,
+    disposeBossMesh,
     createBossHpBar,
     updateBossHpBar,
     createArcadeBossMesh

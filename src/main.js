@@ -11,7 +11,8 @@
             updateBossHpBar,
             bossMat,
             addBossOutline,
-            ensureToonGradient
+            ensureToonGradient,
+            disposeBossMesh
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
@@ -8590,7 +8591,7 @@ function startGaragePreview(carId) {
                         }
                         if (t >= 1) {
                             boss.active = false;
-                            try { if (boss.mesh) scene.remove(boss.mesh); } catch (e) {}
+                            try { if (boss.mesh) { try { disposeBossMesh(boss.mesh); } catch (eD) {} scene.remove(boss.mesh); } } catch (e) {}
                             try { if (boss.hpBar) { scene.remove(boss.hpBar); boss.hpBar = null; } } catch (e) {}
                             boss.mesh = null;
                         }
@@ -9000,7 +9001,7 @@ function startGaragePreview(carId) {
                         if (boss._overtakeT > 1.2) {
                             boss.active = false;
                             if (boss.mesh) {
-                                try { scene.remove(boss.mesh); } catch (e) { boss.mesh.visible = false; }
+                                try { disposeBossMesh(boss.mesh); scene.remove(boss.mesh); } catch (e) { try { boss.mesh.visible = false; } catch (e2) {} }
                             }
                             showBossShout('🏁 ' + (boss.name || 'Босс') + ' отстал!');
                             try {
@@ -9017,7 +9018,7 @@ function startGaragePreview(carId) {
 
                     // Ушёл далеко — деспавн
                     if (boss.z < zPos - 90 || boss.z > zPos + 120) {
-                        try { scene.remove(boss.mesh); } catch (e) {}
+                        try { disposeBossMesh(boss.mesh); scene.remove(boss.mesh); } catch (e) {}
                         boss.active = false;
                     }
                 }
