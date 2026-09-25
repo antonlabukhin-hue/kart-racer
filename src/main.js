@@ -3297,7 +3297,7 @@ function startGaragePreview(carId) {
             easy: {
                 label: '🟢 Лёгкий',
                 trackLength: 1000,
-                timeLimit: 150,
+                timeLimit: 120,
                 maxAnimals: 9,
                 maxCars: 3,
                 maxObstacles: 7,
@@ -3313,7 +3313,7 @@ function startGaragePreview(carId) {
             medium: {
                 label: '🟡 Средний',
                 trackLength: 1600,
-                timeLimit: 160,
+                timeLimit: 125,
                 maxAnimals: 14,
                 maxCars: 7,
                 maxObstacles: 15,
@@ -3329,7 +3329,7 @@ function startGaragePreview(carId) {
             hard: {
                 label: '🔴 Сложный',
                 trackLength: 2200,
-                timeLimit: 150,
+                timeLimit: 120,
                 maxAnimals: 26,
                 maxCars: 16,
                 maxObstacles: 32,
@@ -8490,12 +8490,12 @@ function startGaragePreview(carId) {
                             } catch (e) {}
                             stats.gumPicked++;
                             radioSay(RADIO_LINES.gum[Math.floor(Math.random()*RADIO_LINES.gum.length)]);
-                            if (strikes > 0 && Math.random() < 0.5) {
+                            if (strikes > 0) {
                                 strikes = Math.max(0, strikes - 1);
-                                showTimePenaltyPopup(0, '🍬 −1 авария');
+                                showTimePenaltyPopup(0, '❤️ −1 авария');
                                 const el = document.createElement('div');
                                 el.className = 'animal-shout';
-                                el.textContent = '🍬 Жвачка! −1 авария';
+                                el.textContent = '❤️ Жвачка! −1 авария';
                                 el.style.color = '#ff88cc';
                                 el.style.borderColor = '#ff88cc';
                                 document.body.appendChild(el);
