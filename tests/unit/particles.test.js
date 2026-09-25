@@ -28,6 +28,15 @@ describe('ParticleSystem', () => {
         expect(burst('low', dust(1))).toBe(1);
     });
 
+    it('частицы гаснут, когда кончается время жизни', () => {
+        vi.stubGlobal('window', {});
+        const ps = new ParticleSystem(new THREE.Scene());
+        ps.explode({ x: 0, y: 0, z: 0 }, 1);
+        expect(ps.aliveCount).toBeGreaterThan(0);
+        for (let i = 0; i < 100; i++) ps.update(0.05);
+        expect(ps.aliveCount).toBe(0);
+    });
+
     it('выключенная система ничего не создаёт', () => {
         vi.stubGlobal('window', {});
         const ps = new ParticleSystem(new THREE.Scene());
