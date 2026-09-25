@@ -406,9 +406,14 @@ function createArcadeBossMesh(def) {
         px(g, matJackD, 0, 0.09, 0.02, w * 1.2, 0.05, w * 1.3);
         g.position.set(side * (fat ? 0.22 : 0.19), 0, 0);
         g.userData.isBossLeg = true;
+        g.userData.legSide = side;
         root.add(g);
+        return g;
     }
-    leg(-1); leg(1);
+    const leftLeg = leg(-1);
+    const rightLeg = leg(1);
+    root.userData.leftLeg = leftLeg;
+    root.userData.rightLeg = rightLeg;
 
     // --- торс ---
     // аркадный торс TMNT: широкие бёдра, бочка, дельты

@@ -8810,31 +8810,83 @@ function startGaragePreview(carId) {
                     if (boss.mesh) {
                         boss.mesh.position.x = boss.x;
                         boss.mesh.position.z = boss.z;
-                        // idle: лёгкая походка; attack: толчок вперёд
-                        let bob = Math.abs(Math.sin(boss.phase * 6.5)) * 0.06;
-                        let leanX = 0;
-                        let leanZ = Math.sin(boss.phase * 3.2) * 0.04;
-                        let rotY = 0;
+                        // === Этап A: бег / руки / дыхание ===
+                        boss.animT = (boss.animT || 0) + deltaTime;
+                        const ud = boss.mesh.userData || {};
+                        if (!boss._baseScaleY) boss._baseScaleY = boss.mesh.scale.y || 1;
+                        // частота шага от скорости + состояние атаки
+                        let runMul = 1;
+                        if (boss.attackState === 'windup') runMul = 0.3;
+                        else if (boss.attackState === 'attack') runMul = 1.35;
+                        else if (boss.attackState === 'recover') runMul = 0.45;
+                        else if (boss.attackState === 'die' || boss.hp <= 0) runMul = 0;
+                        const runFreq = (7.5 + (boss.speed || 0.2) * 18) * runMul;
+                        const run = boss.animT * runFreq;
+                        const swing = Math.sin(run);
+                        const stride = Math.abs(swing);
+                        let bob = stride * 0.09;
+                        let leanX = Math.sin(run * 0.5) * 0.03;
+                        let leanZ = Math.sin(run * 0.35) * 0.05;
+                        let rotY = Math.sin(run * 0.25) * 0.04;
+                        let armSwing = 0.5;
+                        let armBoostR = 0;
                         if (boss.attackState === 'windup') {
-                            const u = Math.min(1, boss.attackT / 0.35);
-                            bob += 0.04;
-                            leanX = 0.18 * u; // замах: морда назад (подготовка)
-                            leanZ = (isMelee ? -0.25 : 0.1) * u;
-                            rotY = (isMelee ? 0.2 : -0.15) * u;
+                            const u = Math.min(1, (boss.attackT || 0) / Math.max(0.2, (boss._windupNeed || 0.65)));
+                            bob += 0.03;
+                            leanX = 0.18 * u;
+                            leanZ = (isMelee ? -0.22 : 0.08) * u;
+                            rotY = (isMelee ? 0.18 : -0.12) * u;
+                            armBoostR = -1.1 * u; // замах оружием назад/вверх
+                            armSwing = 0.15;
                         } else if (boss.attackState === 'attack') {
-                            const u = Math.min(1, boss.attackT / 0.28);
-                            bob = 0.1;
-                            leanX = -0.28 * (1 - u * 0.5); // удар вперёд
-                            leanZ = (isMelee ? 0.45 : -0.2) * (1 - u);
-                            rotY = (isMelee ? -0.35 : 0.2) * (1 - u);
-                            // короткий «рывок» к игроку по Z
+                            const u = Math.min(1, (boss.attackT || 0) / 0.28);
+                            bob = 0.11;
+                            leanX = -0.28 * (1 - u * 0.5);
+                            leanZ = (isMelee ? 0.42 : -0.18) * (1 - u);
+                            rotY = (isMelee ? -0.32 : 0.18) * (1 - u);
+                            armBoostR = 0.95 * (1 - u); // удар вперёд
+                            armSwing = 0.2;
                             if (isMelee) boss.z += (zPos - boss.z) * deltaTime * 0.35 * (1 - u);
                         } else if (boss.attackState === 'recover') {
-                            const u = Math.min(1, boss.attackT / 0.4);
+                            const u = Math.min(1, (boss.attackT || 0) / 0.4);
                             leanX *= (1 - u);
                             leanZ *= (1 - u);
                             rotY *= (1 - u);
+                            armBoostR *= (1 - u);
+                            armSwing = 0.25 + 0.25 * u;
                         }
+                        // ноги: противоположная фаза
+                        try {
+                            const legL = ud.leftLeg;
+                            const legR = ud.rightLeg;
+                            if (legL) {
+                                legL.rotation.x = swing * 0.6 * (runMul > 0 ? 1 : 0);
+                                legL.position.y = Math.max(0, -swing) * 0.07;
+                            }
+                            if (legR) {
+                                legR.rotation.x = -swing * 0.6 * (runMul > 0 ? 1 : 0);
+                                legR.position.y = Math.max(0, swing) * 0.07;
+                            }
+                        } catch (eLeg) {}
+                        // руки: в противофазе к ногам + замах оружия на правой
+                        try {
+                            const armL = ud.leftArm;
+                            const armR = ud.rightArm;
+                            if (armL) {
+                                armL.rotation.x = -swing * armSwing + (boss.attackState === 'windup' ? 0.15 : 0);
+                            }
+                            if (armR) {
+                                armR.rotation.x = swing * armSwing + armBoostR;
+                            }
+                        } catch (eArm) {}
+                        // голова слегка кивает в ритме бега
+                        try {
+                            const head = ud.head;
+                            if (head) head.rotation.x = Math.sin(run * 0.5) * 0.05;
+                        } catch (eHead) {}
+                        // дыхание (лёгкий squash торса)
+                        const breath = 1 + Math.sin(boss.animT * 2.4) * 0.025;
+                        boss.mesh.scale.y = boss._baseScaleY * breath;
                         boss.mesh.position.y = 0.05 + bob;
                         boss.mesh.rotation.x = leanX;
                         boss.mesh.rotation.z = leanZ;
@@ -8849,8 +8901,7 @@ function startGaragePreview(carId) {
                             }
                         } catch (e) {}
 
-                        // уникальная анимация по типу
-                        const ud = boss.mesh.userData || {};
+                        // уникальная анимация по типу (ud уже из блока бега)
                         const rArm = ud.rightArm;
                         const lArm = ud.leftArm;
                         const jaw = ud.jaw;
