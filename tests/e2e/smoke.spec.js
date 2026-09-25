@@ -22,6 +22,7 @@ test('вход по Enter, профиль сохраняется после пе
 });
 
 test('свободный заезд: машина едет, звери кричат', async ({ page }) => {
+    test.setTimeout(180_000);
     const problems = watchProblems(page);
     await countShouts(page);
     await login(page);
@@ -118,13 +119,14 @@ test('трофеи в гараже с картинками', async ({ page }) =>
 // Едем прямо без руля до конца заезда (обычно 5 аварий: ~40 с дома, до 2–3 мин на сервере GitHub), потом «Заново»
 for (const mode of ['free', 'campaign']) {
     test(`${mode === 'free' ? 'свободный заезд' : 'кампания'}: «Заново» в конце заезда перезапускает трассу`, async ({ page }) => {
-        test.setTimeout(360_000);
+        test.setTimeout(600_000);
         const problems = watchProblems(page);
         await login(page);
         // сложные трассы: машин и зверей много, 5 аварий набираются быстро
         if (mode === 'free') await startFreeRace(page, 'hard'); else await startCampaign(page, 5);
         await page.keyboard.down('w');
-        await expect(page.locator('#finish-restart-btn')).toBeVisible({ timeout: 240_000 });
+        // без своего лимита: ждём, сколько позволяет лимит теста (на медленном сервере игра идёт медленнее)
+        await expect(page.locator('#finish-restart-btn')).toBeVisible({ timeout: 0 });
         await page.keyboard.up('w');
         await page.locator('#finish-restart-btn').click();
 
