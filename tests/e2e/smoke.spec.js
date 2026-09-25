@@ -69,6 +69,18 @@ test('пауза и выход в меню посреди заезда', async (
     expect(problems).toEqual([]);
 });
 
+test('выход в меню во время отсчёта 3-2-1 убирает цифру', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await startFreeRace(page);
+    await expect(page.locator('#race-countdown')).toBeAttached();
+    await page.keyboard.press('Escape');
+    await page.locator('#pause-menu').click();
+    await expect(page.locator('#main-menu-screen')).toBeVisible();
+    await expect(page.locator('#race-countdown')).toHaveCount(0);
+    expect(problems).toEqual([]);
+});
+
 test('экраны меню открываются без ошибок', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);

@@ -3166,7 +3166,7 @@ function startGaragePreview(carId) {
             try { document.body.classList.remove('finish-open', 'race-paused'); } catch (e) {}
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
-            const kill = '#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn,#cheburashkaWarn';
+            const kill = '#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn,#cheburashkaWarn,#race-countdown';
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque').forEach(function(el) {
                     try { el.remove(); } catch (e2) {}
