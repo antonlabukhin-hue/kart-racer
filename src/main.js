@@ -7083,24 +7083,51 @@ function startGaragePreview(carId) {
             // ============================================================
             // МИНИ-БОСС (компания: свой на главу; иначе — по карте)
             // ============================================================
+            
+            // ============================================================
+            // BOSS_COMBAT — telegraph / кулдаун / множители пули (PR balance)
+            // ============================================================
+            const BOSS_COMBAT = {
+                sweep:  { windup: 0.70, cooldown: 3.4, projSpeedMul: 0.85, projSizeMul: 1.15, multi: 1 },
+                snipe:  { windup: 1.20, cooldown: 4.0, projSpeedMul: 1.25, projSizeMul: 0.85, multi: 1 },
+                burst:  { windup: 0.55, cooldown: 3.2, projSpeedMul: 0.95, projSizeMul: 0.75, multi: 3 },
+                mouth:  { windup: 0.75, cooldown: 3.0, projSpeedMul: 0.90, projSizeMul: 1.10, multi: 1 },
+                rocket: { windup: 1.00, cooldown: 4.4, projSpeedMul: 0.70, projSizeMul: 1.35, multi: 1 },
+                flame:  { windup: 0.60, cooldown: 2.8, projSpeedMul: 0.80, projSizeMul: 1.20, multi: 2 },
+                chain:  { windup: 0.65, cooldown: 3.1, projSpeedMul: 0.88, projSizeMul: 1.00, multi: 1 },
+                acid:   { windup: 0.80, cooldown: 3.6, projSpeedMul: 0.75, projSizeMul: 1.30, multi: 1 },
+                riff:   { windup: 0.55, cooldown: 2.9, projSpeedMul: 0.90, projSizeMul: 1.10, multi: 2 },
+                saw:    { windup: 0.60, cooldown: 3.0, projSpeedMul: 0.95, projSizeMul: 1.05, multi: 1 },
+                drill:  { windup: 0.70, cooldown: 3.2, projSpeedMul: 0.90, projSizeMul: 1.00, multi: 1 },
+                neon:   { windup: 0.50, cooldown: 2.6, projSpeedMul: 1.05, projSizeMul: 0.95, multi: 2 },
+                tools:  { windup: 0.65, cooldown: 3.1, projSpeedMul: 0.92, projSizeMul: 1.00, multi: 1 },
+                ram:    { windup: 0.85, cooldown: 3.5, projSpeedMul: 1.10, projSizeMul: 1.20, multi: 1 },
+                hammer: { windup: 1.05, cooldown: 4.0, projSpeedMul: 0.80, projSizeMul: 1.40, multi: 1 },
+                default:{ windup: 0.65, cooldown: 3.2, projSpeedMul: 1.00, projSizeMul: 1.00, multi: 1 }
+            };
+            function getBossCombat(attack) {
+                const a = attack || 'default';
+                return BOSS_COMBAT[a] || BOSS_COMBAT.default;
+            }
+
             const CAMPAIGN_BOSSES = [
-                { id: 'BOAR_BRIGADE', name: 'Кабан «Бригада»', animal: 'BOAR', fur: 0x6b4423, jacket: 0x2a1810, trim: 0xffcc00, eye: 0xff6644, accent: 0xff2244, weapon: 'bat', attack: 'sweep', scale: 2.15, shout: 'Я вас Арсеньевских знаю!' },
-                { id: 'WOLF_NIGHT', name: 'Волк-снайпер «Ночной»', animal: 'WOLF', fur: 0x3a3a48, jacket: 0x1a1a2a, trim: 0xff0000, eye: 0xffdd00, accent: 0x00ff88, weapon: 'rifle', attack: 'snipe', scale: 2.05, shout: 'Частота закрыта!' },
-                { id: 'BEAR_VETERAN', name: 'Медведь-ветеран «Дед»', animal: 'BEAR', fur: 0x5a3a20, jacket: 0x8a7a5a, trim: 0xffcc00, eye: 0xffaa44, accent: 0x1a1a1a, weapon: 'ppsh', attack: 'burst', scale: 2.4, shout: 'За Родину, курьер!' },
-                { id: 'CROC_GUARD', name: 'Крокодил «Зубастик»', animal: 'CROC', fur: 0x228b22, jacket: 0x1a1a1a, trim: 0xff6600, eye: 0xffff44, accent: 0xffdd44, weapon: 'mouth', attack: 'mouth', scale: 2.15, shout: 'Промзона — мой двор!' },
-                { id: 'RHINO_STORM', name: 'Носорог «Рог»', animal: 'RHINO', fur: 0xa9a9a9, jacket: 0x3a3a2a, trim: 0xffaa00, eye: 0xff8866, accent: 0xff3300, weapon: 'rpg', attack: 'rocket', scale: 2.25, shout: 'Цех №7 не для вас!' },
-                { id: 'DINO_FOREMAN', name: 'Дино-бригадир «Рекс»', animal: 'DINO', fur: 0x4a6a2a, jacket: 0x8a5a20, trim: 0xffaa22, eye: 0xffee44, accent: 0x222222, weapon: 'pipe', attack: 'flame', scale: 2.2, shout: 'Красные трубы помнят!' },
-                { id: 'LION_DUMP', name: 'Лев-свалщик «Грива»', animal: 'LION', fur: 0xdaa520, jacket: 0x1a1a1a, trim: 0xff2244, eye: 0xffaa00, accent: 0x8b4513, weapon: 'chain', attack: 'chain', scale: 2.15, shout: 'Надежда кончилась!' },
-                { id: 'HIPPO_TOXIC', name: 'Бегемот «Химик»', animal: 'HIPPO', fur: 0x9370db, jacket: 0x222222, trim: 0x33ff44, eye: 0x88ff44, accent: 0xffaa00, weapon: 'canister', attack: 'acid', scale: 2.2, shout: 'Зелёный дым — мой духи!' },
-                { id: 'TIGER_ROCKER', name: 'Тигр-рокер «Кислотный»', animal: 'TIGER', fur: 0xd2691e, jacket: 0x1a1a1a, trim: 0xffdd00, eye: 0xffaa44, accent: 0xff2244, weapon: 'guitar', attack: 'riff', scale: 2.1, shout: 'Ми-Ля-До, курьер!' },
-                { id: 'SHARK_SAW', name: 'Акула «Пила»', animal: 'SHARK', fur: 0x6a7a8a, jacket: 0xaa2222, trim: 0xcccccc, eye: 0xffffff, accent: 0xffffff, weapon: 'saw', attack: 'saw', scale: 2.15, shout: 'Кровь в воде!' },
-                { id: 'BULL_MINER', name: 'Бык-шахтёр «Уголёк»', animal: 'BULL', fur: 0x1a1a1a, jacket: 0x2a2a2a, trim: 0xffdd00, eye: 0xff2200, accent: 0x444444, weapon: 'drill', attack: 'drill', scale: 2.25, shout: 'Уголь и пыль!' },
-                { id: 'PANTHER_NEON', name: 'Пантера «Неон»', animal: 'PANTHER', fur: 0x0a0a0a, jacket: 0x1a0a1a, trim: 0xff00ff, eye: 0x00ffff, accent: 0xffff00, weapon: 'disco', attack: 'neon', scale: 2.05, shout: 'Диско не умерло!' },
-                { id: 'GORILLA_MECH', name: 'Горилла «Гайка»', animal: 'GORILLA', fur: 0x2a2a2a, jacket: 0x4a6a2a, trim: 0x8a8a8a, eye: 0xffaa22, accent: 0xffaa22, weapon: 'wrench', attack: 'tools', scale: 2.2, shout: 'Сейчас подкручу!' },
-                { id: 'WOLF_BIKER', name: 'Волк-байкер «Гонщик»', animal: 'WOLF', fur: 0x8a5a20, jacket: 0x1a1a1a, trim: 0xffaa00, eye: 0xff6644, accent: 0xff0000, weapon: 'crowbar', attack: 'ram', scale: 2.15, shout: 'Куда прешь, курьер!' },
-                { id: 'LIZARD_VOLT', name: 'Ящер «Вольт»', animal: 'LIZARD', fur: 0x3a8a5a, jacket: 0x222222, trim: 0x00ffff, eye: 0x00ff88, accent: 0xffdd00, weapon: 'whip', attack: 'zap', scale: 2.05, shout: 'Разряд!' },
+                { id: 'BOAR_BRIGADE', name: 'Кабан «Бригада»', animal: 'BOAR', fur: 0x6b4423, jacket: 0x2a1810, trim: 0xffcc00, eye: 0xff6644, accent: 0xff2244, weapon: 'bat', attack: 'sweep', hp: 3, scale: 2.15, shout: 'Я вас Арсеньевских знаю!' },
+                { id: 'WOLF_NIGHT', name: 'Волк-снайпер «Ночной»', animal: 'WOLF', fur: 0x3a3a48, jacket: 0x1a1a2a, trim: 0xff0000, eye: 0xffdd00, accent: 0x00ff88, weapon: 'rifle', attack: 'snipe', hp: 3, scale: 2.05, shout: 'Частота закрыта!' },
+                { id: 'BEAR_VETERAN', name: 'Медведь-ветеран «Дед»', animal: 'BEAR', fur: 0x5a3a20, jacket: 0x8a7a5a, trim: 0xffcc00, eye: 0xffaa44, accent: 0x1a1a1a, weapon: 'ppsh', attack: 'burst', hp: 4, scale: 2.4, shout: 'За Родину, курьер!' },
+                { id: 'CROC_GUARD', name: 'Крокодил «Зубастик»', animal: 'CROC', fur: 0x228b22, jacket: 0x1a1a1a, trim: 0xff6600, eye: 0xffff44, accent: 0xffdd44, weapon: 'mouth', attack: 'mouth', hp: 3, scale: 2.15, shout: 'Промзона — мой двор!' },
+                { id: 'RHINO_STORM', name: 'Носорог «Рог»', animal: 'RHINO', fur: 0xa9a9a9, jacket: 0x3a3a2a, trim: 0xffaa00, eye: 0xff8866, accent: 0xff3300, weapon: 'rpg', attack: 'rocket', hp: 4, scale: 2.25, shout: 'Цех №7 не для вас!' },
+                { id: 'DINO_FOREMAN', name: 'Дино-бригадир «Рекс»', animal: 'DINO', fur: 0x4a6a2a, jacket: 0x8a5a20, trim: 0xffaa22, eye: 0xffee44, accent: 0x222222, weapon: 'pipe', attack: 'flame', hp: 4, scale: 2.2, shout: 'Красные трубы помнят!' },
+                { id: 'LION_DUMP', name: 'Лев-свалщик «Грива»', animal: 'LION', fur: 0xdaa520, jacket: 0x1a1a1a, trim: 0xff2244, eye: 0xffaa00, accent: 0x8b4513, weapon: 'chain', attack: 'chain', hp: 3, scale: 2.15, shout: 'Надежда кончилась!' },
+                { id: 'HIPPO_TOXIC', name: 'Бегемот «Химик»', animal: 'HIPPO', fur: 0x9370db, jacket: 0x222222, trim: 0x33ff44, eye: 0x88ff44, accent: 0xffaa00, weapon: 'canister', attack: 'acid', hp: 4, scale: 2.2, shout: 'Зелёный дым — мой духи!' },
+                { id: 'TIGER_ROCKER', name: 'Тигр-рокер «Кислотный»', animal: 'TIGER', fur: 0xd2691e, jacket: 0x1a1a1a, trim: 0xffdd00, eye: 0xffaa44, accent: 0xff2244, weapon: 'guitar', attack: 'riff', hp: 3, scale: 2.1, shout: 'Ми-Ля-До, курьер!' },
+                { id: 'SHARK_SAW', name: 'Акула «Пила»', animal: 'SHARK', fur: 0x6a7a8a, jacket: 0xaa2222, trim: 0xcccccc, eye: 0xffffff, accent: 0xffffff, weapon: 'saw', attack: 'saw', hp: 4, scale: 2.15, shout: 'Кровь в воде!' },
+                { id: 'BULL_MINER', name: 'Бык-шахтёр «Уголёк»', animal: 'BULL', fur: 0x1a1a1a, jacket: 0x2a2a2a, trim: 0xffdd00, eye: 0xff2200, accent: 0x444444, weapon: 'drill', attack: 'drill', hp: 4, scale: 2.25, shout: 'Уголь и пыль!' },
+                { id: 'PANTHER_NEON', name: 'Пантера «Неон»', animal: 'PANTHER', fur: 0x0a0a0a, jacket: 0x1a0a1a, trim: 0xff00ff, eye: 0x00ffff, accent: 0xffff00, weapon: 'disco', attack: 'neon', hp: 3, scale: 2.05, shout: 'Диско не умерло!' },
+                { id: 'GORILLA_MECH', name: 'Горилла «Гайка»', animal: 'GORILLA', fur: 0x2a2a2a, jacket: 0x4a6a2a, trim: 0x8a8a8a, eye: 0xffaa22, accent: 0xffaa22, weapon: 'wrench', attack: 'tools', hp: 5, scale: 2.2, shout: 'Сейчас подкручу!' },
+                { id: 'WOLF_BIKER', name: 'Волк-байкер «Гонщик»', animal: 'WOLF', fur: 0x8a5a20, jacket: 0x1a1a1a, trim: 0xffaa00, eye: 0xff6644, accent: 0xff0000, weapon: 'crowbar', attack: 'ram', hp: 4, scale: 2.15, shout: 'Куда прешь, курьер!' },
+                { id: 'LIZARD_VOLT', name: 'Ящер «Вольт»', animal: 'LIZARD', fur: 0x3a8a5a, jacket: 0x222222, trim: 0x00ffff, eye: 0x00ff88, accent: 0xffdd00, weapon: 'whip', attack: 'zap', hp: 4, scale: 2.05, shout: 'Разряд!' },
                 { id: 'MONKEY_HACK', name: 'Обезьяна «Байт»', animal: 'MONKEY', fur: 0xcd853f, jacket: 0xffffff, trim: 0x00ff88, eye: 0x00ff88, accent: 0xff2244, weapon: 'drone', attack: 'drone', scale: 2.0, shout: '404 — антидот не найден!' },
-                { id: 'ALPHA_JUDGE', name: 'Альфа «Судья»', animal: 'ALPHA', fur: 0x2a2a35, jacket: 0x0a0a0a, trim: 0x8a7a5a, eye: 0xcc0000, accent: 0xcc0000, weapon: 'hammer', attack: 'hammer', scale: 2.5, shout: 'Мир останется моим!' }
+                { id: 'ALPHA_JUDGE', name: 'Альфа «Судья»', animal: 'ALPHA', fur: 0x2a2a35, jacket: 0x0a0a0a, trim: 0x8a7a5a, eye: 0xcc0000, accent: 0xcc0000, weapon: 'hammer', attack: 'hammer', hp: 6, scale: 2.5, shout: 'Мир останется моим!' }
             ];
             // createMiniBoss удалён — босс через spawnBoss (createAnimalMesh)
 
@@ -8078,7 +8105,7 @@ function createBossHpBar(maxHp) {
                 scene.add(group);
 
                 // HP растёт по главам; фаза 0 = «вход», давление на полосы
-                const chapterHp = Math.min(6, 3 + Math.floor(bossIdx / 3));
+                const chapterHp = (def.hp != null) ? def.hp : Math.min(6, 3 + Math.floor(bossIdx / 3));
                 try {
                     if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('boss', 1.0);
                 } catch (eSfx) {}
@@ -8098,13 +8125,14 @@ function createBossHpBar(maxHp) {
                     z: startZ,
                     side: side,
                     laneTarget: Math.floor(Math.random() * 3),
-                    speed: 0.22 + Math.min(0.06, bossIdx * 0.004),
+                    speed: 0.20 + Math.min(0.07, bossIdx * 0.0045),
                     hp: chapterHp,
                     maxHp: chapterHp,
                     active: true,
                     phase: 0,
-                    shoutTimer: 3.2,
-                    shotTimer: 2.2,
+                    shoutTimer: 3.0,
+                    shotTimer: 1.8 + Math.min(1.2, bossIdx * 0.08),
+                    combat: getBossCombat(def.attack),
                     attackState: 'idle',
                     attackT: 0,
                     _weapon: null,
@@ -9331,9 +9359,13 @@ function createBossHpBar(maxHp) {
                         boss.attackT = 0;
                         try { if (window.soundEngine) window.soundEngine.playSfx('boss_windup', 0.85); } catch (e) {}
                         const atk = boss.attack || 'default';
-                        boss.shotTimer = (atk === 'rocket' || atk === 'hammer') ? 4.2 : (atk === 'snipe' ? 3.8 : 3.0 + Math.random() * 1.5);
-                        // P0: дольше telegraph — игрок успевает увернуться
-                        boss._windupNeed = (atk === 'snipe') ? 1.25 : (atk === 'hammer' || atk === 'rocket') ? 0.95 : 0.65;
+                        const bc = (boss.combat) || getBossCombat(atk);
+                        boss.combat = bc;
+                        boss.shotTimer = bc.cooldown * (0.92 + Math.random() * 0.16);
+                        boss._windupNeed = bc.windup;
+                        boss._projSpeedMul = bc.projSpeedMul || 1;
+                        boss._projSizeMul = bc.projSizeMul || 1;
+                        boss._projMulti = bc.multi || 1;
                         // визуальный telegraph: подсветка + кольцо на земле
                         try {
                             if (boss.mesh) {
@@ -9409,7 +9441,13 @@ function createBossHpBar(maxHp) {
                             // Уникальный снаряд по типу босса
                             try {
                                 const ud = (boss.mesh && boss.mesh.userData) || {};
-                                const pr = ud.projectile || { color: 0xff4400, emissive: 0xff2200, size: 0.26, shape: 'sphere', speed: 7.2 };
+                                const pr0 = ud.projectile || { color: 0xff4400, emissive: 0xff2200, size: 0.26, shape: 'sphere', speed: 7.2 };
+                                const sm = boss._projSizeMul || 1;
+                                const spm = boss._projSpeedMul || 1;
+                                const pr = Object.assign({}, pr0, {
+                                    size: (pr0.size || 0.26) * sm,
+                                    speed: (pr0.speed || 7.2) * spm
+                                });
                                 const col = isMelee ? 0xffcc44 : pr.color;
                                 const em = isMelee ? 0xffaa22 : (pr.emissive || col);
                                 const bulletMat = new THREE.MeshBasicMaterial({
@@ -9480,6 +9518,21 @@ function createBossHpBar(maxHp) {
                         if (boss.attackT >= 0.45) {
                             boss.attackState = 'idle';
                             boss.attackT = 0;
+                        }
+                    }
+
+                    // Фаза 2 при ≤50% HP — чаще атаки
+                    if (boss.phase === 0 && boss.hp <= boss.maxHp * 0.5) {
+                        boss.phase = 1;
+                        try { if (window.soundEngine) window.soundEngine.playSfx('boss', 0.9); } catch (ePh) {}
+                        try {
+                            if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ': «Это ещё не всё!»');
+                        } catch (ePh2) {}
+                        if (boss.combat) {
+                            boss.combat = Object.assign({}, boss.combat, {
+                                cooldown: Math.max(1.8, (boss.combat.cooldown || 3) * 0.78),
+                                windup: Math.max(0.4, (boss.combat.windup || 0.65) * 0.9)
+                            });
                         }
                     }
 
