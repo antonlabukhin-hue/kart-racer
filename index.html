@@ -7563,13 +7563,12 @@ function startGaragePreview(carId) {
             } catch (e) {}
         };
 
-        window.exitRaceToMenu = 
         // P0: единая очистка UI гонки (финиш / пауза / выход в меню)
         window.teardownRaceUI = function teardownRaceUI() {
             try { document.body.classList.remove('finish-open', 'race-paused'); } catch (e) {}
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
-            const kill = '#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn,#hud-pause-btn,#pause-overlay,#cheburashkaWarn,#onboarding-tip';
+            const kill = '#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn,#cheburashkaWarn';
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque').forEach(function(el) {
                     try { el.remove(); } catch (e2) {}
@@ -7675,6 +7674,7 @@ function startGaragePreview(carId) {
             setTimeout(function(){ if (typeof window.playMenuMusic === 'function') window.playMenuMusic(); }, 100);
             if (openGarageAfter) setTimeout(function(){ if (typeof openGarage === 'function') openGarage(); }, 60);
         };
+        window.exitRaceToMenu = exitRaceToMenu;
         window.__camMode = 0;
         window.__cycleCamera = function() {
             window.__camMode = (window.__camMode + 1) % 4;
