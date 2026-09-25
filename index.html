@@ -12720,6 +12720,9 @@ function createBossHpBar(maxHp) {
             const btnLeft = document.getElementById('btnLeft');
             const btnRight = document.getElementById('btnRight');
             
+            // кнопки постоянные, а заездов много: __stopRace снимает обработчики этого заезда
+            const mobileAbort = new AbortController();
+            const signal = mobileAbort.signal;
             function setupMobileButton(el, onStart, onEnd) {
                 if (!el) return;
                 
@@ -12734,12 +12737,12 @@ function createBossHpBar(maxHp) {
                     if (onEnd) onEnd();
                 };
                 
-                el.addEventListener('touchstart', start, { passive: false });
-                el.addEventListener('touchend', end, { passive: false });
-                el.addEventListener('touchcancel', end, { passive: false });
-                el.addEventListener('mousedown', start);
-                el.addEventListener('mouseup', end);
-                el.addEventListener('mouseleave', end);
+                el.addEventListener('touchstart', start, { passive: false, signal });
+                el.addEventListener('touchend', end, { passive: false, signal });
+                el.addEventListener('touchcancel', end, { passive: false, signal });
+                el.addEventListener('mousedown', start, { signal });
+                el.addEventListener('mouseup', end, { signal });
+                el.addEventListener('mouseleave', end, { signal });
             }
 
             let mobileKeys = { w: false, s: false, a: false, d: false };
@@ -14548,6 +14551,7 @@ function createBossHpBar(maxHp) {
                 document.removeEventListener('keydown', keydownHandler);
                 document.removeEventListener('keyup', keyupHandler);
                 window.removeEventListener('resize', resizeHandler);
+                mobileAbort.abort();
             };
 
             animate(performance.now());
