@@ -3,23 +3,30 @@
 ## Фаза 1 — нарезка файлов
 Модули в `src/` как отдельные файлы.
 
-## Фаза 2 — подключено (текущее)
-Корневой `index.html` импортирует:
+## Фаза 2 — подключено
+Классы из монолита удалены. `window.createAnimalMesh` и `window.showAnimalShout` задаются в `main.js` после объявления функций: модули не видят функций из `main.js` напрямую.
+
+## Фаза 3 — index.html разделён (текущее)
+- стили: `css/style.css`;
+- весь код игры: `src/main.js` (перенесён из `<script type="module">` как был);
+- каталоги `CAMPAIGN_TRACKS`, `CAMPAIGN_STAGE_MODS`, `CAR_PRESETS`, `ANIMAL_TYPES`, `MAP_ANIMALS` — только в `data.js`, `main.js` их импортирует.
+
+`index.html` подключает `./src/main.js`, тот импортирует остальное:
 
 ```js
-import { SoundEngine } from './src/audio.js';
-import { AnimalSpawner } from './src/animals.js';
-import { ParticleSystem } from './src/particles.js';
+import { SoundEngine } from './audio.js';
+import { AnimalSpawner } from './animals.js';
+import { ParticleSystem } from './particles.js';
+import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
 ```
 
-Классы из монолита удалены. `window.createAnimalMesh` задаётся после объявления фабрики мешей в HTML.
+Функции, которые вызываются из разметки (`onclick="nextLorePanel()"` и т.п.), должны оставаться на `window`.
 
-Игра по-прежнему один HTML + ES modules (importmap three + relative `./src/*`).
+Vite собирает `index.html`, `css/`, `src/*` и three из `node_modules` в `dist/assets/` (importmap больше нет, версия three — в `package.json`).
 
-## Фаза 3 — дальше
-- `data.js` / `storage.js` вместо дублей констант и профилей в HTML
+## Фаза 4 — дальше
+- `storage.js` вместо профилей в `main.js`
 - `boss.js` — createArcadeBossMesh
-- единый teardown, XSS-escape имён
 - по желанию: полный вынос `initGame` в `game.js`
 
 
