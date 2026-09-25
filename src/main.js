@@ -8699,13 +8699,16 @@ function startGaragePreview(carId) {
                                 boss._telegraphPulse = false;
                             } catch (eClr) {}
                             try {
-                            if (window.soundEngine) {
-                                const atk = boss.attack || '';
-                                const melee = (atk === 'sweep' || atk === 'ram' || atk === 'hammer' || atk === 'chain');
-                                window.soundEngine.playSfx(melee ? 'boss_melee' : 'boss_gun', 1.05);
-                                window.soundEngine.playSfx('shoot', 0.65);
-                            }
-                        } catch(e) {}
+                                if (window.soundEngine) {
+                                    if (window.soundEngine.playBossAttack) {
+                                        window.soundEngine.playBossAttack(boss.attack || '', 1.05);
+                                    } else {
+                                        const atk = boss.attack || '';
+                                        const melee = (atk === 'sweep' || atk === 'ram' || atk === 'hammer' || atk === 'chain');
+                                        window.soundEngine.playSfx(melee ? 'boss_melee' : 'boss_gun', 1.05);
+                                    }
+                                }
+                            } catch(e) {}
                             boss.attackT = 0;
                             if (boss._laser) { try { scene.remove(boss._laser); } catch (e) {} boss._laser = null; } // legacy cleanup
                             try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(isMelee ? 0.3 : 0.22); } catch (e) {}

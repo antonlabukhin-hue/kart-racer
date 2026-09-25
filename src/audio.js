@@ -719,67 +719,130 @@ class SoundEngine {
             switch (type) {
                 case 'shoot': mk('square', 420, 0.12, 0.1, 120); mk('sawtooth', 180, 0.15, 0.06, 60); break;
                 case 'hit': mk('triangle', 220, 0.18, 0.14, 50); break;
-                // --- боссы ---
-                case 'boss_spawn':
-                    mk('sawtooth', 70, 0.45, 0.18, 40);
-                    mk('square', 110, 0.3, 0.12, 55);
-                    mk('triangle', 180, 0.25, 0.08, 90);
-                    break;
-                case 'boss_roar':
-                    mk('sawtooth', 55, 0.55, 0.2, 28);
-                    mk('square', 90, 0.4, 0.14, 45);
+                // --- боссы (этап B: узнаваемые слои) ---
+                case 'boss_spawn': {
+                    // тяжёлый удар + рык
+                    mk('sawtooth', 48, 0.55, 0.24, 32);
+                    mk('square', 85, 0.4, 0.16, 40);
+                    mk('triangle', 160, 0.3, 0.1, 70);
+                    mk('sine', 55, 0.5, 0.12, 30);
                     if (this.noiseBuffer) {
                         const n = this.audioCtx.createBufferSource();
                         n.buffer = this.noiseBuffer;
                         const ng = this.audioCtx.createGain();
                         const f = this.audioCtx.createBiquadFilter();
-                        f.type = 'lowpass'; f.frequency.value = 400;
-                        ng.gain.setValueAtTime(0.18 * vs, t0);
-                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.5);
+                        f.type = 'lowpass'; f.frequency.value = 500;
+                        ng.gain.setValueAtTime(0.22 * vs, t0);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.55);
                         n.connect(f); f.connect(ng); ng.connect(this.audioCtx.destination);
                         n.start(t0);
                     }
                     break;
-                case 'boss_windup':
-                    mk('triangle', 160, 0.28, 0.1, 320);
-                    mk('sine', 200, 0.22, 0.06, 400);
-                    break;
-                case 'boss_melee':
-                    mk('triangle', 100, 0.2, 0.2, 40);
-                    mk('square', 70, 0.15, 0.12, 35);
+                }
+                case 'boss_roar': {
+                    mk('sawtooth', 42, 0.65, 0.26, 22);
+                    mk('square', 72, 0.5, 0.18, 35);
+                    mk('sawtooth', 95, 0.35, 0.1, 50);
                     if (this.noiseBuffer) {
                         const n = this.audioCtx.createBufferSource();
                         n.buffer = this.noiseBuffer;
                         const ng = this.audioCtx.createGain();
-                        ng.gain.setValueAtTime(0.15 * vs, t0);
-                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
-                        n.connect(ng); ng.connect(this.audioCtx.destination);
-                        n.start(t0);
-                    }
-                    break;
-                case 'boss_gun':
-                    mk('square', 520, 0.08, 0.14, 80);
-                    mk('sawtooth', 240, 0.1, 0.1, 60);
-                    mk('triangle', 90, 0.12, 0.08, 40);
-                    break;
-                case 'boss_hurt':
-                    mk('sawtooth', 140, 0.18, 0.12, 60);
-                    mk('triangle', 90, 0.15, 0.08, 45);
-                    break;
-                case 'boss_die':
-                    mk('sawtooth', 80, 0.5, 0.2, 30);
-                    mk('square', 50, 0.55, 0.16, 25);
-                    mk('triangle', 120, 0.35, 0.1, 40);
-                    if (this.noiseBuffer) {
-                        const n = this.audioCtx.createBufferSource();
-                        n.buffer = this.noiseBuffer;
-                        const ng = this.audioCtx.createGain();
+                        const f = this.audioCtx.createBiquadFilter();
+                        f.type = 'bandpass'; f.frequency.value = 280; f.Q.value = 0.7;
                         ng.gain.setValueAtTime(0.22 * vs, t0);
-                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.55);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.6);
+                        n.connect(f); f.connect(ng); ng.connect(this.audioCtx.destination);
+                        n.start(t0);
+                    }
+                    break;
+                }
+                case 'boss_windup': {
+                    // нарастающий «замах» — игрок слышит telegraph
+                    mk('sine', 120, 0.35, 0.08, 380);
+                    mk('triangle', 180, 0.32, 0.12, 420);
+                    mk('square', 90, 0.25, 0.06, 200);
+                    break;
+                }
+                case 'boss_melee': {
+                    // свист + удар
+                    mk('triangle', 280, 0.12, 0.1, 60);
+                    mk('square', 70, 0.22, 0.22, 28);
+                    mk('sawtooth', 55, 0.2, 0.16, 30);
+                    if (this.noiseBuffer) {
+                        const n = this.audioCtx.createBufferSource();
+                        n.buffer = this.noiseBuffer;
+                        const ng = this.audioCtx.createGain();
+                        ng.gain.setValueAtTime(0.2 * vs, t0);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
                         n.connect(ng); ng.connect(this.audioCtx.destination);
                         n.start(t0);
                     }
                     break;
+                }
+                case 'boss_gun': {
+                    mk('square', 680, 0.07, 0.16, 90);
+                    mk('sawtooth', 220, 0.12, 0.12, 50);
+                    mk('triangle', 110, 0.14, 0.1, 40);
+                    if (this.noiseBuffer) {
+                        const n = this.audioCtx.createBufferSource();
+                        n.buffer = this.noiseBuffer;
+                        const ng = this.audioCtx.createGain();
+                        const f = this.audioCtx.createBiquadFilter();
+                        f.type = 'highpass'; f.frequency.value = 800;
+                        ng.gain.setValueAtTime(0.12 * vs, t0);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1);
+                        n.connect(f); f.connect(ng); ng.connect(this.audioCtx.destination);
+                        n.start(t0);
+                    }
+                    break;
+                }
+                case 'boss_rocket': {
+                    // свист ракеты + бас
+                    mk('sawtooth', 200, 0.35, 0.12, 80);
+                    mk('sine', 90, 0.4, 0.14, 40);
+                    mk('square', 60, 0.25, 0.1, 35);
+                    if (this.noiseBuffer) {
+                        const n = this.audioCtx.createBufferSource();
+                        n.buffer = this.noiseBuffer;
+                        const ng = this.audioCtx.createGain();
+                        const f = this.audioCtx.createBiquadFilter();
+                        f.type = 'lowpass'; f.frequency.setValueAtTime(1200, t0);
+                        f.frequency.exponentialRampToValueAtTime(200, t0 + 0.4);
+                        ng.gain.setValueAtTime(0.16 * vs, t0);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.45);
+                        n.connect(f); f.connect(ng); ng.connect(this.audioCtx.destination);
+                        n.start(t0);
+                    }
+                    break;
+                }
+                case 'boss_snipe': {
+                    mk('sine', 900, 0.15, 0.1, 400);
+                    mk('square', 500, 0.1, 0.12, 120);
+                    mk('triangle', 200, 0.12, 0.08, 60);
+                    break;
+                }
+                case 'boss_hurt': {
+                    mk('sawtooth', 160, 0.16, 0.14, 55);
+                    mk('triangle', 80, 0.2, 0.12, 35);
+                    mk('square', 50, 0.15, 0.1, 30);
+                    break;
+                }
+                case 'boss_die': {
+                    mk('sawtooth', 70, 0.55, 0.24, 25);
+                    mk('square', 45, 0.6, 0.18, 22);
+                    mk('triangle', 100, 0.4, 0.12, 30);
+                    mk('sine', 40, 0.5, 0.1, 20);
+                    if (this.noiseBuffer) {
+                        const n = this.audioCtx.createBufferSource();
+                        n.buffer = this.noiseBuffer;
+                        const ng = this.audioCtx.createGain();
+                        ng.gain.setValueAtTime(0.26 * vs, t0);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.65);
+                        n.connect(ng); ng.connect(this.audioCtx.destination);
+                        n.start(t0);
+                    }
+                    break;
+                }
                 case 'explode':
                     mk('triangle', 90, 0.35, 0.22, 35);
                     mk('sawtooth', 55, 0.4, 0.16, 28);
@@ -899,6 +962,23 @@ class SoundEngine {
             }
         } catch (e) {}
     }
+
+    /** Звук атаки босса по типу attack из CAMPAIGN_BOSSES / BOSS_COMBAT. */
+    playBossAttack(attack, volScale) {
+        const atk = attack || 'default';
+        const melee = (atk === 'sweep' || atk === 'ram' || atk === 'hammer' || atk === 'chain' || atk === 'saw' || atk === 'tools');
+        if (atk === 'rocket' || atk === 'flame') {
+            this.playSfx('boss_rocket', volScale != null ? volScale : 1.05);
+        } else if (atk === 'snipe' || atk === 'neon') {
+            this.playSfx('boss_snipe', volScale != null ? volScale : 1.0);
+        } else if (melee) {
+            this.playSfx('boss_melee', volScale != null ? volScale : 1.05);
+        } else {
+            this.playSfx('boss_gun', volScale != null ? volScale : 1.05);
+            this.playSfx('shoot', 0.55);
+        }
+    }
+
 
     dispose() {
         this.stopMusic();
