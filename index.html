@@ -5266,18 +5266,18 @@ function startCampaignTrack(idx, opts) {
         let garageRenderer = null;
 
         const ACHIEVEMENTS = [
-            { id: 'first_win', name: 'Первый финиш', desc: 'Доехать до конца', img: 'images/ach_first_win.png' },
-            { id: 'perfect', name: 'Идеал', desc: 'Финиш без аварий', img: 'images/ach_perfect.png' },
-            { id: 'night_rider', name: 'Ночной курьер', desc: 'Финиш ночью', img: 'images/ach_night_rider.png' },
-            { id: 'rain_man', name: 'Дождевик', desc: 'Финиш в дождь', img: 'images/ach_rain_man.png' },
-            { id: 'hard_win', name: 'ЗвероСуд', desc: 'Победа на сложном', img: 'images/ach_hard_win.png' },
-            { id: 'gum_2', name: 'Турбо-коллекционер', desc: '2 жвачки за заезд', img: 'images/ach_gum_2.png' },
-            { id: 'no_nitro', name: 'Без нитро', desc: 'Финиш без нитро', img: 'images/ach_no_nitro.png' },
-            { id: 'oil_lover', name: 'Масломан', desc: '5 масляных пятен за заезд', img: 'images/ach_oil_lover.png' },
-            { id: 'bear_friend', name: 'Друг медведя', desc: '5 ударов по зверям за заезд', img: 'images/ach_bear_friend.png' },
-            { id: 'season5', name: 'Смена открыта', desc: '5 уровень сезона', img: 'images/ach_season5.png' },
-            { id: 'races10', name: 'Стахановец', desc: '10 заездов', img: 'images/ach_races10.png' },
-            { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/ach_wins5.png' }
+            { id: 'first_win', name: 'Первый финиш', desc: 'Доехать до конца', img: 'images/trophy_first_win.png' },
+            { id: 'perfect', name: 'Идеал', desc: 'Финиш без аварий', img: 'images/trophy_first_perfect.png' },
+            { id: 'night_rider', name: 'Ночной курьер', desc: 'Финиш ночью', img: 'images/trophy_night_rider.png' },
+            { id: 'rain_man', name: 'Дождевик', desc: 'Финиш в дождь', img: 'images/trophy_rain_man.png' },
+            { id: 'hard_win', name: 'ЗвероСуд', desc: 'Победа на сложном', img: 'images/trophy_hard_win.png' },
+            { id: 'gum_2', name: 'Турбо-коллекционер', desc: '2 жвачки за заезд', img: 'images/trophy_gum_2.png' },
+            { id: 'no_nitro', name: 'Без нитро', desc: 'Финиш без нитро', img: 'images/trophy_no_nitro.png' },
+            { id: 'oil_lover', name: 'Масломан', desc: '5 масляных пятен за заезд', img: 'images/trophy_oil_lover.png' },
+            { id: 'bear_friend', name: 'Друг медведя', desc: '5 ударов по зверям за заезд', img: 'images/trophy_bear_friend.png' },
+            { id: 'season5', name: 'Смена открыта', desc: '5 уровень сезона', img: 'images/trophy_season5.png' },
+            { id: 'races10', name: 'Стахановец', desc: '10 заездов', img: 'images/trophy_races10.png' },
+            { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/trophy_wins5.png' }
         ];
 
         function defaultSeason() {
@@ -5558,6 +5558,9 @@ function createProfile(name) {
             const short = id.replace(/^t_/, '');
             const list = [];
             if (t && t.img) list.push(t.img);
+            // картинка трофея лежит под именем его ачивки: t_cheburashka → need first_win → trophy_first_win.png
+            const ach = t && ACHIEVEMENTS.find(a => a.id === t.need);
+            if (ach && ach.img) list.push(ach.img);
             list.push('images/trophy_' + short + '.png');
             list.push('images/trophy_' + id + '.png');
             list.push('images/' + id + '.png');

@@ -89,3 +89,16 @@ test('экраны меню открываются без ошибок', async (
     await expect(page.locator('#main-menu-screen')).toBeVisible();
     expect(problems).toEqual([]);
 });
+
+test('трофеи в гараже с картинками', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="garage"]').click();
+    await page.locator('.garage-tab[data-gtab="trophies"]').click();
+    const imgs = page.locator('#trophy-grid img.trophy-img');
+    await expect(imgs).toHaveCount(10);
+    await expect.poll(() => imgs.evaluateAll(list => list.filter(i => i.complete && i.naturalWidth > 0).length)).toBe(10);
+    await page.locator('.trophy-slot').first().click();
+    await expect.poll(() => page.locator('#trophy-detail-img').evaluate(i => i.naturalWidth)).toBeGreaterThan(0);
+    expect(problems).toEqual([]);
+});
