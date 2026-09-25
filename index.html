@@ -4999,7 +4999,7 @@
                 }
             } catch (e) {}
             try {
-                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,.animal-shout,.radio-line,#hud-menu-btn,#hud-pause-btn').forEach(function(el) {
+                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,.animal-shout,.radio-line,#hud-menu-btn').forEach(function(el) {
                     try { el.remove(); } catch (e) {}
                 });
             } catch (e) {}
@@ -9564,7 +9564,7 @@ function startGaragePreview(carId) {
                         if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
                         window.__achQueue = [];
                         window.__achShowing = false;
-                        document.querySelectorAll('#finish-screen,#hud-menu-btn,#hud-pause-btn').forEach(function(el) {
+                        document.querySelectorAll('#finish-screen,#hud-menu-btn').forEach(function(el) {
                             try { el.remove(); } catch (e) {}
                         });
                     } catch (e) {}
