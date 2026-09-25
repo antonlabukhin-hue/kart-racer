@@ -49,7 +49,7 @@ npm install
 npm run dev
 ```
 
-Сайт собирается сам: на каждый пуш в `main` GitHub Actions запускает `npm run build` и публикует папку `dist/` на GitHub Pages (`.github/workflows/deploy.yml`). Если сборка упала, сайт не обновится, а у коммита в GitHub будет красный крестик.
+Сайт собирается сам: на каждый пуш в `main` GitHub Actions прогоняет тесты, запускает `npm run build` и публикует папку `dist/` на GitHub Pages (`.github/workflows/deploy.yml`). Если тесты или сборка упали, сайт не обновится, а у коммита в GitHub будет красный крестик.
 
 Версии библиотек (three, vite) записаны только в `package.json`.
 
@@ -76,6 +76,8 @@ npm run dev
 kart-racer/
 ├── index.html          # основной билд игры (монолит + Three.js)
 ├── src/                # модули (audio, animals, particles, data)
+├── tests/unit/         # быстрые тесты модулей из src/ (Vitest)
+├── tests/e2e/          # тесты игры в браузере: вход, заезд, кампания, пауза (Playwright)
 ├── public/images/      # меню, карты, трофеи, спрайты машин
 ├── public/music/       # menu-music.mp3, race-music.mp3
 ├── package.json        # версии three и vite
@@ -127,7 +129,11 @@ kart-racer/
 ```bash
 npm run dev
 # пройти заезд и проверить консоль браузера на ошибки
+npm test
+# тесты: сами соберут игру, откроют её в браузере и пройдут вход, заезд, кампанию и паузу
 ```
+
+Перед первым `npm test` один раз скачать браузер для тестов: `npx playwright install chromium`. Если тест упал, в `test-results/` лежит скриншот момента падения. Тесты же запускаются в GitHub на каждый PR.
 
 Коммиты лучше с коротким смыслом: `fix: traffic maxCars in campaign`, `perf: compress menu JPEGs`.
 
