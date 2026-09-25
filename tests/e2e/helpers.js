@@ -53,14 +53,25 @@ export async function startFreeRace(page, difficulty = 'easy') {
     await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
 }
 
-// Первая трасса кампании: список трасс → (магазин) → качество → лор → старт
-export async function startCampaign(page) {
+// Трасса кампании: список трасс → (магазин) → качество → лор → старт.
+// Для idx > 0 тест заранее записывает прогресс «открыто idx + 1 трасс», как после прохождения
+export async function startCampaign(page, idx = 0) {
+    if (idx > 0) {
+        await page.evaluate(n => {
+            const id = localStorage.getItem('road_racing_session_player');
+            localStorage.setItem('road_racing_campaign_' + id, JSON.stringify({ unlocked: n, completed: [] }));
+        }, idx + 1);
+    }
     await page.locator('.menu-card[data-menu="campaign"]').click();
-    await page.locator('.camp-track[data-idx="0"]').click();
+    await page.locator(`.camp-track[data-idx="${idx}"]`).click();
     await page.locator('#shop-action').click();
     await page.locator('#campaign-quality-go').click();
-    await page.getByRole('button', { name: /Пропустить/ }).click();
-    await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
+    // лор перед заездом есть не у всех трасс
+    const skip = page.getByRole('button', { name: /Пропустить/ });
+    const hud = page.locator('#game-hud');
+    await expect(skip.or(hud).first()).toBeVisible({ timeout: 20_000 });
+    if (await skip.isVisible()) await skip.click();
+    await expect(hud).toBeVisible({ timeout: 20_000 });
 }
 
 export async function progress(page) {
