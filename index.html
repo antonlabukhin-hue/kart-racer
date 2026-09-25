@@ -4987,12 +4987,7 @@
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { window.__hudRefs = null; } catch (e) {}
 
-            try {
-                if (typeof animationId !== 'undefined' && animationId) {
-                    cancelAnimationFrame(animationId);
-                    animationId = null;
-                }
-            } catch (e) {}
+            try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
             try { if (window.soundEngine && soundEngine.stopMusic) soundEngine.stopMusic(); } catch (e) {}
             try { if (window.soundEngine && soundEngine._stopEngineNow) soundEngine._stopEngineNow(); } catch (e) {}
             try {
@@ -7633,12 +7628,7 @@ function startGaragePreview(carId) {
 
         function exitRaceToMenu(openGarageAfter) {
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
-            try {
-                if (typeof animationId !== 'undefined' && animationId) {
-                    cancelAnimationFrame(animationId);
-                    animationId = null;
-                }
-            } catch (e) {}
+            try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
             try { if (window.soundEngine && soundEngine.stopMusic) soundEngine.stopMusic(); } catch (e) {}
             try { if (window.soundEngine && soundEngine._stopEngineNow) soundEngine._stopEngineNow(); } catch (e) {}
             // dispose WebGL
@@ -9099,12 +9089,7 @@ function startGaragePreview(carId) {
             if (typeof window.stopMenuMusic === 'function') window.stopMenuMusic();
             try { if (window.soundEngine && soundEngine.stopMenuMusic) soundEngine.stopMenuMusic(); } catch (e) {}
             // Полная очистка предыдущего заезда (двойной animate = дёрганье)
-            try {
-                if (typeof animationId !== 'undefined' && animationId) {
-                    cancelAnimationFrame(animationId);
-                    animationId = null;
-                }
-            } catch (e) {}
+            try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
             try {
                 if (window.__gameAnimationId) {
                     cancelAnimationFrame(window.__gameAnimationId);
@@ -14547,6 +14532,18 @@ function createBossHpBar(maxHp) {
                 }
             `;
             document.head.appendChild(style);
+
+            // Выход из заезда без финиша (меню, «Заново» в кампании): остановить цикл и снять клавиши,
+            // иначе старый заезд крутится в фоне, а Q в меню спрашивает «начать заново?»
+            window.__stopRace = function() {
+                gameState = 'exited';
+                if (animationId) cancelAnimationFrame(animationId);
+                animationId = null;
+                window.__gameAnimationId = null;
+                document.removeEventListener('keydown', keydownHandler);
+                document.removeEventListener('keyup', keyupHandler);
+                window.removeEventListener('resize', resizeHandler);
+            };
 
             animate(performance.now());
             

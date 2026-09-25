@@ -63,6 +63,9 @@ test('пауза и выход в меню посреди заезда', async (
     await page.locator('#pause-menu').click();
     await expect(page.locator('#main-menu-screen')).toBeVisible();
     await expect(page.locator('#game-hud')).toHaveCount(0);
+    // старый заезд остановлен: цикл не крутится, клавиши заезда в меню не работают
+    await expect.poll(() => page.evaluate(() => window.__gameAnimationId)).toBeFalsy();
+    await page.keyboard.press('q');
     expect(problems).toEqual([]);
 });
 
