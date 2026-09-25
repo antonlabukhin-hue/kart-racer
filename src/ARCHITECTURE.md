@@ -32,7 +32,7 @@ Vite собирает `index.html`, `css/`, `src/*` и three из `node_modules`
 
 ## Фаза 3a — безопасность (сделано)
 - `escapeHtml` + экранирование имени в `renderProfileList`
-- `setInterval` мобильных кнопок: один id, работа только при `__inRace`
+- мобильные кнопки: делегирование событий без `setInterval`, обработчики заезда снимаются через `AbortController` в `__stopRace`
 
 
 ## P0 (сделано)
