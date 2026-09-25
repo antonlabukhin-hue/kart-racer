@@ -33,8 +33,8 @@ export async function countShouts(page) {
     });
 }
 
-export async function login(page, name = 'Тестер') {
-    await page.goto('./');
+export async function login(page, name = 'Тестер', url = './') {
+    await page.goto(url);
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
     await page.locator('#splash-screen').click();
     await page.locator('#profile-name-input').fill(name);
@@ -53,17 +53,10 @@ export async function startFreeRace(page, difficulty = 'easy') {
     await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
 }
 
-// Трасса кампании: список трасс → (магазин) → качество → лор → старт.
-// Для idx > 0 тест заранее записывает прогресс «открыто idx + 1 трасс», как после прохождения
-export async function startCampaign(page, idx = 0) {
-    if (idx > 0) {
-        await page.evaluate(n => {
-            const id = localStorage.getItem('road_racing_session_player');
-            localStorage.setItem('road_racing_campaign_' + id, JSON.stringify({ unlocked: n, completed: [] }));
-        }, idx + 1);
-    }
+// Первая трасса кампании: список трасс → (магазин) → качество → лор → старт
+export async function startCampaign(page) {
     await page.locator('.menu-card[data-menu="campaign"]').click();
-    await page.locator(`.camp-track[data-idx="${idx}"]`).click();
+    await page.locator('.camp-track[data-idx="0"]').click();
     await page.locator('#shop-action').click();
     await page.locator('#campaign-quality-go').click();
     // лор перед заездом есть не у всех трасс

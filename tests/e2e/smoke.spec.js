@@ -82,6 +82,19 @@ test('выход в меню во время отсчёта 3-2-1 убирает
     expect(problems).toEqual([]);
 });
 
+test('сборка для сайта не знает про ?start тестовой сборки', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?start=0.97');
+    await startFreeRace(page);
+    // полоска прогресса обновляется только после отсчёта: ждём GO и немного едем
+    await expect(page.locator('#race-countdown')).toHaveCount(0, { timeout: 30_000 });
+    await page.keyboard.down('w');
+    await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(0);
+    await page.keyboard.up('w');
+    expect(await progress(page)).toBeLessThan(20);
+    expect(problems).toEqual([]);
+});
+
 test('экраны меню открываются без ошибок', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
@@ -116,14 +129,15 @@ test('трофеи в гараже с картинками', async ({ page }) =>
     expect(problems).toEqual([]);
 });
 
-// Едем прямо без руля до конца заезда (обычно 5 аварий: ~40 с дома, до 2–3 мин на сервере GitHub), потом «Заново»
-for (const mode of ['free', 'campaign']) {
-    test(`${mode === 'free' ? 'свободный заезд' : 'кампания'}: «Заново» в конце заезда перезапускает трассу`, async ({ page }) => {
+// Едем прямо без руля до поражения (5 аварий: ~40 с дома, до 2–3 мин на сервере GitHub), потом «Заново».
+// «Заново» после победы в кампании — быстрый сценарий в scenarios/race.spec.js
+for (const mode of ['free']) {
+    test('свободный заезд: «Заново» в конце заезда перезапускает трассу', async ({ page }) => {
         test.setTimeout(600_000);
         const problems = watchProblems(page);
         await login(page);
-        // сложные трассы: машин и зверей много, 5 аварий набираются быстро
-        if (mode === 'free') await startFreeRace(page, 'hard'); else await startCampaign(page, 5);
+        // сложный режим: машин и зверей много, 5 аварий набираются быстро
+        await startFreeRace(page, 'hard');
         await page.keyboard.down('w');
         // без своего лимита: ждём, сколько позволяет лимит теста (на медленном сервере игра идёт медленнее)
         await expect(page.locator('#finish-restart-btn')).toBeVisible({ timeout: 0 });
