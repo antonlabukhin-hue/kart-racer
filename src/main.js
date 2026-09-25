@@ -621,9 +621,6 @@
             } catch (e) {}
             try { document.body.classList.remove('race-mode', 'finish-open'); } catch (e) {}
             try { window.__inRace = false; window.__racePaused = false; } catch (e) {}
-            try {
-                if (typeof gameState !== 'undefined') gameState = 'menu';
-            } catch (e) {}
         }
         function clearCampaignGlobals() {
             try {
@@ -3166,7 +3163,7 @@ function startGaragePreview(carId) {
             try { document.body.classList.remove('finish-open', 'race-paused'); } catch (e) {}
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
-            const kill = '#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn,#cheburashkaWarn';
+            const kill = '#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn,#cheburashkaWarn,#race-countdown';
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque').forEach(function(el) {
                     try { el.remove(); } catch (e2) {}
@@ -3189,6 +3186,7 @@ function startGaragePreview(carId) {
                 if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
             } catch (e) {}
             try {
+                if (window.__onboardStop) window.__onboardStop();
                 const tip = document.getElementById('onboarding-tip');
                 if (tip) { tip.classList.remove('show'); tip.innerHTML = ''; }
             } catch (e) {}
@@ -3206,23 +3204,25 @@ function startGaragePreview(carId) {
                 ? '<b>Как играть</b><div class="ob-keys">Кнопки внизу — газ и полосы<br>Не больше <b>5 аварий</b> · собирай нитро</div>'
                 : '<b>Как играть</b><div class="ob-keys"><span>W</span>/<span>↑</span> газ · <span>A</span><span>D</span> полосы<br><span>P</span> пауза · <span>C</span> камера<br>Лимит: <b>5 аварий</b> · нитро ускоряет</div>';
             el.classList.add('show');
-            clearTimeout(window.__onboardTimer);
-            window.__onboardTimer = setTimeout(function() {
-                try {
-                    el.classList.remove('show');
-                    localStorage.setItem('road_racing_onboarded_v1', '1');
-                } catch (e2) {}
-            }, 12000);
-            // скрыть раньше по любому вводу
+            if (window.__onboardStop) window.__onboardStop();
+            // снять таймеры и слушатели; teardownRaceUI зовёт это при выходе из заезда
+            const stop = function() {
+                clearTimeout(window.__onboardTimer);
+                clearTimeout(window.__onboardListenTimer);
+                window.removeEventListener('keydown', hide);
+                window.removeEventListener('pointerdown', hide);
+            };
+            // скрыть через 12 с или раньше по любому вводу
             const hide = function() {
+                stop();
                 try {
                     el.classList.remove('show');
                     localStorage.setItem('road_racing_onboarded_v1', '1');
                 } catch (e3) {}
-                window.removeEventListener('keydown', hide);
-                window.removeEventListener('pointerdown', hide);
             };
-            setTimeout(function() {
+            window.__onboardStop = stop;
+            window.__onboardTimer = setTimeout(hide, 12000);
+            window.__onboardListenTimer = setTimeout(function() {
                 window.addEventListener('keydown', hide, { once: true });
                 window.addEventListener('pointerdown', hide, { once: true });
             }, 900);
@@ -5147,7 +5147,7 @@ function startGaragePreview(carId) {
                 const goMenu = function(ev) {
                     if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
                     cleanupFinishUI();
-                    const loreIdx = null; // лор злодея уже на финишной плашке компании
+                    // лор злодея уже на финишной плашке компании
                     window.__pendingCampaignLore = null;
                     try {
                         if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
@@ -5155,10 +5155,6 @@ function startGaragePreview(carId) {
                     } catch (e) {
                         console.warn('goMenu', e);
                         try { if (typeof showMainMenu === 'function') showMainMenu(); } catch (e2) {}
-                    }
-                    if (loreIdx != null && typeof showCampaignLore === 'function') {
-                        window.__pendingCampaignLore = null;
-                        setTimeout(function(){ showCampaignLore(loreIdx); }, 200);
                     }
                 };
                 const goGarage = function(ev) {
