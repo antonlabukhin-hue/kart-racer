@@ -9615,7 +9615,9 @@ function startGaragePreview(carId) {
                         }, 60);
                         return;
                     }
-                    try { location.reload(); } catch (e) {}
+                    // свободный заезд: те же настройки заново, без перезагрузки и повторного входа
+                    try { cleanupRaceKeepProfile(); } catch (e) {}
+                    setTimeout(function() { initGame(quality, difficulty, carId, mapId, weatherId); }, 60);
                 };
 
                 function bindFinishBtn(id, handler) {

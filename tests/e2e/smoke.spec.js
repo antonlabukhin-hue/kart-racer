@@ -102,3 +102,25 @@ test('трофеи в гараже с картинками', async ({ page }) =>
     await expect.poll(() => page.locator('#trophy-detail-img').evaluate(i => i.naturalWidth)).toBeGreaterThan(0);
     expect(problems).toEqual([]);
 });
+
+// Едем прямо без руля до конца заезда (обычно 5 аварий: ~40 с дома, до 2–3 мин на сервере GitHub), потом «Заново»
+for (const mode of ['free', 'campaign']) {
+    test(`${mode === 'free' ? 'свободный заезд' : 'кампания'}: «Заново» в конце заезда перезапускает трассу`, async ({ page }) => {
+        test.setTimeout(360_000);
+        const problems = watchProblems(page);
+        await login(page);
+        if (mode === 'free') await startFreeRace(page, 'hard'); else await startCampaign(page);
+        await page.keyboard.down('w');
+        await expect(page.locator('#finish-restart-btn')).toBeVisible({ timeout: 240_000 });
+        await page.keyboard.up('w');
+        await page.locator('#finish-restart-btn').click();
+
+        await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator('#profile-screen')).toBeHidden();
+        await expect(page.locator('#hud-pause-btn')).toBeVisible();
+        await page.keyboard.down('w');
+        await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
+        await page.keyboard.up('w');
+        expect(problems).toEqual([]);
+    });
+}
