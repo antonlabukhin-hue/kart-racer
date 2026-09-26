@@ -10,7 +10,7 @@
 
 | Меню | Гонка | Кампания |
 |:----:|:-----:|:--------:|
-| `images/menu.jpg` | `images/map_arsenev.jpg` | `images/menu_campaign.jpg` |
+| `images/splash.jpg` | `images/map_arsenev.jpg` | `images/menu_campaign.jpg` |
 
 *(открой игру локально или по ссылке выше — в README картинки подтянутся с GitHub Pages после деплоя)*
 
@@ -89,7 +89,7 @@ kart-racer/
 └── README.md
 ```
 
-Картинки и музыка лежат в `public/`: Vite копирует их в сборку как есть. В коде адреса без `public/`: `images/menu.jpg`, `music/race-music.mp3`.
+Картинки и музыка лежат в `public/`: Vite копирует их в сборку как есть. В коде адреса без `public/`: `images/splash.jpg`, `music/race-music.mp3`.
 
 ---
 

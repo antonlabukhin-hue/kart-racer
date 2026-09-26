@@ -1,4 +1,5 @@
-# Тесты на каждый PR и пуш; при пуше в main после зелёных тестов — сборка и публикация dist/ на GitHub Pages
+# Быстрый smoke-набор на каждый PR; полный прогон — на main и вручную.
+# При пуше в main после полного зелёного прогона публикуем dist/ на GitHub Pages.
 name: Deploy
 
 on:
@@ -26,7 +27,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm test
+      - run: npm run test:pr
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -35,8 +36,28 @@ jobs:
             playwright-report
             test-results
 
+  test-full:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:full
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: full-playwright-report
+          path: |
+            playwright-report
+            test-results
+
   deploy:
-    needs: test
+    needs: test-full
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:

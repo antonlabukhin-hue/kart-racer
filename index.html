@@ -39,8 +39,8 @@
     <!-- ЗАСТАВКА -->
     <div id="notify-root" aria-live="polite"></div>
     <div id="splash-screen">
-        <img src="images/splash.jpg" alt="Дорожный прорыв"
-             onerror="this.onerror=null;this.src='images/menu.jpg';">
+        <img src="images/splash.jpg" alt="Дорожный прорыв" loading="eager" decoding="async"
+             onerror="this.onerror=null;this.src='images/splash.jpg';">
         <div class="hint">Нажми, чтобы продолжить</div>
     </div>
 
@@ -115,37 +115,38 @@
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="main-menu-screen">
         <div class="content">
-            <img class="menu-hero" src="images/menu_main.jpg" alt="Меню"
-                 onerror="this.onerror=null;this.src='images/menu.jpg';">
+            <img class="menu-hero" src="images/menu_main.jpg" alt="Меню" loading="eager" decoding="async"
+                 onerror="this.onerror=null;this.src='images/splash.jpg';">
             <h1 style="color:#ffdd00;font-size:22px;">ДОРОЖНЫЙ ПРОРЫВ</h1>
             <div class="sub" id="main-menu-sub" style="color:#888;font-size:13px;margin:2px 0 4px;">—</div>
             <div class="menu-grid">
-                <div class="menu-card" data-menu="campaign">
+                <button type="button" class="menu-card" data-menu="campaign">
                     <img src="images/menu_campaign.jpg" alt="Компания" onerror="this.style.background='#3a2010';this.src='';">
                     <span>📖 Компания</span>
-                </div>
-                <div class="menu-card" data-menu="race">
+                </button>
+                <button type="button" class="menu-card" data-menu="race">
                     <img src="images/menu_race.jpg" alt="Свободный заезд" onerror="this.style.background='#332';this.src='';">
                     <span>🏁 Свободный заезд</span>
-                </div>
-                <div class="menu-card locked" data-menu="multiplayer" title="Скоро">
+                </button>
+                <button type="button" class="menu-card locked" data-menu="multiplayer" title="Скоро" aria-disabled="true">
                     <img src="images/menu_multiplayer.jpg" alt="Мультиплеер" onerror="this.style.background='#1a1a2e';this.src='';">
                     <span>🌐 Мультиплеер</span>
                     <div class="lock-badge" style="position:absolute;left:0;right:0;top:6px;left:6px;right:auto;width:auto;background:rgba(0,0,0,0.8);font-size:10px;padding:3px 6px;border-radius:6px;">🔒 Скоро</div>
-                </div>
-                <div class="menu-card" data-menu="garage">
+                </button>
+                <button type="button" class="menu-card" data-menu="garage">
                     <img src="images/menu_garage.jpg" alt="Гараж" onerror="this.style.background='#223';this.src='';">
                     <span>🔧 Гараж</span>
-                </div>
-                <div class="menu-card" data-menu="rewards">
+                </button>
+                <button type="button" class="menu-card" data-menu="rewards">
                     <img src="images/menu_rewards.jpg" alt="Награды" onerror="this.style.background='#242';this.src='';">
                     <span>🎁 Награды сезона</span>
-                </div>
-                <div class="menu-card" data-menu="events">
+                </button>
+                <button type="button" class="menu-card" data-menu="events">
                     <img src="images/menu_events.jpg" alt="События" onerror="this.style.background='#422';this.src='';">
                     <span>📋 События и смена</span>
-                </div>
+                </button>
             </div>
+            <button class="profile-btn quick-race-btn" id="main-menu-quick-race" type="button">⚡ Быстрый рейс</button>
             <button class="profile-btn secondary" id="main-menu-shop" style="margin-top:12px;">🚗 Магазин машин</button>
             <button class="profile-btn secondary" id="main-menu-logout">Сменить курьера</button>
         </div>
@@ -154,7 +155,7 @@
     <!-- НАГРАДЫ 1-30 -->
     <div id="rewards-screen">
         <div class="content">
-            <img class="menu-hero" src="images/menu_rewards.jpg" alt="Награды" onerror="this.style.display='none'">
+            <img class="menu-hero" loading="lazy" decoding="async" src="images/menu_rewards.jpg" alt="Награды" onerror="this.style.display='none'">
             <h1 style="color:#ffdd00;">🎁 СЕЗОН 1 — НАГРАДЫ</h1>
             <div class="sub" id="rewards-progress" style="color:#aaa;">Уровень —</div>
             <div id="rewards-list" style="max-height:50vh;overflow-y:auto;"></div>
@@ -165,7 +166,7 @@
     <!-- СОБЫТИЯ / КОНТРАКТ -->
     <div id="events-screen">
         <div class="content">
-            <img class="menu-hero" src="images/menu_events.jpg" alt="События" onerror="this.style.display='none'">
+            <img class="menu-hero" loading="lazy" decoding="async" src="images/menu_events.jpg" alt="События" onerror="this.style.display='none'">
             <h1 style="color:#ffdd00;">📋 СМЕНА И СОБЫТИЯ</h1>
             <div id="events-body"></div>
             <button class="garage-btn" id="events-start-contract" style="display:none;">НАЧАТЬ СМЕНУ →</button>
@@ -276,7 +277,7 @@
 
     <div id="difficulty-screen" style="display:none;">
         <div class="content">
-            <img class="diff-hero" src="images/menu.jpg" alt="Заставка"
+            <img class="diff-hero" loading="lazy" decoding="async" src="images/splash.jpg" alt="Заставка"
                  onerror="this.onerror=null;this.src='images/menu.png';">
             <div class="diff-main">
                 <div id="campaign-diff-note" class="camp-note" style="display:none;"></div>
@@ -308,7 +309,7 @@
     <!-- ВЫБОР КАРТЫ -->
     <div id="map-select-screen">
         <div class="content">
-            <img id="map-select-banner" src="images/map_select.jpg" alt="Выбор карты">
+            <img id="map-select-banner" loading="lazy" decoding="async" src="images/map_select.jpg" alt="Выбор карты">
             <h2>🗺️ ВЫБЕРИ МАРШРУТ</h2>
             <div class="sub">Открой все дороги из Арсеньева</div>
             <div class="map-options">
@@ -380,7 +381,7 @@
     <div id="lore-screen">
         <!-- Панель 1 -->
         <div class="lore-panel" id="lore-panel-1">
-            <img class="lore-img" src="images/lore1.jpg" alt="Лор 1" onerror="this.style.display='none'">
+            <img class="lore-img" src="images/splash.jpg" alt="Лор 1" onerror="this.style.display='none'">
             <div class="lore-text">
                 <h2>🏎️ ДОРОЖНЫЙ ПРОРЫВ — ДОРОГА ИЗ АРСЕНЬЕВА</h2>
                 <p>Год 2037. Мир уже не тот. Животные внезапно осознали, что у них есть права, и решили воспользоваться ими самым радикальным способом. Они вышли на дороги — массово, агрессивно и с полным игнорированием ПДД.</p>

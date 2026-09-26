@@ -21,6 +21,18 @@ test('вход по Enter, профиль сохраняется после пе
     expect(problems).toEqual([]);
 });
 
+test('быстрый рейс сразу открывает заезд', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-quick-race').click();
+    await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#difficulty-screen')).toBeHidden();
+    await page.keyboard.down('w');
+    await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
 test('свободный заезд: машина едет, звери кричат', async ({ page }) => {
     test.setTimeout(180_000);
     const problems = watchProblems(page);

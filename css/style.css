@@ -101,9 +101,16 @@
         .menu-card {
             border: 2px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 0;
             background: rgba(255,255,255,0.04); cursor: pointer; overflow: hidden; transition: .2s;
-            color: #fff; text-align: center;
+            color: #fff; text-align: center; width: 100%; font: inherit; appearance: none;
         }
         .menu-card:hover { border-color: #ffdd00; transform: scale(1.02); }
+        .menu-card:focus-visible, .profile-item:focus-visible,
+        .map-card:focus-visible, .car-card:focus-visible,
+        .control-btn:focus-visible {
+            outline: 3px solid #ffdd00; outline-offset: 3px;
+        }
+        .menu-card[aria-disabled="true"] { cursor: not-allowed; }
+        .quick-race-btn { border-color: rgba(80,220,140,0.7); background: rgba(50,180,100,0.16); color: #baffc8; position: relative; z-index: 5; }
         .menu-card img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #1a1520; }
         .menu-card span { display: block; padding: 10px 8px; font-weight: bold; font-size: 14px; }
         .reward-row {
@@ -160,7 +167,7 @@
             width: 100%; padding: 12px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.15);
             background: #15151c; color: #fff; font-size: 16px; margin-bottom: 10px; text-align: center;
         }
-        #profile-name-input:focus { outline: none; border-color: #ffdd00; }
+        #profile-name-input:focus { outline: 3px solid #ffdd00; outline-offset: 2px; border-color: #ffdd00; }
         #garage-screen .content { position: relative; z-index: 5; }
         .garage-btn { position: relative; z-index: 6; pointer-events: auto !important; cursor: pointer; }
         .profile-btn, .garage-btn {
@@ -3749,7 +3756,7 @@
         /* ===== MAIN MENU: подписи карточек не обрезать, плотнее к баннеру ===== */
         #main-menu-screen .content {
             gap: 6px !important;
-            grid-template-rows: auto auto auto minmax(0, 1fr) auto auto !important;
+            grid-template-rows: auto auto auto auto auto auto auto !important;
             padding-top: 10px !important;
             padding-bottom: 12px !important;
         }
@@ -3771,6 +3778,7 @@
             gap: 8px !important;
             margin-top: 2px !important;
             align-content: start !important;
+            align-self: auto !important;
             grid-auto-rows: auto !important;
         }
         #main-menu-screen .menu-card {

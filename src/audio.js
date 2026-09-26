@@ -27,6 +27,7 @@ class SoundEngine {
         this.menuAudio = null;
         this.menuMusicPlaying = false;
         this.musicLoaded = false;
+        this.musicLoadPromise = null;
         this.useProceduralFallback = true;
 
         this.noiseBuffer = null;
@@ -64,7 +65,6 @@ class SoundEngine {
             this.enabled = true;
             this.initialized = true;
 
-            this.loadMusic();
             this.createVolumeControls();
 
             const resumeAudio = () => {
@@ -155,6 +155,13 @@ class SoundEngine {
     }
 
     async loadMusic() {
+        if (this.musicLoadPromise) return this.musicLoadPromise;
+        this.musicLoadPromise = this._loadMusic();
+        try { return await this.musicLoadPromise; }
+        finally { this.musicLoadPromise = null; }
+    }
+
+    async _loadMusic() {
         const candidates = [
             this.musicUrl,
             'music/race-music.mp3',
@@ -340,6 +347,15 @@ class SoundEngine {
 
     _playMusic() {
         if (this.isMusicPlaying) return;
+
+        // Не скачиваем 3.4 MiB race-трека на заставке: загрузка начинается
+        // только после фактического старта гонки.
+        if (!this.musicLoaded) {
+            this.loadMusic().then(() => {
+                if (!this.isMusicPlaying) this._playMusic();
+            });
+            return;
+        }
 
         // 1. Пробуем MP3
         if (this.musicBuffer && this.musicLoaded) {
