@@ -10385,6 +10385,31 @@ function showLoreScreen(quality, difficulty) {
             if (shopBtn) shopBtn.addEventListener('click', function() {
                 if (typeof openShopScreen === 'function') openShopScreen(false);
             });
+            // «Быстрый рейс» — сразу в заезд с текущими/дефолтными настройками,
+            // без магазина, экрана сложности и лора (в отличие от обычной «Новая гонка»).
+            const quickRaceBtn = document.getElementById('main-menu-quick-race');
+            if (quickRaceBtn) quickRaceBtn.addEventListener('click', function() {
+                if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
+                else {
+                    window.__campaignMods = null;
+                    window.__campaignTrackId = null; try { window.__trackTheme = null; } catch (e) {}
+                    window.__campaignIdx = null;
+                    window.__forceDifficulty = null;
+                }
+                pendingMode = 'race';
+                if (typeof hideMainMenu === 'function') hideMainMenu();
+                if (currentPlayer && !(currentPlayer.unlockedCars || []).includes(currentPlayer.preferredCar)) {
+                    currentPlayer.preferredCar = 'cheburashka';
+                }
+                pendingCar = (currentPlayer && currentPlayer.preferredCar) || pendingCar || 'cheburashka';
+                pendingQuality = pendingQuality || 'medium';
+                pendingDifficulty = pendingDifficulty || 'medium';
+                pendingMap = pendingMap || 'arsenev';
+                pendingWeather = pendingWeather || 'day';
+                if (typeof initGame === 'function') {
+                    initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
+                }
+            });
             const logoutMenu = document.getElementById('main-menu-logout');
             if (logoutMenu) logoutMenu.addEventListener('click', function() {
                 if (typeof logoutPlayer === 'function') logoutPlayer();

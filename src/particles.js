@@ -16,6 +16,7 @@ class ParticleSystem {
     this.colors = new Float32Array(this.maxParticles * 3);
     this.velocities = [];
     this.lifetimes = [];
+    this.maxLifetimes = [];
 
     for (let i = 0; i < this.maxParticles; i++) {
         this.positions[i * 3] = 0;
@@ -26,6 +27,7 @@ class ParticleSystem {
         this.colors[i * 3] = 0.82; this.colors[i * 3 + 1] = 0.71; this.colors[i * 3 + 2] = 0.55;
         this.velocities.push({ x: 0, y: 0, z: 0 });
         this.lifetimes.push(0);
+        this.maxLifetimes.push(1);
     }
 
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
@@ -74,7 +76,7 @@ class ParticleSystem {
 emit(position, velocity, count = 2, customSize = 0.15) {
     if (!this.enabled || !position) return;
     velocity = velocity || { x: 0, y: 0.2, z: 0 };
-    const q = (typeof quality !== 'undefined' && quality) || (typeof window !== 'undefined' && window.__lastQuality) || 'medium';
+    const q = (typeof window !== 'undefined' && window.__lastQuality) || 'medium';
     const density = q === 'high' ? 2 : q === 'medium' ? 1 : 0.5;
     const actualCount = Math.max(1, Math.floor(count * density));
     for (let i = 0; i < actualCount; i++) {
@@ -98,6 +100,7 @@ emit(position, velocity, count = 2, customSize = 0.15) {
             z: velocity.z + Math.random() * 0.5
         };
         this.lifetimes[idx] = 0.6 + Math.random() * 0.4;
+        this.maxLifetimes[idx] = this.lifetimes[idx];
     }
     try { if (this.geometry.attributes.color) this.geometry.attributes.color.needsUpdate = true; } catch (e) {}
 }
@@ -105,7 +108,7 @@ emit(position, velocity, count = 2, customSize = 0.15) {
 explode(position, power) {
     if (!this.enabled || !position) return;
     const p = power != null ? power : 1;
-    const q = (typeof quality !== 'undefined' && quality) || (typeof window !== 'undefined' && window.__lastQuality) || 'medium';
+    const q = (typeof window !== 'undefined' && window.__lastQuality) || 'medium';
     const dens = q === 'low' ? 0.45 : (q === 'medium' ? 0.7 : 1);
     const spawn = (count, sizeMin, sizeMax, lifeMin, lifeMax, speed, yBias, r, g, b, r2, g2, b2) => {
         const n = Math.max(2, Math.floor(count * dens));
@@ -131,6 +134,7 @@ explode(position, power) {
                 z: Math.sin(ang) * sp
             };
             this.lifetimes[idx] = lifeMin + Math.random() * (lifeMax - lifeMin);
+            this.maxLifetimes[idx] = this.lifetimes[idx];
             if (wasDead) this.aliveCount++;
         }
     };
@@ -166,7 +170,7 @@ update(deltaTime) {
             this.velocities[i].z *= 0.95;
             this.velocities[i].y += -1.8 * deltaTime; // гравитация для взрывов
 
-            const lifeRatio = this.lifetimes[i] / 1.0;
+            const lifeRatio = this.lifetimes[i] / (this.maxLifetimes[i] || 1);
             this.opacities[i] = Math.max(0, lifeRatio * 0.5);
             this.sizes[i] *= 1.02;
             // погасла раньше конца жизни — тоже мёртвая, иначе aliveCount не доходит до 0
