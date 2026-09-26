@@ -12,7 +12,7 @@
     "test": "vitest run && playwright test",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test --project=site --grep=\"игра загружается|вход по Enter|быстрый рейс|сборка для сайта|экраны меню открываются|трофеи в гараже\"",
+    "test:e2e:smoke": "playwright test --project=site --grep=@smoke",
     "test:pr": "npm run test:unit && npm run test:e2e:smoke",
     "test:full": "npm test"
   },

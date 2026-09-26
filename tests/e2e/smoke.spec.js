@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 // проверяем, что машина едет, а не как быстро
 import { watchProblems, countShouts, login, startFreeRace, startCampaign, progress } from './helpers.js';
 
-test('игра загружается, three из сборки', async ({ page }) => {
+test('игра загружается, three из сборки', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await page.goto('./');
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
@@ -12,7 +12,7 @@ test('игра загружается, three из сборки', async ({ page }
     expect(problems).toEqual([]);
 });
 
-test('вход по Enter, профиль сохраняется после перезагрузки', async ({ page }) => {
+test('вход по Enter, профиль сохраняется после перезагрузки', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Антон');
     await page.reload();
@@ -21,7 +21,7 @@ test('вход по Enter, профиль сохраняется после пе
     expect(problems).toEqual([]);
 });
 
-test('быстрый рейс сразу открывает заезд', async ({ page }) => {
+test('быстрый рейс сразу открывает заезд', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
     await page.locator('#main-menu-quick-race').click();
@@ -94,7 +94,7 @@ test('выход в меню во время отсчёта 3-2-1 убирает
     expect(problems).toEqual([]);
 });
 
-test('сборка для сайта не знает про ?start тестовой сборки', async ({ page }) => {
+test('сборка для сайта не знает про ?start тестовой сборки', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.97');
     await startFreeRace(page);
@@ -107,7 +107,7 @@ test('сборка для сайта не знает про ?start тестов�
     expect(problems).toEqual([]);
 });
 
-test('экраны меню открываются без ошибок', async ({ page }) => {
+test('экраны меню открываются без ошибок', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
     for (const [card, screen, back] of [
@@ -128,7 +128,7 @@ test('экраны меню открываются без ошибок', async (
     expect(problems).toEqual([]);
 });
 
-test('трофеи в гараже с картинками', async ({ page }) => {
+test('трофеи в гараже с картинками', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
     await page.locator('.menu-card[data-menu="garage"]').click();

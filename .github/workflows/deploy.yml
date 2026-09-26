@@ -18,6 +18,8 @@ concurrency:
 
 jobs:
   test:
+    # быстрый smoke-набор нужен только на PR — на push в main его дублирует test-full
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

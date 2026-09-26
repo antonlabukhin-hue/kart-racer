@@ -321,13 +321,6 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
 
 
         // Критичные картинки UI — фоновая предзагрузка
-        const UI_ASSETS = [
-            'images/splash.jpg', 'images/menu.jpg', 'images/menu_main.jpg',
-            'images/menu_race.jpg', 'images/menu_garage.jpg', 'images/menu_rewards.jpg',
-            'images/menu_events.jpg', 'images/win.jpg', 'images/lose.jpg',
-            'images/lore1.jpg', 'images/lore2.jpg',
-            'images/map_arsenev.jpg', 'images/map_promzona.jpg', 'images/map_svalka.jpg'
-        ];
         const MUSIC_CANDIDATES = [
             'music/race-music.mp3',
             './music/race-music.mp3',
@@ -982,8 +975,14 @@ function createProfile(name) {
             if (!Array.isArray(p.campaign.completed)) p.campaign.completed = [];
             if (p.season.chips == null) p.season.chips = 0;
             if (p.season.gum == null) p.season.gum = 0;
-            if (!p.carLoadout) p.carLoadout = { parts: [], paint: 'stock', paintByCar: {} };
+            if (!p.carLoadout) p.carLoadout = { parts: [], ownedParts: [], paint: 'stock', paintByCar: {} };
             if (!p.carLoadout.parts) p.carLoadout.parts = [];
+            // миграция: раньше один и тот же список parts означал и «куплено», и «установлено» —
+            // снятие детали стирало и покупку, повторная установка списывала фишки заново.
+            // Теперь ownedParts — что куплено (навсегда), parts — что сейчас установлено.
+            if (!Array.isArray(p.carLoadout.ownedParts)) {
+                p.carLoadout.ownedParts = p.carLoadout.parts.slice();
+            }
             if (!p.carLoadout.paintByCar || typeof p.carLoadout.paintByCar !== 'object') p.carLoadout.paintByCar = {};
             // миграция: общий paint → текущей машине
             if (p.carLoadout.paint && p.preferredCar && !p.carLoadout.paintByCar[p.preferredCar]) {
@@ -2127,7 +2126,8 @@ function renderGaragePartsPanel() {
             box.classList.add('active');
             box.style.display = 'block';
             ensureProfileFields(currentPlayer);
-            const owned = currentPlayer.carLoadout.parts || [];
+            const equipped = currentPlayer.carLoadout.parts || [];
+            const ownedParts = currentPlayer.carLoadout.ownedParts || [];
             let html = '<div style="font-size:11px;color:#888;margin-bottom:6px;">Наведи — примерка · клик — купить/снять · фишки: ' + Number(currentPlayer.season.chips || 0) + '</div>';
             html += '<div class="color-swatches">';
             CAR_PAINTS.forEach(p => {
@@ -2142,10 +2142,12 @@ function renderGaragePartsPanel() {
             CAR_PARTS.forEach(part => {
                 // У Нивы нет багажника на крышу
                 if (isNiva && part.id === 'roof_rack') return;
-                const isOwned = owned.includes(part.id);
-                html += '<div class="part-row' + (isOwned?' owned':'') + '" data-part="' + part.id + '">' +
+                const isEquipped = equipped.includes(part.id);
+                const isOwned = ownedParts.includes(part.id);
+                const priceLabel = isEquipped ? '✓ установлено' : (isOwned ? '✓ куплено' : ('🪙 ' + part.price));
+                html += '<div class="part-row' + (isEquipped?' owned':'') + '" data-part="' + part.id + '">' +
                     '<span>' + escapeHtml(part.name) + '</span>' +
-                    '<span class="part-price">' + (isOwned ? '✓ стоит' : ('🪙 ' + part.price)) + '</span></div>';
+                    '<span class="part-price">' + priceLabel + '</span></div>';
             });
             box.innerHTML = html;
             box.querySelectorAll('.color-swatch').forEach(sw => {
@@ -2187,26 +2189,31 @@ function renderGaragePartsPanel() {
                 if (window.Notify) Notify.warn('Нива', 'На джип багажник на крышу не ставится');
                 return;
             }
-            const owned = currentPlayer.carLoadout.parts;
-            if (owned.includes(partId)) {
-                // снять
-                currentPlayer.carLoadout.parts = owned.filter(id => id !== partId);
+            const equipped = currentPlayer.carLoadout.parts;
+            const ownedParts = currentPlayer.carLoadout.ownedParts;
+            const isOwned = ownedParts.includes(partId);
+            if (equipped.includes(partId)) {
+                // снять — деталь остаётся купленной, просто больше не стоит на машине
+                currentPlayer.carLoadout.parts = equipped.filter(id => id !== partId);
                 saveCurrentPlayer();
                 if (window.Notify) Notify.info('Снято', part.name);
             } else {
-                if (currentPlayer.season.chips < part.price) {
-                    if (window.Notify) Notify.warn('Мало фишек', 'Нужно 🪙' + part.price);
-                    return;
+                if (!isOwned) {
+                    if (currentPlayer.season.chips < part.price) {
+                        if (window.Notify) Notify.warn('Мало фишек', 'Нужно 🪙' + part.price);
+                        return;
+                    }
+                    currentPlayer.season.chips -= part.price;
+                    ownedParts.push(partId);
                 }
-                currentPlayer.season.chips -= part.price;
                 // один слот — заменяем деталь того же slot
                 const sameSlot = CAR_PARTS.filter(p => p.slot === part.slot).map(p => p.id);
-                currentPlayer.carLoadout.parts = owned.filter(id => !sameSlot.includes(id));
+                currentPlayer.carLoadout.parts = equipped.filter(id => !sameSlot.includes(id));
                 currentPlayer.carLoadout.parts.push(partId);
                 saveCurrentPlayer();
                 try { if (window.soundEngine) window.soundEngine.playSfx('coins', 1.0); } catch (e) {}
                 window.__garageSpinT = 0.7; try { tickGarageSpin(); } catch(e) {} try { if (window.__garageCar) window.__garageCar.rotation.y += 0.12; } catch(e) {}
-                if (window.Notify) Notify.success('🛠️ Установлено', part.name);
+                if (window.Notify) Notify.success(isOwned ? '🛠️ Установлено' : '🛠️ Куплено и установлено', part.name);
             }
             renderGaragePartsPanel();
             applyGarageLoadoutVisual();
@@ -7619,6 +7626,7 @@ function startGaragePreview(carId) {
                     maxHp: chapterHp,
                     active: true,
                     phase: 0,
+                    enraged: false,
                     shoutTimer: 3.0,
                     shotTimer: 1.8 + Math.min(1.2, bossIdx * 0.08),
                     combat: getBossCombat(def.attack),
@@ -9086,7 +9094,10 @@ function startGaragePreview(carId) {
                                 const len = Math.max(0.01, Math.sqrt(dx * dx + dz * dz));
                                 const speed = isMelee ? 11.0 : (pr.speed || 10.5);
                                 const life = pr.life != null ? pr.life : (isMelee ? 1.2 : 3.5);
-                                const nShot = pr.multi ? pr.multi : 1;
+                                // multi берём из BOSS_COMBAT (boss._projMulti), а не из визуального PROJ —
+                                // у PROJ свои (другие) значения multi, из-за чего burst стрелял 5 вместо 3,
+                                // а flame/riff/neon — 1 вместо 2
+                                const nShot = boss._projMulti || pr.multi || 1;
                                 for (let si = 0; si < nShot; si++) {
                                     const spread = nShot > 1 ? (si - (nShot-1)/2) * 0.35 : 0;
                                     let meshI = ball;
@@ -9135,8 +9146,10 @@ function startGaragePreview(carId) {
                     }
 
                     // Фаза 2 при ≤50% HP — чаще атаки
-                    if (boss.phase === 0 && boss.hp <= boss.maxHp * 0.5) {
-                        boss.phase = 1;
+                    // (boss.phase — непрерывный таймер для sin()-анимации, растёт каждый кадр;
+                    // флаг ярости должен жить отдельно, иначе это условие никогда не срабатывает)
+                    if (!boss.enraged && boss.hp <= boss.maxHp * 0.5) {
+                        boss.enraged = true;
                         try { if (window.soundEngine) window.soundEngine.playSfx('boss', 0.9); } catch (ePh) {}
                         try {
                             if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ': «Это ещё не всё!»');
@@ -9655,6 +9668,12 @@ function startGaragePreview(carId) {
 
                 // ---- 3-2-1-GO ----
                 if (gameState === 'countdown') {
+                    // пауза должна останавливать и отсчёт, не только саму гонку
+                    if (window.__racePaused) {
+                        lastTime = currentTime;
+                        try { renderer.render(scene, camera); } catch (e) {}
+                        return;
+                    }
                     const dt = Math.min(0.05, ((currentTime - (lastTime || currentTime)) / 1000) || 0.016);
                     lastTime = currentTime;
                     countdownT -= dt;
