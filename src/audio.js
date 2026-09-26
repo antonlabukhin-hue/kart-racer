@@ -483,8 +483,11 @@ class SoundEngine {
         const absSp = Math.abs(speed || 0);
         const n = Math.max(0, Math.min(1, absSp / maxS));
 
-        // 5 передач: 10/26/44/62/80%
-        const edges = [0, 0.10, 0.26, 0.44, 0.62, 0.80, 1.0];
+        // 5 передач: пороги совпадают с main.js (там решают, когда проиграть щелчок
+        // переключения) — раньше здесь были свои пороги (10/26/44/62/80%), и частота
+        // внутри передачи считалась относительно них, а не тех, что реально включены,
+        // из-за чего смена звучала не совсем на своём месте.
+        const edges = [0, 0.06, 0.18, 0.34, 0.52, 0.72, 1.0];
         let gear = 0;
         for (let g = 5; g >= 1; g--) if (n >= edges[g]) { gear = g; break; }
         if (gearOpt != null && gearOpt !== undefined) gear = Math.max(0, Math.min(5, gearOpt | 0));
@@ -498,9 +501,9 @@ class SoundEngine {
         const g0 = edges[gear], g1 = edges[Math.min(gear + 1, 6)];
         const inG = g1 > g0 ? Math.max(0, Math.min(1, (n - g0) / (g1 - g0))) : 0;
 
-        // Широкий диапазон — ухо точно слышит смену
-        const bases = [70, 100, 140, 190, 250, 330];
-        const spans = [45, 55, 65, 75, 90, 100];
+        // Шире диапазон внутри каждой передачи — набор скорости слышен, а не только сам щелчок
+        const bases = [65, 95, 135, 190, 260, 350];
+        const spans = [50, 60, 75, 90, 100, 120];
         let freq = bases[gear] + inG * spans[gear];
         if (absSp < 0.01) freq = 55;
         if (this._gearShiftDrop > 0) {
@@ -509,7 +512,7 @@ class SoundEngine {
         }
 
         const volMul = (this.engineVolumeMultiplier != null) ? this.engineVolumeMultiplier : 0.6;
-        let vol = (0.04 + n * 0.18) * volMul;
+        let vol = (0.05 + n * 0.24) * volMul;
         if (absSp < 0.01) vol = 0.001;
 
         this.engineFrequency = freq;
