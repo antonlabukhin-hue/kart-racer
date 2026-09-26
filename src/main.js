@@ -7250,6 +7250,72 @@ function startGaragePreview(carId) {
                 }
             }
 
+            // === Падающие обломки: telegraph-предупреждение, затем удар по дороге ===
+            const fallingDebris = [];
+            window.__fallingDebris = fallingDebris;
+            // раз в 12–18 сек (реже на easy, чаще на hard) — как договорились
+            const _debrisRange = difficulty === 'easy' ? [16, 21] : difficulty === 'hard' ? [10, 14] : [13, 17];
+            let debrisTimer = _debrisRange[0] + Math.random() * (_debrisRange[1] - _debrisRange[0]);
+            const debrisLaneXs = [-TRACK_WIDTH * 0.28, 0, TRACK_WIDTH * 0.28];
+            function debrisVisual() {
+                if (isSnowTrack) {
+                    return {
+                        color: 0xcfeeff, emissive: 0x336699, shape: 'icicle'
+                    };
+                } else if (mapId === 'promzona' || mapId === 'svalka') {
+                    return {
+                        color: Math.random() < 0.5 ? 0x6a6a70 : 0x8a5a20,
+                        emissive: 0x111111,
+                        shape: Math.random() < 0.5 ? 'plate' : 'barrel'
+                    };
+                }
+                return { color: 0x9a6a30, emissive: 0x221100, shape: 'crate' };
+            }
+            function createDebrisWarning(x, z) {
+                const ring = new THREE.Mesh(
+                    new THREE.RingGeometry(0.35, 0.6, 16),
+                    new THREE.MeshBasicMaterial({ color: 0xff3322, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false })
+                );
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.set(x, 0.05, z);
+                scene.add(ring);
+                return ring;
+            }
+            function createDebrisMesh(vis) {
+                const mat = new THREE.MeshLambertMaterial({ color: vis.color, emissive: vis.emissive, emissiveIntensity: 0.2 });
+                let mesh;
+                if (vis.shape === 'icicle') {
+                    mesh = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.9, 6), mat);
+                    mesh.rotation.x = Math.PI;
+                } else if (vis.shape === 'barrel') {
+                    mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.6, 10), mat);
+                } else if (vis.shape === 'plate') {
+                    mesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.6), mat);
+                } else {
+                    mesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), mat);
+                }
+                mesh.castShadow = true;
+                return mesh;
+            }
+            function spawnDebrisWarning() {
+                try {
+                    const x = debrisLaneXs[Math.floor(Math.random() * debrisLaneXs.length)];
+                    // Появляется на дороге впереди игрока — успеваем среагировать
+                    const z = zPos - (20 + Math.random() * 8);
+                    if (z < FINISH_Z + 40 || z > START_Z - 25) return; // не спавним у старта/финиша
+                    const ring = createDebrisWarning(x, z);
+                    fallingDebris.push({
+                        x: x, z: z, ring: ring, mesh: null,
+                        state: 'warning',
+                        telegraphT: 1.0 + Math.random() * 0.5,
+                        fallT: 0,
+                        lifeT: 9,
+                        active: true,
+                        vis: debrisVisual()
+                    });
+                } catch (eSpawn) {}
+            }
+
             // ============================================================
             // МИНИ-БОСС (компания: свой на главу; иначе — по карте)
             // ============================================================
@@ -8627,6 +8693,86 @@ function startGaragePreview(carId) {
                         }
                     }
                 });
+
+                // ---- Падающие обломки ----
+                if (gameState === 'racing') {
+                    debrisTimer -= deltaTime;
+                    if (debrisTimer <= 0) {
+                        debrisTimer = _debrisRange[0] + Math.random() * (_debrisRange[1] - _debrisRange[0]);
+                        spawnDebrisWarning();
+                    }
+                }
+                for (let di = fallingDebris.length - 1; di >= 0; di--) {
+                    const d = fallingDebris[di];
+                    if (!d.active) continue;
+                    if (d.state === 'warning') {
+                        d.telegraphT -= deltaTime;
+                        if (d.ring) {
+                            const pulse = 0.35 + Math.abs(Math.sin(d.telegraphT * 14)) * 0.45;
+                            d.ring.material.opacity = pulse;
+                            const sc = 1 + (1 - Math.min(1, Math.max(0, d.telegraphT))) * 0.3;
+                            d.ring.scale.set(sc, sc, sc);
+                        }
+                        if (d.telegraphT <= 0) {
+                            d.state = 'falling';
+                            d.fallT = 0.28;
+                            d.mesh = createDebrisMesh(d.vis);
+                            d.mesh.position.set(d.x, 3.2, d.z);
+                            scene.add(d.mesh);
+                            if (d.ring) { scene.remove(d.ring); d.ring = null; }
+                        }
+                    } else if (d.state === 'falling') {
+                        d.fallT -= deltaTime;
+                        const t = Math.max(0, d.fallT / 0.28);
+                        if (d.mesh) d.mesh.position.y = 0.3 + t * 2.9;
+                        if (d.fallT <= 0) {
+                            d.state = 'active';
+                            if (d.mesh) d.mesh.position.y = 0.3;
+                            try {
+                                for (let s = 0; s < 8; s++) {
+                                    particleSystem.emit(
+                                        _v.p1.set(d.x, 0.2, d.z),
+                                        _v.vel.set((Math.random() - 0.5) * 2, 1 + Math.random(), (Math.random() - 0.5) * 2),
+                                        1, 0.14
+                                    );
+                                }
+                                if (window.soundEngine) window.soundEngine.playSfx('bump', 0.8);
+                            } catch (eFx) {}
+                        }
+                    } else if (d.state === 'active') {
+                        d.lifeT -= deltaTime;
+                        const dx = xPos - d.x;
+                        const dz = zPos - d.z;
+                        if (Math.abs(dx) < 0.55 && Math.abs(dz) < 0.55) {
+                            if (carAirborne || carYOffset > 0.45) {
+                                try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
+                            } else {
+                                speed *= 0.65;
+                                stunTimer = 0.3;
+                                shakeTime = 0.2;
+                                try { soundEngine.playCrashSound(0.3); } catch (e) {}
+                                try { if (playerCar) playerCar.userData._suspensionKick = 0.18; } catch (e) {}
+                                showTimePenaltyPopup(1.5 * ((config && config.timePenaltyMul != null) ? config.timePenaltyMul : 1), 'Обломки!');
+                                try {
+                                    for (let s = 0; s < 10; s++) {
+                                        particleSystem.emit(
+                                            _v.p1.set(d.x, 0.3, d.z),
+                                            _v.vel.set((Math.random() - 0.5) * 3, 1.2 + Math.random(), (Math.random() - 0.5) * 3),
+                                            1, 0.16
+                                        );
+                                    }
+                                } catch (eFx2) {}
+                            }
+                            d.lifeT = -1; // и промах, и попадание — одноразовое
+                        }
+                        // игрок проехал мимо или объект зажился — убираем
+                        if (d.lifeT <= 0 || zPos < d.z - 12) {
+                            d.active = false;
+                            if (d.mesh) { try { scene.remove(d.mesh); } catch (e) {} d.mesh = null; }
+                            fallingDebris.splice(di, 1);
+                        }
+                    }
+                }
 
                 // ---- Коллектиблы ----
                 collectibles.forEach(c => {
