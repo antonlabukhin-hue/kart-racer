@@ -158,10 +158,13 @@ export const CAMPAIGN_STAGE_MODS = {
     }
 };
 
+// Скорость и разгон подняты на 20% относительно исходных (0.35/0.31/0.41 и 0.018/0.014/0.024) —
+// по просьбе сделать обычную езду быстрее; масштабируем обе величины вместе, чтобы
+// сохранить прежнее ощущение разгона (время до максимума не изменилось).
 export const CAR_PRESETS = {
-    cheburashka: { name: 'Чебурашка', color: 0xff2200, maxSpeed: 0.35, accel: 0.018, durability: 1.00, oilGrip: 1.00, priceChips: 0 },
-    kirpich:     { name: 'Нива',       color: 0x4a6a4a, maxSpeed: 0.31, accel: 0.014, durability: 0.70, oilGrip: 1.18, priceChips: 12 },
-    turbo:       { name: 'Волга',      color: 0xc0a060, maxSpeed: 0.41, accel: 0.024, durability: 1.15, oilGrip: 0.72, priceChips: 20 }
+    cheburashka: { name: 'Чебурашка', color: 0xff2200, maxSpeed: 0.42, accel: 0.0216, durability: 1.00, oilGrip: 1.00, priceChips: 0 },
+    kirpich:     { name: 'Нива',       color: 0x4a6a4a, maxSpeed: 0.372, accel: 0.0168, durability: 0.70, oilGrip: 1.18, priceChips: 12 },
+    turbo:       { name: 'Волга',      color: 0xc0a060, maxSpeed: 0.492, accel: 0.0288, durability: 1.15, oilGrip: 0.72, priceChips: 20 }
 };
 
 export const ANIMAL_TYPES = {

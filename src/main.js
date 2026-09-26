@@ -7363,14 +7363,24 @@ function startGaragePreview(carId) {
             function spawnDebrisWarning() {
                 try {
                     const x = debrisLaneXs[Math.floor(Math.random() * debrisLaneXs.length)];
-                    // Появляется на дороге впереди игрока — успеваем среагировать
-                    const z = zPos - (20 + Math.random() * 8);
+                    const telegraphT = 0.95 + Math.random() * 0.65; // 0.95–1.6с предупреждение
+                    const fallT = 0.28; // время самого падения (см. ветку state === 'falling')
+                    // Раньше дистанция до точки спавна была фиксированной (20–28 юнитов) и не
+                    // зависела от скорости машины: на быстрой езде игрок успевал проехать место
+                    // ДО того, как обломок долетал до земли, и удар всегда приходился «в спину».
+                    // Теперь дистанцию подгоняем под текущую скорость так, чтобы обломок
+                    // становился твёрдым (state 'active') примерно тогда, когда туда доедет
+                    // игрок — а разброс 0.8–1.5 даёт то шанс влететь, то время перестроиться в
+                    // соседнюю полосу и объехать.
+                    const unitsPerSec = Math.max(Math.abs(speed) * 60, MAX_SPEED * 60 * 0.45);
+                    const lead = unitsPerSec * (telegraphT + fallT) * (0.8 + Math.random() * 0.7);
+                    const z = zPos - Math.max(14, lead);
                     if (z < FINISH_Z + 40 || z > START_Z - 25) return; // не спавним у старта/финиша
                     const w = createDebrisWarning(x, z);
                     fallingDebris.push({
                         x: x, z: z, ring: w.ring, beam: w.beam, mesh: null,
                         state: 'warning',
-                        telegraphT: 1.0 + Math.random() * 0.5,
+                        telegraphT: telegraphT,
                         fallT: 0,
                         lifeT: 9,
                         active: true,
