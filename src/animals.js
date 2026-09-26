@@ -180,7 +180,9 @@ class AnimalSpawner {
         this.spawnTimer += deltaTime;
         const totalActive = this.animals.length;
 
-        if (this.spawnTimer >= this.nextSpawnTime && totalActive < this.maxAnimals) {
+        // спокойный старт: пока машина разгоняется (первые 45 ед.), зверей не выпускаем
+        const calmStart = typeof this.startZ === 'number' && this.startZ - playerZ < 45;
+        if (!calmStart && this.spawnTimer >= this.nextSpawnTime && totalActive < this.maxAnimals) {
             this.spawnTimer = 0;
             this.nextSpawnTime = this.getRandomInterval();
 
@@ -191,8 +193,9 @@ class AnimalSpawner {
             if (plan && plan.length && this.totalSpawned < plan.length) {
                 const item = plan[this.totalSpawned];
                 if (item && typeof item.z === 'number') {
-                    // z из плана, но не дальше чем «чуть впереди игрока»
-                    spawnZ = Math.min(item.z, playerZ - 10);
+                    // z из плана, но не ближе порога перебежки + запас. Было playerZ - 10: если точка плана
+                    // уже позади, зверь появлялся в 10 ед. и сразу бежал — ~0.4 с на реакцию, не увернуться
+                    spawnZ = Math.min(item.z, playerZ - (this.triggerLookahead + 4));
                     this._planFromLeft = item.fromLeft;
                 }
             }
