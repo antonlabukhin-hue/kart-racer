@@ -1,3 +1,5 @@
+
+import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowTheme } from './snow.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
         import { AnimalSpawner } from './animals.js';
@@ -637,7 +639,8 @@
         function clearCampaignGlobals() {
             try {
                 window.__campaignMods = null;
-                window.__campaignTrackId = null;
+                window.__campaignTrackId = null; try { window.__trackTheme = null; } catch(e) {}
+                window.__trackTheme = null;
                 window.__campaignIdx = null;
                 window.__forceDifficulty = null;
             } catch (e) {}
@@ -682,6 +685,7 @@
 
             window.__campaignIdx = idx;
             window.__campaignTrackId = t.id;
+            window.__trackTheme = t.theme || 'default';
             pendingMode = 'campaign';
             pendingMap = t.style || 'arsenev';
             pendingWeather = t.weather || 'day';
@@ -750,6 +754,7 @@ function startCampaignTrack(idx, opts) {
             const launch = function() {
                 window.__campaignIdx = idx;
                 window.__campaignTrackId = t.id;
+                window.__trackTheme = t.theme || 'default';
                 pendingMode = 'campaign';
                 pendingMap = t.style;
                 pendingWeather = t.weather || 'day';
@@ -4643,6 +4648,24 @@ function startGaragePreview(carId) {
         // ============================================================
         function initGame(quality, difficulty, carId = 'cheburashka', mapId = 'arsenev', weatherId = 'day') {
             try { window.__lastQuality = quality || 'medium'; } catch (e) {}
+            // Тема трассы (snow) — как можно раньше
+            (function resolveTrackTheme() {
+                let trackTheme = 'default';
+                try {
+                    const cid = window.__campaignTrackId;
+                    let explicit = window.__trackTheme;
+                    if (cid && typeof CAMPAIGN_TRACKS !== 'undefined') {
+                        const td = CAMPAIGN_TRACKS.find(function(t){ return t.id === cid; });
+                        if (td && td.theme) explicit = td.theme;
+                    }
+                    if (typeof isSnowTheme === 'function' && isSnowTheme(cid, explicit)) trackTheme = 'snow';
+                    else if (cid === 'c04' || cid === 'c08' || cid === 'c12' || cid === 'c16') trackTheme = 'snow';
+                    else if (explicit === 'snow') trackTheme = 'snow';
+                } catch (eTh) { console.warn('theme resolve', eTh); }
+                window.__trackTheme = trackTheme;
+                window.__trackThemeActive = trackTheme;
+                console.log('[theme]', trackTheme, 'track=', window.__campaignTrackId);
+            })();
             // Мобильные: гонка только в landscape
             if (window.__isMobile && typeof isPortrait === 'function' && isPortrait()) {
                 console.log('📱 Ждём горизонтальную ориентацию...');
@@ -4673,7 +4696,7 @@ function startGaragePreview(carId) {
             if (typeof updateRotateLock === 'function') updateRotateLock();
 
             window.__forcePBR = false; // гонка — лёгкие шейдеры
-            console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}, погода: ${weatherId}`);
+            console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}, погода: ${weatherId}, тема: ${window.__trackThemeActive || "default"}`);
             window.__inRace = true;
             if (typeof window.stopMenuMusic === 'function') window.stopMenuMusic();
             try { if (window.soundEngine && soundEngine.stopMenuMusic) soundEngine.stopMenuMusic(); } catch (e) {}
@@ -4698,6 +4721,8 @@ function startGaragePreview(carId) {
             window.__camMode = 0;
             const weatherMode = weatherId || 'day';
             window.weatherMode = weatherMode;
+            // тема уже выставлена в начале initGame
+            const trackTheme = window.__trackThemeActive || 'default';
             window.__nightSpots = 0;
             const carPreset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
             
@@ -4765,7 +4790,7 @@ function startGaragePreview(carId) {
                     window.__nightSpots = 0;
                     if (pendingMode !== 'campaign') {
                         window.__campaignMods = null;
-                        window.__campaignTrackId = null;
+                        window.__campaignTrackId = null; try { window.__trackTheme = null; } catch(e) {}
                         window.__campaignIdx = null;
                         window.__campaignTrafficMul = 1;
                         window.__campaignOilMul = 1;
@@ -5873,6 +5898,7 @@ function startGaragePreview(carId) {
             // ============================================================
             // ПОСТАПОКАЛИПТИЧЕСКОЕ ОКРУЖЕНИЕ: руины + мёртвые деревья
             // ============================================================
+            
             function createDeadTree(x, z, scale = 1) {
                 const group = new THREE.Group();
                 const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1a, roughness: 0.95 });
@@ -6219,6 +6245,43 @@ function startGaragePreview(carId) {
                     if (ambient) { ambient.intensity = 1.05; }
                     if (hemi) { hemi.intensity = 0.95; }
                     if (sunLight) { sunLight.intensity = 2.85; sunLight.color.setHex(mapId === 'arsenev' || !mapId ? 0xfff0d0 : sunLight.color.getHex()); }
+                    // Этап C: снежная тема (декор + атмосфера)
+                    if (window.__trackThemeActive === 'snow') {
+                        sky = 0xd0e4f5;
+                        fogC = 0xc0d4e8;
+                        fogNear = 35;
+                        fogFar = 140;
+                        if (ambient) { ambient.color.setHex(0xb0c4d8); ambient.intensity = Math.max(ambient.intensity || 0.6, 0.75); }
+                        if (hemi) {
+                            hemi.color.setHex(0xe0eef8);
+                            hemi.groundColor.setHex(0x90a8b8);
+                        }
+                        if (sunLight) {
+                            sunLight.intensity = 2.4;
+                            sunLight.color.setHex(0xf0f6ff);
+                        }
+                        if (ground && ground.material) {
+                            ground.material.color = new THREE.Color(0xe8f0f8);
+                            try { ground.material.roughness = 0.9; ground.material.needsUpdate = true; } catch (eG) {}
+                        }
+                        // чуть «зимний» асфальт
+                        try {
+                            scene.traverse(function(o) {
+                                if (!o.isMesh || !o.material) return;
+                                if (o.name === 'road' || (o.userData && o.userData.isRoad)) {
+                                    if (o.material.color) o.material.color.offsetHSL(0.02, -0.1, 0.08);
+                                }
+                            });
+                        } catch (eRd) {}
+                        // лёд на дороге (визуал)
+                        try {
+                            for (let ip = 0; ip < 18; ip++) {
+                                const iz = -TRACK_LENGTH / 2 + 50 + Math.random() * (TRACK_LENGTH - 100);
+                                const ix = (Math.random() - 0.5) * TRACK_WIDTH * 0.85;
+                                createIcePatch(scene, ix, iz, 0.8 + Math.random() * 0.8);
+                            }
+                        } catch (eIce) {}
+                    }
                     scene.background = new THREE.Color(sky);
                     scene.fog.color = new THREE.Color(fogC);
                     scene.fog.near = fogNear; scene.fog.far = fogFar;
@@ -6431,9 +6494,35 @@ function startGaragePreview(carId) {
                     else if (r < 0.93) createCrateStack(x, z, scale);
                     else createTireStack(x, z, scale);
                 }
+                // Снежная тема: часть декора → ёлки, сугробы, снеговики (сдвиг от дороги)
+                if (window.__trackThemeActive === 'snow') {
+                    const sideSign = x >= 0 ? 1 : -1;
+                    const sx = sideSign * (Math.abs(x) + 1.3 + Math.random() * 1.5);
+                    const rs = Math.random();
+                    if (rs < 0.5) createSpruce(scene, sx, z, scale * (0.9 + Math.random() * 0.5));
+                    else if (rs < 0.72) createSnowBank(scene, sx, z, scale * (1.0 + Math.random() * 0.6));
+                    else if (rs < 0.88) createSnowman(scene, sx, z, scale * (0.85 + Math.random() * 0.4));
+                    else createSpruce(scene, sx + sideSign * (0.8 + Math.random()), z + (Math.random() - 0.5) * 2, scale * 0.75);
+                }
             }
 
-            // Придорожный мусор / баррикады
+            
+            // Снежные барханы вдоль обочины (тема snow)
+            if (window.__trackThemeActive === 'snow') {
+                const bankCount = window.__isMobile ? 14 : 22;
+                for (let i = 0; i < bankCount; i++) {
+                    const z = -TRACK_LENGTH / 2 + 30 + Math.random() * (TRACK_LENGTH - 60);
+                    const side = Math.random() > 0.5 ? 1 : -1;
+                    // дальше от края полотна, чтобы не залезать на асфальт
+                    const x = side * (TRACK_WIDTH * 0.5 + 2.4 + Math.random() * 3.2);
+                    createSnowBank(scene, x, z, 1.0 + Math.random() * 0.7);
+                    if (Math.random() < 0.5) {
+                        createSpruce(scene, x + side * (1.0 + Math.random() * 1.2), z + (Math.random() - 0.5) * 3, 0.9 + Math.random() * 0.5);
+                    }
+                }
+            }
+
+// Придорожный мусор / баррикады
             for (let i = 0; i < debrisCount; i++) {
                 const z = -TRACK_LENGTH / 2 + 40 + Math.random() * (TRACK_LENGTH - 80);
                 const side = Math.random() > 0.5 ? 1 : -1;
@@ -10168,7 +10257,7 @@ function showLoreScreen(quality, difficulty) {
                         if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
                         else {
                             window.__campaignMods = null;
-                            window.__campaignTrackId = null;
+                            window.__campaignTrackId = null; try { window.__trackTheme = null; } catch(e) {}
                             window.__campaignIdx = null;
                             window.__forceDifficulty = null;
                             try { pendingMode = 'race'; } catch (e) {}
