@@ -8474,6 +8474,7 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) {}
                 const moveAmount = speed * 60 * deltaTime;
+                const zPosBeforeMove = zPos; // для проверки трамплина отрезком, а не точкой (см. ниже)
                 zPos -= moveAmount;
 
                 if (Math.abs(speed) > 0.05) {
@@ -8496,15 +8497,25 @@ function startGaragePreview(carId) {
                         for (let ri = 0; ri < ramps.length; ri++) {
                             const rp = ramps[ri];
                             if (!rp) continue;
-                            if (zPos <= rp.zEnter && zPos >= rp.zExit && Math.abs(xPos - rp.x) < rp.width * 0.55) {
+                            if (Math.abs(xPos - rp.x) >= rp.width * 0.55) continue;
+                            const insideNow = zPos <= rp.zEnter && zPos >= rp.zExit;
+                            // На высокой скорости (особенно после нитро) один кадр может целиком
+                            // пронести машину через узкую зону старта прыжка (последние 10% трамплина),
+                            // и точечная проверка insideNow с p>0.9 её просто не увидит — прыжок молча
+                            // не происходит. Поэтому дополнительно проверяем отрезок движения за кадр:
+                            // если машина была перед трамплином, а стала за ним (или уже в зоне
+                            // p>0.9 прошла его насквирь), считаем, что съезд с трамплина случился.
+                            const crossedRamp = !insideNow && zPosBeforeMove >= rp.zEnter && zPos <= rp.zExit;
+                            if (insideNow || crossedRamp) {
                                 const prog = (rp.zEnter - zPos) / Math.max(0.1, rp.len);
                                 const p = Math.max(0, Math.min(1, prog));
-                                carYOffset = rp.height * p;
                                 onRamp = true;
-                                if (p > 0.9 && speed > 0.12) {
+                                if ((crossedRamp || p > 0.9) && speed > 0.12) {
                                     carAirborne = true;
                                     carAirVel = (1.0 + speed * 2.4) * rp.height;
                                     carYOffset = rp.height;
+                                } else {
+                                    carYOffset = rp.height * p;
                                 }
                                 break;
                             }
