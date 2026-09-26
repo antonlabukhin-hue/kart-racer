@@ -6894,6 +6894,8 @@ function startGaragePreview(carId) {
             let xPos = 0;
             let carYOffset = 0;
             let carBumpTimer = 0;
+            let carAirborne = false;
+            let carAirVel = 0;
             let xVelocity = 0;
             let _prevSpeed = 0;
             let _ambientT = 8 + Math.random() * 10;
@@ -7173,6 +7175,67 @@ function startGaragePreview(carId) {
                 else type = 'bump';
                 obstacles.push(createObstacle(z, type));
             }
+
+            // === Рампы-трамплины ===
+            const ramps = [];
+            window.__ramps = ramps;
+            const isSnowTrack = (window.__trackThemeActive === 'snow');
+            const rampCount = isSnowTrack ? 5 : (window.__isMobile ? 3 : 4);
+            // Яркий цвет, чтобы было видно сразу
+            const rampMat = new THREE.MeshLambertMaterial({
+                color: isSnowTrack ? 0xa8d8ff : 0xff9933,
+                emissive: isSnowTrack ? 0x223344 : 0x442200,
+                emissiveIntensity: 0.25
+            });
+            const rampArrowMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            function createRamp(z, laneX, height) {
+                height = Math.max(0.55, height || 0.7);
+                const len = 4.0;
+                const width = 2.2;
+                const group = new THREE.Group();
+                // Основная плита
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, 0.18, len), rampMat);
+                const angle = -Math.atan2(height, len);
+                mesh.rotation.x = angle;
+                // Поднимаем, чтобы не тонула в асфальте
+                mesh.position.y = height * 0.5 + 0.05;
+                mesh.castShadow = true;
+                group.add(mesh);
+                // Белые стрелки «вперёд»
+                for (let s = 0; s < 3; s++) {
+                    const ar = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.6), rampArrowMat);
+                    const along = len * 0.3 - s * 0.85;
+                    ar.position.set(0, 0.15 + height * (0.35 + s * 0.15), along);
+                    ar.rotation.x = angle;
+                    group.add(ar);
+                }
+                // Маркер-столбик сбоку (чтобы заметить издалека)
+                const pole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.08, 0.1, 1.2, 6),
+                    new THREE.MeshLambertMaterial({ color: 0xff2222 })
+                );
+                pole.position.set(width * 0.65, 0.6, len * 0.3);
+                group.add(pole);
+                group.position.set(laneX, 0, z);
+                scene.add(group);
+                const half = len * 0.5;
+                return {
+                    mesh: group, x: laneX, z: z,
+                    zEnter: z + half, zExit: z - half,
+                    len: len, width: width, height: height, active: true
+                };
+            }
+            // Ближе к старту + равномерно до финиша (игрок едет START_Z → FINISH_Z, z уменьшается)
+            const _laneXs = [-TRACK_WIDTH * 0.25, 0, TRACK_WIDTH * 0.25];
+            for (let ri = 0; ri < rampCount; ri++) {
+                const t = (ri + 0.35) / (rampCount + 0.2); // 0.2..~0.9
+                const rz = START_Z - 25 - t * (START_Z - FINISH_Z - 80);
+                const lx = _laneXs[ri % 3];
+                const rh = isSnowTrack ? 0.75 + Math.random() * 0.25 : 0.65 + Math.random() * 0.3;
+                ramps.push(createRamp(rz, lx, rh));
+            }
+            console.log('ramps:', ramps.length, 'z=', ramps.map(function(r){ return Math.round(r.z); }), isSnowTrack ? 'snow' : 'normal');
+
             // Бонусные препятствия по картам
             if (mapId === 'svalka') {
                 for (let i = 0; i < 8; i++) {
@@ -8286,11 +8349,50 @@ function startGaragePreview(carId) {
                     }
                 }
 
-                if (carBumpTimer > 0) {
-                    carBumpTimer -= deltaTime;
-                    if (carBumpTimer <= 0) { carBumpTimer = 0; carYOffset = 0; }
+                // Рампы + полёт
+                if (!carAirborne) {
+                    let onRamp = false;
+                    try {
+                        for (let ri = 0; ri < ramps.length; ri++) {
+                            const rp = ramps[ri];
+                            if (!rp) continue;
+                            if (zPos <= rp.zEnter && zPos >= rp.zExit && Math.abs(xPos - rp.x) < rp.width * 0.55) {
+                                const prog = (rp.zEnter - zPos) / Math.max(0.1, rp.len);
+                                const p = Math.max(0, Math.min(1, prog));
+                                carYOffset = rp.height * p;
+                                onRamp = true;
+                                if (p > 0.9 && speed > 0.12) {
+                                    carAirborne = true;
+                                    carAirVel = (1.0 + speed * 2.4) * rp.height;
+                                    carYOffset = rp.height;
+                                }
+                                break;
+                            }
+                        }
+                    } catch (eRp) {}
+                    if (!onRamp) {
+                        if (carBumpTimer > 0) {
+                            carBumpTimer -= deltaTime;
+                            if (carBumpTimer <= 0) { carBumpTimer = 0; carYOffset = 0; }
+                        } else {
+                            carYOffset = 0;
+                        }
+                    }
                 } else {
-                    carYOffset = 0;
+                    carAirVel -= 9.5 * deltaTime;
+                    carYOffset += carAirVel * deltaTime;
+                    if (carYOffset <= 0) {
+                        carYOffset = 0;
+                        carAirborne = false;
+                        const landBoost = speed > 0.08;
+                        carAirVel = 0;
+                        if (landBoost) {
+                            const cap = (typeof MAX_SPEED !== 'undefined' ? MAX_SPEED : 0.45) * 1.08;
+                            speed = Math.min(speed * 1.14, cap);
+                            try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Прыжок!'); } catch (e) {}
+                            try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('whoosh', 0.65); } catch (e) {}
+                        }
+                    }
                 }
                 let suspY = 0;
                 if (playerCar.userData && playerCar.userData._suspensionKick) {
@@ -8454,7 +8556,9 @@ function startGaragePreview(carId) {
                     const hitR = (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') ? 0.55 : 0.42;
                     
                     if (Math.abs(dx) < hitR && Math.abs(dz) < hitR) {
-                        if (obs.type === 'pothole') {
+                        if (carAirborne || carYOffset > 0.45) {
+                            // в прыжке ямы/кочки/масло не срабатывают
+                        } else if (obs.type === 'pothole') {
                             const acidMul = weatherZone === 'acid' ? 1.6 : 1;
                             speed *= 0.28 / acidMul;
                             stunTimer = 0.35 * acidMul;
@@ -9281,8 +9385,13 @@ function startGaragePreview(carId) {
                         const dz = zPos - obs.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
                         if (dist < obs.radius + 0.45) {
-                            obs.hit = true;
-                            handleObstacleHit(obs);
+                            if (carAirborne || carYOffset > 0.4) {
+                                obs.hit = true;
+                                try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
+                            } else {
+                                obs.hit = true;
+                                handleObstacleHit(obs);
+                            }
                         }
                     }
                 }
