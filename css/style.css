@@ -4102,8 +4102,9 @@
         }
 
         /* «Чебурашка: ещё одна авария…» стояла в той же верхней полосе, что и реплики зверей */
+        body.race-mode .story-plaque { top: calc(env(safe-area-inset-top, 0px) + 120px) !important; }
         body.race-mode #cheburashkaWarn {
-            top: calc(env(safe-area-inset-top, 0px) + 124px) !important;
+            top: calc(env(safe-area-inset-top, 0px) + 150px) !important;
             z-index: 132 !important;
         }
         @media screen and (max-height: 500px) {
