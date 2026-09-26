@@ -141,7 +141,8 @@ test('с выбора карты можно вернуться к сложнос
         await page.locator('.difficulty-btn[data-diff="easy"]').click();
         const skip = page.getByRole('button', { name: /Пропустить/ });
         const map = page.locator('#map-select-screen');
-        await expect(skip.or(map).first()).toBeVisible();
+        // лор показывается не всегда; .or().first() брал скрытый экран карт — ждём, что видно хоть одно
+        await expect.poll(async () => (await skip.isVisible()) || (await map.isVisible()), { timeout: 10_000 }).toBe(true);
         if (await skip.isVisible()) await skip.click();
         await expect(map).toBeVisible();
     };
