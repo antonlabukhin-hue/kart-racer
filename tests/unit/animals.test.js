@@ -51,4 +51,21 @@ describe('AnimalSpawner', () => {
         expect(run(spawner(), -990)).toBeLessThan(0.95);
         expect(run(spawner({ startZ: undefined }), -990)).toBe(1);
     });
+
+    it('на старте, пока машина разгоняется, звери не появляются', () => {
+        const sp = spawner();
+        for (let i = 0; i < 200; i++) sp.update(0.05, -40);
+        expect(sp.totalSpawned).toBe(0);
+        for (let i = 0; i < 200; i++) sp.update(0.05, -60);
+        expect(sp.totalSpawned).toBeGreaterThan(0);
+    });
+
+    it('зверь из плана не появляется вплотную к машине', () => {
+        const sp = spawner();
+        // точка плана уже позади — раньше зверь ставился в 10 ед. перед машиной
+        window.__spawnPlan = [{ z: 0, fromLeft: true }];
+        for (let i = 0; i < 200 && sp.totalSpawned === 0; i++) sp.update(0.05, -100);
+        expect(sp.totalSpawned).toBe(1);
+        expect(-100 - sp.animals[0].z).toBeGreaterThanOrEqual(15 + 4);
+    });
 });

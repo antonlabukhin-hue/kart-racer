@@ -21,6 +21,9 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
 
+        // Меняется вместе с длиной трасс / лимитом (DIFFICULTY_CONFIG) — сбрасывает несравнимые рекорды времени
+        const BALANCE_VERSION = 2;
+
         function escapeHtml(str) {
             return String(str == null ? '' : str)
                 .replace(/&/g, '&amp;')
@@ -987,6 +990,11 @@ function createProfile(name) {
             if (p.campaign.unlocked == null) p.campaign.unlocked = 1;
             if (!Array.isArray(p.campaign.completed)) p.campaign.completed = [];
             if (!p.campaign.stars || typeof p.campaign.stars !== 'object') p.campaign.stars = {};
+            // трассы и лимит времени поменялись (баланс v2: 90 с) — старые рекорды несравнимы
+            if (p.balanceVer !== BALANCE_VERSION) {
+                p.bestTimes = { easy: null, medium: null, hard: null };
+                p.balanceVer = BALANCE_VERSION;
+            }
             if (p.season.chips == null) p.season.chips = 0;
             if (p.season.gum == null) p.season.gum = 0;
             if (!p.carLoadout) p.carLoadout = { parts: [], ownedParts: [], paint: 'stock', paintByCar: {} };
@@ -1911,8 +1919,11 @@ function createProfile(name) {
 
                     if (!currentPlayer.bestTimes) currentPlayer.bestTimes = { easy: null, medium: null, hard: null };
                     const d = meta.difficulty;
+                    // экран финиша сравнивает время с рекордом уже после этой записи — флаг для «НОВЫЙ РЕКОРД!»
+                    window.__lastRaceNewBest = false;
                     if (d && (currentPlayer.bestTimes[d] == null || meta.time < currentPlayer.bestTimes[d])) {
                         currentPlayer.bestTimes[d] = meta.time;
+                        window.__lastRaceNewBest = true;
                     }
 
                     if (meta.difficulty === 'hard' && meta.mapId) {
@@ -3331,18 +3342,22 @@ function startGaragePreview(carId) {
         // finishLoreAndStart: единая реализация ниже (window.finishLoreAndStart назначается там)
 
 
+        // Баланс v2 (BALANCE_VERSION в начале файла): лимит 90 с на всех сложностях.
+        // Чистый заезд на «Чебурашке» (~24 ед/с в среднем с нитро): лёгкий ~58 с, средний ~62 с, сложный ~65 с.
+        // Авария стоит ~5 / 6 / 8 с (штраф × timePenaltyMul + потеря скорости) — по времени можно ошибиться
+        // примерно 5 / 4 / 3 раза. Сложность растёт плотностью зверей и машин, а не длиной трассы.
         const DIFFICULTY_CONFIG = {
             // lookahead ~14–18: впереди, но доезжаешь; crossMul чтобы зверь был на полосе у машины
             // animalSpawnRate: секунды между спавнами (больше = реже)
             easy: {
                 label: '🟢 Лёгкий',
-                trackLength: 1000,
-                timeLimit: 120,
+                trackLength: 1400,
+                timeLimit: 90,
                 maxAnimals: 9,
-                maxCars: 3,
-                maxObstacles: 7,
+                maxCars: 4,
+                maxObstacles: 9,
                 trees: 16,
-                animalSpawnRate: 3.1,
+                animalSpawnRate: 3.6, // v2: трасса длиннее на 40% — реже, чтобы зверей за заезд было ~+20%, а не +40%
                 hasNightZone: false,
                 // ещё −10% к жёсткости
                 triggerLookahead: 17.5,
@@ -3352,8 +3367,8 @@ function startGaragePreview(carId) {
             },
             medium: {
                 label: '🟡 Средний',
-                trackLength: 1600,
-                timeLimit: 125,
+                trackLength: 1500,
+                timeLimit: 90,
                 maxAnimals: 14,
                 maxCars: 7,
                 maxObstacles: 15,
@@ -3368,11 +3383,11 @@ function startGaragePreview(carId) {
             },
             hard: {
                 label: '🔴 Сложный',
-                trackLength: 2200,
-                timeLimit: 120,
-                maxAnimals: 26,
-                maxCars: 16,
-                maxObstacles: 32,
+                trackLength: 1550,
+                timeLimit: 90,
+                maxAnimals: 24,
+                maxCars: 13,
+                maxObstacles: 26,
                 trees: 38,
                 animalSpawnRate: 1.15,
                 hasNightZone: false,
@@ -5048,7 +5063,8 @@ function startGaragePreview(carId) {
                 
                 if (state === 'win') {
                     const bestTimes = getBestTimes();
-                    const isNewBest = saveBestTime(difficulty, timeTaken);
+                    const isNewBest = saveBestTime(difficulty, timeTaken) || !!window.__lastRaceNewBest;
+                    window.__lastRaceNewBest = false;
                     isBest = isNewBest;
 
                     // Открытие следующей карты (только сложный режим)
@@ -8167,8 +8183,14 @@ function startGaragePreview(carId) {
                 setTimeout(function(){ timeEl.classList.remove('time-hit-flash'); }, 350);
             }
 
+            // журнал аварий заезда (причина, доля трассы) — для баланса, читается тестами через __raceDebug
+            const hitLog = [];
+            const logHit = function(cause) {
+                hitLog.push({ cause: cause, at: Math.round((START_Z - zPos) / (START_Z - FINISH_Z) * 100) });
+            };
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;
+                logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
                 strikes++;
                 speed *= obs.penalty || 0.35;
                 stunTimer = 0.4;
@@ -8220,7 +8242,8 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets,
+                    get boss() { return boss; }, bossBullets, hitLog,
+                    get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
                 };
@@ -8763,7 +8786,7 @@ function startGaragePreview(carId) {
                     if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl) {
                         car.hitCooldown = 1.2;
                         const pen = car.kind === 'bus' || car.kind === 'truck' ? 5 : 4;
-                        handleObstacleHit({ penalty: 0.3, timePenalty: pen });
+                        handleObstacleHit({ penalty: 0.3, timePenalty: pen, cause: 'car:' + (car.kind || 'car') });
                     }
                     
                     if (car.z < -TRACK_LENGTH / 2 - 10) {
@@ -9659,6 +9682,7 @@ function startGaragePreview(carId) {
                             xPos += (boss.x - xPos) * 0.35;
                         }
                         if (bu.heavy && typeof strikes !== 'undefined') {
+                            logHit('boss');
                             strikes = Math.min((typeof MAX_STRIKES !== 'undefined' ? MAX_STRIKES : 5), strikes + 1);
                         }
                         try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.35); } catch (e) {}
