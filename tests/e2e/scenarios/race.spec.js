@@ -43,6 +43,8 @@ test('кампания: победа на 1-й трассе — «Заново»
     await page.keyboard.down('w');
     await expect(page.locator('#finish-screen')).toContainText('ГЛАВА 1 ПРОЙДЕНА', { timeout: 150_000 });
     await page.keyboard.up('w');
+    // за победу минимум одна звезда
+    await expect(page.locator('#finish-screen .finish-stars span.on').first()).toBeVisible();
 
     await page.locator('#finish-restart-btn').click();
     await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
@@ -61,5 +63,8 @@ test('кампания: победа на 1-й трассе — «Заново»
     await page.locator('#profile-list').getByText('Тестер').click();
     await page.locator('.menu-card[data-menu="campaign"]').click();
     await expect(page.locator('.camp-track[data-idx="1"]')).not.toHaveClass(/locked/);
+    // звёзды пережили «Заново» (профиль кампании пересобирается) и перезагрузку
+    await expect(page.locator('.camp-track[data-idx="0"] .ct-stars')).toContainText('★');
+    await expect(page.locator('#campaign-stars-total')).toContainText('/ 51');
     expect(problems).toEqual([]);
 });

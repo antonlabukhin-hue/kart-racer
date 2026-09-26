@@ -17,6 +17,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             disposeBossMesh
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
+        import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
 
@@ -416,6 +417,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             let cp = currentPlayer.campaign || { unlocked: 1, completed: [] };
             if (cp.unlocked == null || cp.unlocked < 1) cp.unlocked = 1;
             if (!Array.isArray(cp.completed)) cp.completed = [];
+            cp.stars = mergeStars(cp.stars, null);
             // бэкап на случай старых профилей
             try {
                 const raw = localStorage.getItem('road_racing_campaign_' + currentPlayer.id);
@@ -427,6 +429,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                             if (cp.completed.indexOf(id) < 0) cp.completed.push(id);
                         });
                     }
+                    if (bak && bak.stars) cp.stars = mergeStars(cp.stars, bak.stars);
                 }
             } catch (e) {}
             currentPlayer.campaign = cp;
@@ -481,14 +484,21 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 return d === 'hard' ? 'сложный' : (d === 'medium' ? 'средний' : 'лёгкий');
             };
             box.innerHTML = '';
+            const sumEl = document.getElementById('campaign-stars-total');
+            if (sumEl) {
+                sumEl.innerHTML = '<b>★ ' + totalStars(prog.stars) + ' / ' + (CAMPAIGN_TRACKS.length * MAX_STARS_PER_TRACK) + '</b>'
+                    + '<span>' + STAR_RULES.map(function(r, i) { return '★'.repeat(i + 1) + ' ' + r; }).join(' · ') + '</span>';
+            }
             CAMPAIGN_TRACKS.forEach(function(t, idx) {
                 const open = idx < (prog.unlocked || 1);
                 const done = (prog.completed || []).indexOf(t.id) >= 0;
+                const stars = (prog.stars && prog.stars[t.id]) || 0;
                 const n = idx + 1;
                 const num = (n < 10 ? '0' : '') + n;
                 const imgJpg = 'images/camp_' + num + '.jpg';
                 const imgPng = 'images/camp_' + num + '.png';
-                let badge = done ? '✅ Пройдено' : (open ? '▶ Играть' : '🔒 Закрыто');
+                // пройдена до появления звёзд — звёзд нет, пока не перепройдёшь
+                let badge = done ? (stars ? starsText(stars) : '✅ Пройдено') : (open ? '▶ Играть' : '🔒 Закрыто');
 
                 const row = document.createElement('div');
                 row.className = 'camp-track' + (open ? '' : ' locked') + (done ? ' done' : '');
@@ -530,8 +540,9 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 body.querySelector('.ct-meta').textContent = wIcon(t.weather) + ' · ' + diffLabel(t.diff);
 
                 const badgeEl = document.createElement('div');
-                badgeEl.className = 'ct-badge';
+                badgeEl.className = 'ct-badge' + (done && stars ? ' ct-stars' : '');
                 badgeEl.textContent = badge;
+                if (done && stars) badgeEl.title = 'Звёзды: ' + stars + ' из ' + MAX_STARS_PER_TRACK;
 
                 row.appendChild(thumbWrap);
                 row.appendChild(body);
@@ -665,6 +676,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             currentPlayer.campaign = {
                 unlocked: prog.unlocked,
                 completed: (prog.completed || []).slice(),
+                stars: Object.assign({}, prog.stars),
                 current: idx
             };
             try { saveCurrentPlayer(); } catch (e) {}
@@ -825,13 +837,17 @@ function startCampaignTrack(idx, opts) {
             }
         }
 
-        function onCampaignRaceWon(trackId) {
+        function onCampaignRaceWon(trackId, strikes) {
             if (!currentPlayer || !trackId) return;
             ensureProfileFields(currentPlayer);
             const prog = getCampaignProgress();
             const idx = CAMPAIGN_TRACKS.findIndex(function(t){ return t.id === trackId; });
             if (idx < 0) return;
             if (prog.completed.indexOf(trackId) < 0) prog.completed.push(trackId);
+            const prevStars = (prog.stars && prog.stars[trackId]) || 0;
+            const gotStars = calcCampaignStars(strikes);
+            prog.stars = mergeStars(prog.stars, { [trackId]: gotStars });
+            window.__lastCampaignStars = { trackId: trackId, got: gotStars, prev: prevStars };
             const need = idx + 2;
             const wasUnlocked = prog.unlocked;
             if (prog.unlocked < need) prog.unlocked = Math.min(CAMPAIGN_TRACKS.length, need);
@@ -852,7 +868,8 @@ function startCampaignTrack(idx, opts) {
             if (prog.unlocked < 1) prog.unlocked = 1;
             currentPlayer.campaign = {
                 unlocked: prog.unlocked,
-                completed: prog.completed.slice()
+                completed: prog.completed.slice(),
+                stars: Object.assign({}, prog.stars)
             };
             try { saveCurrentPlayer(); } catch (e) {}
             try {
@@ -969,6 +986,7 @@ function createProfile(name) {
             if (!p.campaign) p.campaign = { unlocked: 1, completed: [] };
             if (p.campaign.unlocked == null) p.campaign.unlocked = 1;
             if (!Array.isArray(p.campaign.completed)) p.campaign.completed = [];
+            if (!p.campaign.stars || typeof p.campaign.stars !== 'object') p.campaign.stars = {};
             if (p.season.chips == null) p.season.chips = 0;
             if (p.season.gum == null) p.season.gum = 0;
             if (!p.carLoadout) p.carLoadout = { parts: [], ownedParts: [], paint: 'stock', paintByCar: {} };
@@ -5116,6 +5134,21 @@ function startGaragePreview(carId) {
                         villainLine = fails[Math.floor(Math.random() * fails.length)] + ' Забери посылку, если ещё веришь в свой маршрут.';
                     }
                     const quoteHtml = escapeHtml(String(villainLine)).replace(/\n/g, '<br>');
+                    const ls = window.__lastCampaignStars;
+                    let starsHtml = '';
+                    if (state === 'win' && ls && ls.trackId === window.__campaignTrackId) {
+                        const improved = ls.got > ls.prev;
+                        let hint = '';
+                        if (ls.got < MAX_STARS_PER_TRACK) hint = 'Следующая звезда: ' + STAR_RULES[ls.got];
+                        if (ls.prev > 0 && improved) hint = 'Новый рекорд главы!' + (hint ? ' · ' + hint : '');
+                        else if (ls.prev > ls.got) hint = 'Рекорд главы: ' + starsText(ls.prev);
+                        starsHtml = '<div class="finish-stars" aria-label="Звёзд: ' + ls.got + ' из ' + MAX_STARS_PER_TRACK + '">'
+                            + [0, 1, 2].map(function(i) {
+                                return '<span class="' + (i < ls.got ? 'on' : '') + '" style="animation-delay:' + (0.25 + i * 0.3) + 's">★</span>';
+                            }).join('')
+                            + '</div>'
+                            + (hint ? '<div class="finish-stars-hint">' + escapeHtml(hint) + '</div>' : '');
+                    }
                     const head = (state === 'win')
                         ? (hasNext || isLast ? ('📡 ГЛАВА ' + (campIdx + 1) + ' ПРОЙДЕНА') : title)
                         : title;
@@ -5144,6 +5177,7 @@ function startGaragePreview(carId) {
                         + '</div>'
                         + '<div style="font-size:18px;font-weight:bold;color:#ff6666;margin:10px 0 4px;text-align:center;">' + escapeHtml(state === 'win' ? head : title) + '</div>'
                         + '<div style="font-size:12px;color:#aaa;text-align:center;margin-bottom:6px;">«' + trackName + '»</div>'
+                        + starsHtml
                         + '<div style="font-size:12px;color:#ccc;text-align:center;line-height:1.4;margin-bottom:8px;">' + statsLine + '</div>'
                         + '<div style="text-align:left;font-size:13px;line-height:1.45;color:#e8d0c8;background:rgba(70,15,25,0.45);border-left:3px solid #ff4444;padding:10px 12px;border-radius:0 10px 10px 0;margin-bottom:12px;max-height:100px;overflow-y:auto;">' + quoteHtml + '</div>'
                         + nextBtn
@@ -5365,7 +5399,7 @@ function startGaragePreview(carId) {
                 window.__lastRaceRewards = raceRewards;
                 try {
                     if (state === 'win' && wasCampaign && campaignTrackId) {
-                        onCampaignRaceWon(campaignTrackId);
+                        onCampaignRaceWon(campaignTrackId, typeof strikes !== 'undefined' ? strikes : 0);
                     }
                 } catch (e) { console.warn('campaign win', e); }
                 
