@@ -3959,3 +3959,157 @@
             filter: brightness(0.55) saturate(0.7);
             transition: filter 0.25s;
         }
+
+        /* ===== Аудит меню: перекрытия, кликабельность, анимации ===== */
+
+        /* Панель игрока и громкость лежат под экранами меню (z 3000+): видны сквозь затемнение,
+           но не нажимаются. В меню они не нужны — имя и сезон есть в шапке главного меню. */
+        body:not(.race-mode) #player-bar,
+        body:not(.race-mode) #volume-controls {
+            display: none !important;
+        }
+
+        /* Кампания: строки «картинка · название · статус», а не узкие плитки из общей сетки карточек */
+        #campaign-screen .content {
+            max-width: min(640px, 100%) !important;
+        }
+        #campaign-track-list {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)) !important;
+            gap: 10px !important;
+            overflow: visible !important;
+        }
+        .camp-track { cursor: pointer; }
+        .camp-track.locked { cursor: not-allowed; }
+        /* список прокручивается внутри своей строки сетки и не наезжает на «В меню» */
+        #campaign-track-list {
+            overflow: hidden auto !important;
+            min-height: 0 !important;
+            padding: 2px !important;
+        }
+
+        /* Единый отклик кнопок меню: у части кнопок (Назад/Меню, вкладки гаража, карточки магазина,
+           «Забрать») не было ни hover, ни нажатия. Всё внутри :where() — нулевой вес, родные стили кнопок главнее. */
+        :where(button, [role=button], .shop-car-btn, .garage-tab):where(:not(.control-btn, :disabled)) {
+            transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease,
+                        box-shadow 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+        }
+        @media (hover: hover) {
+            :where(button, [role=button], .shop-car-btn, .garage-tab):where(:not(.control-btn, :disabled, .locked, [aria-disabled="true"])):hover {
+                filter: brightness(1.18);
+            }
+        }
+        :where(button, [role=button], .shop-car-btn, .garage-tab):where(:not(.control-btn, :disabled, .locked, [aria-disabled="true"])):active {
+            transform: scale(0.96);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            :where(button, [role=button], .shop-car-btn, .garage-tab) { transition: none; }
+        }
+        /* нет картинки главы: скрипт прячет img, но .ct-thumb { display:block !important } возвращал его — торчал alt-текст */
+        .ct-thumb-wrap.no-img .ct-thumb { display: none !important; }
+        .ct-thumb-wrap.no-img {
+            background: linear-gradient(135deg, #2c2238 0%, #1a1422 60%, #2a1a1a 100%) !important;
+        }
+        .ct-thumb-wrap.no-img::after {
+            content: "🛣️";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            opacity: 0.55;
+        }
+        .camp-track.locked .ct-thumb-wrap.no-img::after { content: none; }
+
+        /* Лор: кнопки «Пропустить/Далее» были внизу прокручиваемой панели и уходили под нижнюю панель
+           «Назад/Меню» — теперь они всегда видны внизу панели, а панель оставляет место под навигацию */
+        #lore-screen .lore-panel {
+            max-height: calc(100dvh - var(--ui-safe-t, 0px) - var(--ui-safe-b, 0px) - 76px) !important;
+            margin-bottom: 4px !important;
+        }
+        #lore-screen .lore-nav {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.94) 35%);
+        }
+        #lore-screen > .nav-bar { margin-top: 4px; flex: 0 0 auto; }
+
+        /* Невысокие экраны (телефон горизонтально): карточка кампании зажималась по высоте
+           и списку трасс оставалось ~10px — прокручиваем весь экран, а не список */
+        @media screen and (max-height: 560px) {
+            #campaign-screen .content {
+                display: block !important;
+                max-height: none !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            #campaign-track-list { overflow: visible !important; margin: 8px 0 !important; }
+            /* замок на закрытой карте — подписью по низу карточки, а не столбиком в 1 букву */
+            .map-card.locked { position: relative !important; }
+            .map-card .lock-badge {
+                position: absolute !important;
+                left: 4px; right: 4px; bottom: 4px;
+                margin: 0 !important;
+                padding: 2px 4px;
+                border-radius: 6px;
+                background: rgba(0,0,0,0.78);
+                font-size: 10px !important;
+                line-height: 1.2;
+                text-align: center;
+                white-space: normal;
+            }
+        }
+
+        /* Финиш свободного заезда: без flex-direction карточка и кнопки стояли в ряд, кнопки висели
+           в правом верхнем углу отдельно от карточки. Узкий экран — кнопки под карточкой,
+           широкий — рядом, по центру высоты карточки. */
+        #finish-screen:not(.finish-layout-camp) {
+            flex-direction: column !important;
+            align-items: center !important;
+        }
+        #finish-screen:not(.finish-layout-camp) .finish-inner { margin-bottom: 0 !important; }
+        @media screen and (min-width: 880px) {
+            #finish-screen:not(.finish-layout-camp) {
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 20px;
+            }
+            #finish-screen:not(.finish-layout-camp) .finish-inner,
+            #finish-screen:not(.finish-layout-camp) .finish-actions { margin: auto 0 !important; }
+            #finish-screen:not(.finish-layout-camp) .finish-actions { width: min(320px, 100%) !important; }
+        }
+
+        /* Реплики в заезде стояли на 22% / 78% ширины — под панелью HUD слева и под громкостью справа.
+           Переносим в свободную полосу по центру: зверь левее центра, босс правее, радио ниже. */
+        body.race-mode .animal-shout:not(.boss-shout) {
+            left: 39% !important;
+            max-width: min(22vw, 230px) !important;
+            z-index: 131 !important;
+        }
+        body.race-mode .animal-shout.boss-shout {
+            left: 61% !important;
+            max-width: min(22vw, 240px) !important;
+            z-index: 131 !important;
+        }
+        body.race-mode .radio-line { top: calc(env(safe-area-inset-top, 0px) + 90px) !important; }
+
+        /* Камера в заезде наезжала на «☰ Меню» (right 72px при ширине «Меню» ~72px + отступ 8px) */
+        body.race-mode #mobile-controls .mc-cam,
+        #mobile-controls.active .mc-cam {
+            right: max(90px, env(safe-area-inset-right, 0px) + 86px) !important;
+        }
+
+        /* «Чебурашка: ещё одна авария…» стояла в той же верхней полосе, что и реплики зверей */
+        body.race-mode #cheburashkaWarn {
+            top: calc(env(safe-area-inset-top, 0px) + 124px) !important;
+            z-index: 132 !important;
+        }
+        @media screen and (max-height: 500px) {
+            /* на телефоне горизонтально верх занят HUD и полоской HP босса — ставим над громкостью */
+            body.race-mode #cheburashkaWarn {
+                top: auto !important;
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 44px) !important;
+            }
+        }

@@ -128,6 +128,37 @@ test('экраны меню открываются без ошибок', { tag: 
     expect(problems).toEqual([]);
 });
 
+test('с выбора карты можно вернуться к сложности и в меню', { tag: '@smoke' }, async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    // панель игрока и громкость в меню не показываются (раньше просвечивали сквозь затемнение и не нажимались)
+    await expect(page.locator('#player-bar')).toBeHidden();
+    await expect(page.locator('#volume-controls')).toBeHidden();
+    const toMapSelect = async () => {
+        await page.locator('.menu-card[data-menu="race"]').click();
+        const shop = page.locator('#shop-action');
+        if (await shop.isVisible()) await shop.click();
+        await page.locator('.difficulty-btn[data-diff="easy"]').click();
+        const skip = page.getByRole('button', { name: /Пропустить/ });
+        const map = page.locator('#map-select-screen');
+        await expect(skip.or(map).first()).toBeVisible();
+        if (await skip.isVisible()) await skip.click();
+        await expect(map).toBeVisible();
+    };
+    await toMapSelect();
+    await page.locator('#map-select-back').click();
+    await expect(page.locator('#difficulty-screen')).toBeVisible();
+    await expect(page.locator('#map-select-screen')).toBeHidden();
+    await page.locator('#diff-menu').click();
+    await expect(page.locator('#main-menu-screen')).toBeVisible();
+
+    await toMapSelect();
+    await page.locator('#map-select-menu').click();
+    await expect(page.locator('#main-menu-screen')).toBeVisible();
+    await expect(page.locator('#map-select-screen')).toBeHidden();
+    expect(problems).toEqual([]);
+});
+
 test('трофеи в гараже с картинками', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
