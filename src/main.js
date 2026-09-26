@@ -7307,7 +7307,9 @@ function startGaragePreview(carId) {
             window.__fallingDebris = fallingDebris;
             // раз в 12–18 сек (реже на easy, чаще на hard) — как договорились
             const _debrisRange = difficulty === 'easy' ? [16, 21] : difficulty === 'hard' ? [10, 14] : [13, 17];
-            let debrisTimer = _debrisRange[0] + Math.random() * (_debrisRange[1] - _debrisRange[0]);
+            // первый обломок — раньше обычного цикла, чтобы механика была заметна сразу,
+            // а не только если игрок доедет до 13+ секунды
+            let debrisTimer = 6 + Math.random() * 3;
             const debrisLaneXs = [-TRACK_WIDTH * 0.28, 0, TRACK_WIDTH * 0.28];
             function debrisVisual() {
                 if (isSnowTrack) {
@@ -7324,14 +7326,23 @@ function startGaragePreview(carId) {
                 return { color: 0x9a6a30, emissive: 0x221100, shape: 'crate' };
             }
             function createDebrisWarning(x, z) {
+                // Жёлтый, не красный: красный уже занят бордюром дороги (0xff2222) — на его фоне
+                // предупреждение было почти незаметно
                 const ring = new THREE.Mesh(
-                    new THREE.RingGeometry(0.35, 0.6, 16),
-                    new THREE.MeshBasicMaterial({ color: 0xff3322, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false })
+                    new THREE.RingGeometry(0.45, 0.85, 20),
+                    new THREE.MeshBasicMaterial({ color: 0xffcc00, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false })
                 );
                 ring.rotation.x = -Math.PI / 2;
                 ring.position.set(x, 0.05, z);
                 scene.add(ring);
-                return ring;
+                // Вертикальный маячок — виден издалека, пока обломок ещё не упал
+                const beam = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.05, 0.05, 3.0, 6, 1, true),
+                    new THREE.MeshBasicMaterial({ color: 0xffcc00, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false })
+                );
+                beam.position.set(x, 1.5, z);
+                scene.add(beam);
+                return { ring: ring, beam: beam };
             }
             function createDebrisMesh(vis) {
                 const mat = new THREE.MeshLambertMaterial({ color: vis.color, emissive: vis.emissive, emissiveIntensity: 0.2 });
@@ -7355,9 +7366,9 @@ function startGaragePreview(carId) {
                     // Появляется на дороге впереди игрока — успеваем среагировать
                     const z = zPos - (20 + Math.random() * 8);
                     if (z < FINISH_Z + 40 || z > START_Z - 25) return; // не спавним у старта/финиша
-                    const ring = createDebrisWarning(x, z);
+                    const w = createDebrisWarning(x, z);
                     fallingDebris.push({
-                        x: x, z: z, ring: ring, mesh: null,
+                        x: x, z: z, ring: w.ring, beam: w.beam, mesh: null,
                         state: 'warning',
                         telegraphT: 1.0 + Math.random() * 0.5,
                         fallT: 0,
@@ -8766,6 +8777,7 @@ function startGaragePreview(carId) {
                             const sc = 1 + (1 - Math.min(1, Math.max(0, d.telegraphT))) * 0.3;
                             d.ring.scale.set(sc, sc, sc);
                         }
+                        if (d.beam) d.beam.material.opacity = 0.25 + Math.abs(Math.sin(d.telegraphT * 14)) * 0.3;
                         if (d.telegraphT <= 0) {
                             d.state = 'falling';
                             d.fallT = 0.28;
@@ -8773,6 +8785,7 @@ function startGaragePreview(carId) {
                             d.mesh.position.set(d.x, 3.2, d.z);
                             scene.add(d.mesh);
                             if (d.ring) { scene.remove(d.ring); d.ring = null; }
+                            if (d.beam) { scene.remove(d.beam); d.beam = null; }
                         }
                     } else if (d.state === 'falling') {
                         d.fallT -= deltaTime;
