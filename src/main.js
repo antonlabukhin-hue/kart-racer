@@ -3472,6 +3472,8 @@ function startGaragePreview(carId) {
             if (cm && cm.ground != null) color = cm.ground;
             else if (mapId === 'promzona') color = 0x3a4030;
             else if (mapId === 'svalka') color = 0x3a4a28;
+            // Снежная тема — поверх любых карточных/дефолтных цветов: сугробы, а не грязь/трава
+            if (window.__trackThemeActive === 'snow') color = 0xdce8f4;
             const trackW = dims.trackWidth != null ? dims.trackWidth : 6;
             const len = (dims.length != null ? dims.length : 320) + 80;
             const common = {
@@ -5567,17 +5569,24 @@ function startGaragePreview(carId) {
                 const canvas = window._acquireTexCanvas ? window._acquireTexCanvas(size, size) : document.createElement('canvas');
                 canvas.width = size; canvas.height = size;
                 const ctx = canvas.getContext('2d', { willReadFrequently: false, alpha: false });
-                ctx.fillStyle = '#5c4a32';
+                const isSnow = window.__trackThemeActive === 'snow';
+                ctx.fillStyle = isSnow ? '#eef5ff' : '#5c4a32';
                 ctx.fillRect(0, 0, size, size);
                 const dots = size <= 48 ? 50 : 100;
                 for (let i = 0; i < dots; i++) {
                     const x = Math.random() * size;
                     const y = Math.random() * size;
-                    const shade = 60 + Math.random() * 50;
-                    ctx.fillStyle = 'rgb(' + shade + ',' + (shade * 0.75) + ',' + (shade * 0.45) + ')';
+                    if (isSnow) {
+                        // лёгкие голубоватые тени/сугробы вместо травяных крапинок
+                        const shade = 200 + Math.random() * 45;
+                        ctx.fillStyle = 'rgba(' + (shade - 30) + ',' + (shade - 12) + ',' + shade + ',0.5)';
+                    } else {
+                        const shade = 60 + Math.random() * 50;
+                        ctx.fillStyle = 'rgb(' + shade + ',' + (shade * 0.75) + ',' + (shade * 0.45) + ')';
+                    }
                     ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 2);
                 }
-                ctx.strokeStyle = 'rgba(30,20,10,0.4)';
+                ctx.strokeStyle = isSnow ? 'rgba(180,205,230,0.35)' : 'rgba(30,20,10,0.4)';
                 ctx.lineWidth = 1;
                 for (let i = 0; i < 12; i++) {
                     ctx.beginPath();
@@ -5630,6 +5639,38 @@ function startGaragePreview(carId) {
             try {
                 addNoiseLandscape(scene, mapId, !!(window.__isMobile), { trackWidth: TRACK_WIDTH, length: TRACK_LENGTH });
             } catch (e) { console.warn('noise landscape', e); }
+
+            // === Снегопад — только на snow-теме, раньше с неба вообще ничего не падало ===
+            let snowfall = null;
+            if (window.__trackThemeActive === 'snow') {
+                try {
+                    const snowCount = quality === 'low' ? 140 : (window.__isMobile ? 200 : 360);
+                    const snowPos = new Float32Array(snowCount * 3);
+                    const snowSpeed = new Float32Array(snowCount);
+                    const snowDrift = new Float32Array(snowCount);
+                    for (let i = 0; i < snowCount; i++) {
+                        const i3 = i * 3;
+                        snowPos[i3] = (Math.random() - 0.5) * (TRACK_WIDTH + 26);
+                        snowPos[i3 + 1] = Math.random() * 14;
+                        // старт вокруг стартовой позиции игрока (xPos/zPos ещё не объявлены здесь)
+                        snowPos[i3 + 2] = START_Z - 35 + (Math.random() - 0.5) * 70;
+                        snowSpeed[i] = 0.9 + Math.random() * 1.1;
+                        snowDrift[i] = Math.random() * Math.PI * 2;
+                    }
+                    const snowGeo = new THREE.BufferGeometry();
+                    snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+                    const snowMat = new THREE.PointsMaterial({
+                        color: 0xffffff, size: 0.12, transparent: true, opacity: 0.85,
+                        depthWrite: false, sizeAttenuation: true
+                    });
+                    const snowPoints = new THREE.Points(snowGeo, snowMat);
+                    scene.add(snowPoints);
+                    snowfall = {
+                        points: snowPoints, geo: snowGeo, pos: snowPos,
+                        speed: snowSpeed, drift: snowDrift, count: snowCount, t: 0
+                    };
+                } catch (eSnow) { console.warn('snowfall', eSnow); }
+            }
 
             const trackMat = new THREE.MeshStandardMaterial({
                 map: createAsphaltTexture(),
@@ -7202,19 +7243,23 @@ function startGaragePreview(carId) {
                 const group = new THREE.Group();
                 // Основная плита
                 const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, 0.18, len), rampMat);
-                const angle = -Math.atan2(height, len);
+                // Игрок движется в сторону уменьшения z (zEnter → zExit, см. return ниже),
+                // так что подъём должен расти к zExit. Локальный +z плиты — сторона zEnter (низ),
+                // локальный -z — сторона zExit (верх), поэтому угол положительный.
+                const angle = Math.atan2(height, len);
                 mesh.rotation.x = angle;
                 // Поднимаем, чтобы не тонула в асфальте
                 mesh.position.y = height * 0.5 + 0.05;
                 mesh.castShadow = true;
                 group.add(mesh);
-                // Белые стрелки «вперёд»
+                // Белые стрелки «вперёд» — дети плиты (mesh), а не group: наследуют её поворот
+                // и координаты задаются в локальной (ещё не повёрнутой) системе плиты, поэтому
+                // всегда лежат вплотную к поверхности, а не «висят» рядом с ней.
                 for (let s = 0; s < 3; s++) {
                     const ar = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.6), rampArrowMat);
                     const along = len * 0.3 - s * 0.85;
-                    ar.position.set(0, 0.15 + height * (0.35 + s * 0.15), along);
-                    ar.rotation.x = angle;
-                    group.add(ar);
+                    ar.position.set(0, 0.09 + 0.035, along);
+                    mesh.add(ar);
                 }
                 // Маркер-столбик сбоку (чтобы заметить издалека)
                 const pole = new THREE.Mesh(
@@ -8780,6 +8825,24 @@ function startGaragePreview(carId) {
                             fallingDebris.splice(di, 1);
                         }
                     }
+                }
+
+                // ---- Снегопад ----
+                if (snowfall) {
+                    snowfall.t += deltaTime;
+                    const pos = snowfall.pos;
+                    for (let si = 0; si < snowfall.count; si++) {
+                        const i3 = si * 3;
+                        pos[i3 + 1] -= snowfall.speed[si] * deltaTime * 1.6;
+                        pos[i3] += Math.sin(snowfall.t * 0.6 + snowfall.drift[si]) * deltaTime * 0.35;
+                        if (pos[i3 + 1] < 0) {
+                            // упала — переносим наверх, в облако вокруг текущей позиции игрока
+                            pos[i3 + 1] = 10 + Math.random() * 4;
+                            pos[i3] = xPos + (Math.random() - 0.5) * (TRACK_WIDTH + 26);
+                            pos[i3 + 2] = zPos - 35 + (Math.random() - 0.5) * 70;
+                        }
+                    }
+                    snowfall.geo.attributes.position.needsUpdate = true;
                 }
 
                 // ---- Коллектиблы ----
