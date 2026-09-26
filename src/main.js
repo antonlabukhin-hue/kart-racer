@@ -52,11 +52,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const isMob = !!window.__isMobile;
                 const maxAniso = opts.anisotropy != null ? opts.anisotropy : (isMob ? 1 : 2);
                 if (tex.anisotropy !== undefined) tex.anisotropy = maxAniso;
-                if (THREE.SRGBColorSpace && tex.colorSpace !== undefined && opts.srgb !== false) {
-                    tex.colorSpace = THREE.SRGBColorSpace;
-                } else if (THREE.sRGBEncoding && tex.encoding !== undefined && opts.srgb !== false) {
-                    tex.encoding = THREE.sRGBEncoding;
-                }
+                if (opts.srgb !== false) tex.colorSpace = THREE.SRGBColorSpace;
                 tex.needsUpdate = true;
             } catch (e) {}
             return tex;
@@ -987,6 +983,14 @@ function createProfile(name) {
             // миграция: общий paint → текущей машине
             if (p.carLoadout.paint && p.preferredCar && !p.carLoadout.paintByCar[p.preferredCar]) {
                 p.carLoadout.paintByCar[p.preferredCar] = p.carLoadout.paint;
+            }
+            // ownedPaints — купленные цвета (на все машины профиля). Раньше покупка нигде не
+            // запоминалась, и возврат к уже купленному цвету списывал фишки ещё раз.
+            // Миграция: всё, что сейчас стоит на машинах, считаем купленным.
+            if (!Array.isArray(p.carLoadout.ownedPaints)) {
+                const was = Object.values(p.carLoadout.paintByCar);
+                if (p.carLoadout.paint) was.push(p.carLoadout.paint);
+                p.carLoadout.ownedPaints = Array.from(new Set(was.filter(id => id && id !== 'stock')));
             }
             if (!p.trophies) p.trophies = {};
             return p;
@@ -2128,13 +2132,14 @@ function renderGaragePartsPanel() {
             ensureProfileFields(currentPlayer);
             const equipped = currentPlayer.carLoadout.parts || [];
             const ownedParts = currentPlayer.carLoadout.ownedParts || [];
+            const ownedPaints = currentPlayer.carLoadout.ownedPaints || [];
             let html = '<div style="font-size:11px;color:#888;margin-bottom:6px;">Наведи — примерка · клик — купить/снять · фишки: ' + Number(currentPlayer.season.chips || 0) + '</div>';
             html += '<div class="color-swatches">';
             CAR_PAINTS.forEach(p => {
                 const col = p.color != null ? p.color : (CAR_PRESETS[currentPlayer.preferredCar]||{}).color || 0xff2200;
                 const hex = '#' + (col >>> 0).toString(16).padStart(6, '0');
                 const active = getPaintForCar(currentPlayer.preferredCar || 'cheburashka') === p.id ? ' active' : '';
-                html += '<div class="color-swatch' + active + '" data-paint="' + p.id + '" style="background:' + hex + '" title="' + escapeHtml(p.name) + (p.price?(' 🪙'+p.price):' бесплатно') + '"></div>';
+                html += '<div class="color-swatch' + active + '" data-paint="' + p.id + '" style="background:' + hex + '" title="' + escapeHtml(p.name) + (!p.price ? ' бесплатно' : (ownedPaints.includes(p.id) ? ' ✓ куплено' : (' 🪙' + p.price))) + '"></div>';
             });
             html += '</div>';
             const carId = currentPlayer.preferredCar || 'cheburashka';
@@ -2168,11 +2173,16 @@ function renderGaragePartsPanel() {
             ensureProfileFields(currentPlayer);
             const carId = currentPlayer.preferredCar || 'cheburashka';
             if (getPaintForCar(carId) === paintId) return;
-            if (p.price > 0 && currentPlayer.season.chips < p.price) {
+            const ownedPaints = currentPlayer.carLoadout.ownedPaints;
+            const needPay = p.price > 0 && !ownedPaints.includes(paintId);
+            if (needPay && currentPlayer.season.chips < p.price) {
                 if (window.Notify) Notify.warn('Мало фишек', 'Нужно 🪙' + p.price);
                 return;
             }
-            if (p.price > 0) currentPlayer.season.chips -= p.price;
+            if (needPay) {
+                currentPlayer.season.chips -= p.price;
+                ownedPaints.push(paintId);
+            }
             setPaintForCar(carId, paintId);
             saveCurrentPlayer();
             if (window.Notify) Notify.success('🎨 Покраска', p.name);
@@ -4297,9 +4307,7 @@ function startGaragePreview(carId) {
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.repeat.set(2, 2);
             if (window.optimizeTexture) window.optimizeTexture(tex, { mipmaps: false, anisotropy: 1 });
-            _animalTexCache[key] = tex;
-            if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
-            else if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+            tex.colorSpace = THREE.SRGBColorSpace;
             tex.needsUpdate = true;
             _animalTexCache[key] = tex;
             return tex;
@@ -5315,6 +5323,7 @@ function startGaragePreview(carId) {
                 document.removeEventListener('keydown', keydownHandler);
                 document.removeEventListener('keyup', keyupHandler);
                 window.removeEventListener('resize', resizeHandler);
+                raceAbort.abort();
                 
                 const mobileControls = document.getElementById('mobile-controls');
                 if (mobileControls) {
@@ -8034,12 +8043,34 @@ function startGaragePreview(carId) {
             document.addEventListener('keydown', keydownHandler);
             document.addEventListener('keyup', keyupHandler);
 
+            // Обработчики на время заезда: снимаются в endGame и __stopRace
+            const raceAbort = new AbortController();
+
             document.addEventListener('click', () => {
                 if (soundEngine && soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
                     soundEngine.audioCtx.resume();
                     soundEngine.startMusic();
                 }
-            });
+            }, { signal: raceAbort.signal });
+
+            // Ушли из окна (Alt+Tab, другая вкладка) — keyup уже не придёт, и газ/руль «залипают».
+            // Отпускаем все кнопки и ставим заезд на паузу.
+            function releaseAllKeys() {
+                keys.w = keys.s = keys.a = keys.d = false;
+                mobileKeys.w = mobileKeys.s = mobileKeys.a = mobileKeys.d = false;
+                document.querySelectorAll('#mobile-controls .active').forEach(el => el.classList.remove('active'));
+            }
+            function onFocusLost() {
+                releaseAllKeys();
+                if ((gameState === 'racing' || gameState === 'countdown') && !window.__racePaused &&
+                    typeof window.toggleRacePause === 'function') {
+                    window.toggleRacePause();
+                }
+            }
+            window.addEventListener('blur', onFocusLost, { signal: raceAbort.signal });
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) onFocusLost();
+            }, { signal: raceAbort.signal });
 
             // ============================================================
             // RESIZE
@@ -9960,6 +9991,7 @@ function startGaragePreview(carId) {
                 document.removeEventListener('keyup', keyupHandler);
                 window.removeEventListener('resize', resizeHandler);
                 mobileAbort.abort();
+                raceAbort.abort();
             };
 
             animate(performance.now());

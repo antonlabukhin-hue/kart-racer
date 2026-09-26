@@ -66,7 +66,7 @@ npm run dev
 - `animals.js` — AnimalSpawner  
 - `particles.js` — ParticleSystem  
 - `data.js` — кампания, машины, животные (общие для `main.js` и `animals.js`)  
-- `boss.js` — заглушка (меши ещё в initGame)  
+- `boss.js` — мини-боссы кампании: параметры атак, материалы, меши, HP-бар  
 
 Подробный план: [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md).  
 `index.html` подключает `src/main.js`, остальные модули он импортирует сам.
