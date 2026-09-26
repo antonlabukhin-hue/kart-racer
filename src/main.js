@@ -3568,10 +3568,16 @@ function startGaragePreview(carId) {
             el.textContent = text;
             const mob = !!(window.__isMobile || window.innerHeight < 500);
             if (mob && Math.random() > 0.45) return; // реже на мобилках
-            document.body.appendChild(el);
-            setTimeout(function() { try { el.remove(); } catch (e) {} }, mob ? 1400 : 2200);
+            postShout(el, mob ? 1400 : 2200);
         }
         window.showAnimalShout = showAnimalShout;
+
+        /** Показать реплику: все реплики стоят в одной точке, поэтому новая заменяет прежнюю (босс — отдельно) */
+        function postShout(el, ms) {
+            document.querySelectorAll('.animal-shout:not(.boss-shout)').forEach(function(n) { try { n.remove(); } catch (e) {} });
+            document.body.appendChild(el);
+            setTimeout(function() { try { el.remove(); } catch (e) {} }, ms);
+        }
 
 
         // ============================================================
@@ -8141,11 +8147,15 @@ function startGaragePreview(carId) {
                 if (seconds === 0 && animalName) {
                     popup.textContent = animalName; // событие без штрафа: «НИТРО!», «Босс повержен»
                 } else if (animalName) {
-                    popup.textContent = animalName + ': -' + seconds + 'с';
+                    // «Кабан: попадание!» + «: -2с» давало «попадание!: -2с»
+                    popup.textContent = animalName + (/[!?.:]$/.test(animalName) ? ' ' : ': ') + '−' + seconds + 'с';
                 } else {
-                    popup.textContent = '-' + seconds + 'с';
+                    popup.textContent = '−' + seconds + 'с';
                 }
-                popup.style.left = (rect.right + 10) + 'px';
+                // справа от панели HUD: от строки времени надпись ложилась поверх самой панели
+                const hudEl = document.getElementById('game-hud');
+                const hudRight = hudEl ? hudEl.getBoundingClientRect().right : rect.right;
+                popup.style.left = (Math.max(rect.right, hudRight) + 10) + 'px';
                 popup.style.top = (rect.top - 2) + 'px';
                 popup.style.opacity = '1';
                 popup.style.animation = 'none';
@@ -8205,6 +8215,16 @@ function startGaragePreview(carId) {
                 config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
             animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
+            // Только в тестовой сборке: состояние заезда для автопилота в тестах. На сайт не попадает.
+            if (import.meta.env.MODE === 'test') {
+                window.__raceDebug = {
+                    get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
+                    get state() { return gameState; }, get strikes() { return strikes; },
+                    get boss() { return boss; }, bossBullets,
+                    trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
+                    cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
+                };
+            }
             try {
                 if (typeof animalSpawner.buildMandatoryPool === 'function') {
                     animalSpawner.buildMandatoryPool();
@@ -8986,8 +9006,7 @@ function startGaragePreview(carId) {
                             el.textContent = '⛽ НИТРО!';
                             el.style.color = '#33ff66';
                             el.style.borderColor = '#33ff66';
-                            document.body.appendChild(el);
-                            setTimeout(() => el.remove(), 1500);
+                            postShout(el, 1500);
                         } else {
                             // Жвачка Турбо: +5 сек ИЛИ снятие 1 аварии
                             try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.0); } catch (e) {}
@@ -9007,8 +9026,7 @@ function startGaragePreview(carId) {
                                 el.textContent = '❤️ Жвачка! −1 авария';
                                 el.style.color = '#ff88cc';
                                 el.style.borderColor = '#ff88cc';
-                                document.body.appendChild(el);
-                                setTimeout(() => el.remove(), 1600);
+                                postShout(el, 1600);
                             } else {
                                 raceTime = Math.max(0, raceTime - 5);
                                 showTimePenaltyPopup(0, '🍬 +5 сек');
@@ -9017,8 +9035,7 @@ function startGaragePreview(carId) {
                                 el.textContent = '🍬 Жвачка Турбо! +5 сек';
                                 el.style.color = '#ff88cc';
                                 el.style.borderColor = '#ff88cc';
-                                document.body.appendChild(el);
-                                setTimeout(() => el.remove(), 1600);
+                                postShout(el, 1600);
                             }
                             updateHUD();
                         }
@@ -10461,6 +10478,24 @@ function showLoreScreen(quality, difficulty) {
                 initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
             });
         }
+        // Раньше с выбора карты можно было только уехать: авто-панель «Назад/Меню» пропускает экраны с #map-select-go
+        const hideMapSelect = function() {
+            const mapScreen = document.getElementById('map-select-screen');
+            if (mapScreen) {
+                mapScreen.classList.remove('active');
+                mapScreen.style.display = 'none';
+            }
+        };
+        const mapBackBtn = document.getElementById('map-select-back');
+        if (mapBackBtn) mapBackBtn.addEventListener('click', function() {
+            hideMapSelect();
+            window.showDifficultyScreen();
+        });
+        const mapMenuBtn = document.getElementById('map-select-menu');
+        if (mapMenuBtn) mapMenuBtn.addEventListener('click', function() {
+            hideMapSelect();
+            showMainMenu();
+        });
 
         // Обработчики кнопок сложности → сначала лор
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
