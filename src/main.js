@@ -1678,9 +1678,10 @@ function createProfile(name) {
                 const price = preset.priceChips || 0;
                 const desc = document.getElementById('shop-desc');
                 if (desc) {
-                    desc.textContent = owned
+                    const ab = preset.ability ? ('Способность «' + preset.ability.name + '»: ' + preset.ability.desc + '. ') : '';
+                    desc.textContent = ab + (owned
                         ? (preset.name + ' — в гараже. Можно выбрать на рейс.')
-                        : ('Стоимость: ' + price + ' фишек. Фишки падают за финиши и награды сезона.');
+                        : ('Стоимость: ' + price + ' фишек. Фишки падают за финиши и награды сезона.'));
                 }
                 const act = document.getElementById('shop-action');
                 if (act) {
@@ -2514,7 +2515,8 @@ function renderGaragePartsPanel() {
                 return '<div class="up-row"><div class="up-name">' + u.icon + ' ' + u.name + '<small>' + u.perLevel + '</small></div>' +
                     '<div class="up-pips">' + pips + '</div>' + btn + '</div>';
             }).join('');
-            box.innerHTML = '<div class="up-head">' + escapeHtml(preset.name) + ' · фишки: 🪙 ' + chips + '</div>' +
+            const abil = preset.ability ? '<div class="up-ability">★ ' + escapeHtml(preset.ability.name) + ': ' + escapeHtml(preset.ability.desc) + '</div>' : '';
+            box.innerHTML = '<div class="up-head">' + escapeHtml(preset.name) + ' · фишки: 🪙 ' + chips + '</div>' + abil +
                 '<div class="up-bars">' + bars + '</div>' + rows +
                 '<div class="up-note">Улучшения видны на машине и работают в заезде. У каждой машины своя прокачка.</div>';
             box.querySelectorAll('button[data-up]').forEach(function(b) {
@@ -7322,7 +7324,7 @@ function startGaragePreview(carId) {
                 if (gameState !== 'racing' || _nmCooldown > 0) return;
                 _nmCooldown = 1.2;
                 nearMissCount++;
-                nitroTimer = Math.max(nitroTimer, 0.9);
+                nitroTimer = Math.max(nitroTimer, ABILITY === 'nimble' ? 1.4 : 0.9);
                 try {
                     const el = document.createElement('div');
                     el.className = 'animal-shout';
@@ -7857,7 +7859,10 @@ function startGaragePreview(carId) {
             const FRICTION_FORCE = 0.008;
             const MAX_X_SPEED = 0.55;
             const DRY_DAMPING = 0.82;
-            const DRY_STEER = 3.2 * carStats.steerMul;
+            const ABILITY = (carPreset.ability && carPreset.ability.id) || null;
+            const DRY_STEER = 3.2 * carStats.steerMul * (ABILITY === 'nimble' ? 1.15 : 1);
+            const NITRO_SPEED = ABILITY === 'turbo' ? 1.6 : 1.45;
+            const NITRO_ACCEL = ABILITY === 'turbo' ? 1.8 : 1.6;
             const OIL_GRIP = carStats.oilGrip;
             const DURABILITY = carStats.durability; // множитель штрафа времени (меньше = танк); броня его снижает
             const NITRO_TIME = carStats.nitroTime;
@@ -8090,7 +8095,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8318,8 +8323,8 @@ function startGaragePreview(carId) {
                     camera.updateProjectionMatrix();
                 }
 
-                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? 1.45 : 1.0);
-                const effectiveAccel = ACCELERATION * (nitroTimer > 0 ? 1.6 : 1.0);
+                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? NITRO_SPEED : 1.0);
+                const effectiveAccel = ACCELERATION * (nitroTimer > 0 ? NITRO_ACCEL : 1.0);
 
                 // константы разгона/тормоза подобраны «за кадр при 60 fps» — масштабируем по времени кадра,
                 // иначе на 144 Гц машина разгонялась в 2.4 раза быстрее, а на телефоне с 30 fps — вдвое медленнее
@@ -8784,6 +8789,13 @@ function startGaragePreview(carId) {
                     if (Math.abs(dx) < hitR && Math.abs(dz) < hitR) {
                         if (carAirborne || carYOffset > 0.45) {
                             // в прыжке ямы/кочки/масло не срабатывают
+                        } else if (ABILITY === 'offroad' && obs.type !== 'oil' && obs.type !== 'acid') {
+                            // Нива-внедорожник: ямы, кочки, лёд и смола — не помеха (масло и кислота — да)
+                            if (!obs._offroadShown) {
+                                obs._offroadShown = true;
+                                showTimePenaltyPopup(0, '🚙 Нива не заметила');
+                                try { if (playerCar) playerCar.userData._suspensionKick = 0.08; } catch (e) {}
+                            }
                         } else if (obs.type === 'pothole') {
                             const acidMul = weatherZone === 'acid' ? 1.6 : 1;
                             speed *= 0.28 / acidMul;

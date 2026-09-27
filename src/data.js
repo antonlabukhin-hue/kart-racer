@@ -162,9 +162,13 @@ export const CAMPAIGN_STAGE_MODS = {
 // по просьбе сделать обычную езду быстрее; масштабируем обе величины вместе, чтобы
 // сохранить прежнее ощущение разгона (время до максимума не изменилось).
 export const CAR_PRESETS = {
-    cheburashka: { name: 'Чебурашка', color: 0xff2200, maxSpeed: 0.42, accel: 0.0216, durability: 1.00, oilGrip: 1.00, priceChips: 0 },
-    kirpich:     { name: 'Нива',       color: 0x4a6a4a, maxSpeed: 0.372, accel: 0.0168, durability: 0.70, oilGrip: 1.18, priceChips: 12 },
-    turbo:       { name: 'Волга',      color: 0xc0a060, maxSpeed: 0.492, accel: 0.0288, durability: 1.15, oilGrip: 0.72, priceChips: 20 }
+    // ability — у каждой машины своя «фишка», выбор машины — решение, а не косметика
+    cheburashka: { name: 'Чебурашка', color: 0xff2200, maxSpeed: 0.42, accel: 0.0216, durability: 1.00, oilGrip: 1.00, priceChips: 0,
+        ability: { id: 'nimble', name: 'Вёрткая', desc: 'руль острее на 15%, «На волоске!» даёт нитро дольше' } },
+    kirpich:     { name: 'Нива',       color: 0x4a6a4a, maxSpeed: 0.372, accel: 0.0168, durability: 0.70, oilGrip: 1.18, priceChips: 12,
+        ability: { id: 'offroad', name: 'Внедорожник', desc: 'ямы, кочки, лёд и смола не тормозят' } },
+    turbo:       { name: 'Волга',      color: 0xc0a060, maxSpeed: 0.492, accel: 0.0288, durability: 1.15, oilGrip: 0.72, priceChips: 20,
+        ability: { id: 'turbo', name: 'Турбо', desc: 'нитро разгоняет сильнее (×1.6 вместо ×1.45)' } }
 };
 
 export const ANIMAL_TYPES = {
