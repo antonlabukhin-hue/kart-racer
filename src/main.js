@@ -28,6 +28,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhase2Html } from './boss-intro.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
+        import { startGamepadPolling } from './gamepad.js';
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { createMapEvent } from './mapevents.js';
@@ -7927,12 +7928,14 @@ function startGaragePreview(carId) {
             };
 
             function getKeys() {
-                if (isMobile) {
+                const pk = window.__padKeys; // геймпад (src/gamepad.js)
+                if (isMobile || pk) {
+                    const m = isMobile ? mobileKeys : {};
                     return {
-                        w: keys.w || mobileKeys.w,
-                        s: keys.s || mobileKeys.s,
-                        a: keys.a || mobileKeys.a,
-                        d: keys.d || mobileKeys.d
+                        w: keys.w || !!m.w || !!(pk && pk.w),
+                        s: keys.s || !!m.s || !!(pk && pk.s),
+                        a: keys.a || !!m.a || !!(pk && pk.a),
+                        d: keys.d || !!m.d || !!(pk && pk.d)
                     };
                 }
                 return keys;
@@ -11131,6 +11134,25 @@ function showLoreScreen(quality, difficulty) {
             if (ov) ov.classList.remove('show');
             if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
         });
+        // геймпад: гонка, пауза, камера и навигация по меню
+        startGamepadPolling({
+            inRace: function() { return !!window.__inRace; },
+            togglePause: function() { if (typeof window.toggleRacePause === 'function') window.toggleRacePause(); },
+            cycleCamera: function() { if (typeof window.__cycleCamera === 'function') window.__cycleCamera(); },
+            focusables: function() {
+                return Array.from(document.querySelectorAll('button, .menu-card, .camp-track, .map-card, .profile-item, input, select'))
+                    .filter(function(el) {
+                        if (el.disabled || el.offsetParent === null) return false;
+                        const r = el.getBoundingClientRect();
+                        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+                        if (cx < 0 || cy < 0 || cx > innerWidth || cy > innerHeight) return true;
+                        // не под другим экраном
+                        const hit = document.elementFromPoint(cx, cy);
+                        return !!hit && (hit === el || el.contains(hit));
+                    });
+            }
+        });
+        window.addEventListener('mousemove', function() { document.body.classList.remove('pad-nav'); }, { passive: true });
         window.addEventListener('keydown', function(e) {
             if ((e.code === 'KeyP' || e.code === 'Escape') && window.__inRace) {
                 e.preventDefault();

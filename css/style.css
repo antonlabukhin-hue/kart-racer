@@ -4361,3 +4361,6 @@
             box-shadow: 0 4px 18px rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.25s, transform 0.25s; }
         #coach-tip.show { opacity: 1; transform: translate(-50%, 0); }
         @media (pointer: coarse) { #coach-tip { bottom: auto; top: 96px; font-size: 13px; } }
+
+        /* геймпад: видимый фокус при навигации по меню */
+        body.pad-nav :focus { outline: 3px solid #ffd23c !important; outline-offset: 2px; box-shadow: 0 0 14px rgba(255,210,60,0.6) !important; }
