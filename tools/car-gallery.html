@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Галерея машин</title>
+    <style>
+        /* Инструмент разработки: npm run dev → http://localhost:5173/tools/car-gallery.html
+           В сборку сайта не попадает (vite собирает только index.html). */
+        :root { color-scheme: dark; }
+        body { margin: 0; background: #14121a; color: #eee; font: 13px system-ui, sans-serif; overflow: hidden; }
+        #bar { position: fixed; top: 0; left: 0; right: 0; padding: 8px 12px; background: rgba(0,0,0,.6); display: flex; gap: 10px; align-items: center; z-index: 2; flex-wrap: wrap; }
+        #bar button { background: #2a2635; color: #eee; border: 1px solid #555; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+        #bar button.on { border-color: #ffcc00; color: #ffcc00; }
+        .lbl { position: fixed; transform: translate(-50%, 0); pointer-events: none; font-weight: 600; text-shadow: 0 1px 3px #000; }
+    </style>
+</head>
+<body>
+<div id="bar">
+    <b>Машины</b>
+    <span>Прокачка:</span>
+    <button data-lvl="0">0</button><button data-lvl="1">1</button><button data-lvl="2">2</button><button data-lvl="3">3</button>
+    <button id="parts">косметика</button>
+    <button id="spin" class="on">вращение</button>
+    <button id="one">по одной</button>
+</div>
+<script type="module">
+    import * as THREE from 'three';
+    import { buildShowroomCar, applyUpgradeVisuals } from '../src/cars.js';
+    import { CAR_PRESETS } from '../src/data.js';
+    window.THREE = THREE;
+
+    const q = new URLSearchParams(location.search);
+    const lvl = parseInt(q.get('lvl') || '0', 10);
+    const withParts = q.get('parts') === '1';
+    const one = q.get('one');
+    const yaw0 = parseFloat(q.get('yaw') || '0.7');
+    let spin = q.get('spin') !== '0';
+    const nav = (k, v) => { if (v == null) q.delete(k); else q.set(k, v); location.search = q.toString(); };
+    document.querySelectorAll('[data-lvl]').forEach(b => { b.classList.toggle('on', +b.dataset.lvl === lvl); b.onclick = () => nav('lvl', b.dataset.lvl); });
+    document.getElementById('parts').classList.toggle('on', withParts);
+    document.getElementById('parts').onclick = () => nav('parts', withParts ? null : '1');
+    document.getElementById('spin').onclick = e => { spin = !spin; e.target.classList.toggle('on', spin); };
+    document.getElementById('one').classList.toggle('on', one != null);
+    document.getElementById('one').onclick = () => {
+        const ids = Object.keys(CAR_PRESETS);
+        nav('one', one == null ? ids[0] : ids[(ids.indexOf(one) + 1) % ids.length]);
+    };
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1c1a24);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const d = new THREE.DirectionalLight(0xffe0b0, 1.6); d.position.set(3, 5, 2); scene.add(d);
+    const fill = new THREE.DirectionalLight(0x88aaff, 0.6); fill.position.set(-3, 2, -2); scene.add(fill);
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(12, 48), new THREE.MeshStandardMaterial({ color: 0x222230, roughness: 0.7 }));
+    ground.rotation.x = -Math.PI / 2; scene.add(ground);
+
+    const ids = one ? [one] : Object.keys(CAR_PRESETS);
+    const items = ids.map((id, i) => {
+        const built = buildShowroomCar(id);
+        Object.values(built.parts || {}).forEach(m => { if (m) m.visible = withParts; });
+        applyUpgradeVisuals(built.upgrades, { engine: lvl, gearbox: lvl, tires: lvl, armor: lvl, nitro: lvl });
+        built.group.position.x = (i - (ids.length - 1) / 2) * 3.6;
+        scene.add(built.group);
+        const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.textContent = CAR_PRESETS[id].name + ' (' + id + ')';
+        document.body.appendChild(lbl);
+        return { group: built.group, lbl };
+    });
+    const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, 0.1, 100);
+    if (one) { camera.position.set(0, 2.2, 5.4); camera.lookAt(0, 0.5, 0); }
+    else { camera.position.set(0, 4.5, 10); camera.lookAt(0, 0.4, 0); }
+    addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
+    const v = new THREE.Vector3(); let t = 0, last = performance.now();
+    (function frame(now) {
+        const dt = Math.min(0.05, (now - last) / 1000); last = now; if (spin) t += dt;
+        items.forEach(it => {
+            it.group.rotation.y = yaw0 + t * 0.5;
+            v.copy(it.group.position); v.y -= 0.2; v.project(camera);
+            it.lbl.style.left = ((v.x + 1) / 2 * innerWidth) + 'px';
+            it.lbl.style.top = ((1 - v.y) / 2 * innerHeight + 30) + 'px';
+        });
+        renderer.render(scene, camera);
+        requestAnimationFrame(frame);
+    })(performance.now());
+</script>
+</body>
+</html>
