@@ -29,6 +29,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { bossIntroHtml, bossPhase2Html } from './boss-intro.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
+        import { resolveLang, applyLang } from './i18n.js';
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { createMapEvent } from './mapevents.js';
@@ -2880,6 +2881,8 @@ function startGaragePreview(carId) {
                 choice('quality', [['low', '🚀 Низкое'], ['medium', '⚡ Среднее'], ['high', '🔥 Высокое']]) +
                 '<div class="st-group">Камера в заезде</div>' +
                 choice('camera', [[0, 'Сзади'], [1, 'Капот'], [2, 'Салон'], [3, 'Сбоку']]) +
+                '<div class="st-group">Язык</div>' +
+                choice('lang', [['auto', 'Авто'], ['ru', 'Русский'], ['en', 'English']]) +
                 '<div class="st-group">Удобство</div>' +
                 toggle('shake', 'Тряска камеры и линии скорости') +
                 toggle('vibrate', 'Вибрация телефона при аварии') +
@@ -2912,6 +2915,7 @@ function startGaragePreview(carId) {
                     const v = k === 'camera' ? parseInt(b.dataset.v, 10) : b.dataset.v;
                     save({ [k]: v });
                     if (k === 'quality') applyQualityChoice(v);
+                    if (k === 'lang') applyLang(resolveLang(v, navigator.languages));
                 });
             });
             el.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
@@ -11134,6 +11138,11 @@ function showLoreScreen(quality, difficulty) {
             if (ov) ov.classList.remove('show');
             if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
         });
+        // язык интерфейса (src/i18n.js): ?lang=en|ru — принудительно (для проверки перевода)
+        try {
+            const qLang = new URLSearchParams(location.search).get('lang');
+            applyLang(resolveLang(qLang || loadSettings().lang, navigator.languages));
+        } catch (e) { console.warn('i18n', e); }
         // геймпад: гонка, пауза, камера и навигация по меню
         startGamepadPolling({
             inRace: function() { return !!window.__inRace; },

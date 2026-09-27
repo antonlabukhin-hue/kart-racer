@@ -13,8 +13,8 @@ describe('настройки', () => {
 
     it('сохраняются и читаются', () => {
         const st = memStorage();
-        saveSettings({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false }, st);
-        expect(loadSettings(st)).toEqual({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false });
+        saveSettings({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en' }, st);
+        expect(loadSettings(st)).toEqual({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en' });
     });
 
     it('кривые значения приводятся к допустимым', () => {
