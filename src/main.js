@@ -7646,6 +7646,7 @@ function startGaragePreview(carId) {
             // ============================================================
             const gaps = [];
             const debrisZones = [];
+            const gapCones = []; // сбиваемые конусы перед разломами
             const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
             const _starGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, depthWrite: false });
             function createStar(x, z) {
@@ -7731,7 +7732,9 @@ function startGaragePreview(carId) {
                     // знак со схемой полос: где трамплин (↑), где провал (✕)
                     scene.add(createRoadSign(['⚠ РАЗЛОМ'], -TRACK_WIDTH / 2 - 1.8, zNear + 52, { laneMark: li0, big: true }));
                     scene.add(createRoadSign(['⚠ РАЗЛОМ'], TRACK_WIDTH / 2 + 1.8, zNear + 52, { laneMark: li0, big: true }));
-                    scene.add(createGapCones(_rampLaneXs, li0, zNear));
+                    const coneGroup = createGapCones(_rampLaneXs, li0, zNear);
+                    scene.add(coneGroup);
+                    (coneGroup.userData.cones || []).forEach(function(cn) { gapCones.push(cn); });
                     gaps.push({ zNear: zNear, zFar: zNear - GAP_LEN, mesh: mesh, lanes: lanes, used: false });
                 });
                 const srcKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
@@ -8426,7 +8429,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, giveNitro: function() { nitroTimer = 3.2; }, stats: stats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, giveNitro: function() { nitroTimer = 3.2; }, stats: stats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8853,6 +8856,28 @@ function startGaragePreview(carId) {
                 // Разломы: не на трамплине и не в воздухе — проваливаешься (авария + штраф),
                 // машину вытаскивает на дальний край разлома
                 _nmCooldown -= deltaTime;
+                // конусы: задел — отлетает кувырком (без штрафа, это не преграда)
+                for (let ci = 0; ci < gapCones.length; ci++) {
+                    const cn = gapCones[ci];
+                    if (!cn.hit) {
+                        if (gameState === 'racing' && carYOffset < 0.5 && Math.abs(xPos - cn.x) < 0.62 && Math.abs(zPos - cn.z) < 0.6) { // полуширина машины + конуса
+                            cn.hit = true;
+                            const sp = Math.max(8, Math.abs(speed) * 60);
+                            cn.vel = new THREE.Vector3((cn.x - xPos) * 6 + (Math.random() - 0.5) * 3, 3 + Math.random() * 2, -sp * 0.6);
+                            cn.spin = new THREE.Vector3((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 14);
+                            try { if (window.soundEngine) window.soundEngine.playSfx('bump', 0.35); } catch (e) {}
+                        }
+                        continue;
+                    }
+                    if (cn.t > 2) continue;
+                    cn.t += deltaTime;
+                    cn.vel.y -= 9.8 * deltaTime;
+                    cn.mesh.position.addScaledVector(cn.vel, deltaTime);
+                    cn.mesh.rotation.x += cn.spin.x * deltaTime;
+                    cn.mesh.rotation.y += cn.spin.y * deltaTime;
+                    cn.mesh.rotation.z += cn.spin.z * deltaTime;
+                    if (cn.t > 2) cn.mesh.visible = false;
+                }
                 for (let gi = 0; gi < gaps.length; gi++) {
                     const gp = gaps[gi];
                     if (gp.mesh && gp.mesh.userData.beacons) {
@@ -8866,11 +8891,19 @@ function startGaragePreview(carId) {
                         try {
                             const sh = document.createElement('div');
                             sh.className = 'animal-shout';
-                            sh.textContent = '🕳 Провал! Целься в трамплин';
+                            sh.textContent = '🕳 Провал!';
                             postShout(sh, 1800);
                         } catch (eSh) {}
                         shakeTime = Math.max(shakeTime, 0.45);
                         try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.5); } catch (e) {}
+                        // всплеск из разлома: машина уходит под «дно» сразу, без этого провал не читался
+                        try {
+                            for (let s2 = 0; s2 < 22; s2++) {
+                                particleSystem.emit(_v.p1.set(xPos + (Math.random() - 0.5) * 1.2, 0.2, zPos),
+                                    _v.vel.set((Math.random() - 0.5) * 3, 2.5 + Math.random() * 2.5, (Math.random() - 0.5) * 2), 1, 0.2);
+                            }
+                            if (particleSystem.explode) particleSystem.explode({ x: xPos, y: 0.3, z: zPos }, 0.7);
+                        } catch (eP) {}
                     }
                 }
                 for (let gi = 0; gi < gaps.length; gi++) {

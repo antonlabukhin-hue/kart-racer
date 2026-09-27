@@ -332,21 +332,33 @@ export const SETPIECE_LAYOUT = {
     debrisZones: [0.14, 0.6, 0.93]
 };
 
-/** Конусы перед разломом в полосах без трамплина — «сюда нельзя» (визуально, не преграда) */
+/**
+ * Конусы перед разломом в полосах без трамплина — «сюда нельзя». Не преграда: сбитый конус
+ * отлетает (main.js), машина едет дальше — прямо в разлом. userData.cones[] = { mesh, x, z }.
+ */
 export function createGapCones(laneXs, rampLane, zNear) {
     const g = new THREE.Group();
     const coneMat = new THREE.MeshLambertMaterial({ color: 0xff6a00 });
     const bandMat = new THREE.MeshBasicMaterial({ color: 0xf4f4f4 });
+    const cones = [];
     laneXs.forEach(function(x, li) {
         if (li === rampLane) return;
         [-0.55, 0, 0.55].forEach(function(dx) {
+            const cone = new THREE.Group();
             const c = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 10), coneMat);
-            c.position.set(x + dx, 0.3, zNear + 1.2);
-            g.add(c);
+            c.position.y = 0.3;
+            cone.add(c);
             const b = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.135, 0.09, 10), bandMat);
-            b.position.set(x + dx, 0.34, zNear + 1.2);
-            g.add(b);
+            b.position.y = 0.34;
+            cone.add(b);
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.42), coneMat);
+            base.position.y = 0.02;
+            cone.add(base);
+            cone.position.set(x + dx, 0, zNear + 1.2);
+            g.add(cone);
+            cones.push({ mesh: cone, x: x + dx, z: zNear + 1.2, hit: false, vel: null, t: 0 });
         });
     });
+    g.userData.cones = cones;
     return g;
 }
