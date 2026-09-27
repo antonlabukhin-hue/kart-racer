@@ -8070,7 +8070,7 @@ function startGaragePreview(carId) {
                     scene.add(hpBar); // не child group — без умножения на scale
                     boss.hpBar = hpBar;
                     boss._hpWorld = new THREE.Vector3();
-                    updateBossHpBar(boss);
+                    updateBossHpBar(boss, camera);
                 } catch (e) { console.warn('hpBar', e); }
 
                 bossSpawned = true;
@@ -10049,7 +10049,7 @@ function startGaragePreview(carId) {
                                     18, 0.35
                                 );
                             } catch (e) {}
-                            updateBossHpBar(boss);
+                            updateBossHpBar(boss, camera);
                             try { updateBossHeadQuote(boss); } catch (eQ) {}
                             try {
                                 if (currentPlayer && currentPlayer.season) {
@@ -10064,11 +10064,11 @@ function startGaragePreview(carId) {
                             } catch (e) {}
                         } else {
                             showBossShout((boss.name || 'Босс') + ' HP ' + Math.max(0, boss.hp) + '/' + (boss.maxHp || 3));
-                            try { updateBossHpBar(boss); updateBossHeadQuote(boss); } catch (e) {}
+                            try { updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
                         }
                     }
                     } // end !dying
-                    try { if (!boss.dying) updateBossHpBar(boss); updateBossHeadQuote(boss); } catch (e) {}
+                    try { if (!boss.dying) updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
 
                     // Обгон: уехали вперёд от босса — он сдаётся
                     if (boss.active && !boss.dying && zPos < boss.z - 22) {
