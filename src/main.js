@@ -1276,10 +1276,14 @@ function createProfile(name) {
                 root.id = 'ach-plaque-root';
                 document.body.appendChild(root);
             }
-            root.style.pointerEvents = 'auto';
+            // в заезде — маленькая плашка сбоку, без кнопки и не перехватывает ввод:
+            // большая карточка по центру (после «Заново» очередь доигрывала её уже на трассе) закрывала дорогу
+            const compact = document.body.classList.contains('race-mode') && !document.body.classList.contains('finish-open');
+            root.classList.toggle('compact', compact);
+            root.style.pointerEvents = compact ? 'none' : 'auto';
             root.innerHTML = '';
             const card = document.createElement('div');
-            card.className = 'ach-plaque';
+            card.className = 'ach-plaque' + (compact ? ' compact' : '');
             const title = (next.trophy && next.trophy.name) || next.meta.name;
             const desc = next.meta.desc || (next.trophy && next.trophy.desc) || '';
             const emoji = (next.trophy && next.trophy.emoji) || '🏅';
@@ -1300,10 +1304,12 @@ function createProfile(name) {
                 setTimeout(pumpAchQueue, 150);
             };
             card.querySelector('button').onclick = close;
-            setTimeout(close, 8500);
+            setTimeout(close, compact ? 2600 : 8500);
             root.appendChild(card);
-            root.style.pointerEvents = 'auto';
+            root.style.pointerEvents = compact ? 'none' : 'auto';
         }
+
+        window.showAchievementPlaque = showAchievementPlaque;
 
         function getAchievementMeta(id) {
             return ACHIEVEMENTS.find(a => a.id === id) || { id, name: id, desc: '' };

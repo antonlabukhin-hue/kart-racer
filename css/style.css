@@ -4244,3 +4244,38 @@
             #settings-screen .st-group { margin: 6px 0 4px; }
             #settings-screen .st-row { margin: 2px 0; }
         }
+
+        /* Достижение во время заезда — маленькая плашка над правой обочиной, не мешает видеть дорогу */
+        #ach-plaque-root.compact {
+            inset: auto;
+            right: 12px;
+            top: 220px;
+            display: block;
+            pointer-events: none !important;
+        }
+        .ach-plaque.compact {
+            pointer-events: none !important;
+            width: 210px;
+            padding: 8px 10px;
+            border-width: 1px;
+            border-radius: 12px;
+            background: rgba(14, 12, 20, 0.78);
+            display: grid;
+            grid-template-columns: 40px 1fr;
+            grid-template-rows: auto auto;
+            column-gap: 8px;
+            text-align: left;
+            animation: achSlide 0.3s ease-out both;
+        }
+        .ach-plaque.compact img, .ach-plaque.compact .ach-emoji-fallback {
+            grid-row: 1 / 3; width: 40px; height: 40px; margin: 0; font-size: 28px;
+        }
+        .ach-plaque.compact .ach-congrats { font-size: 10px; margin: 0; grid-column: 2; }
+        .ach-plaque.compact h3 { font-size: 13px; margin: 0; grid-column: 2; }
+        .ach-plaque.compact p, .ach-plaque.compact button { display: none; }
+        @keyframes achSlide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+        @media screen and (max-height: 500px) {
+            /* телефон горизонтально: справа колонка кнопок — плашка левее неё, по середине высоты */
+            #ach-plaque-root.compact { right: 84px; top: 34%; }
+            .ach-plaque.compact { width: 180px; }
+        }
