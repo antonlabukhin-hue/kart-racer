@@ -45,6 +45,9 @@ test('кампания: победа на 1-й трассе — «Заново»
     await page.keyboard.up('w');
     // за победу минимум одна звезда
     await expect(page.locator('#finish-screen .finish-stars span.on').first()).toBeVisible();
+    // три задания главы; «Не больше 1 аварии» на автопилоте выполняется
+    await expect(page.locator('#finish-screen .finish-tasks > div:not(.reward)')).toHaveCount(3);
+    await expect(page.locator('#finish-screen .finish-tasks')).toContainText('Не больше 1 аварии');
 
     await page.locator('#finish-restart-btn').click();
     await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
@@ -66,5 +69,6 @@ test('кампания: победа на 1-й трассе — «Заново»
     // звёзды пережили «Заново» (профиль кампании пересобирается) и перезагрузку
     await expect(page.locator('.camp-track[data-idx="0"] .ct-stars')).toContainText('★');
     await expect(page.locator('#campaign-stars-total')).toContainText('/ 51');
+    await expect(page.locator('.camp-track[data-idx="0"] .ct-meta')).toContainText('задания');
     expect(problems).toEqual([]);
 });

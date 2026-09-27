@@ -22,6 +22,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
+        import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
         import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
@@ -439,6 +440,10 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                         });
                     }
                     if (bak && bak.stars) cp.stars = mergeStars(cp.stars, bak.stars);
+                    if (bak && bak.tasks) {
+                        if (!cp.tasks) cp.tasks = {};
+                        Object.keys(bak.tasks).forEach(function(id) { cp.tasks[id] = mergeTaskProgress(cp.tasks[id], bak.tasks[id] || []).done; });
+                    }
                 }
             } catch (e) {}
             currentPlayer.campaign = cp;
@@ -546,7 +551,10 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 body.innerHTML = '<div class="ct-name"></div><div class="ct-desc"></div><div class="ct-meta"></div>';
                 body.querySelector('.ct-name').textContent = t.name;
                 body.querySelector('.ct-desc').textContent = t.desc;
-                body.querySelector('.ct-meta').textContent = wIcon(t.weather) + ' · ' + diffLabel(t.diff);
+                const tdone = (prog.tasks && prog.tasks[t.id]) || [];
+                const tcount = tdone.filter(Boolean).length;
+                body.querySelector('.ct-meta').textContent = wIcon(t.weather) + ' · ' + diffLabel(t.diff) + (open ? ' · задания ' + tcount + '/3' : '');
+                if (open) body.querySelector('.ct-meta').title = tasksForChapter(idx, t.diff).map(function(tk, i) { return (tdone[i] ? '✓ ' : '○ ') + tk.text; }).join('\n');
 
                 const badgeEl = document.createElement('div');
                 badgeEl.className = 'ct-badge' + (done && stars ? ' ct-stars' : '');
@@ -686,6 +694,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 unlocked: prog.unlocked,
                 completed: (prog.completed || []).slice(),
                 stars: Object.assign({}, prog.stars),
+                tasks: Object.assign({}, prog.tasks),
                 current: idx
             };
             try { saveCurrentPlayer(); } catch (e) {}
@@ -846,7 +855,7 @@ function startCampaignTrack(idx, opts) {
             }
         }
 
-        function onCampaignRaceWon(trackId, strikes) {
+        function onCampaignRaceWon(trackId, strikes, meta) {
             if (!currentPlayer || !trackId) return;
             ensureProfileFields(currentPlayer);
             const prog = getCampaignProgress();
@@ -857,6 +866,17 @@ function startCampaignTrack(idx, opts) {
             const gotStars = calcCampaignStars(strikes);
             prog.stars = mergeStars(prog.stars, { [trackId]: gotStars });
             window.__lastCampaignStars = { trackId: trackId, got: gotStars, prev: prevStars };
+            // задания главы: первое выполнение — фишки
+            try {
+                const diff = CAMPAIGN_TRACKS[idx].diff;
+                const now = evaluateTasks(idx, diff, Object.assign({ state: 'win', strikes: strikes }, meta || {}));
+                if (!prog.tasks || typeof prog.tasks !== 'object') prog.tasks = {};
+                const merged = mergeTaskProgress(prog.tasks[trackId], now);
+                prog.tasks[trackId] = merged.done;
+                const reward = merged.newly * TASK_REWARD_CHIPS;
+                if (reward > 0 && currentPlayer.season) currentPlayer.season.chips = (currentPlayer.season.chips || 0) + reward;
+                window.__lastCampaignTasks = { trackId: trackId, list: tasksForChapter(idx, diff), now: now, done: merged.done, reward: reward };
+            } catch (eT) { console.warn('tasks', eT); }
             const need = idx + 2;
             const wasUnlocked = prog.unlocked;
             if (prog.unlocked < need) prog.unlocked = Math.min(CAMPAIGN_TRACKS.length, need);
@@ -878,7 +898,8 @@ function startCampaignTrack(idx, opts) {
             currentPlayer.campaign = {
                 unlocked: prog.unlocked,
                 completed: prog.completed.slice(),
-                stars: Object.assign({}, prog.stars)
+                stars: Object.assign({}, prog.stars),
+                tasks: Object.assign({}, prog.tasks)
             };
             try { saveCurrentPlayer(); } catch (e) {}
             try {
@@ -4869,6 +4890,13 @@ function startGaragePreview(carId) {
                             }).join('')
                             + '</div>'
                             + (hint ? '<div class="finish-stars-hint">' + escapeHtml(hint) + '</div>' : '');
+                        const lt = window.__lastCampaignTasks;
+                        if (lt && lt.trackId === window.__campaignTrackId) {
+                            starsHtml += '<div class="finish-tasks">' + lt.list.map(function(tk, i) {
+                                const cls = lt.now[i] ? 'ok' : (lt.done[i] ? 'old' : 'no');
+                                return '<div class="' + cls + '">' + (lt.done[i] ? '✓' : '○') + ' ' + escapeHtml(tk.text) + '</div>';
+                            }).join('') + (lt.reward ? '<div class="reward">+' + lt.reward + ' 🪙 за новые задания</div>' : '') + '</div>';
+                        }
                     }
                     const head = (state === 'win')
                         ? (hasNext || isLast ? ('📡 ГЛАВА ' + (campIdx + 1) + ' ПРОЙДЕНА') : title)
@@ -5120,7 +5148,10 @@ function startGaragePreview(carId) {
                 window.__lastRaceRewards = raceRewards;
                 try {
                     if (state === 'win' && wasCampaign && campaignTrackId) {
-                        onCampaignRaceWon(campaignTrackId, typeof strikes !== 'undefined' ? strikes : 0);
+                        onCampaignRaceWon(campaignTrackId, typeof strikes !== 'undefined' ? strikes : 0, {
+                            time: timeTaken, starsPicked: stats.starsPicked || 0, nearMiss: (typeof nearMissCount !== "undefined" ? nearMissCount : 0),
+                            nitroPicked: stats.nitroPicked || 0, gumPicked: stats.gumPicked || 0
+                        });
                     }
                 } catch (e) { console.warn('campaign win', e); }
                 

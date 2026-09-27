@@ -4308,3 +4308,10 @@
         #garage-panel-upgrades .up-note { font-size: 11px; color: #888; margin-top: 6px; }
 
         #garage-panel-upgrades .up-ability { font-size: 12px; color: #9fdf9f; margin: -2px 0 8px; }
+
+        /* задания главы на финише */
+        .finish-tasks { margin: 4px auto 8px; max-width: 300px; font-size: 12px; text-align: left; }
+        .finish-tasks div { padding: 2px 0; color: #888; }
+        .finish-tasks div.ok { color: #33ff88; font-weight: 700; }
+        .finish-tasks div.old { color: #9fdf9f; }
+        .finish-tasks .reward { color: #ffd23c; font-weight: 700; margin-top: 2px; }
