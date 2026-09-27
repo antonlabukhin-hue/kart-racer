@@ -19,6 +19,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
         import { gapStyle, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource } from './setpieces.js';
         import { resolveLayout } from './track-layout.js';
+        import { MAP_ORDER, MAP_NAMES, CAMPAIGN_FINISH_LINES, VILLAIN_INTRO, ACHIEVEMENTS, CAR_SHOP_ORDER, CAR_PARTS, CAR_PAINTS, TROPHIES, SEASON_REWARDS, DAILY_CONTRACTS, ANIMAL_SHOUTS_LIST } from './content.js';
+        import { DIFFICULTY_CONFIG } from './difficulty.js';
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
@@ -373,12 +375,6 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         // ============================================================
         const STORAGE_KEY = 'road_racing_best_times';
         const MAP_UNLOCK_KEY = 'road_racing_maps_unlocked';
-        const MAP_ORDER = ['arsenev', 'promzona', 'svalka'];
-        const MAP_NAMES = {
-            arsenev: 'Трасса Арсеньева',
-            promzona: 'Промзона',
-            svalka: 'Свалка «Надежда»'
-        };
 
 
         // =======================
@@ -389,30 +385,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
 
         
         // Реплики злодея на финише главы компании (по индексу трассы 0..16)
-        const CAMPAIGN_FINISH_LINES = [
-            'Одна трасса — не победа.\nТы лишь выехал из клетки, курьер.\nАнтидот всё ещё в багажнике… и под прицелом.',
-            'Дождь смыл твои следы, но не мой интерес.\nПродолжай. Мне нравится, как ты цепляешься за «мир».',
-            'Ночь тебя не съела — жаль.\nЗелёные глаза запомнили «Чебурашку».\nДальше будет теснее.',
-            'Промзона открыла рот.\nТы въехал в мою территорию добровольно.\nХрабрость или глупость — разберём на финише Центра.',
-            'Цех №7 помнит мой почерк.\nТы едешь по чертежам, которые я же и испортил.\nАнтидот не исправит автора.',
-            'Красный свет труб — не декорация.\nЭто предупреждение.\nСбавь героизм, пока частота ещё вежливая.',
-            'Свалка «Надежда» приняла тебя как ещё один остов.\nТы выбрался. Пока что.\nНадежда — плохой навигатор.',
-            'Зелёный дым не отличил, кто прав.\nОн только показал, кто дышит глубже.\nТы всё ещё везёшь «undo» для моего приговора.',
-            'Холодный рассвет.\nЯ слышал, как стучало сердце.\nНе путай адреналин с правотой.',
-            'Кассеты, «Терминатор», жвачка…\nТы снова в ностальгии, а я — в эфире.\nИрония не спасёт антидот.',
-            'Подступы к Центру.\nПочти у двери тех, кто всё «исправит».\nСкажи им: мир без ЗвероСуда — снова ложь в халате.',
-            'Ты доехал.\nБутылка на столе. Подписи. Улыбки.\nНо частота останется.\nВключи радио завтра — если услышишь треск, это не сбой. Это я.',
-            'Радиорынок гудит.\nТы купил время — не победу.',
-            'Эстакада не прощает тормозов.\nЯ жду внизу схемы.',
-            'Карьер пуст, как обещания Центра.\nГони дальше.',
-            'В тоннеле ты один… почти.\nМолчание — тоже частота.',
-            'Крыша. Финал. Или антракт?\nВключи радио завтра.'
-        ];
 
-        const VILLAIN_INTRO = {
-            title: 'Кто говорит с тобой',
-            text: 'Меня не будет в рации под именем.\nТолько треск, пауза и голос, который знает твой маршрут лучше диспетчера.\n\nКогда-то я ставил подписи рядом с теми, кто «исправлял экосистему».\nПотом увидел правду: звери проснулись, а люди — нет.\n\nЗвероСуд — мой ответ на ваши отчёты.\nАнтидот — их попытка нажать undo.\n\nТы — курьер между двумя правдами.\nВезёшь надежду Центра… и мешаешь моей.\n\nСемнадцать трасс.\nОдин багажник.\nИ частота, с которой я не сойду.'
-        };
 
 
         /**
@@ -954,20 +927,6 @@ function startCampaignTrack(idx, opts) {
         let garageRaf = null;
         let garageRenderer = null;
 
-        const ACHIEVEMENTS = [
-            { id: 'first_win', name: 'Первый финиш', desc: 'Доехать до конца', img: 'images/trophy_first_win.png' },
-            { id: 'perfect', name: 'Идеал', desc: 'Финиш без аварий', img: 'images/trophy_first_perfect.png' },
-            { id: 'night_rider', name: 'Ночной курьер', desc: 'Финиш ночью', img: 'images/trophy_night_rider.png' },
-            { id: 'rain_man', name: 'Дождевик', desc: 'Финиш в дождь', img: 'images/trophy_rain_man.png' },
-            { id: 'hard_win', name: 'ЗвероСуд', desc: 'Победа на сложном', img: 'images/trophy_hard_win.png' },
-            { id: 'gum_2', name: 'Турбо-коллекционер', desc: '2 жвачки за заезд', img: 'images/trophy_gum_2.png' },
-            { id: 'no_nitro', name: 'Без нитро', desc: 'Финиш без нитро', img: 'images/trophy_no_nitro.png' },
-            { id: 'oil_lover', name: 'Масломан', desc: '5 масляных пятен за заезд', img: 'images/trophy_oil_lover.png' },
-            { id: 'bear_friend', name: 'Друг медведя', desc: '5 ударов по зверям за заезд', img: 'images/trophy_bear_friend.png' },
-            { id: 'season5', name: 'Смена открыта', desc: '5 уровень сезона', img: 'images/trophy_season5.png' },
-            { id: 'races10', name: 'Стахановец', desc: '10 заездов', img: 'images/trophy_races10.png' },
-            { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/trophy_wins5.png' }
-        ];
 
         function defaultSeason() {
             return { level: 1, xp: 0, gum: 0, chips: 0, contractsDone: 0, titles: [] };
@@ -986,40 +945,6 @@ function startCampaignTrack(idx, opts) {
         // КАТАЛОГИ МАШИН / КАСТОМ / ТРОФЕИ (обязательно до гаража)
         // ============================================================
         // CAR_PRESETS — из ./data.js
-        const CAR_SHOP_ORDER = ['cheburashka', 'kirpich', 'turbo'];
-        const CAR_PARTS = [
-            { id: 'spoiler', name: 'Спойлер «Кирпич»', price: 8, slot: 'spoiler' },
-            { id: 'skirts', name: 'Пороги', price: 6, slot: 'skirts' },
-            { id: 'exhaust', name: 'Выхлоп двойной', price: 7, slot: 'exhaust' },
-            { id: 'roof_rack', name: 'Багажник на крышу', price: 9, slot: 'roof' },
-            { id: 'lip', name: 'Губа передняя', price: 5, slot: 'lip' },
-            { id: 'rims', name: 'Литьё «Мелодия»', price: 10, slot: 'rims' },
-            { id: 'antenna', name: 'Антенна-кнут', price: 3, slot: 'antenna' },
-            { id: 'fog', name: 'Противотуманки', price: 4, slot: 'fog' },
-            { id: 'xenon', name: 'Ксенон фар', price: 11, slot: 'lights' }
-        ];
-        const CAR_PAINTS = [
-            { id: 'stock', name: 'Завод', color: null, price: 0 },
-            { id: 'red', name: 'Арсеньев красный', color: 0xcc2200, price: 5 },
-            { id: 'black', name: 'Чёрный кирпич', color: 0x1a1a1a, price: 6 },
-            { id: 'yellow', name: 'Такси 90-х', color: 0xe8b800, price: 6 },
-            { id: 'white', name: 'Белая ночь', color: 0xd8d8d8, price: 5 },
-            { id: 'green', name: 'Промзона', color: 0x3a6a3a, price: 5 },
-            { id: 'purple', name: 'Дискотека', color: 0x5a2a7a, price: 8 },
-            { id: 'chrome', name: 'Хром-мечта', color: 0xaaaaaa, price: 12 }
-        ];
-        const TROPHIES = [
-            { id: 't_cheburashka', name: 'Чебурашка', emoji: '🧸', desc: 'Первый финиш', need: 'first_win' },
-            { id: 't_wolf', name: 'Волк («Ну, погоди!»)', emoji: '🐺', desc: 'Друг медведя', need: 'bear_friend' },
-            { id: 't_terminator', name: 'Т-800 (кассета)', emoji: '🤖', desc: 'Финиш ночью', need: 'night_rider' },
-            { id: 't_matrix', name: 'Нео-пилюля', emoji: '💊', desc: 'Финиш без аварий', need: 'perfect' },
-            { id: 't_brother', name: 'Брат', emoji: '🕶️', desc: 'Победа на сложном', need: 'hard_win' },
-            { id: 't_titanic', name: 'Сердце океана', emoji: '💎', desc: '2 жвачки за рейс', need: 'gum_2' },
-            { id: 't_pokemon', name: 'Пикачу-значок', emoji: '⚡', desc: 'Финиш без нитро', need: 'no_nitro' },
-            { id: 't_ranetki', name: 'Микрофон Ранеток', emoji: '🎤', desc: 'Уровень сезона 5', need: 'season5' },
-            { id: 't_taxi', name: 'Шашечки такси', emoji: '🚕', desc: '10 заездов', need: 'races10' },
-            { id: 't_mk', name: 'Фишка MK', emoji: '🕹️', desc: '5 побед', need: 'wins5' }
-        ];
 
 function createProfile(name) {
             const id = 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
@@ -1084,49 +1009,7 @@ function createProfile(name) {
             return p;
         }
 
-        const SEASON_REWARDS = [
-            { level: 1,  text: 'Рамка «Курьер 2037»', gum: 10, chips: 0 },
-            { level: 2,  text: 'Реплика радио №1', gum: 5, chips: 0 },
-            { level: 3,  text: 'Стикер «Не бить — засудит»', gum: 10, chips: 0 },
-            { level: 4,  text: 'Гудок «Мелодия»', gum: 5, chips: 1 },
-            { level: 5,  text: 'Номер «АРС–90»', gum: 15, chips: 1 },
-            { level: 6,  text: 'Пачка Турбо', gum: 50, chips: 0 },
-            { level: 7,  text: 'Фишка Mortal', gum: 0, chips: 1 },
-            { level: 8,  text: 'Титул «Без нитро»', gum: 10, chips: 0 },
-            { level: 9,  text: 'Новый крик зверя', gum: 5, chips: 0 },
-            { level: 10, text: 'Окрас «Ночная пыль»', gum: 20, chips: 2 },
-            { level: 11, text: 'Жвачка ×30', gum: 30, chips: 0 },
-            { level: 12, text: 'Фишка ×1', gum: 0, chips: 1 },
-            { level: 13, text: 'Рамка «Промзона FM»', gum: 15, chips: 0 },
-            { level: 14, text: 'Титул «Друг медведя»', gum: 10, chips: 0 },
-            { level: 15, text: 'Окрас «Кирпич ржавый»', gum: 20, chips: 2 },
-            { level: 16, text: 'Жвачка ×40', gum: 40, chips: 0 },
-            { level: 17, text: 'Фишка ×1', gum: 0, chips: 1 },
-            { level: 18, text: 'Реплика радио №2', gum: 10, chips: 0 },
-            { level: 19, text: 'Титул «Масломан»', gum: 10, chips: 0 },
-            { level: 20, text: 'Гудок «Ранетки»', gum: 25, chips: 2 },
-            { level: 21, text: 'Стикер «Свалка»', gum: 15, chips: 0 },
-            { level: 22, text: 'Фишка ×2', gum: 0, chips: 2 },
-            { level: 23, text: 'Рамка «Надежда»', gum: 15, chips: 0 },
-            { level: 24, text: 'Титул «С Арсеньева»', gum: 15, chips: 0 },
-            { level: 25, text: 'Окрас «Турбо сезон»', gum: 30, chips: 3 },
-            { level: 26, text: 'Жвачка ×50', gum: 50, chips: 0 },
-            { level: 27, text: 'Фишка ×2', gum: 0, chips: 2 },
-            { level: 28, text: 'Реплика босса', gum: 15, chips: 0 },
-            { level: 29, text: 'Рамка «Золотой Кирпич»', gum: 20, chips: 2 },
-            { level: 30, text: 'Звание «Кассета ЗвероСуда»', gum: 100, chips: 5 }
-        ];
 
-        const DAILY_CONTRACTS = [
-            { id: 'fin_2crash', title: 'Аккуратный рейс', desc: 'Финиш с ≤2 авариями', check: m => m.state==='win' && m.strikes<=2, xp: 100, gum: 25, chips: 1 },
-            { id: 'gum2', title: 'Сладкий груз', desc: 'Финиш и собери ≥2 жвачки', check: m => m.state==='win' && (m.gumPicked||0)>=2, xp: 90, gum: 30, chips: 1 },
-            { id: 'nitro1', title: 'Зелёная стрела', desc: 'Финиш, взяв нитро ≥1', check: m => m.state==='win' && (m.nitroPicked||0)>=1, xp: 80, gum: 20, chips: 1 },
-            { id: 'no_nitro', title: 'На своих двоих', desc: 'Финиш без нитро', check: m => m.state==='win' && (m.nitroPicked||0)===0, xp: 100, gum: 25, chips: 1 },
-            { id: 'night', title: 'Ночная смена', desc: 'Финиш в погоде «Ночь»', check: m => m.state==='win' && m.weather==='night', xp: 110, gum: 30, chips: 2 },
-            { id: 'rain', title: 'Мокрый асфальт', desc: 'Финиш в дождь', check: m => m.state==='win' && m.weather==='rain', xp: 100, gum: 25, chips: 1 },
-            { id: 'perfect', title: 'Чистый лист', desc: 'Финиш без аварий', check: m => m.state==='win' && m.strikes===0, xp: 130, gum: 40, chips: 2 },
-            { id: 'hard', title: 'ЗвероСуд', desc: 'Победа на сложном', check: m => m.state==='win' && m.difficulty==='hard', xp: 150, gum: 35, chips: 2 }
-        ];
 
         function todayKey() {
             const d = new Date();
@@ -3098,57 +2981,6 @@ function startGaragePreview(carId) {
         // Чистый заезд на «Чебурашке» (~24 ед/с в среднем с нитро): лёгкий ~58 с, средний ~62 с, сложный ~65 с.
         // Авария стоит ~5 / 6 / 8 с (штраф × timePenaltyMul + потеря скорости) — по времени можно ошибиться
         // примерно 5 / 4 / 3 раза. Сложность растёт плотностью зверей и машин, а не длиной трассы.
-        const DIFFICULTY_CONFIG = {
-            // lookahead ~14–18: впереди, но доезжаешь; crossMul чтобы зверь был на полосе у машины
-            // animalSpawnRate: секунды между спавнами (больше = реже)
-            easy: {
-                label: '🟢 Лёгкий',
-                trackLength: 1400,
-                timeLimit: 90,
-                maxAnimals: 9,
-                maxCars: 4,
-                maxObstacles: 9,
-                trees: 16,
-                animalSpawnRate: 3.6, // v2: трасса длиннее на 40% — реже, чтобы зверей за заезд было ~+20%, а не +40%
-                hasNightZone: false,
-                // ещё −10% к жёсткости
-                triggerLookahead: 17.5,
-                animalCrossMul: 0.64,
-                timePenaltyMul: 0.55,
-                laneChangeMul: 0.28
-            },
-            medium: {
-                label: '🟡 Средний',
-                trackLength: 1500,
-                timeLimit: 90,
-                maxAnimals: 14,
-                maxCars: 7,
-                maxObstacles: 15,
-                trees: 26,
-                animalSpawnRate: 2.15,
-                hasNightZone: false,
-                // ещё −10% к жёсткости
-                triggerLookahead: 15.2,
-                animalCrossMul: 0.70,
-                timePenaltyMul: 0.78,
-                laneChangeMul: 0.52
-            },
-            hard: {
-                label: '🔴 Сложный',
-                trackLength: 1550,
-                timeLimit: 90,
-                maxAnimals: 24,
-                maxCars: 13,
-                maxObstacles: 26,
-                trees: 38,
-                animalSpawnRate: 1.15,
-                hasNightZone: false,
-                triggerLookahead: 13,
-                animalCrossMul: 1.4,
-                timePenaltyMul: 1.05,
-                laneChangeMul: 0.95
-            }
-        };
 
         // ============================================================
         // КЭШИРОВАННЫЕ ВЕКТОРЫ
@@ -3303,17 +3135,6 @@ function startGaragePreview(carId) {
         // ============================================================
         // ВЫКРИКИ ЖИВОТНЫХ
         // ============================================================
-        const ANIMAL_SHOUTS_LIST = [
-            'куда прешь!',
-            'я снимаю тебя!',
-            'в интернет выложу!',
-            'Ты че с Мелодии?',
-            'Сковпин, куда прешь!',
-            'Салов не гони',
-            'Кабанцев ты же наш!',
-            'Я тебя засужу!',
-            'Он с Арсеньева!'
-        ];
         // для совместимости со старым кодом
         const ANIMAL_SHOUTS = {};
         Object.keys(ANIMAL_TYPES).forEach(k => {
