@@ -3321,7 +3321,7 @@ function startGaragePreview(carId) {
                 '<li><b>❤️ Жвачка-сердечко</b> снимает одну аварию, а если аварий нет — даёт +5 секунд.</li>' +
                 '<li><b>⛽ Зелёные стрелки — нитро.</b> Проскочил впритирку мимо зверя — «На волоске!», тоже нитро.</li>' +
                 '<li><b>👊 Босс: врежься в него 3 раза</b> — столько у первого босса HP (у следующих больше, на нитро удар двойной). Красное кольцо под ним — сейчас выстрелит, уходи в сторону.</li>' +
-                '<li><b>🕳 Разлом через всю дорогу:</b> заезжай на трамплин по жёлтым стрелкам. Объедешь — провалишься.</li>' +
+                '<li><b>🕳 Разлом через всю дорогу:</b> заезжай на трамплин по жёлтым стрелкам. Объедешь — провалишься. На нитро трамплин подбрасывает выше — за разломом висит ⭐ (−3 с).</li>' +
                 '<li><b>⚠ Под аркой</b> качается то, что сейчас упадёт, — меняй полосу.</li>' +
                 '</ul>' +
                 controls +
@@ -7646,6 +7646,26 @@ function startGaragePreview(carId) {
             // ============================================================
             const gaps = [];
             const debrisZones = [];
+            const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
+            const _starGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, depthWrite: false });
+            function createStar(x, z) {
+                const g = new THREE.Group();
+                const sh = new THREE.Shape();
+                for (let i = 0; i < 10; i++) {
+                    const r = i % 2 ? 0.2 : 0.46;
+                    const a = Math.PI / 2 + i * Math.PI / 5;
+                    if (i === 0) sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); else sh.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                }
+                sh.closePath();
+                const star = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.12, bevelEnabled: false }), _starMat);
+                star.position.z = -0.06;
+                g.add(star);
+                const glow = new THREE.Mesh(new THREE.SphereGeometry(0.62, 12, 8), _starGlowMat);
+                g.add(glow);
+                g.position.set(x, 1.4, z);
+                scene.add(g);
+                return { mesh: g, x: x, z: z, type: 'star', active: true, bob: 0, radius: 1.05, airOnly: true, minY: 1.05, baseY: 1.4 };
+            }
             let nearMissCount = 0;
             let _nmCooldown = 0;
             function nearMiss() {
@@ -7700,9 +7720,11 @@ function startGaragePreview(carId) {
                         // награда за прыжок — жвачка над серединой разлома (берётся только в полёте)
                         if (gi === 0 && li === lanes[0]) {
                             const c = createCollectible(zNear - GAP_LEN / 2, 'gum');
-                            c.x = _rampLaneXs[li]; c.mesh.position.x = c.x; c.mesh.position.y = 1.3; c.airOnly = true;
+                            c.x = _rampLaneXs[li]; c.mesh.position.x = c.x; c.baseY = 1.3; c.airOnly = true;
                             collectibles.push(c);
                         }
+                        // звезда высоко за разломом: обычный прыжок до неё не достаёт (~0.6), нитро-прыжок — да (~1.4)
+                        collectibles.push(createStar(_rampLaneXs[li], zNear + 0.8 - 12));
                     });
                     const mesh = createGapMesh(TRACK_WIDTH, zNear, GAP_LEN, _gapStyle);
                     scene.add(mesh);
@@ -8404,7 +8426,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; },
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, giveNitro: function() { nitroTimer = 3.2; }, stats: stats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8792,6 +8814,11 @@ function startGaragePreview(carId) {
                                     carAirborne = true;
                                     carAirVel = (1.0 + speed * 2.4) * rp.height;
                                     carYOffset = rp.height;
+                                    // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
+                                    if (nitroTimer > 0) {
+                                        carAirVel *= 1.6;
+                                        try { showTimePenaltyPopup(0, '🚀 Нитро-прыжок!'); } catch (e) {}
+                                    }
                                 } else {
                                     carYOffset = rp.height * p;
                                 }
@@ -9243,8 +9270,12 @@ function startGaragePreview(carId) {
                     if (!c.active) return;
                     if (c.type === 'gum') {
                         c.bob += deltaTime * 3;
-                        c.mesh.position.y = Math.sin(c.bob) * 0.08;
+                        c.mesh.position.y = (c.baseY || 0) + Math.sin(c.bob) * 0.08; // было без baseY: жвачка над разломом лежала на земле
                         c.mesh.rotation.y += deltaTime * 2;
+                    } else if (c.type === 'star') {
+                        c.bob += deltaTime * 2.5;
+                        c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.12;
+                        c.mesh.rotation.y += deltaTime * 2.4;
                     } else if (c.type === 'nitro') {
                         // стрелки пульсируют emissive
                         c.bob += deltaTime * 4;
@@ -9257,12 +9288,27 @@ function startGaragePreview(carId) {
 
                     const dx = xPos - c.x;
                     const dz = zPos - c.z;
-                    if (c.airOnly && carYOffset < 0.6) return; // висит над разломом — берётся в прыжке
+                    if (c.airOnly && carYOffset < (c.minY || 0.6)) return; // висит в воздухе — берётся только в прыжке
                     const hitR = c.type === 'nitro' ? 0.85 : (c.radius || 0.55);
                     if (Math.abs(dx) < hitR && Math.abs(dz) < hitR * (c.type === 'nitro' ? 1.4 : 1)) {
                         c.active = false;
                         c.mesh.visible = false;
-                        if (c.type === 'nitro') {
+                        if (c.type === 'star') {
+                            raceTime = Math.max(0, raceTime - 3);
+                            stats.starsPicked = (stats.starsPicked || 0) + 1;
+                            showTimePenaltyPopup(0, '⭐ −3 с');
+                            try {
+                                const el = document.createElement('div');
+                                el.className = 'animal-shout';
+                                el.textContent = '⭐ Звезда за нитро-прыжок! −3 с';
+                                el.style.color = '#ffd84a';
+                                el.style.borderColor = '#ffd84a';
+                                postShout(el, 1500);
+                                if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.3);
+                            } catch (e) {}
+                            try { particleSystem.emit(_v.p1.set(c.x, carYOffset + 0.6, c.z), _v.vel.set(0, 1.5, 0), 16, 0.2); } catch (e) {}
+                            updateHUD();
+                        } else if (c.type === 'nitro') {
                             nitroTimer = 3.2;
                             fovPunch = 14;
                             stats.nitroPicked++;
