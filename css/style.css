@@ -4353,3 +4353,11 @@
         @keyframes biShake { 0%,100% { transform: translateX(-50%); } 25% { transform: translateX(calc(-50% - 6px)); } 75% { transform: translateX(calc(-50% + 6px)); } }
         @media (max-width: 600px) { #boss-intro { top: 48px; min-width: 0; padding: 8px 14px; } #boss-intro .bi-nick { font-size: 22px; } }
         #boss-intro .bi-quote { color: #fff; font-size: 13px; font-style: italic; margin-top: 4px; opacity: 0.9; }
+
+        /* подсказка тренера (главы 1–3): под машиной, дорогу впереди не закрывает */
+        #coach-tip { position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 20px); z-index: 120; pointer-events: none;
+            max-width: min(560px, 92vw); padding: 9px 16px; border-radius: 12px; text-align: center;
+            background: rgba(10, 20, 30, 0.88); border: 2px solid #33ccff; color: #fff; font: 600 15px system-ui, "Segoe UI", Arial, sans-serif;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.25s, transform 0.25s; }
+        #coach-tip.show { opacity: 1; transform: translate(-50%, 0); }
+        @media (pointer: coarse) { #coach-tip { bottom: auto; top: 96px; font-size: 13px; } }

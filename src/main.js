@@ -25,6 +25,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhase2Html } from './boss-intro.js';
+        import { tutorialFor, pickCoach } from './tutorial.js';
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { createMapEvent } from './mapevents.js';
@@ -638,7 +639,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 }
             } catch (e) {}
             try {
-                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#speed-lines,.animal-shout,.radio-line,#hud-menu-btn').forEach(function(el) {
+                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#speed-lines,#coach-tip,.animal-shout,.radio-line,#hud-menu-btn').forEach(function(el) {
                     try { el.remove(); } catch (e) {}
                 });
             } catch (e) {}
@@ -3057,7 +3058,7 @@ function startGaragePreview(carId) {
                     window.__gameRenderer = null;
                 }
             } catch (e) {}
-            document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#speed-lines,.animal-shout,.radio-line,#hud-menu-btn').forEach(el => {
+            document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#speed-lines,#coach-tip,.animal-shout,.radio-line,#hud-menu-btn').forEach(el => {
                 try { el.remove(); } catch (e) {}
             });
             const mc = document.getElementById('mobile-controls');
@@ -5173,6 +5174,7 @@ function startGaragePreview(carId) {
                 const hud = document.getElementById('game-hud');
                 if (hud) hud.remove();
                 try { const sl = document.getElementById('speed-lines'); if (sl) sl.remove(); } catch (e) {}
+                try { const ct = document.getElementById('coach-tip'); if (ct) ct.remove(); } catch (e) {}
                 const cheb = document.getElementById('cheburashkaWarn');
                 if (cheb) cheb.remove();
                 document.querySelectorAll('.animal-shout, .radio-line, .story-plaque').forEach(el => el.remove());
@@ -6841,6 +6843,29 @@ function startGaragePreview(carId) {
             const ghostStoreKey = ghostKey(currentPlayer && (currentPlayer.id || currentPlayer.name),
                 window.__campaignTrackId ? ('camp_' + window.__campaignTrackId) : mapId, difficulty);
             const ghostRec = createGhostRecorder();
+            // Обучение: главы 1–3, пока глава не пройдена (src/tutorial.js)
+            let coachSteps = [];
+            try {
+                const cp = (_campIdx >= 0 && _campIdx < 3) ? getCampaignProgress() : null;
+                if (cp && (cp.completed || []).indexOf(window.__campaignTrackId) < 0) coachSteps = tutorialFor(_campIdx);
+            } catch (e) {}
+            const coachShown = new Set();
+            let coachAcc = 0, coachLastT = -99;
+            function showCoach(text) {
+                let el = document.getElementById('coach-tip');
+                if (!el) {
+                    el = document.createElement('div');
+                    el.id = 'coach-tip';
+                    el.setAttribute('aria-live', 'polite');
+                    document.body.appendChild(el);
+                }
+                el.textContent = text;
+                el.classList.remove('show');
+                void el.offsetWidth;
+                el.classList.add('show');
+                clearTimeout(window.__coachTimer);
+                window.__coachTimer = setTimeout(function() { el.classList.remove('show'); }, 3800);
+            }
             let ghostClock = 0;
             let ghostData = null;
             let ghostCar = null;
@@ -8267,7 +8292,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8369,6 +8394,40 @@ function startGaragePreview(carId) {
                 const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
                 ghostClock += deltaTime;
                 ghostRec.update(deltaTime, xPos, zPos, carYOffset);
+                if (coachSteps.length && coachShown.size < coachSteps.length && (coachAcc += deltaTime) > 0.2) {
+                    coachAcc = 0;
+                    // не чаще раза в 3 с — подсказки не налезают друг на друга
+                    if (ghostClock - coachLastT > 3) {
+                        const ahead = function(list, key) {
+                            let best = null;
+                            for (let i = 0; i < list.length; i++) {
+                                const d = zPos - list[i][key];
+                                if (d > 0 && (best === null || d < best)) best = d;
+                            }
+                            return best;
+                        };
+                        let animal = false;
+                        const an = animalSpawner.animals;
+                        for (let i = 0; i < an.length && !animal; i++) {
+                            const a = an[i];
+                            if (a && a.triggered && !a.hit && zPos - a.z > 6 && zPos - a.z < 32 && Math.abs(a.x - xPos) < 2.2) animal = true;
+                        }
+                        const step = pickCoach(coachSteps, coachShown, {
+                            t: ghostClock,
+                            gap: ahead(gaps, 'zNear'),
+                            debris: ahead(debrisZones.filter(function(d) { return !d.fired; }), 'z'),
+                            event: mapEvent ? zPos - mapEvent.z : null,
+                            animal: animal,
+                            boss: !!(boss && boss.active && !boss.dying),
+                            nitro: nitroTimer > 0
+                        });
+                        if (step) {
+                            coachShown.add(step.id);
+                            coachLastT = ghostClock;
+                            showCoach(step.text);
+                        }
+                    }
+                }
                 if (ghostCar) {
                     const gp = sampleGhost(ghostData, ghostClock);
                     if (!gp) ghostCar.visible = false;
