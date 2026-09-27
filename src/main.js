@@ -7354,6 +7354,9 @@ function startGaragePreview(carId) {
                 emissiveIntensity: 0.25
             });
             const rampArrowMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const rampSideMat = new THREE.MeshLambertMaterial({ color: isSnowTrack ? 0x9aa8b4 : 0x6a6a70, side: THREE.DoubleSide });
+            const rampEdgeYellow = new THREE.MeshBasicMaterial({ color: 0xffd400 });
+            const rampEdgeDark = new THREE.MeshBasicMaterial({ color: 0x151515 });
             function createRamp(z, laneX, height) {
                 height = Math.max(0.55, height || 0.7);
                 const len = 4.0;
@@ -7378,6 +7381,28 @@ function startGaragePreview(carId) {
                     const along = len * 0.3 - s * 0.85;
                     ar.position.set(0, 0.09 + 0.035, along);
                     mesh.add(ar);
+                }
+                // Бетонные боковины-клинья и задняя стенка: раньше плита «висела» над асфальтом
+                const tri = new THREE.Shape();
+                tri.moveTo(-len / 2, 0);            // → z = +len/2 (заезд, низ)
+                tri.lineTo(len / 2, 0);             // → z = -len/2 (съезд)
+                tri.lineTo(len / 2, height);
+                tri.closePath();
+                const triGeo = new THREE.ShapeGeometry(tri);
+                [-width / 2, width / 2].forEach(function(sx) {
+                    const side = new THREE.Mesh(triGeo, rampSideMat);
+                    side.rotation.y = Math.PI / 2;
+                    side.position.set(sx, 0, 0);
+                    group.add(side);
+                });
+                const back = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.12), rampSideMat);
+                back.position.set(0, height / 2, -len / 2 + 0.06);
+                group.add(back);
+                // жёлто-чёрная кромка на краю съезда
+                for (let s = 0; s < 6; s++) {
+                    const st = new THREE.Mesh(new THREE.BoxGeometry(width / 6, 0.07, 0.22), s % 2 ? rampEdgeDark : rampEdgeYellow);
+                    st.position.set(-width / 2 + width / 12 + s * width / 6, 0.09 + 0.02, -len * 0.5 + 0.13);
+                    mesh.add(st);
                 }
                 group.position.set(laneX, 0, z);
                 scene.add(group);
@@ -8605,22 +8630,25 @@ function startGaragePreview(carId) {
                 const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? 1.45 : 1.0);
                 const effectiveAccel = ACCELERATION * (nitroTimer > 0 ? 1.6 : 1.0);
 
+                // константы разгона/тормоза подобраны «за кадр при 60 fps» — масштабируем по времени кадра,
+                // иначе на 144 Гц машина разгонялась в 2.4 раза быстрее, а на телефоне с 30 fps — вдвое медленнее
+                const k60 = deltaTime * 60;
                 if (stunTimer > 0) {
                     stunTimer -= deltaTime;
-                    if (speed > 0) speed = Math.max(speed - FRICTION_FORCE * 2, 0);
+                    if (speed > 0) speed = Math.max(speed - FRICTION_FORCE * 2 * k60, 0);
                 } else if (currentKeys.w) {
-                    speed = Math.min(speed + effectiveAccel, effectiveMax);
+                    speed = Math.min(speed + effectiveAccel * k60, effectiveMax);
                 } else if (currentKeys.s) {
                     // вперёд → тормоз; на месте/назад → задний ход, только пока зажата кнопка
                     if (speed > 0.02) {
-                        speed = Math.max(speed - BRAKE_FORCE * 3.2, 0);
+                        speed = Math.max(speed - BRAKE_FORCE * 3.2 * k60, 0);
                     } else {
-                        speed = Math.max(speed - BRAKE_FORCE * 2.2, -MAX_SPEED * 0.28);
+                        speed = Math.max(speed - BRAKE_FORCE * 2.2 * k60, -MAX_SPEED * 0.28);
                     }
                 } else {
                     // отпустили — быстро останавливаемся (и вперёд, и назад)
-                    if (speed > 0) speed = Math.max(speed - FRICTION_FORCE, 0);
-                    else if (speed < 0) speed = Math.min(speed + Math.max(FRICTION_FORCE, 0.008) * 8, 0);
+                    if (speed > 0) speed = Math.max(speed - FRICTION_FORCE * k60, 0);
+                    else if (speed < 0) speed = Math.min(speed + Math.max(FRICTION_FORCE, 0.008) * 8 * k60, 0);
                 }
 
                 // Передачи + двигатель
@@ -8670,12 +8698,12 @@ function startGaragePreview(carId) {
                 } else if (currentKeys.d) {
                     xVelocity = Math.min(xVelocity + DRY_STEER * steerMul * deltaTime, MAX_X_SPEED * (onOil ? 1.3 : 1));
                 } else {
-                    xVelocity *= dampMul;
+                    xVelocity *= Math.pow(dampMul, deltaTime * 60); // гашение тоже по времени, а не по кадрам
                     if (Math.abs(xVelocity) < 0.001) xVelocity = 0;
                 }
                 // На масле добавляем лёгкий рандомный снос
                 if (onOil) {
-                    xVelocity += (Math.random() - 0.5) * 0.04;
+                    xVelocity += (Math.random() - 0.5) * 0.04 * deltaTime * 60;
                 }
                 xPos += xVelocity * deltaTime * 15;
 
