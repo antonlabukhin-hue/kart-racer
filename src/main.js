@@ -30,6 +30,9 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
         import { resolveLang, applyLang } from './i18n.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
+        // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
+        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { createMapEvent } from './mapevents.js';
@@ -1647,6 +1650,7 @@ function createProfile(name) {
                                 return;
                             }
                             currentPlayer.season.chips -= price;
+                            trackEvent('buy', { item: 'car', id: shopSelectedCar, price: price });
                             try { if (window.soundEngine) window.soundEngine.playSfx('coins', 1.15); } catch (e) {}
                             try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.7); } catch (e) {}
                             if (!currentPlayer.unlockedCars.includes(shopSelectedCar)) {
@@ -2169,6 +2173,7 @@ function renderGaragePartsPanel() {
             if (needPay) {
                 currentPlayer.season.chips -= p.price;
                 ownedPaints.push(paintId);
+                trackEvent('buy', { item: 'paint', id: paintId, price: p.price });
             }
             setPaintForCar(carId, paintId);
             saveCurrentPlayer();
@@ -2202,6 +2207,7 @@ function renderGaragePartsPanel() {
                     }
                     currentPlayer.season.chips -= part.price;
                     ownedParts.push(partId);
+                    trackEvent('buy', { item: 'part', id: partId, price: part.price });
                 }
                 // один слот — заменяем деталь того же slot
                 const sameSlot = CAR_PARTS.filter(p => p.slot === part.slot).map(p => p.id);
@@ -2473,6 +2479,7 @@ function renderGaragePartsPanel() {
                     }
                     currentPlayer.season.chips -= c;
                     lv[id] += 1;
+                    trackEvent('buy', { item: 'upgrade', id: id, level: lv[id], car: carId, price: c });
                     currentPlayer.upgrades[carId] = lv;
                     saveCurrentPlayer();
                     try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.1); } catch (e) {}
@@ -2933,6 +2940,10 @@ function startGaragePreview(carId) {
         window.openSettingsScreen = openSettingsScreen;
 
         function exitRaceToMenu(openGarageAfter) {
+            try {
+                const rs = window.__raceDebug ? window.__raceDebug.state : (window.__inRace && !document.getElementById('finish-screen') ? 'racing' : '');
+                if (window.__inRace && rs === 'racing') trackEvent('race_quit', { chapter: window.__campaignTrackId || null, mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race' });
+            } catch (e) {}
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
             try { if (window.soundEngine && soundEngine.stopMusic) soundEngine.stopMusic(); } catch (e) {}
@@ -4426,6 +4437,10 @@ function startGaragePreview(carId) {
             document.addEventListener('pointerdown', onceMusic, { once: true });
 
             const TRACK_LENGTH = config.trackLength;
+            trackEvent('race_start', {
+                mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race', map: mapId, diff: difficulty, car: carId,
+                chapter: window.__campaignTrackId || null, wave: isEndlessMode() ? window.__endless.wave : undefined
+            });
             
                 try {
                     window.__nightSpots = 0;
@@ -5005,6 +5020,15 @@ function startGaragePreview(carId) {
                 if (cheb) cheb.remove();
                 document.querySelectorAll('.animal-shout, .radio-line, .story-plaque').forEach(el => el.remove());
                 const timeTaken = raceTime;
+                try {
+                    trackEvent('race_end', {
+                        state: state, time: Math.round(timeTaken * 10) / 10, strikes: strikes,
+                        progress: Math.round(Math.max(0, Math.min(1, (START_Z - zPos) / (START_Z - FINISH_Z))) * 100) / 100,
+                        mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race', map: mapId, diff: difficulty,
+                        chapter: campaignTrackId, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
+                        wave: isEndlessMode() ? window.__endless.wave : undefined
+                    });
+                } catch (e) {}
 
                 // Начисление фишек / XP / жвачки (раньше recordRaceResult не вызывался!)
                 let raceRewards = { xp: 0, gum: 0, chips: 0, achievements: [] };
@@ -8064,6 +8088,7 @@ function startGaragePreview(carId) {
             const hitLog = [];
             const logHit = function(cause) {
                 hitLog.push({ cause: cause, at: Math.round((START_Z - zPos) / (START_Z - FINISH_Z) * 100) });
+                trackEvent('crash', { cause: cause, at: hitLog[hitLog.length - 1].at, map: mapId, chapter: window.__campaignTrackId || null });
             };
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;
