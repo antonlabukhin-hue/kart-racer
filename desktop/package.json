@@ -1,0 +1,39 @@
+{
+  "name": "road-breakthrough-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Дорожный прорыв — настольная сборка (Electron) для Steam",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "npm --prefix .. run build && electron .",
+    "dist": "npm --prefix .. run build && electron-builder --dir",
+    "dist:win": "npm --prefix .. run build && electron-builder --win"
+  },
+  "build": {
+    "appId": "ru.roadbreakthrough.game",
+    "productName": "Road Breakthrough",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      {
+        "from": "../dist",
+        "to": "dist"
+      }
+    ],
+    "win": {
+      "target": "dir"
+    },
+    "linux": {
+      "target": "dir"
+    },
+    "mac": {
+      "target": "dir"
+    }
+  },
+  "devDependencies": {
+    "electron": "^39.8.10",
+    "electron-builder": "^26.0.0"
+  }
+}
