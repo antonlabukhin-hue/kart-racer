@@ -23,6 +23,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
+        import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
@@ -664,6 +665,36 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             try { if (typeof pendingMode !== 'undefined') pendingMode = 'race'; } catch (e) {}
         }
         window.clearCampaignGlobals = clearCampaignGlobals;
+
+        // «Звериный час»: забег волнами (src/endless.js)
+        function isEndlessMode() {
+            return typeof pendingMode !== 'undefined' && pendingMode === 'endless' && !!window.__endless;
+        }
+        function launchEndlessWave() {
+            const run = window.__endless;
+            if (!run || !currentPlayer) return;
+            pendingMode = 'endless';
+            try { hideMainMenu(); } catch (e) {}
+            const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
+            const q = window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium';
+            initGame(q, waveDifficulty(run.wave), car, waveMap(run.wave), 'day');
+        }
+        function startEndlessRun() {
+            clearCampaignGlobals();
+            window.__endless = newEndlessRun();
+            launchEndlessWave();
+        }
+        window.startEndlessRun = startEndlessRun;
+        // карточка волны между трассами
+        function showWaveCard(run, gained, onDone) {
+            const el = document.createElement('div');
+            el.id = 'endless-wave-card';
+            el.innerHTML = '<div class="ew-sub">Волна ' + (run.wave - 1) + ' пройдена · +' + gained + '</div>'
+                + '<div class="ew-title">🐾 ВОЛНА ' + run.wave + '</div>'
+                + '<div class="ew-sub">Счёт: ' + run.score + ' · Аварии: ' + run.strikes + ' / 5</div>';
+            document.body.appendChild(el);
+            setTimeout(function() { try { el.remove(); } catch (e) {} onDone(); }, 1800);
+        }
         window.cleanupRaceKeepProfile = cleanupRaceKeepProfile;
 
 
@@ -1394,6 +1425,7 @@ function createProfile(name) {
             try { if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI(); } catch (e) {}
             const bar = document.getElementById('player-bar');
             if (!bar || !currentPlayer) return;
+            try { const eb = document.getElementById('menu-endless-best'); if (eb) eb.textContent = currentPlayer.endlessBest ? '🏆 ' + currentPlayer.endlessBest : ''; } catch (e) {}
             bar.classList.add('visible');
             const n = document.getElementById('player-bar-name');
             const s = document.getElementById('player-bar-season');
@@ -4502,7 +4534,7 @@ function startGaragePreview(carId) {
             const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
             const config = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
-                : DIFFICULTY_CONFIG[difficulty];
+                : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave) : DIFFICULTY_CONFIG[difficulty]);
 
             if (window.soundEngine) {
                 window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35;
@@ -4645,7 +4677,8 @@ function startGaragePreview(carId) {
                 `;
                 hud.innerHTML = `
                     <div style="color:#ff8844;">⏱ ВРЕМЯ: <span id="timeDisplay" style="color:#fff;">${formatTime(TIME_LIMIT)}</span></div>
-                    <div style="color:#ff5555;">💥 АВАРИИ: <span id="strikesDisplay" style="color:#fff;">0 / ${MAX_STRIKES}</span></div>
+                    ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">🐾 ВОЛНА ' + window.__endless.wave + ' · ' + window.__endless.score + '</div>' : ''}
+                    <div style="color:#ff5555;">💥 АВАРИИ: <span id="strikesDisplay" style="color:#fff;">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
                     <div style="color:#88ccff;">⚡ СКОРОСТЬ: <span id="speedDisplay" style="color:#fff;">0</span> км/ч</div>
                     <div id="comboDisplay" style="display:none;color:#ffaa66;margin-top:4px;font-size:13px;">🔥 КОМБО</div>
                     <div id="weatherDisplay" style="color:#88ccff;font-size:12px;margin-top:2px;">☀ ЯСНО</div>
@@ -4825,6 +4858,13 @@ function startGaragePreview(carId) {
                     else if (stats.maxSpeedReached >= 180) titleExtra = 'Таз на стероидах';
                     else if (difficulty === 'hard') titleExtra = 'Выжил в ЗвероСуде';
                     if (titleExtra) message += '\n✨ Титул: ' + titleExtra;
+                } else if (isEndlessMode()) {
+                    const run = window.__endless;
+                    title = '🐾 ЗВЕРИНЫЙ ЧАС ОКОНЧЕН';
+                    color = '#ffd23c';
+                    message = 'Волна: ' + run.wave + ' · Счёт: ' + run.score
+                        + '\n' + (state === 'timeout' ? 'Время волны вышло' : 'Аварий: ' + strikes + ' / ' + MAX_STRIKES)
+                        + '\n' + (run.isNewBest ? '🎉 НОВЫЙ РЕКОРД!' : '🏆 Рекорд: ' + (currentPlayer.endlessBest || 0));
                 } else if (state === 'timeout') {
                     title = '🌉 МОСТ УЛЕТЕЛ';
                     color = '#ff6644';
@@ -5022,6 +5062,11 @@ function startGaragePreview(carId) {
                         }, 60);
                         return;
                     }
+                    if (isEndlessMode()) {
+                        try { cleanupRaceKeepProfile(); } catch (e) {}
+                        setTimeout(startEndlessRun, 60);
+                        return;
+                    }
                     // свободный заезд: те же настройки заново, без перезагрузки и повторного входа
                     try { cleanupRaceKeepProfile(); } catch (e) {}
                     setTimeout(function() { initGame(quality, difficulty, carId, mapId, weatherId); }, 60);
@@ -5146,6 +5191,30 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) { console.warn('rewards', e); }
                 window.__lastRaceRewards = raceRewards;
+                if (isEndlessMode()) {
+                    const run = window.__endless;
+                    const nm = typeof nearMissCount !== 'undefined' ? nearMissCount : 0;
+                    run.nearMiss += nm;
+                    run.strikes = strikes;
+                    if (state === 'win') {
+                        const gained = waveScore({ time: timeTaken, nearMiss: nm, starsPicked: stats.starsPicked || 0, timeLimit: TIME_LIMIT });
+                        run.score += gained;
+                        run.wave++;
+                        try { soundEngine.stopMusic(); } catch (e) {}
+                        showWaveCard(run, gained, function() {
+                            try { cleanupRaceKeepProfile(); } catch (e) {}
+                            launchEndlessWave();
+                        });
+                        return;
+                    }
+                    const prog = (START_Z - zPos) / (START_Z - FINISH_Z);
+                    run.score += partialScore(prog, nm);
+                    const rb = recordBest(currentPlayer.endlessBest, run.score);
+                    run.isNewBest = rb.isNew;
+                    run.bestBefore = currentPlayer.endlessBest || 0;
+                    currentPlayer.endlessBest = rb.best;
+                    try { saveCurrentPlayer(); } catch (e) {}
+                }
                 try {
                     if (state === 'win' && wasCampaign && campaignTrackId) {
                         onCampaignRaceWon(campaignTrackId, typeof strikes !== 'undefined' ? strikes : 0, {
@@ -7871,7 +7940,7 @@ function startGaragePreview(carId) {
             // ============================================================
             const keys = { w: false, s: false, a: false, d: false };
             let speed = 0;
-            let strikes = 0;
+            let strikes = isEndlessMode() ? (window.__endless.strikes || 0) : 0;
             let raceTime = 0;
             let stunTimer = 0;
             let shakeTime = 0;
@@ -8126,7 +8195,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -10839,9 +10908,8 @@ function showLoreScreen(quality, difficulty) {
                         else if (typeof openCampaignScreen === 'function') openCampaignScreen();
                         else alert('openCampaignScreen не найден');
                         return;
-                    } else if (m === 'multiplayer') {
-                        if (window.Notify) Notify.warn('Мультиплеер', 'Режим в разработке. Загляни позже.');
-                        else alert('Мультиплеер скоро');
+                    } else if (m === 'endless') {
+                        startEndlessRun();
                     } else if (m === 'race' && typeof beginRaceFlow === 'function') {
                         if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
                         else {
