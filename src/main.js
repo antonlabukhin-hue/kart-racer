@@ -19,6 +19,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
         import { gapStyle, gapLayout, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
         import { campaignHardConfig } from './balance.js';
+        import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
@@ -7656,6 +7657,7 @@ function startGaragePreview(carId) {
             const gaps = [];
             const debrisZones = [];
             const gapCones = []; // сбиваемые конусы перед разломами
+            let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
             const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
             const _starGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, depthWrite: false });
             function createStar(x, z) {
@@ -7756,6 +7758,14 @@ function startGaragePreview(carId) {
                     scene.add(createRoadSign(warn, TRACK_WIDTH / 2 + 1.6, z + 55));
                     debrisZones.push({ z: z, src: src, hangers: src.userData.hangers || [], drops: dropsN, fired: false });
                 });
+                // сцена карты
+                const evKind = (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
+                const evZ = _zAt(MAP_EVENT_AT);
+                clearZone(evZ + 30, evZ - 45);
+                mapEvent = createMapEvent(evKind, TRACK_WIDTH, evZ, _rampLaneXs);
+                scene.add(mapEvent.group);
+                const evSign = evKind === 'promzona' ? ['ОСТОРОЖНО', 'ВЫБРОС ПАРА'] : evKind === 'svalka' ? ['ОСТОРОЖНО', 'ГОРЯЩИЕ ШИНЫ'] : ['⚠ Ж/Д ПЕРЕЕЗД', 'ОСТОРОЖНО, ПОЕЗД'];
+                scene.add(createRoadSign(evSign, -TRACK_WIDTH / 2 - 1.8, evZ + 60, { big: true }));
             } catch (eSet) { console.warn('setpieces', eSet); }
 
             // ============================================================
@@ -8438,7 +8448,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, giveNitro: function() { nitroTimer = 3.2; }, stats: stats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = 3.2; }, stats: stats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8865,6 +8875,32 @@ function startGaragePreview(carId) {
                 // Разломы: не на трамплине и не в воздухе — проваливаешься (авария + штраф),
                 // машину вытаскивает на дальний край разлома
                 _nmCooldown -= deltaTime;
+                // сцена карты: поезд — авария (как зверь), пар и шины — ожог: скорость и время
+                if (mapEvent && gameState === 'racing') {
+                    const evHit = mapEvent.update({ x: xPos, z: zPos, dt: deltaTime, y: carYOffset,
+                        ups: Math.max(Math.abs(speed) * 60, MAX_SPEED * 60 * 0.45) });
+                    if (evHit) {
+                        if (evHit.strike) {
+                            handleObstacleHit({ penalty: 0.01, timePenalty: evHit.timePenalty, cause: evHit.kind });
+                            speed = 0;
+                            if (evHit.stopAt != null) zPos = Math.max(zPos, evHit.stopAt);
+                        } else {
+                            const evPen = Math.round(evHit.timePenalty * ((config && config.timePenaltyMul != null) ? config.timePenaltyMul : 1) * 10) / 10;
+                            raceTime += evPen;
+                            speed *= evHit.speedMul;
+                            stunTimer = 0.3;
+                            showTimePenaltyPopup(evPen, evHit.text);
+                            try { soundEngine.playCrashSound(0.3); } catch (e) {}
+                        }
+                        shakeTime = Math.max(shakeTime, 0.3);
+                        try {
+                            const el = document.createElement('div');
+                            el.className = 'animal-shout';
+                            el.textContent = evHit.text;
+                            postShout(el, 1400);
+                        } catch (e) {}
+                    }
+                }
                 // конусы: задел — отлетает кувырком (без штрафа, это не преграда)
                 for (let ci = 0; ci < gapCones.length; ci++) {
                     const cn = gapCones[ci];
