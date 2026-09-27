@@ -11,7 +11,8 @@ export const DEFAULT_SETTINGS = {
     quality: 'medium',// low | medium | high
     camera: 0,        // 0 сзади, 1 капот, 2 салон, 3 сбоку
     shake: true,      // тряска камеры при ударах
-    vibrate: true     // вибрация телефона при аварии
+    vibrate: true,    // вибрация телефона при аварии
+    ghost: true       // призрак лучшего заезда
 };
 
 const clamp01 = function(v, d) { const n = Number(v); return isFinite(n) ? Math.max(0, Math.min(1, n)) : d; };
@@ -26,7 +27,8 @@ export function normalizeSettings(raw) {
         quality: ['low', 'medium', 'high'].indexOf(r.quality) >= 0 ? r.quality : d.quality,
         camera: [0, 1, 2, 3].indexOf(Number(r.camera)) >= 0 ? Number(r.camera) : d.camera,
         shake: r.shake == null ? d.shake : !!r.shake,
-        vibrate: r.vibrate == null ? d.vibrate : !!r.vibrate
+        vibrate: r.vibrate == null ? d.vibrate : !!r.vibrate,
+        ghost: r.ghost == null ? d.ghost : !!r.ghost
     };
 }
 

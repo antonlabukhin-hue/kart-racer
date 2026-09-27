@@ -23,6 +23,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
+        import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
@@ -2995,6 +2996,7 @@ function startGaragePreview(carId) {
                 '<div class="st-group">Удобство</div>' +
                 toggle('shake', 'Тряска камеры при ударах') +
                 toggle('vibrate', 'Вибрация телефона при аварии') +
+                toggle('ghost', '👻 Призрак лучшего заезда') +
                 '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
                 '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
                 '</div>';
@@ -4826,6 +4828,7 @@ function startGaragePreview(carId) {
                     title = strikes === 0 ? '🏆 ИДЕАЛЬНЫЙ ЗАЕЗД!' : '🏁 ФИНИШ!';
                     color = '#ffdd00';
                     message = `Время: ${formatTime(timeTaken)} · Аварий: ${strikes} / ${MAX_STRIKES}`;
+                    if (window.__ghostSaved) message += '\n👻 Призрак обновлён — в следующий раз гонишься за собой';
                     if (isBest) message += '\n🎉 НОВЫЙ РЕКОРД!';
                     if (bestTimes[difficulty] !== null) {
                         message += `\n🏆 Лучшее: ${formatTime(bestTimes[difficulty])}`;
@@ -5191,6 +5194,16 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) { console.warn('rewards', e); }
                 window.__lastRaceRewards = raceRewards;
+                if (state === 'win' && !isEndlessMode()) {
+                    try {
+                        let prevGhost = null;
+                        try { prevGhost = JSON.parse(localStorage.getItem(ghostStoreKey) || 'null'); } catch (e) {}
+                        if (isBetterGhost(prevGhost, timeTaken) && ghostRec.length >= 2) {
+                            localStorage.setItem(ghostStoreKey, JSON.stringify(ghostRec.finish(timeTaken, carId)));
+                            window.__ghostSaved = true;
+                        }
+                    } catch (e) { console.warn('ghost save', e); }
+                }
                 if (isEndlessMode()) {
                     const run = window.__endless;
                     const nm = typeof nearMissCount !== 'undefined' ? nearMissCount : 0;
@@ -6819,6 +6832,40 @@ function startGaragePreview(carId) {
             playerCar.matrixAutoUpdate = true;
             scene.add(playerCar);
 
+            // Призрак лучшего заезда на этой трассе и сложности (src/ghost.js); в «Зверином часе» — нет
+            const ghostStoreKey = ghostKey(currentPlayer && (currentPlayer.id || currentPlayer.name),
+                window.__campaignTrackId ? ('camp_' + window.__campaignTrackId) : mapId, difficulty);
+            const ghostRec = createGhostRecorder();
+            let ghostClock = 0;
+            let ghostData = null;
+            let ghostCar = null;
+            window.__ghostSaved = false;
+            if (!isEndlessMode() && _settings.ghost !== false) {
+                try { ghostData = JSON.parse(localStorage.getItem(ghostStoreKey) || 'null'); } catch (e) { ghostData = null; }
+                if (isValidGhost(ghostData)) {
+                    try {
+                        const gb = _buildShowroomCar(ghostData.car || carId || 'cheburashka');
+                        ghostCar = gb.group;
+                        ghostCar.scale.setScalar(RACE_CAR_SCALE);
+                        Object.values(gb.parts || {}).forEach(function(m) { if (m) m.visible = false; });
+                        ghostCar.traverse(function(o) {
+                            if (!o.isMesh) return;
+                            o.castShadow = false; o.receiveShadow = false;
+                            const mk = function(m) {
+                                const c = m.clone();
+                                c.transparent = true; c.opacity = 0.45; c.depthWrite = false;
+                                if (c.emissive) { c.emissive.setHex(0x66aaff); c.emissiveIntensity = 0.7; }
+                                return c;
+                            };
+                            o.material = Array.isArray(o.material) ? o.material.map(mk) : mk(o.material);
+                            o.renderOrder = 2;
+                        });
+                        ghostCar.position.set(ghostData.x[0], ghostData.y[0], ghostData.z[0]);
+                        scene.add(ghostCar);
+                    } catch (e) { console.warn('ghost', e); ghostCar = null; }
+                } else ghostData = null;
+            }
+
             // ============================================================
             // ПОПУТНЫЕ МАШИНЫ
             // ============================================================
@@ -8195,7 +8242,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8295,6 +8342,19 @@ function startGaragePreview(carId) {
                 
                 raceTime += deltaTime;
                 const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
+                ghostClock += deltaTime;
+                ghostRec.update(deltaTime, xPos, zPos, carYOffset);
+                if (ghostCar) {
+                    const gp = sampleGhost(ghostData, ghostClock);
+                    if (!gp) ghostCar.visible = false;
+                    else {
+                        ghostCar.position.set(gp.x, gp.y, gp.z);
+                        ghostCar.rotation.z = Math.max(-0.12, Math.min(0.12, -gp.dx * 0.02));
+                        // вплотную — прячем, чтобы не мешал видеть свою машину
+                        const near = Math.abs(gp.z - zPos) < 2.5 && Math.abs(gp.x - xPos) < 1.2;
+                        ghostCar.visible = !near;
+                    }
+                }
                 
                 // Комбо
                 comboTime += deltaTime;
