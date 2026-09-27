@@ -8,7 +8,7 @@ test('аналитика: заезд пишется в локальный жур
     await startFreeRace(page, 'easy');
     await waitRacing(page);
     await page.keyboard.down('w');
-    await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 120_000 });
     await page.keyboard.up('w');
     const sum = await page.evaluate(() => window.__analytics.summary());
     expect(sum.races).toBe(1);

@@ -5098,11 +5098,15 @@ function startGaragePreview(carId) {
                 if (state === 'win') {
                     const startCam = camera.position.clone();
                     let tCine = 0;
+                    let cineLast = performance.now();
                     const cineDur = 5.5;
                     const cx = xPos, cy = 1.0, cz = zPos;
                     const orbitR = 7.5;
                     function cineFrame() {
-                        tCine += 0.016;
+                        // по реальному времени: на слабом устройстве облёт не растягивается на минуту
+                        const cineNow = performance.now();
+                        tCine += Math.min(0.1, (cineNow - cineLast) / 1000);
+                        cineLast = cineNow;
                         const k = Math.min(1, tCine / cineDur);
                         // 1.2 оборота вокруг машины
                         const ang = -0.4 + k * Math.PI * 2.4;
