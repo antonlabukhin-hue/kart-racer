@@ -1,0 +1,16 @@
+{
+  "appId": "ru.roadbreakthrough.game",
+  "appName": "Road Breakthrough",
+  "webDir": "../dist",
+  "android": {
+    "backgroundColor": "#000000",
+    "allowMixedContent": false
+  },
+  "ios": {
+    "backgroundColor": "#000000",
+    "contentInset": "never"
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 0 }
+  }
+}

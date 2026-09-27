@@ -24,10 +24,25 @@ import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_AN
 
 Vite собирает `index.html`, `css/`, `src/*` и three из `node_modules` в `dist/assets/` (importmap больше нет, версия three — в `package.json`).
 
-## Фаза 4 — дальше
-- `storage.js` вместо профилей в `main.js`
-- `boss.js` — createArcadeBossMesh
-- по желанию: полный вынос `initGame` в `game.js`
+## Фаза 4 — модули вокруг `main.js` (текущее)
+Данные и чистая логика живут в отдельных модулях с юнит-тестами (`tests/unit`), `main.js` — склейка с игровым циклом и DOM.
+
+| Модуль | Что внутри |
+|---|---|
+| `content.js` | контент мета-игры: карты, реплики злодея, достижения, трофеи, детали/краски, награды сезона, контракты, выкрики |
+| `difficulty.js` | `DIFFICULTY_CONFIG` — параметры сложностей |
+| `balance.js` | интерполяция «сложных» глав кампании |
+| `tracks/layouts.json` + `track-layout.js` | раскладка участков (разломы, арки, сцена карты) и её проверка |
+| `setpieces.js`, `mapevents.js` | меши участков и сцен карт |
+| `boss.js`, `boss-intro.js` | модели боссов; карточка представления и фазы 2 |
+| `cars.js`, `upgrades.js` | модели машин, прокачка и её видимые детали |
+| `campaign-stars.js`, `chapter-tasks.js`, `tutorial.js` | звёзды, задания глав, подсказки тренера в главах 1–3 |
+| `endless.js` | «Звериный час»: волны, очки, рекорд |
+| `ghost.js` | призрак лучшего заезда: запись и воспроизведение |
+| `audio.js`, `map-audio.js` | звук; тема карты (темп трека + процедурный фон) |
+| `settings.js` | настройки игрока |
+
+Дальше: профили (`storage.js`) и в перспективе вынос `initGame` в `game.js`.
 
 
 ## Фаза 3a — безопасность (сделано)

@@ -10,7 +10,6 @@
  */
 import * as THREE from 'three';
 
-export const MAP_EVENT_AT = 0.72; // доля трассы: между аркой (0.6) и последним разломом (0.84)
 
 function lambert(c, extra) { return new THREE.MeshLambertMaterial(Object.assign({ color: c }, extra || {})); }
 
@@ -92,37 +91,64 @@ function createCrossing(trackWidth, z0) {
 }
 
 // ---------------------------------------------------------------- пар
+// Магистраль вдоль обочины → вертикальный стояк с вентилем → колено с соплом, смотрящим на дорогу.
+// Струя выходит ИЗ сопла и расширяется к своей полосе (раньше начиналась у края дороги, отдельно
+// от трубы, слева была развёрнута широким концом к трубе, а вентиль висел в воздухе).
 function createSteam(trackWidth, z0, lanes) {
     const g = new THREE.Group();
     const hw = trackWidth / 2;
-    const pipeMat = lambert(0x7a6a5a), valveMat = lambert(0xcc2222);
-    // магистраль вдоль обочины
+    const pipeMat = lambert(0x7a6a5a), rustMat = lambert(0x8a4a22), valveMat = lambert(0xcc2222);
+    const pipeX = hw + 1.1;
     [-1, 1].forEach(function(side) {
-        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 40, 12), pipeMat);
+        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 44, 12), pipeMat);
         pipe.rotation.x = Math.PI / 2;
-        pipe.position.set(side * (hw + 0.9), 0.5, z0 - 12);
+        pipe.position.set(side * pipeX, 0.3, z0 - 12);
         g.add(pipe);
+        for (let k = 0; k < 6; k++) { // хомуты и подпорки
+            const clamp = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 6, 14), rustMat);
+            clamp.position.set(side * pipeX, 0.3, z0 + 8 - k * 7);
+            g.add(clamp);
+        }
     });
     const jets = [];
+    const steamMat = function() { return new THREE.MeshBasicMaterial({ color: 0xf0f4f8, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }); };
     lanes.forEach(function(lane, i) {
         const z = z0 - i * 12;
         const side = lane.x < 0 ? -1 : 1;
-        const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.0, 8), pipeMat);
-        branch.rotation.z = Math.PI / 2;
-        branch.position.set(side * (hw + 0.4), 0.55, z);
-        g.add(branch);
-        const valve = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.05, 6, 12), valveMat);
-        valve.position.set(side * (hw + 0.6), 0.95, z);
-        g.add(valve);
-        // струя пара поперёк полосы: от обочины до края своей полосы
-        const reach = Math.abs(lane.x - side * hw) + 1.1;
-        const jet = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.2, reach, 12, 1, true),
-            new THREE.MeshBasicMaterial({ color: 0xf0f4f8, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
-        jet.rotation.z = Math.PI / 2;
-        jet.position.set(side * (hw - reach / 2), 0.7, z);
+        // стояк с вентилем
+        const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.75, 10), pipeMat);
+        riser.position.set(side * pipeX, 0.65, z);
+        g.add(riser);
+        const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.04, 6, 14), valveMat);
+        wheel.position.set(side * pipeX, 0.72, z + 0.2); // на стояке, лицом к игроку
+        g.add(wheel);
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.03), valveMat);
+        spoke.position.copy(wheel.position);
+        g.add(spoke);
+        // колено и сопло к дороге
+        const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), pipeMat);
+        elbow.position.set(side * pipeX, 1.02, z);
+        g.add(elbow);
+        const nozzleX = side * (pipeX - 0.45);
+        const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.5, 10), pipeMat);
+        nozzle.rotation.z = side * Math.PI / 2;
+        nozzle.position.set(side * (pipeX - 0.22), 1.02, z);
+        g.add(nozzle);
+        // струя: узкий конец у сопла, широкий — над дальним краем полосы
+        const farEdge = lane.x - side * 1.05;
+        const len = Math.abs(nozzleX - farEdge);
+        const jetGeo = new THREE.CylinderGeometry(0.55, 0.1, len, 14, 1, true);
+        const jet = new THREE.Mesh(jetGeo, steamMat());
+        jet.rotation.z = side * Math.PI / 2;           // +y цилиндра (широкий конец) → к центру дороги
+        jet.position.set(nozzleX - side * len / 2, 0.95, z);
+        jet.userData.noOutline = true;
         g.add(jet);
-        jets.push({ mesh: jet, z: z, x0: Math.min(side * hw, side * (hw - reach)), x1: Math.max(side * hw, side * (hw - reach)),
-            t: i * 0.9, hitDone: false, sideX: side * hw });
+        // облачко у сопла — пыхтит перед выбросом
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), steamMat());
+        puff.position.set(nozzleX - side * 0.25, 1.02, z);
+        g.add(puff);
+        jets.push({ mesh: jet, puff: puff, z: z, x0: Math.min(nozzleX, farEdge), x1: Math.max(nozzleX, farEdge),
+            t: i * 0.9, hitDone: false });
     });
     return { group: g, jets: jets };
 }
@@ -177,9 +203,10 @@ export function createMapEvent(kind, trackWidth, z0, laneXs) {
                     // цикл 3.2 с: 1.4 тишина → 0.8 шипение (пыхтит) → 1.0 выброс
                     j.t = (j.t + ctx.dt) % 3.2;
                     const phase = j.t < 1.4 ? 'idle' : j.t < 2.2 ? 'warn' : 'blast';
-                    const m = j.mesh.material;
-                    m.opacity = phase === 'blast' ? 0.55 + Math.random() * 0.2 : phase === 'warn' ? (Math.random() < 0.3 ? 0.18 : 0.04) : 0;
-                    j.mesh.scale.y = phase === 'warn' ? 0.3 : 1;
+                    // выброс: струя на всю длину; шипение: пыхтит облачко у сопла
+                    j.mesh.material.opacity = phase === 'blast' ? 0.55 + Math.random() * 0.2 : 0;
+                    j.puff.material.opacity = phase === 'warn' ? 0.25 + Math.random() * 0.35 : phase === 'blast' ? 0.6 : 0;
+                    j.puff.scale.setScalar(phase === 'warn' ? 0.7 + Math.random() * 0.5 : 1.2);
                     j.phase = phase;
                     if (phase !== 'blast') j.hitDone = false;
                     if (phase === 'blast' && !j.hitDone && ctx.y < 0.9 && Math.abs(ctx.z - j.z) < 0.8 && ctx.x > j.x0 - 0.3 && ctx.x < j.x1 + 0.3) {

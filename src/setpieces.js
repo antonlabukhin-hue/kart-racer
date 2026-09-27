@@ -63,10 +63,7 @@ export function rampTexture(kind) {
     return tex;
 }
 
-/** Где по ходу трассы разломы (доля пути): на лёгкой два, дальше — три */
-export function gapLayout(difficulty) {
-    return difficulty === 'easy' ? [0.27, 0.84] : [0.23, 0.34, 0.84];
-}
+// где по ходу трассы участки — src/tracks/layouts.json (src/track-layout.js)
 
 const _texCache = {};
 function signTexture(lines, bg, fg, laneMark) {
@@ -367,13 +364,6 @@ export function createDebrisSource(kind, trackWidth, z, laneXs) {
     return g;
 }
 
-/**
- * Куда ставить участки по ходу трассы (доля пути 0..1).
- * Ритм: спокойный старт → разлом → босс (0.42–0.7) → опасный участок → финальный разлом → спринт.
- */
-export const SETPIECE_LAYOUT = {
-    debrisZones: [0.14, 0.6, 0.93]
-};
 
 /**
  * Конусы перед разломом в полосах без трамплина — «сюда нельзя». Не преграда: сбитый конус

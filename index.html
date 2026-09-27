@@ -128,10 +128,10 @@
                     <img src="images/menu_race.jpg" alt="Свободный заезд" onerror="this.style.background='#332';this.src='';">
                     <span>🏁 Свободный заезд</span>
                 </button>
-                <button type="button" class="menu-card locked" data-menu="multiplayer" title="Скоро" aria-disabled="true">
-                    <img src="images/menu_multiplayer.jpg" alt="Мультиплеер" onerror="this.style.background='#1a1a2e';this.src='';">
-                    <span>🌐 Мультиплеер</span>
-                    <div class="lock-badge" style="position:absolute;left:0;right:0;top:6px;left:6px;right:auto;width:auto;background:rgba(0,0,0,0.8);font-size:10px;padding:3px 6px;border-radius:6px;">🔒 Скоро</div>
+                <button type="button" class="menu-card menu-endless" data-menu="endless" title="Бесконечный режим: волна за волной, пока не разобьёшься">
+                    <img src="images/menu_multiplayer.jpg" alt="Звериный час" onerror="this.style.background='#1a1a2e';this.src='';">
+                    <span>🐾 Звериный час</span>
+                    <div class="endless-best" id="menu-endless-best"></div>
                 </button>
                 <button type="button" class="menu-card" data-menu="garage">
                     <img src="images/menu_garage.jpg" alt="Гараж" onerror="this.style.background='#223';this.src='';">
@@ -211,10 +211,12 @@
             <div class="season-bar-bg"><div class="season-bar-fill" id="garage-season-fill"></div></div>
             <div class="garage-tabs">
                 <button type="button" class="garage-tab active" data-gtab="parts">🛠️ Кастом</button>
+                <button type="button" class="garage-tab" data-gtab="upgrades">⚙ Прокачка</button>
                 <button type="button" class="garage-tab" data-gtab="trophies">🏆 Трофеи 90-х</button>
                 <button type="button" class="garage-tab" data-gtab="achs">🏅 Ачивки</button>
             </div>
             <div class="garage-panel active" id="garage-panel-parts"></div>
+            <div class="garage-panel" id="garage-panel-upgrades"></div>
             <div class="garage-panel" id="garage-panel-trophies">
                 <div class="trophy-grid" id="trophy-grid"></div>
                 <div id="trophy-detail">

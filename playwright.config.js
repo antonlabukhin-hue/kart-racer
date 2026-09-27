@@ -11,6 +11,8 @@ export default defineConfig({
     reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
     use: {
         viewport: { width: 1000, height: 650 },
+        // язык «авто» берётся из браузера — тесты проверяют русский интерфейс (английский — tests/e2e/scenarios/i18n.spec.js)
+        locale: 'ru-RU',
         screenshot: 'only-on-failure',
         trace: 'retain-on-failure',
         launchOptions: {
