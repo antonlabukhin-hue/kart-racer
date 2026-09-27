@@ -9274,7 +9274,10 @@ function startGaragePreview(carId) {
                                 shakeTime = 0.2;
                                 try { soundEngine.playCrashSound(0.3); } catch (e) {}
                                 try { if (playerCar) playerCar.userData._suspensionKick = 0.18; } catch (e) {}
-                                showTimePenaltyPopup(1.5 * ((config && config.timePenaltyMul != null) ? config.timePenaltyMul : 1), 'Обломки!');
+                                // штраф был только надписью «−1.5 с» — к времени заезда ничего не прибавлялось
+                                const debrisPen = Math.round(1.5 * ((config && config.timePenaltyMul != null) ? config.timePenaltyMul : 1) * 10) / 10;
+                                raceTime += debrisPen;
+                                showTimePenaltyPopup(debrisPen, 'Обломки!');
                                 try {
                                     for (let s = 0; s < 10; s++) {
                                         particleSystem.emit(
