@@ -8792,7 +8792,8 @@ function startGaragePreview(carId) {
                             soundEngine.playCrashSound(0.35);
                             try { if (window.soundEngine) window.soundEngine.playSfx('bump', 0.9); } catch (e) {}
                             try { if (typeof playerCar !== 'undefined' && playerCar) playerCar.userData._suspensionKick = 0.22; } catch (e) {}
-                            showTimePenaltyPopup(2 * acidMul, weatherZone==='acid' ? 'Кислотная яма' : 'Яма');
+                            // надпись была «−2 с», но время не прибавлялось: потеря — от торможения, пишем честно
+                            showTimePenaltyPopup(0, weatherZone==='acid' ? 'Кислотная яма' : 'Яма');
                             obs.active = false;
                             obs.mesh.visible = false;
                         } else if (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') {
@@ -8804,26 +8805,26 @@ function startGaragePreview(carId) {
                                 oilSlideTimer = 1.8;
                                 xVelocity += (Math.random() - 0.5) * 1.6;
                                 speed *= 0.92;
-                                showTimePenaltyPopup(1, labels.ice);
+                                showTimePenaltyPopup(0, labels.ice);
                             } else if (obs.type === 'acid') {
                                 // замедление + штраф времени
                                 oilSlideTimer = 0.9;
                                 speed *= 0.55;
                                 raceTime += 1.5;
                                 xVelocity += (Math.random() - 0.5) * 0.4;
-                                showTimePenaltyPopup(2.5, labels.acid);
+                                showTimePenaltyPopup(1.5, labels.acid); // прибавляется 1.5, а писало 2.5
                             } else if (obs.type === 'tar') {
                                 // торможение + потеря управления
                                 oilSlideTimer = 1.5;
                                 speed *= 0.45;
                                 xVelocity *= 0.3;
-                                showTimePenaltyPopup(1.5, labels.tar);
+                                showTimePenaltyPopup(0, labels.tar);
                             } else {
                                 // oil — классика
                                 oilSlideTimer = 1.4;
                                 speed *= 0.82;
                                 xVelocity += (Math.random() - 0.5) * 0.9;
-                                showTimePenaltyPopup(1, labels.oil);
+                                showTimePenaltyPopup(0, labels.oil);
                             }
                             if (Math.random() < 0.35 && RADIO_LINES.oil) radioSay(RADIO_LINES.oil[Math.floor(Math.random() * RADIO_LINES.oil.length)] || RADIO_LINES.oil[0]);
                             soundEngine.playCrashSound(0.15);
@@ -8840,7 +8841,7 @@ function startGaragePreview(carId) {
                             shakeTime = 0.15;
                             try { if (playerCar) playerCar.userData._suspensionKick = 0.12; } catch (e) {}
                             soundEngine.playCrashSound(0.2);
-                            showTimePenaltyPopup(1.5, 'Кочка');
+                            showTimePenaltyPopup(0, 'Кочка');
                             for (let s = 0; s < 6; s++) {
                                 particleSystem.emit(
                                     _v.p1.set(xPos, 0.2, zPos),
