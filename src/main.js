@@ -636,7 +636,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 }
             } catch (e) {}
             try {
-                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,.animal-shout,.radio-line,#hud-menu-btn').forEach(function(el) {
+                document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#speed-lines,.animal-shout,.radio-line,#hud-menu-btn').forEach(function(el) {
                     try { el.remove(); } catch (e) {}
                 });
             } catch (e) {}
@@ -2843,7 +2843,7 @@ function startGaragePreview(carId) {
             try { document.body.classList.remove('finish-open', 'race-paused'); } catch (e) {}
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
-            const kill = '#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn,#cheburashkaWarn,#race-countdown';
+            const kill = '#finish-screen,#game-hud,#nitro-vignette,#speed-lines,#hud-menu-btn,#cheburashkaWarn,#race-countdown';
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque').forEach(function(el) {
                     try { el.remove(); } catch (e2) {}
@@ -2994,7 +2994,7 @@ function startGaragePreview(carId) {
                 '<div class="st-group">Камера в заезде</div>' +
                 choice('camera', [[0, 'Сзади'], [1, 'Капот'], [2, 'Салон'], [3, 'Сбоку']]) +
                 '<div class="st-group">Удобство</div>' +
-                toggle('shake', 'Тряска камеры при ударах') +
+                toggle('shake', 'Тряска камеры и линии скорости') +
                 toggle('vibrate', 'Вибрация телефона при аварии') +
                 toggle('ghost', '👻 Призрак лучшего заезда') +
                 '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
@@ -3055,7 +3055,7 @@ function startGaragePreview(carId) {
                     window.__gameRenderer = null;
                 }
             } catch (e) {}
-            document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,.animal-shout,.radio-line,#hud-menu-btn').forEach(el => {
+            document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#speed-lines,.animal-shout,.radio-line,#hud-menu-btn').forEach(el => {
                 try { el.remove(); } catch (e) {}
             });
             const mc = document.getElementById('mobile-controls');
@@ -4522,7 +4522,7 @@ function startGaragePreview(carId) {
             } catch (e) {}
             const _cont = document.getElementById('game-container');
             if (_cont) { while (_cont.firstChild) _cont.removeChild(_cont.firstChild); }
-            document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn').forEach(el => { try { el.remove(); } catch(e){} });
+            document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#speed-lines,#hud-menu-btn').forEach(el => { try { el.remove(); } catch(e){} });
             const _settings = loadSettings();
             window.__camMode = _settings.camera; // камера по умолчанию — из «Настроек»
             const weatherMode = weatherId || 'day';
@@ -5168,6 +5168,7 @@ function startGaragePreview(carId) {
                 } catch (eTip) {}
                 const hud = document.getElementById('game-hud');
                 if (hud) hud.remove();
+                try { const sl = document.getElementById('speed-lines'); if (sl) sl.remove(); } catch (e) {}
                 const cheb = document.getElementById('cheburashkaWarn');
                 if (cheb) cheb.remove();
                 document.querySelectorAll('.animal-shout, .radio-line, .story-plaque').forEach(el => el.remove());
@@ -7340,6 +7341,7 @@ function startGaragePreview(carId) {
             const collectibles = [];
             let nitroTimer = 0;
             let fovPunch = 0;
+            let speedLinesEl = null, speedLinesO = -1;
             const BASE_FOV = (window.__portraitMode) ? 48 : (window.__isMobile ? 52 : 55);
 
             function createNitroArrows(z, lane) {
@@ -7467,10 +7469,12 @@ function startGaragePreview(carId) {
             }
             let nearMissCount = 0;
             let _nmCooldown = 0;
+            let slowmoT = 0; // секунды реального времени в замедлении
             function nearMiss() {
                 if (gameState !== 'racing' || _nmCooldown > 0) return;
                 _nmCooldown = 1.2;
                 nearMissCount++;
+                slowmoT = 0.3;
                 nitroTimer = Math.max(nitroTimer, ABILITY === 'nimble' ? 1.4 : 0.9);
                 try {
                     const el = document.createElement('div');
@@ -8242,7 +8246,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8474,6 +8478,17 @@ function startGaragePreview(carId) {
                         }
                     } catch (e) {}
                 }
+                // линии скорости по краям экрана: на пределе и на нитро (выкл. вместе с тряской)
+                if (!speedLinesEl) {
+                    speedLinesEl = document.createElement('div');
+                    speedLinesEl.id = 'speed-lines';
+                    document.body.appendChild(speedLinesEl);
+                }
+                {
+                    const k = Math.max(0, (Math.abs(speed) / (MAX_SPEED || 0.4) - 0.82) / 0.18);
+                    const o = _settings.shake === false ? 0 : Math.min(0.6, k * 0.22 + (nitroTimer > 0 ? 0.35 : 0) + (slowmoT > 0 ? 0.2 : 0));
+                    if (Math.abs(o - speedLinesO) > 0.02) { speedLinesO = o; speedLinesEl.style.opacity = o.toFixed(2); }
+                }
                 if (fovPunch > 0) {
                     fovPunch = Math.max(0, fovPunch - deltaTime * 12);
                     camera.fov = BASE_FOV + fovPunch;
@@ -8671,6 +8686,11 @@ function startGaragePreview(carId) {
                         carAirborne = false;
                         const landBoost = speed > 0.08;
                         carAirVel = 0;
+                        try {
+                            if (particleSystem && particleSystem.sparks) particleSystem.sparks({ x: xPos, y: 0.05, z: zPos + 0.6 }, 14, 1);
+                            if (_settings.shake !== false) shakeTime = Math.max(shakeTime, 0.14);
+                            fovPunch = Math.max(fovPunch, 6);
+                        } catch (e) {}
                         if (landBoost) {
                             const cap = (typeof MAX_SPEED !== 'undefined' ? MAX_SPEED : 0.45) * 1.08;
                             speed = Math.min(speed * 1.14, cap);
@@ -10205,7 +10225,11 @@ function startGaragePreview(carId) {
                 }
                 // delta: на слабых устройствах clamp чуть шире, чтобы не спираль лага
                 const rawDt = (currentTime - lastTime) / 1000;
-                const deltaTime = Math.min(window.__renderOpt && window.__renderOpt.isMob ? 0.05 : 0.033, Math.max(0.001, rawDt));
+                const _dtReal = Math.min(window.__renderOpt && window.__renderOpt.isMob ? 0.05 : 0.033, Math.max(0.001, rawDt));
+                // «На волоске!» — короткое замедление (время гонки тоже замедляется — честно для призрака и лимита)
+                let _timeScale = 1;
+                if (slowmoT > 0 && gameState === 'racing') { slowmoT -= _dtReal; _timeScale = 0.4; }
+                const deltaTime = _dtReal * _timeScale;
                 lastTime = currentTime;
 
                 // --- адаптивный DPR по FPS (раз в ~1с) ---

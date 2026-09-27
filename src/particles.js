@@ -105,6 +105,35 @@ emit(position, velocity, count = 2, customSize = 0.15) {
     try { if (this.geometry.attributes.color) this.geometry.attributes.color.needsUpdate = true; } catch (e) {}
 }
 
+/** Искры: жёлто-оранжевые, быстрые, короткие (приземление, скрежет) */
+sparks(position, count, dirZ) {
+    if (!this.enabled || !position) return;
+    const q = (typeof window !== 'undefined' && window.__lastQuality) || 'medium';
+    const n = Math.max(3, Math.floor((count || 10) * (q === 'low' ? 0.5 : 1)));
+    for (let i = 0; i < n; i++) {
+        const idx = this.particleIndex % this.maxParticles;
+        this.particleIndex++;
+        const i3 = idx * 3;
+        if (this.opacities[idx] <= 0.01) this.aliveCount++;
+        this.positions[i3] = position.x + (Math.random() - 0.5) * 0.7;
+        this.positions[i3 + 1] = position.y + 0.05;
+        this.positions[i3 + 2] = position.z + (Math.random() - 0.5) * 0.4;
+        this.sizes[idx] = 0.07 + Math.random() * 0.07;
+        this.opacities[idx] = 0.9;
+        const hot = Math.random();
+        this.colors[i3] = 1; this.colors[i3 + 1] = 0.55 + hot * 0.4; this.colors[i3 + 2] = 0.15 + hot * 0.25;
+        const side = Math.random() < 0.5 ? -1 : 1;
+        this.velocities[idx] = {
+            x: side * (1.2 + Math.random() * 2.2),
+            y: 0.8 + Math.random() * 1.6,
+            z: (dirZ || 1) * (1.5 + Math.random() * 2.5)
+        };
+        this.lifetimes[idx] = 0.25 + Math.random() * 0.25;
+        this.maxLifetimes[idx] = this.lifetimes[idx];
+    }
+    try { if (this.geometry.attributes.color) this.geometry.attributes.color.needsUpdate = true; } catch (e) {}
+}
+
 explode(position, power) {
     if (!this.enabled || !position) return;
     const p = power != null ? power : 1;
