@@ -17,7 +17,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             disposeBossMesh
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
-        import { gapStyle, gapLayout, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
+        import { gapStyle, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource } from './setpieces.js';
+        import { resolveLayout } from './track-layout.js';
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
@@ -26,7 +27,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { bossIntroHtml, bossPhase2Html } from './boss-intro.js';
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
-        import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
+        import { createMapEvent } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
@@ -7508,8 +7509,11 @@ function startGaragePreview(carId) {
                 }
             }
             try {
+                // раскладка участков — из данных (src/tracks/layouts.json): карта → глава кампании
+                const _layout = resolveLayout(null, { mapId: mapId, difficulty: difficulty, campaignId: window.__campaignTrackId || null });
+                window.__trackLayout = _layout;
                 let prevLane = -1;
-                gapLayout(difficulty).forEach(function(frac, gi) {
+                _layout.gaps.forEach(function(frac, gi) {
                     const zNear = _zAt(frac);
                     clearZone(zNear + 45, zNear - GAP_LEN - 15);
                     // разлом во всю ширину, трамплин — в одной полосе (не там же, где в прошлый раз):
@@ -7544,7 +7548,7 @@ function startGaragePreview(carId) {
                 });
                 const srcKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
                 const dropsN = difficulty === 'easy' ? 1 : 2;
-                SETPIECE_LAYOUT.debrisZones.forEach(function(frac) {
+                _layout.debris.forEach(function(frac) {
                     const z = _zAt(frac);
                     const src = createDebrisSource(srcKind, TRACK_WIDTH, z, debrisLaneXs);
                     scene.add(src);
@@ -7554,7 +7558,7 @@ function startGaragePreview(carId) {
                 });
                 // сцена карты
                 const evKind = (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
-                const evZ = _zAt(MAP_EVENT_AT);
+                const evZ = _zAt(_layout.event);
                 clearZone(evZ + 30, evZ - 45);
                 mapEvent = createMapEvent(evKind, TRACK_WIDTH, evZ, _rampLaneXs);
                 scene.add(mapEvent.group);

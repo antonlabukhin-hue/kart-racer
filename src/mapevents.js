@@ -10,7 +10,6 @@
  */
 import * as THREE from 'three';
 
-export const MAP_EVENT_AT = 0.72; // доля трассы: между аркой (0.6) и последним разломом (0.84)
 
 function lambert(c, extra) { return new THREE.MeshLambertMaterial(Object.assign({ color: c }, extra || {})); }
 
