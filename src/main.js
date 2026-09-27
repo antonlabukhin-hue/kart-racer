@@ -18,6 +18,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
         import { gapStyle, gapLayout, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
+        import { campaignHardConfig } from './balance.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
@@ -4836,7 +4837,11 @@ function startGaragePreview(carId) {
             window.__nightSpots = 0;
             const carPreset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
             
-            const config = DIFFICULTY_CONFIG[difficulty];
+            // кампания: «сложные» главы плавно ужесточаются к финалу (src/balance.js)
+            const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
+            const config = (difficulty === 'hard' && _campIdx >= 0)
+                ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
+                : DIFFICULTY_CONFIG[difficulty];
 
             if (window.soundEngine) {
                 window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35;

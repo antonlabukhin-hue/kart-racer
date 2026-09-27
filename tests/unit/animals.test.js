@@ -60,6 +60,22 @@ describe('AnimalSpawner', () => {
         expect(sp.totalSpawned).toBeGreaterThan(0);
     });
 
+    it('звери не сбиваются в «стену»: два подряд не ближе minGap', () => {
+        const sp = spawner();
+        // план, где все точки в одном месте — худший случай
+        window.__spawnPlan = Array.from({ length: 10 }, () => ({ z: -120, fromLeft: true }));
+        let z = -60;
+        const zs = [];
+        for (let i = 0; i < 2000 && sp.totalSpawned < 6; i++) {
+            const before = sp.totalSpawned;
+            sp.update(0.05, z);
+            if (sp.totalSpawned > before) zs.push(sp.animals[sp.animals.length - 1].z);
+            z -= 0.3;
+        }
+        for (let i = 1; i < zs.length; i++) expect(zs[i - 1] - zs[i]).toBeGreaterThanOrEqual(sp.minGap - 0.001);
+        window.__spawnPlan = null;
+    });
+
     it('зверь из плана не появляется вплотную к машине', () => {
         const sp = spawner();
         // точка плана уже позади — раньше зверь ставился в 10 ед. перед машиной
