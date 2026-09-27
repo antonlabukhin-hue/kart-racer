@@ -17,7 +17,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             disposeBossMesh
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
-        import { gapStyle, gapLayout, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
+        import { gapStyle, gapLayout, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
         import { campaignHardConfig } from './balance.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
@@ -7352,10 +7352,11 @@ function startGaragePreview(carId) {
             const ramps = [];
             window.__ramps = ramps;
             const isSnowTrack = (window.__trackThemeActive === 'snow');
-            // Яркий цвет, чтобы было видно сразу
+            // Скат из материала трассы (доски / рифлёная сталь / ржавое железо / снег), светлый — читается на асфальте
+            const _rampKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
             const rampMat = new THREE.MeshLambertMaterial({
-                color: isSnowTrack ? 0xa8d8ff : 0xff9933,
-                emissive: isSnowTrack ? 0x223344 : 0x442200,
+                map: rampTexture(_rampKind),
+                emissive: 0x2a1a08,
                 emissiveIntensity: 0.25
             });
             const rampArrowMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
