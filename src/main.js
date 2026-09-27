@@ -23,6 +23,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
+        import { bossIntroHtml, bossPhase2Html } from './boss-intro.js';
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
@@ -7563,6 +7564,7 @@ function startGaragePreview(carId) {
             // БОСС — МЕДВЕДЬ «АРСЕНЬЕВСКИХ ЗНАЮ»
             // ============================================================
             let boss = null;
+            const _rageRed = new THREE.Color(0xff2200);
             let bossSpawned = false;
             window.__bossSpawnQueued = false;
             let bossShouted = false;
@@ -7789,8 +7791,9 @@ function startGaragePreview(carId) {
                 // одна уникальная фраза босса при появлении (у головы, 3 сек)
                 try {
                     const line = def.shout || def.name || 'С дороги!';
-                    showBossHeadQuote(boss, line);
-                    showBossShout(line);
+                    // реплика — в карточке (пузырь над головой наезжал на неё)
+                    showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp), '', 3000);
+                    slowmoT = Math.max(slowmoT, 0.45);
                 } catch (e) {}
                 try {
                     if (window.soundEngine) {
@@ -7894,6 +7897,17 @@ function startGaragePreview(carId) {
                 } catch (e) {}
             }
 
+            // карточка представления / второй фазы босса (src/boss-intro.js) — сверху, дорогу не закрывает
+            function showBossCard(html, cls, ms) {
+                document.querySelectorAll('#boss-intro').forEach(function(n) { try { n.remove(); } catch (e) {} });
+                const el = document.createElement('div');
+                el.id = 'boss-intro';
+                if (cls) el.className = cls;
+                el.innerHTML = html;
+                document.body.appendChild(el);
+                setTimeout(function() { el.classList.add('out'); }, (ms || 2800) - 350);
+                setTimeout(function() { try { el.remove(); } catch (e) {} }, ms || 2800);
+            }
             function showBossShout(text) {
                 // один слот — не накладываем выкрики друг на друга
                 document.querySelectorAll('.animal-shout.boss-shout').forEach(function(n) { try { n.remove(); } catch (e) {} });
@@ -8246,7 +8260,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -9573,6 +9587,25 @@ function startGaragePreview(carId) {
                     // флаг ярости должен жить отдельно, иначе это условие никогда не срабатывает)
                     if (!boss.enraged && boss.hp <= boss.maxHp * 0.5) {
                         boss.enraged = true;
+                        boss.speed *= 1.12;
+                        try {
+                            showBossCard(bossPhase2Html({ name: boss.name }), 'phase2', 2000);
+                            // свои копии материалов (общие лежат в кэше) — пульсируют красным
+                            const seen = new Map();
+                            boss._rageMats = [];
+                            boss.mesh.traverse(function(o) {
+                                if (!o.isMesh || !o.material || Array.isArray(o.material) || !o.material.emissive) return;
+                                let c = seen.get(o.material);
+                                if (!c) {
+                                    c = o.material.clone();
+                                    c.userData._emi0 = c.emissive.clone();
+                                    c.userData._ei0 = c.emissiveIntensity;
+                                    seen.set(o.material, c);
+                                    boss._rageMats.push(c);
+                                }
+                                o.material = c;
+                            });
+                        } catch (eRage) { console.warn('rage', eRage); }
                         try { if (window.soundEngine) window.soundEngine.playSfx('boss', 0.9); } catch (ePh) {}
                         try {
                             if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ': «Это ещё не всё!»');
@@ -9585,6 +9618,14 @@ function startGaragePreview(carId) {
                         }
                     }
 
+                    if (boss._rageMats && !boss.dying) {
+                        const rk = 0.3 + 0.25 * Math.sin(boss.phase * 7);
+                        for (let ri = 0; ri < boss._rageMats.length; ri++) {
+                            const rm = boss._rageMats[ri];
+                            rm.emissive.copy(rm.userData._emi0).lerp(_rageRed, rk);
+                            rm.emissiveIntensity = Math.max(rm.userData._ei0 || 0, 0.45);
+                        }
+                    }
                     if (boss.mesh) {
                         boss.mesh.position.x = boss.x;
                         boss.mesh.position.z = boss.z;
