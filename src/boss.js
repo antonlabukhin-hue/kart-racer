@@ -307,7 +307,7 @@ function createBossHpBar(maxHp) {
     bar.userData.maxHp = n;
     return bar;
 }
-function updateBossHpBar(boss) {
+function updateBossHpBar(boss, camera) {
     if (!boss || !boss.hpBar) return;
     if (!boss.mesh) { boss.hpBar.visible = false; return; }
     const fills = boss.hpBar.userData.fills || [];
@@ -329,8 +329,11 @@ function updateBossHpBar(boss) {
             boss._hpWorld.y + 1.85 * sc + 0.9,
             boss._hpWorld.z
         );
-        if (typeof camera !== 'undefined' && camera) boss.hpBar.quaternion.copy(camera.quaternion);
-        boss.hpBar.visible = !boss.dying;
+        // камеру передают параметром: в модуле её нет, и полоска раньше не поворачивалась к игроку
+        if (camera) boss.hpBar.quaternion.copy(camera.quaternion);
+        // вплотную к камере полоска вылезала на панель HUD — прячем (HP есть текстом в HUD)
+        const near = camera ? camera.position.distanceTo(boss.hpBar.position) < 7 : false;
+        boss.hpBar.visible = !boss.dying && !near;
     } catch (e) {}
 }
 

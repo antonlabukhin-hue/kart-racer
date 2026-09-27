@@ -1,6 +1,7 @@
 /**
  * SoundEngine — Web Audio (двигатель, SFX) + HTML5 (музыка гонки)
  */
+import { loadSettings, saveSettings } from './settings.js';
 class SoundEngine {
     constructor() {
         this.audioCtx = null;
@@ -20,8 +21,11 @@ class SoundEngine {
         this.currentMusicSource = null;
         this.isMusicPlaying = false;
         this.musicStarted = false;
-        this.musicVolume = 0.55;
-        this.engineVolumeMultiplier = 0.6;
+        // громкости — из настроек игрока (экран «Настройки», ползунки в заезде)
+        const st = loadSettings();
+        this.musicVolume = st.music;
+        this.engineVolumeMultiplier = st.engine;
+        this.sfxVolume = st.sfx;
         this.musicUrl = 'music/race-music.mp3';
         this.menuMusicUrl = 'music/menu-music.mp3';
         this.menuAudio = null;
@@ -133,6 +137,7 @@ class SoundEngine {
             // Только громкость — НЕ перезапускать трек (иначе двоится)
             this.setMusicVolume(val);
             document.getElementById('music-volume-value').textContent = Math.round(val * 100) + '%';
+            saveSettings(Object.assign(loadSettings(), { music: val }));
             if (this.audioCtx && this.audioCtx.state === 'suspended') {
                 this.audioCtx.resume().catch(function(){});
             }
@@ -151,6 +156,7 @@ class SoundEngine {
             const val = parseInt(e.target.value) / 100;
             this.engineVolumeMultiplier = val;
             document.getElementById('engine-volume-value').textContent = Math.round(val * 100) + '%';
+            saveSettings(Object.assign(loadSettings(), { engine: val }));
         });
     }
 
@@ -312,6 +318,19 @@ class SoundEngine {
         if (this.raceAudio) {
             try { this.raceAudio.pause(); this.raceAudio.currentTime = 0; } catch (e) {}
         }
+    }
+    /** Применить настройки с экрана «Настройки» и подвинуть ползунки заезда, если они есть */
+    applySettings(st) {
+        if (!st) return;
+        this.setMusicVolume(st.music);
+        this.engineVolumeMultiplier = st.engine;
+        this.sfxVolume = st.sfx;
+        [['music-volume', st.music], ['engine-volume', st.engine]].forEach(function(p) {
+            const el = document.getElementById(p[0]);
+            const lbl = document.getElementById(p[0] + '-value');
+            if (el) el.value = String(Math.round(p[1] * 100));
+            if (lbl) lbl.textContent = Math.round(p[1] * 100) + '%';
+        });
     }
     setMusicVolume(v) {
         this.musicVolume = Math.max(0, Math.min(1, v));
@@ -695,7 +714,7 @@ class SoundEngine {
             thud.type = 'triangle';
             thud.frequency.setValueAtTime(140, t0);
             thud.frequency.exponentialRampToValueAtTime(30, t0 + 0.3);
-            g.gain.setValueAtTime(0.35 * volumeScale, t0);
+            g.gain.setValueAtTime(Math.max(0.0001, 0.35 * volumeScale * (this.sfxVolume != null ? this.sfxVolume : 1)), t0);
             g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.32);
             thud.connect(g);
             g.connect(this.audioCtx.destination);
@@ -723,7 +742,7 @@ class SoundEngine {
             if (!this.audioCtx) return;
             if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
             const t0 = this.audioCtx.currentTime;
-            const vs = (volScale != null ? volScale : 1) * 0.9;
+            const vs = (volScale != null ? volScale : 1) * 0.9 * (this.sfxVolume != null ? this.sfxVolume : 1);
             const mk = (wave, freq, dur, peak, slide) => {
                 const o = this.audioCtx.createOscillator();
                 const g = this.audioCtx.createGain();
@@ -1011,3 +1030,4 @@ class SoundEngine {
 
 export { SoundEngine };
 export default SoundEngine;
+

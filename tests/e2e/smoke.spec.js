@@ -154,6 +154,28 @@ test('первый заезд: «Даю установку:» держит от�
     expect(problems).toEqual([]);
 });
 
+test('настройки сохраняются и применяются после перезагрузки', { tag: '@smoke' }, async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Настройщик');
+    await page.locator('#main-menu-settings').click();
+    const scr = page.locator('#settings-screen');
+    await expect(scr).toBeVisible();
+    await scr.locator('input[data-key="music"]').fill('20');
+    await scr.locator('.st-choice[data-key="quality"] button[data-v="high"]').click();
+    await scr.locator('.st-choice[data-key="camera"] button[data-v="1"]').click();
+    await page.locator('#settings-close').click();
+    await expect(scr).toHaveCount(0);
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Настройщик').click();
+    await expect(page.locator('#main-menu-screen')).toBeVisible();
+    expect(await page.evaluate(() => window.soundEngine.musicVolume)).toBeCloseTo(0.2);
+    await page.locator('#main-menu-settings').click();
+    await expect(page.locator('#settings-screen .st-choice[data-key="quality"] button.on')).toHaveAttribute('data-v', 'high');
+    await expect(page.locator('#settings-screen .st-choice[data-key="camera"] button.on')).toHaveAttribute('data-v', '1');
+    expect(problems).toEqual([]);
+});
+
 test('с выбора карты можно вернуться к сложности и в меню', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);

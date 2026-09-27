@@ -20,6 +20,49 @@ export function gapStyle(mapId, isSnow) {
     return { floor: 0x061018, glow: 0x33a8d8, name: 'размыв' };
 }
 
+/**
+ * Скат трамплина — из того, что есть у трассы под рукой:
+ * Арсеньев — доски, Промзона — рифлёный стальной лист, Свалка — ржавое железо с заплатами,
+ * снег — утоптанный снег со льдом. Цвета светлые и тёплые, чтобы скат читался на асфальте.
+ */
+const _rampTexCache = {};
+export function rampTexture(kind) {
+    if (_rampTexCache[kind]) return _rampTexCache[kind];
+    const cv = document.createElement('canvas');
+    cv.width = 128; cv.height = 128;
+    const cx = cv.getContext('2d');
+    if (kind === 'promzona') {
+        cx.fillStyle = '#8f9296'; cx.fillRect(0, 0, 128, 128);
+        cx.fillStyle = '#b8bcc0';
+        for (let y = 4; y < 128; y += 16) for (let x = (y / 16) % 2 ? 12 : 4; x < 128; x += 16) {
+            cx.save(); cx.translate(x, y); cx.rotate(0.7); cx.fillRect(-5, -1.5, 10, 3); cx.restore();
+        }
+        cx.fillStyle = 'rgba(200,110,40,0.35)'; cx.fillRect(0, 100, 128, 28);
+    } else if (kind === 'svalka') {
+        cx.fillStyle = '#9a5a2a'; cx.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < 40; i++) { cx.fillStyle = Math.random() > 0.5 ? '#6e3a18' : '#c07a3a'; cx.fillRect(Math.random() * 128, Math.random() * 128, 6 + Math.random() * 14, 4 + Math.random() * 10); }
+        cx.fillStyle = '#7a7a70'; cx.fillRect(20, 30, 40, 34); cx.fillRect(74, 76, 36, 30); // заплаты
+        cx.fillStyle = '#333'; [[22, 32], [58, 32], [22, 62], [58, 62], [76, 78], [108, 78], [76, 104], [108, 104]].forEach(function(p) { cx.fillRect(p[0], p[1], 2, 2); });
+    } else if (kind === 'snow') {
+        cx.fillStyle = '#e4f0f8'; cx.fillRect(0, 0, 128, 128);
+        cx.fillStyle = 'rgba(150,200,235,0.6)';
+        for (let i = 0; i < 12; i++) { cx.beginPath(); cx.ellipse(Math.random() * 128, Math.random() * 128, 6 + Math.random() * 12, 3 + Math.random() * 5, Math.random(), 0, Math.PI * 2); cx.fill(); }
+    } else {
+        // доски
+        for (let i = 0; i < 8; i++) {
+            cx.fillStyle = i % 2 ? '#c8923c' : '#b5812f';
+            cx.fillRect(0, i * 16, 128, 16);
+            cx.fillStyle = '#6a4418'; cx.fillRect(0, i * 16 + 15, 128, 1);
+            cx.fillStyle = '#3a2a1a'; cx.fillRect(10 + (i * 37) % 100, i * 16 + 7, 2, 2); cx.fillRect(116 - (i * 23) % 90, i * 16 + 7, 2, 2);
+        }
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(1, 2);
+    _rampTexCache[kind] = tex;
+    return tex;
+}
+
 /** Где по ходу трассы разломы (доля пути): на лёгкой два, дальше — три */
 export function gapLayout(difficulty) {
     return difficulty === 'easy' ? [0.27, 0.84] : [0.23, 0.34, 0.84];
@@ -332,21 +375,33 @@ export const SETPIECE_LAYOUT = {
     debrisZones: [0.14, 0.6, 0.93]
 };
 
-/** Конусы перед разломом в полосах без трамплина — «сюда нельзя» (визуально, не преграда) */
+/**
+ * Конусы перед разломом в полосах без трамплина — «сюда нельзя». Не преграда: сбитый конус
+ * отлетает (main.js), машина едет дальше — прямо в разлом. userData.cones[] = { mesh, x, z }.
+ */
 export function createGapCones(laneXs, rampLane, zNear) {
     const g = new THREE.Group();
     const coneMat = new THREE.MeshLambertMaterial({ color: 0xff6a00 });
     const bandMat = new THREE.MeshBasicMaterial({ color: 0xf4f4f4 });
+    const cones = [];
     laneXs.forEach(function(x, li) {
         if (li === rampLane) return;
         [-0.55, 0, 0.55].forEach(function(dx) {
+            const cone = new THREE.Group();
             const c = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 10), coneMat);
-            c.position.set(x + dx, 0.3, zNear + 1.2);
-            g.add(c);
+            c.position.y = 0.3;
+            cone.add(c);
             const b = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.135, 0.09, 10), bandMat);
-            b.position.set(x + dx, 0.34, zNear + 1.2);
-            g.add(b);
+            b.position.y = 0.34;
+            cone.add(b);
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.42), coneMat);
+            base.position.y = 0.02;
+            cone.add(base);
+            cone.position.set(x + dx, 0, zNear + 1.2);
+            g.add(cone);
+            cones.push({ mesh: cone, x: x + dx, z: zNear + 1.2, hit: false, vel: null, t: 0 });
         });
     });
+    g.userData.cones = cones;
     return g;
 }

@@ -17,7 +17,10 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             disposeBossMesh
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
-        import { gapStyle, gapLayout, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
+        import { gapStyle, gapLayout, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
+        import { campaignHardConfig } from './balance.js';
+        import { loadSettings, saveSettings } from './settings.js';
+        import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
@@ -3320,7 +3323,7 @@ function startGaragePreview(carId) {
                 '<li><b>❤️ Жвачка-сердечко</b> снимает одну аварию, а если аварий нет — даёт +5 секунд.</li>' +
                 '<li><b>⛽ Зелёные стрелки — нитро.</b> Проскочил впритирку мимо зверя — «На волоске!», тоже нитро.</li>' +
                 '<li><b>👊 Босс: врежься в него 3 раза</b> — столько у первого босса HP (у следующих больше, на нитро удар двойной). Красное кольцо под ним — сейчас выстрелит, уходи в сторону.</li>' +
-                '<li><b>🕳 Разлом через всю дорогу:</b> заезжай на трамплин по жёлтым стрелкам. Объедешь — провалишься.</li>' +
+                '<li><b>🕳 Разлом через всю дорогу:</b> заезжай на трамплин по жёлтым стрелкам. Объедешь — провалишься. На нитро трамплин подбрасывает выше — за разломом висит ⭐ (−3 с).</li>' +
                 '<li><b>⚠ Под аркой</b> качается то, что сейчас упадёт, — меняй полосу.</li>' +
                 '</ul>' +
                 controls +
@@ -3345,6 +3348,84 @@ function startGaragePreview(carId) {
             return true;
         }
         window.showRaceBriefing = showRaceBriefing;
+
+        // ============================================================
+        // НАСТРОЙКИ — карточка поверх меню (src/settings.js хранит значения)
+        // ============================================================
+        function openSettingsScreen() {
+            if (document.getElementById('settings-screen')) return;
+            let st = loadSettings();
+            const el = document.createElement('div');
+            el.id = 'settings-screen';
+            el.setAttribute('role', 'dialog');
+            el.setAttribute('aria-modal', 'true');
+            const slider = function(key, label) {
+                const v = Math.round(st[key] * 100);
+                return '<label class="st-row"><span>' + label + '</span><input type="range" min="0" max="100" step="5" data-key="' + key + '" value="' + v + '"><b data-val="' + key + '">' + v + '%</b></label>';
+            };
+            const choice = function(key, opts) {
+                return '<div class="st-choice" data-key="' + key + '">' + opts.map(function(o) {
+                    return '<button type="button" data-v="' + o[0] + '"' + (String(st[key]) === String(o[0]) ? ' class="on"' : '') + '>' + o[1] + '</button>';
+                }).join('') + '</div>';
+            };
+            const toggle = function(key, label) {
+                return '<label class="st-toggle"><input type="checkbox" data-key="' + key + '"' + (st[key] ? ' checked' : '') + '><span>' + label + '</span></label>';
+            };
+            el.innerHTML =
+                '<div class="st-card">' +
+                '<div class="st-title">⚙ Настройки</div>' +
+                '<div class="st-group">Звук</div>' +
+                slider('music', '🎵 Музыка') + slider('engine', '🏎 Двигатель') + slider('sfx', '💥 Эффекты') +
+                '<div class="st-group">Графика</div>' +
+                choice('quality', [['low', '🚀 Низкое'], ['medium', '⚡ Среднее'], ['high', '🔥 Высокое']]) +
+                '<div class="st-group">Камера в заезде</div>' +
+                choice('camera', [[0, 'Сзади'], [1, 'Капот'], [2, 'Салон'], [3, 'Сбоку']]) +
+                '<div class="st-group">Удобство</div>' +
+                toggle('shake', 'Тряска камеры при ударах') +
+                toggle('vibrate', 'Вибрация телефона при аварии') +
+                '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
+                '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
+                '</div>';
+            document.body.appendChild(el);
+            const save = function(patch) {
+                st = saveSettings(Object.assign(st, patch));
+                try { if (window.soundEngine && window.soundEngine.applySettings) window.soundEngine.applySettings(st); } catch (e) {}
+            };
+            el.querySelectorAll('input[type=range]').forEach(function(inp) {
+                inp.addEventListener('input', function() {
+                    const k = inp.dataset.key;
+                    el.querySelector('[data-val="' + k + '"]').textContent = inp.value + '%';
+                    save({ [k]: parseInt(inp.value, 10) / 100 });
+                });
+            });
+            // проба громкости эффектов — сразу слышно, что изменилось
+            el.querySelector('input[data-key="sfx"]').addEventListener('change', function() {
+                try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.0); } catch (e) {}
+            });
+            el.querySelectorAll('.st-choice').forEach(function(box) {
+                box.addEventListener('click', function(ev) {
+                    const b = ev.target.closest('button');
+                    if (!b) return;
+                    box.querySelectorAll('button').forEach(function(x) { x.classList.toggle('on', x === b); });
+                    const k = box.dataset.key;
+                    const v = k === 'camera' ? parseInt(b.dataset.v, 10) : b.dataset.v;
+                    save({ [k]: v });
+                    if (k === 'quality') applyQualityChoice(v);
+                });
+            });
+            el.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+                cb.addEventListener('change', function() { save({ [cb.dataset.key]: cb.checked }); });
+            });
+            el.querySelector('#settings-briefing').addEventListener('click', function(ev) {
+                try { localStorage.removeItem(BRIEFING_KEY); } catch (e) {}
+                ev.currentTarget.textContent = '✓ Покажем в следующем заезде';
+            });
+            const close = function() { el.remove(); document.removeEventListener('keydown', onKey); };
+            const onKey = function(ev) { if (ev.key === 'Escape') close(); };
+            el.querySelector('#settings-close').addEventListener('click', close);
+            document.addEventListener('keydown', onKey);
+        }
+        window.openSettingsScreen = openSettingsScreen;
 
         function exitRaceToMenu(openGarageAfter) {
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
@@ -4828,7 +4909,8 @@ function startGaragePreview(carId) {
             const _cont = document.getElementById('game-container');
             if (_cont) { while (_cont.firstChild) _cont.removeChild(_cont.firstChild); }
             document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn').forEach(el => { try { el.remove(); } catch(e){} });
-            window.__camMode = 0;
+            const _settings = loadSettings();
+            window.__camMode = _settings.camera; // камера по умолчанию — из «Настроек»
             const weatherMode = weatherId || 'day';
             window.weatherMode = weatherMode;
             // тема уже выставлена в начале initGame
@@ -4836,7 +4918,11 @@ function startGaragePreview(carId) {
             window.__nightSpots = 0;
             const carPreset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
             
-            const config = DIFFICULTY_CONFIG[difficulty];
+            // кампания: «сложные» главы плавно ужесточаются к финалу (src/balance.js)
+            const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
+            const config = (difficulty === 'hard' && _campIdx >= 0)
+                ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
+                : DIFFICULTY_CONFIG[difficulty];
 
             if (window.soundEngine) {
                 window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35;
@@ -7347,10 +7433,11 @@ function startGaragePreview(carId) {
             const ramps = [];
             window.__ramps = ramps;
             const isSnowTrack = (window.__trackThemeActive === 'snow');
-            // Яркий цвет, чтобы было видно сразу
+            // Скат из материала трассы (доски / рифлёная сталь / ржавое железо / снег), светлый — читается на асфальте
+            const _rampKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
             const rampMat = new THREE.MeshLambertMaterial({
-                color: isSnowTrack ? 0xa8d8ff : 0xff9933,
-                emissive: isSnowTrack ? 0x223344 : 0x442200,
+                map: rampTexture(_rampKind),
+                emissive: 0x2a1a08,
                 emissiveIntensity: 0.25
             });
             const rampArrowMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -7469,7 +7556,14 @@ function startGaragePreview(carId) {
                 );
                 beam.position.set(x, 1.5, z);
                 scene.add(beam);
-                return { ring: ring, beam: beam };
+                // тень: растёт и темнеет к моменту удара — видно, куда именно упадёт
+                const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 20), debrisShadowMat.clone());
+                shadow.rotation.x = -Math.PI / 2;
+                shadow.position.set(x, 0.045, z);
+                shadow.scale.setScalar(0.25);
+                shadow.material.opacity = 0.12;
+                scene.add(shadow);
+                return { ring: ring, beam: beam, shadow: shadow };
             }
             function createDebrisMesh(vis) {
                 const mat = new THREE.MeshLambertMaterial({ color: vis.color, emissive: vis.emissive, emissiveIntensity: 0.2 });
@@ -7487,13 +7581,14 @@ function startGaragePreview(carId) {
                 mesh.castShadow = true;
                 return mesh;
             }
+            const debrisShadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.12, depthWrite: false });
             function spawnDebrisAt(x, z, telegraphT, dropY, hanger) {
                 const w = createDebrisWarning(x, z);
                 // луч-маячок не нужен: видно сам предмет на арке, он раскачивается
                 if (hanger && w.beam) { scene.remove(w.beam); w.beam = null; }
                 fallingDebris.push({
-                    x: x, z: z, ring: w.ring, beam: w.beam, mesh: null, hanger: hanger || null,
-                    state: 'warning', telegraphT: telegraphT, fallT: 0, lifeT: 9,
+                    x: x, z: z, ring: w.ring, beam: w.beam, shadow: w.shadow, mesh: null, hanger: hanger || null,
+                    state: 'warning', telegraphT: telegraphT, telegraph0: telegraphT, fallT: 0, lifeT: 9,
                     active: true, vis: debrisVisual(), dropY: dropY
                 });
             }
@@ -7515,8 +7610,8 @@ function startGaragePreview(carId) {
                     if (z < FINISH_Z + 40 || z > START_Z - 25) return; // не спавним у старта/финиша
                     const w = createDebrisWarning(x, z);
                     fallingDebris.push({
-                        x: x, z: z, ring: w.ring, beam: w.beam, mesh: null,
-                        state: 'warning',
+                        x: x, z: z, ring: w.ring, beam: w.beam, shadow: w.shadow, mesh: null,
+                        state: 'warning', telegraph0: telegraphT,
                         telegraphT: telegraphT,
                         fallT: 0,
                         lifeT: 9,
@@ -7641,6 +7736,28 @@ function startGaragePreview(carId) {
             // ============================================================
             const gaps = [];
             const debrisZones = [];
+            const gapCones = []; // сбиваемые конусы перед разломами
+            let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
+            const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
+            const _starGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, depthWrite: false });
+            function createStar(x, z) {
+                const g = new THREE.Group();
+                const sh = new THREE.Shape();
+                for (let i = 0; i < 10; i++) {
+                    const r = i % 2 ? 0.2 : 0.46;
+                    const a = Math.PI / 2 + i * Math.PI / 5;
+                    if (i === 0) sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); else sh.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                }
+                sh.closePath();
+                const star = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.12, bevelEnabled: false }), _starMat);
+                star.position.z = -0.06;
+                g.add(star);
+                const glow = new THREE.Mesh(new THREE.SphereGeometry(0.62, 12, 8), _starGlowMat);
+                g.add(glow);
+                g.position.set(x, 1.4, z);
+                scene.add(g);
+                return { mesh: g, x: x, z: z, type: 'star', active: true, bob: 0, radius: 1.05, airOnly: true, minY: 1.05, baseY: 1.4 };
+            }
             let nearMissCount = 0;
             let _nmCooldown = 0;
             function nearMiss() {
@@ -7695,16 +7812,20 @@ function startGaragePreview(carId) {
                         // награда за прыжок — жвачка над серединой разлома (берётся только в полёте)
                         if (gi === 0 && li === lanes[0]) {
                             const c = createCollectible(zNear - GAP_LEN / 2, 'gum');
-                            c.x = _rampLaneXs[li]; c.mesh.position.x = c.x; c.mesh.position.y = 1.3; c.airOnly = true;
+                            c.x = _rampLaneXs[li]; c.mesh.position.x = c.x; c.baseY = 1.3; c.airOnly = true;
                             collectibles.push(c);
                         }
+                        // звезда высоко за разломом: обычный прыжок до неё не достаёт (~0.6), нитро-прыжок — да (~1.4)
+                        collectibles.push(createStar(_rampLaneXs[li], zNear + 0.8 - 12));
                     });
                     const mesh = createGapMesh(TRACK_WIDTH, zNear, GAP_LEN, _gapStyle);
                     scene.add(mesh);
                     // знак со схемой полос: где трамплин (↑), где провал (✕)
                     scene.add(createRoadSign(['⚠ РАЗЛОМ'], -TRACK_WIDTH / 2 - 1.8, zNear + 52, { laneMark: li0, big: true }));
                     scene.add(createRoadSign(['⚠ РАЗЛОМ'], TRACK_WIDTH / 2 + 1.8, zNear + 52, { laneMark: li0, big: true }));
-                    scene.add(createGapCones(_rampLaneXs, li0, zNear));
+                    const coneGroup = createGapCones(_rampLaneXs, li0, zNear);
+                    scene.add(coneGroup);
+                    (coneGroup.userData.cones || []).forEach(function(cn) { gapCones.push(cn); });
                     gaps.push({ zNear: zNear, zFar: zNear - GAP_LEN, mesh: mesh, lanes: lanes, used: false });
                 });
                 const srcKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
@@ -7717,6 +7838,14 @@ function startGaragePreview(carId) {
                     scene.add(createRoadSign(warn, TRACK_WIDTH / 2 + 1.6, z + 55));
                     debrisZones.push({ z: z, src: src, hangers: src.userData.hangers || [], drops: dropsN, fired: false });
                 });
+                // сцена карты
+                const evKind = (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
+                const evZ = _zAt(MAP_EVENT_AT);
+                clearZone(evZ + 30, evZ - 45);
+                mapEvent = createMapEvent(evKind, TRACK_WIDTH, evZ, _rampLaneXs);
+                scene.add(mapEvent.group);
+                const evSign = evKind === 'promzona' ? ['ОСТОРОЖНО', 'ВЫБРОС ПАРА'] : evKind === 'svalka' ? ['ОСТОРОЖНО', 'ГОРЯЩИЕ ШИНЫ'] : ['⚠ Ж/Д ПЕРЕЕЗД', 'ОСТОРОЖНО, ПОЕЗД'];
+                scene.add(createRoadSign(evSign, -TRACK_WIDTH / 2 - 1.8, evZ + 60, { big: true }));
             } catch (eSet) { console.warn('setpieces', eSet); }
 
             // ============================================================
@@ -7941,7 +8070,7 @@ function startGaragePreview(carId) {
                     scene.add(hpBar); // не child group — без умножения на scale
                     boss.hpBar = hpBar;
                     boss._hpWorld = new THREE.Vector3();
-                    updateBossHpBar(boss);
+                    updateBossHpBar(boss, camera);
                 } catch (e) { console.warn('hpBar', e); }
 
                 bossSpawned = true;
@@ -8349,6 +8478,7 @@ function startGaragePreview(carId) {
                 if (gameState !== 'racing') return;
                 logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
                 strikes++;
+                try { if (_settings.vibrate && navigator.vibrate) navigator.vibrate(strikes >= MAX_STRIKES ? [80, 60, 160] : 70); } catch (e) {}
                 speed *= obs.penalty || 0.35;
                 stunTimer = 0.4;
                 shakeTime = 0.2;
@@ -8399,7 +8529,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; },
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = 3.2; }, stats: stats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8787,6 +8917,11 @@ function startGaragePreview(carId) {
                                     carAirborne = true;
                                     carAirVel = (1.0 + speed * 2.4) * rp.height;
                                     carYOffset = rp.height;
+                                    // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
+                                    if (nitroTimer > 0) {
+                                        carAirVel *= 1.6;
+                                        try { showTimePenaltyPopup(0, '🚀 Нитро-прыжок!'); } catch (e) {}
+                                    }
                                 } else {
                                     carYOffset = rp.height * p;
                                 }
@@ -8821,6 +8956,54 @@ function startGaragePreview(carId) {
                 // Разломы: не на трамплине и не в воздухе — проваливаешься (авария + штраф),
                 // машину вытаскивает на дальний край разлома
                 _nmCooldown -= deltaTime;
+                // сцена карты: поезд — авария (как зверь), пар и шины — ожог: скорость и время
+                if (mapEvent && gameState === 'racing') {
+                    const evHit = mapEvent.update({ x: xPos, z: zPos, dt: deltaTime, y: carYOffset,
+                        ups: Math.max(Math.abs(speed) * 60, MAX_SPEED * 60 * 0.45) });
+                    if (evHit) {
+                        if (evHit.strike) {
+                            handleObstacleHit({ penalty: 0.01, timePenalty: evHit.timePenalty, cause: evHit.kind });
+                            speed = 0;
+                            if (evHit.stopAt != null) zPos = Math.max(zPos, evHit.stopAt);
+                        } else {
+                            const evPen = Math.round(evHit.timePenalty * ((config && config.timePenaltyMul != null) ? config.timePenaltyMul : 1) * 10) / 10;
+                            raceTime += evPen;
+                            speed *= evHit.speedMul;
+                            stunTimer = 0.3;
+                            showTimePenaltyPopup(evPen, evHit.text);
+                            try { soundEngine.playCrashSound(0.3); } catch (e) {}
+                        }
+                        shakeTime = Math.max(shakeTime, 0.3);
+                        try {
+                            const el = document.createElement('div');
+                            el.className = 'animal-shout';
+                            el.textContent = evHit.text;
+                            postShout(el, 1400);
+                        } catch (e) {}
+                    }
+                }
+                // конусы: задел — отлетает кувырком (без штрафа, это не преграда)
+                for (let ci = 0; ci < gapCones.length; ci++) {
+                    const cn = gapCones[ci];
+                    if (!cn.hit) {
+                        if (gameState === 'racing' && carYOffset < 0.5 && Math.abs(xPos - cn.x) < 0.62 && Math.abs(zPos - cn.z) < 0.6) { // полуширина машины + конуса
+                            cn.hit = true;
+                            const sp = Math.max(8, Math.abs(speed) * 60);
+                            cn.vel = new THREE.Vector3((cn.x - xPos) * 6 + (Math.random() - 0.5) * 3, 3 + Math.random() * 2, -sp * 0.6);
+                            cn.spin = new THREE.Vector3((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 14);
+                            try { if (window.soundEngine) window.soundEngine.playSfx('bump', 0.35); } catch (e) {}
+                        }
+                        continue;
+                    }
+                    if (cn.t > 2) continue;
+                    cn.t += deltaTime;
+                    cn.vel.y -= 9.8 * deltaTime;
+                    cn.mesh.position.addScaledVector(cn.vel, deltaTime);
+                    cn.mesh.rotation.x += cn.spin.x * deltaTime;
+                    cn.mesh.rotation.y += cn.spin.y * deltaTime;
+                    cn.mesh.rotation.z += cn.spin.z * deltaTime;
+                    if (cn.t > 2) cn.mesh.visible = false;
+                }
                 for (let gi = 0; gi < gaps.length; gi++) {
                     const gp = gaps[gi];
                     if (gp.mesh && gp.mesh.userData.beacons) {
@@ -8834,11 +9017,19 @@ function startGaragePreview(carId) {
                         try {
                             const sh = document.createElement('div');
                             sh.className = 'animal-shout';
-                            sh.textContent = '🕳 Провал! Целься в трамплин';
+                            sh.textContent = '🕳 Провал!';
                             postShout(sh, 1800);
                         } catch (eSh) {}
                         shakeTime = Math.max(shakeTime, 0.45);
                         try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.5); } catch (e) {}
+                        // всплеск из разлома: машина уходит под «дно» сразу, без этого провал не читался
+                        try {
+                            for (let s2 = 0; s2 < 22; s2++) {
+                                particleSystem.emit(_v.p1.set(xPos + (Math.random() - 0.5) * 1.2, 0.2, zPos),
+                                    _v.vel.set((Math.random() - 0.5) * 3, 2.5 + Math.random() * 2.5, (Math.random() - 0.5) * 2), 1, 0.2);
+                            }
+                            if (particleSystem.explode) particleSystem.explode({ x: xPos, y: 0.3, z: zPos }, 0.7);
+                        } catch (eP) {}
                     }
                 }
                 for (let gi = 0; gi < gaps.length; gi++) {
@@ -9136,6 +9327,11 @@ function startGaragePreview(carId) {
                             d.ring.scale.set(sc, sc, sc);
                         }
                         if (d.beam) d.beam.material.opacity = 0.25 + Math.abs(Math.sin(d.telegraphT * 14)) * 0.3;
+                        if (d.shadow) {
+                            const k = 1 - Math.max(0, d.telegraphT) / Math.max(0.1, d.telegraph0 || 1);
+                            d.shadow.scale.setScalar(0.25 + k * 0.5);
+                            d.shadow.material.opacity = 0.12 + k * 0.25;
+                        }
                         if (d.hanger) {
                             const amp = 0.08 + (1 - Math.min(1, d.telegraphT)) * 0.22;
                             d.hanger.rotation.z = Math.sin(performance.now() * 0.03) * amp;
@@ -9165,9 +9361,11 @@ function startGaragePreview(carId) {
                         const t = Math.max(0, d.fallT / 0.28);
                         const gy = d.groundY != null ? d.groundY : 0.3;
                         if (d.mesh) d.mesh.position.y = gy + t * t * ((d.dropY || 3.2) - gy);
+                        if (d.shadow) { d.shadow.scale.setScalar(0.75 + (1 - t) * 0.35); d.shadow.material.opacity = 0.37 + (1 - t) * 0.25; }
                         if (d.fallT <= 0) {
                             d.state = 'active';
                             if (d.mesh) d.mesh.position.y = d.groundY != null ? d.groundY : 0.3;
+                            if (d.shadow) { scene.remove(d.shadow); d.shadow.material.dispose(); d.shadow = null; }
                             try {
                                 for (let s = 0; s < 8; s++) {
                                     particleSystem.emit(
@@ -9193,7 +9391,10 @@ function startGaragePreview(carId) {
                                 shakeTime = 0.2;
                                 try { soundEngine.playCrashSound(0.3); } catch (e) {}
                                 try { if (playerCar) playerCar.userData._suspensionKick = 0.18; } catch (e) {}
-                                showTimePenaltyPopup(1.5 * ((config && config.timePenaltyMul != null) ? config.timePenaltyMul : 1), 'Обломки!');
+                                // штраф был только надписью «−1.5 с» — к времени заезда ничего не прибавлялось
+                                const debrisPen = Math.round(1.5 * ((config && config.timePenaltyMul != null) ? config.timePenaltyMul : 1) * 10) / 10;
+                                raceTime += debrisPen;
+                                showTimePenaltyPopup(debrisPen, 'Обломки!');
                                 try {
                                     for (let s = 0; s < 10; s++) {
                                         particleSystem.emit(
@@ -9238,8 +9439,12 @@ function startGaragePreview(carId) {
                     if (!c.active) return;
                     if (c.type === 'gum') {
                         c.bob += deltaTime * 3;
-                        c.mesh.position.y = Math.sin(c.bob) * 0.08;
+                        c.mesh.position.y = (c.baseY || 0) + Math.sin(c.bob) * 0.08; // было без baseY: жвачка над разломом лежала на земле
                         c.mesh.rotation.y += deltaTime * 2;
+                    } else if (c.type === 'star') {
+                        c.bob += deltaTime * 2.5;
+                        c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.12;
+                        c.mesh.rotation.y += deltaTime * 2.4;
                     } else if (c.type === 'nitro') {
                         // стрелки пульсируют emissive
                         c.bob += deltaTime * 4;
@@ -9252,12 +9457,27 @@ function startGaragePreview(carId) {
 
                     const dx = xPos - c.x;
                     const dz = zPos - c.z;
-                    if (c.airOnly && carYOffset < 0.6) return; // висит над разломом — берётся в прыжке
+                    if (c.airOnly && carYOffset < (c.minY || 0.6)) return; // висит в воздухе — берётся только в прыжке
                     const hitR = c.type === 'nitro' ? 0.85 : (c.radius || 0.55);
                     if (Math.abs(dx) < hitR && Math.abs(dz) < hitR * (c.type === 'nitro' ? 1.4 : 1)) {
                         c.active = false;
                         c.mesh.visible = false;
-                        if (c.type === 'nitro') {
+                        if (c.type === 'star') {
+                            raceTime = Math.max(0, raceTime - 3);
+                            stats.starsPicked = (stats.starsPicked || 0) + 1;
+                            showTimePenaltyPopup(0, '⭐ −3 с');
+                            try {
+                                const el = document.createElement('div');
+                                el.className = 'animal-shout';
+                                el.textContent = '⭐ Звезда за нитро-прыжок! −3 с';
+                                el.style.color = '#ffd84a';
+                                el.style.borderColor = '#ffd84a';
+                                postShout(el, 1500);
+                                if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.3);
+                            } catch (e) {}
+                            try { particleSystem.emit(_v.p1.set(c.x, carYOffset + 0.6, c.z), _v.vel.set(0, 1.5, 0), 16, 0.2); } catch (e) {}
+                            updateHUD();
+                        } else if (c.type === 'nitro') {
                             nitroTimer = 3.2;
                             fovPunch = 14;
                             stats.nitroPicked++;
@@ -9829,7 +10049,7 @@ function startGaragePreview(carId) {
                                     18, 0.35
                                 );
                             } catch (e) {}
-                            updateBossHpBar(boss);
+                            updateBossHpBar(boss, camera);
                             try { updateBossHeadQuote(boss); } catch (eQ) {}
                             try {
                                 if (currentPlayer && currentPlayer.season) {
@@ -9844,11 +10064,11 @@ function startGaragePreview(carId) {
                             } catch (e) {}
                         } else {
                             showBossShout((boss.name || 'Босс') + ' HP ' + Math.max(0, boss.hp) + '/' + (boss.maxHp || 3));
-                            try { updateBossHpBar(boss); updateBossHeadQuote(boss); } catch (e) {}
+                            try { updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
                         }
                     }
                     } // end !dying
-                    try { if (!boss.dying) updateBossHpBar(boss); updateBossHeadQuote(boss); } catch (e) {}
+                    try { if (!boss.dying) updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
 
                     // Обгон: уехали вперёд от босса — он сдаётся
                     if (boss.active && !boss.dying && zPos < boss.z - 22) {
@@ -10058,7 +10278,7 @@ function startGaragePreview(carId) {
 
                 if (shakeTime > 0) {
                     shakeTime = Math.max(0, shakeTime - deltaTime);
-                    if (!(typeof weatherMode !== 'undefined' && weatherMode === 'night')) {
+                    if (_settings.shake && !(typeof weatherMode !== 'undefined' && weatherMode === 'night')) {
                         const power = Math.min(shakeTime, 0.16) * 0.03;
                         const t = performance.now() * 0.04;
                         camera.position.x += Math.sin(t * 1.5) * power;
@@ -10538,13 +10758,21 @@ function startGaragePreview(carId) {
         // ============================================================
         // НАСТРОЙКИ КАЧЕСТВА
         // ============================================================
-        let selectedQuality = 'medium';
+        // качество по умолчанию — из настроек; выбор на экране сложности и в «Настройках» — одно и то же
+        let selectedQuality = loadSettings().quality;
+        function applyQualityChoice(q) {
+            selectedQuality = q;
+            try { window.__lastQuality = q; pendingQuality = q; } catch (e) {}
+            document.querySelectorAll('.quality-selector .q-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.quality === q); });
+        }
+        applyQualityChoice(selectedQuality);
 
         document.querySelectorAll('.quality-selector .q-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.quality-selector .q-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 selectedQuality = btn.dataset.quality;
+                saveSettings(Object.assign(loadSettings(), { quality: selectedQuality }));
             });
         });
 
@@ -11065,6 +11293,8 @@ function showLoreScreen(quality, difficulty) {
             if (rewardsClose) rewardsClose.addEventListener('click', function() {
                 if (typeof showMainMenu === 'function') showMainMenu();
             });
+            const settingsBtn = document.getElementById('main-menu-settings');
+            if (settingsBtn) settingsBtn.addEventListener('click', function() { openSettingsScreen(); });
             const eventsClose = document.getElementById('events-close');
             if (eventsClose) eventsClose.addEventListener('click', function() {
                 if (typeof showMainMenu === 'function') showMainMenu();

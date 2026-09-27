@@ -30,6 +30,10 @@ class AnimalSpawner {
         this.crossMul = (typeof crossMul === 'number' && crossMul > 0) ? crossMul : 1.0;
         this.startZ = startZ;
         this.enabled = true;
+        // два зверя подряд — не ближе minGap по трассе (~1 с реакции на крейсерской скорости):
+        // план с разбросом ±10% пути сбивал зверей в «стену» по 5 штук на 120 ед.
+        this.minGap = 24;
+        this._lastSpawnZ = null;
         
         this.mandatoryPool = [];
         this.speciesCount = {};
@@ -199,7 +203,9 @@ class AnimalSpawner {
                     this._planFromLeft = item.fromLeft;
                 }
             }
+            if (this._lastSpawnZ != null && spawnZ > this._lastSpawnZ - this.minGap) spawnZ = this._lastSpawnZ - this.minGap;
             if (spawnZ > this.finishZ) {
+                this._lastSpawnZ = spawnZ;
                 const typeId = this.getNextSpecies();
                 const animal = this.createAnimal(spawnZ, typeId);
                 this.animals.push(animal);

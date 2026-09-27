@@ -4204,3 +4204,43 @@
             #race-briefing .br-keys { font-size: 12px; margin-bottom: 8px; padding: 4px; }
             #race-briefing .br-go { min-height: 42px; font-size: 17px; }
         }
+
+        /* ===== Настройки: карточка поверх меню ===== */
+        #settings-screen {
+            position: fixed; inset: 0; z-index: 9000;
+            display: flex; align-items: center; justify-content: center;
+            padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+            box-sizing: border-box; background: rgba(0, 0, 0, 0.78);
+            overflow-y: auto; animation: uiFadeIn 0.2s ease both;
+        }
+        #settings-screen .st-card {
+            width: min(460px, 100%); max-height: 100%; overflow-y: auto; box-sizing: border-box;
+            background: linear-gradient(180deg, #1a1620, #0e0c12);
+            border: 2px solid rgba(255, 220, 0, 0.5); border-radius: 16px;
+            padding: 14px 16px; color: #eee; font-family: system-ui, 'Segoe UI', Arial, sans-serif;
+            box-shadow: 0 18px 60px rgba(0, 0, 0, 0.85);
+            animation: uiPop 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        #settings-screen .st-title { font: 900 24px/1.1 Impact, 'Arial Black', sans-serif; color: #ffdd00; margin-bottom: 6px; }
+        #settings-screen .st-group { font-size: 12px; font-weight: 700; color: #ffaa44; text-transform: uppercase; letter-spacing: 1px; margin: 12px 0 6px; }
+        #settings-screen .st-row { display: grid; grid-template-columns: 110px 1fr 46px; align-items: center; gap: 8px; font-size: 14px; margin: 6px 0; }
+        #settings-screen .st-row input { width: 100%; accent-color: #ffdd00; min-height: 28px; }
+        #settings-screen .st-row b { text-align: right; color: #ffdd00; font-size: 13px; }
+        #settings-screen .st-choice { display: flex; gap: 6px; flex-wrap: wrap; }
+        #settings-screen .st-choice button {
+            flex: 1 1 0; min-height: 38px; min-width: 70px; border-radius: 10px; cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.06); color: #ddd; font-weight: 700;
+        }
+        #settings-screen .st-choice button.on { border-color: #ffdd00; color: #ffdd00; background: rgba(255, 220, 0, 0.12); }
+        #settings-screen .st-toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; margin: 8px 0; cursor: pointer; min-height: 32px; }
+        #settings-screen .st-toggle input { width: 22px; height: 22px; accent-color: #33ff66; }
+        #settings-screen .st-btn {
+            display: block; width: 100%; min-height: 44px; margin-top: 10px; border-radius: 12px; cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.25); background: rgba(30, 30, 40, 0.95); color: #eee; font-weight: 700; font-size: 14px;
+        }
+        #settings-screen .st-btn.primary { border-color: rgba(255, 220, 0, 0.6); color: #ffdd00; }
+        @media screen and (max-height: 500px) {
+            #settings-screen .st-card { padding: 10px 14px; }
+            #settings-screen .st-group { margin: 6px 0 4px; }
+            #settings-screen .st-row { margin: 2px 0; }
+        }
