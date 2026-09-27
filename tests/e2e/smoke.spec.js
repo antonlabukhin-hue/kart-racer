@@ -128,6 +128,32 @@ test('экраны меню открываются без ошибок', { tag: 
     expect(problems).toEqual([]);
 });
 
+test('первый заезд: «Даю установку:» держит отсчёт до «Погнали», второй раз не показывается', { tag: '@smoke' }, async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Новичок', './', { briefing: true });
+    await startFreeRace(page);
+    const br = page.locator('#race-briefing');
+    await expect(br).toBeVisible();
+    await expect(br).toContainText('Даю установку:');
+    await expect(br).toContainText('5 аварий');
+    // отсчёт и время стоят, пока плашка открыта
+    await page.waitForTimeout(4500);
+    await expect(page.locator('#timeDisplay')).toHaveText('1:30');
+    expect(await progress(page)).toBeLessThan(1);
+    await page.locator('#race-briefing-go').click();
+    await expect(br).toHaveCount(0);
+    await page.keyboard.down('w');
+    await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
+    await page.keyboard.up('w');
+    // второй заезд — без плашки
+    await page.keyboard.press('Escape');
+    await page.locator('#pause-menu').click();
+    await startFreeRace(page);
+    await page.waitForTimeout(1500);
+    await expect(br).toHaveCount(0);
+    expect(problems).toEqual([]);
+});
+
 test('с выбора карты можно вернуться к сложности и в меню', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);

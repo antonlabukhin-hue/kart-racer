@@ -17,7 +17,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             disposeBossMesh
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
-        import { gapStyle, gapRampLanes, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
+        import { gapStyle, gapLayout, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
@@ -3254,6 +3254,12 @@ function startGaragePreview(carId) {
                 const tip = document.getElementById('onboarding-tip');
                 if (tip) { tip.classList.remove('show'); tip.innerHTML = ''; }
             } catch (e) {}
+            try {
+                const br = document.getElementById('race-briefing');
+                if (br) br.remove();
+                if (window.__briefingClose) document.removeEventListener('keydown', window.__briefingClose, true);
+                window.__briefingOpen = false;
+            } catch (e) {}
         };
 
 
@@ -3292,6 +3298,53 @@ function startGaragePreview(carId) {
             }, 900);
         }
         window.showFirstRaceOnboarding = showFirstRaceOnboarding;
+
+        // «Даю установку:» — при первом заезде отсчёт стоит, пока игрок не прочитает правила и не нажмёт «Погнали»
+        const BRIEFING_KEY = 'road_racing_briefing_v2';
+        function showRaceBriefing() {
+            try { if (localStorage.getItem(BRIEFING_KEY) === '1') return false; } catch (e) {}
+            const mobile = !!(window.__isMobile || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches));
+            const controls = mobile
+                ? '<div class="br-keys"><span>▲</span> газ <span>▼</span> тормоз <span>◀</span><span>▶</span> полосы <span>⏸</span> пауза <span>📷</span> камера</div>'
+                : '<div class="br-keys"><span>W</span>/<span>↑</span> газ · <span>S</span>/<span>↓</span> тормоз · <span>A</span><span>D</span>/<span>←</span><span>→</span> полосы<br><span>P</span>/<span>Esc</span> пауза · <span>C</span> камера</div>';
+            const el = document.createElement('div');
+            el.id = 'race-briefing';
+            el.setAttribute('role', 'dialog');
+            el.setAttribute('aria-modal', 'true');
+            el.innerHTML =
+                '<div class="br-card">' +
+                '<div class="br-title">Даю установку:</div>' +
+                '<ul class="br-list">' +
+                '<li><b>⏱ Доставь груз за 1:30.</b> Время на табло слева — не зевай.</li>' +
+                '<li><b>🐾 В зверей и машины не врезайся.</b> Каждое столкновение — авария и штраф по времени. <b>5 аварий — проигрыш.</b></li>' +
+                '<li><b>❤️ Жвачка-сердечко</b> снимает одну аварию, а если аварий нет — даёт +5 секунд.</li>' +
+                '<li><b>⛽ Зелёные стрелки — нитро.</b> Проскочил впритирку мимо зверя — «На волоске!», тоже нитро.</li>' +
+                '<li><b>👊 Босс: врежься в него 3 раза</b> — столько у первого босса HP (у следующих больше, на нитро удар двойной). Красное кольцо под ним — сейчас выстрелит, уходи в сторону.</li>' +
+                '<li><b>🕳 Разлом через всю дорогу:</b> заезжай на трамплин по жёлтым стрелкам. Объедешь — провалишься.</li>' +
+                '<li><b>⚠ Под аркой</b> качается то, что сейчас упадёт, — меняй полосу.</li>' +
+                '</ul>' +
+                controls +
+                '<button type="button" class="br-go" id="race-briefing-go">Погнали →</button>' +
+                '</div>';
+            document.body.appendChild(el);
+            const go = function(ev) {
+                if (ev && ev.type === 'keydown' && ev.key !== 'Enter' && ev.key !== ' ') return;
+                if (ev) { try { ev.preventDefault(); } catch (e) {} }
+                document.removeEventListener('keydown', go, true);
+                try { localStorage.setItem(BRIEFING_KEY, '1'); } catch (e) {}
+                el.classList.add('closing');
+                setTimeout(function() { try { el.remove(); } catch (e) {} }, 220);
+                window.__briefingOpen = false;
+                try { if (window.soundEngine && window.soundEngine.audioCtx && window.soundEngine.audioCtx.state === 'suspended') window.soundEngine.audioCtx.resume(); } catch (e) {}
+            };
+            el.querySelector('#race-briefing-go').addEventListener('click', go);
+            document.addEventListener('keydown', go, true);
+            window.__briefingClose = go;
+            setTimeout(function() { try { el.querySelector('#race-briefing-go').focus(); } catch (e) {} }, 50);
+            window.__briefingOpen = true;
+            return true;
+        }
+        window.showRaceBriefing = showRaceBriefing;
 
         function exitRaceToMenu(openGarageAfter) {
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
@@ -7294,7 +7347,6 @@ function startGaragePreview(carId) {
             const ramps = [];
             window.__ramps = ramps;
             const isSnowTrack = (window.__trackThemeActive === 'snow');
-            const rampCount = isSnowTrack ? 5 : (window.__isMobile ? 3 : 4);
             // Яркий цвет, чтобы было видно сразу
             const rampMat = new THREE.MeshLambertMaterial({
                 color: isSnowTrack ? 0xa8d8ff : 0xff9933,
@@ -7327,13 +7379,6 @@ function startGaragePreview(carId) {
                     ar.position.set(0, 0.09 + 0.035, along);
                     mesh.add(ar);
                 }
-                // Маркер-столбик сбоку (чтобы заметить издалека)
-                const pole = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.08, 0.1, 1.2, 6),
-                    new THREE.MeshLambertMaterial({ color: 0xff2222 })
-                );
-                pole.position.set(width * 0.65, 0.6, len * 0.3);
-                group.add(pole);
                 group.position.set(laneX, 0, z);
                 scene.add(group);
                 const half = len * 0.5;
@@ -7343,16 +7388,7 @@ function startGaragePreview(carId) {
                     len: len, width: width, height: height, active: true
                 };
             }
-            // Ближе к старту + равномерно до финиша (игрок едет START_Z → FINISH_Z, z уменьшается)
-            const _laneXs = [-TRACK_WIDTH * 0.25, 0, TRACK_WIDTH * 0.25];
-            for (let ri = 0; ri < rampCount; ri++) {
-                const t = (ri + 0.35) / (rampCount + 0.2); // 0.2..~0.9
-                const rz = START_Z - 25 - t * (START_Z - FINISH_Z - 80);
-                const lx = _laneXs[ri % 3];
-                const rh = isSnowTrack ? 0.75 + Math.random() * 0.25 : 0.65 + Math.random() * 0.3;
-                ramps.push(createRamp(rz, lx, rh));
-            }
-            console.log('ramps:', ramps.length, 'z=', ramps.map(function(r){ return Math.round(r.z); }), isSnowTrack ? 'snow' : 'normal');
+            // Трамплинов «просто так» нет: каждый стоит перед разломом — ставятся ниже, в ПОСТАНОВОЧНЫХ УЧАСТКАХ
 
             // Бонусные препятствия по картам
             if (mapId === 'svalka') {
@@ -7426,10 +7462,12 @@ function startGaragePreview(carId) {
                 mesh.castShadow = true;
                 return mesh;
             }
-            function spawnDebrisAt(x, z, telegraphT, dropY) {
+            function spawnDebrisAt(x, z, telegraphT, dropY, hanger) {
                 const w = createDebrisWarning(x, z);
+                // луч-маячок не нужен: видно сам предмет на арке, он раскачивается
+                if (hanger && w.beam) { scene.remove(w.beam); w.beam = null; }
                 fallingDebris.push({
-                    x: x, z: z, ring: w.ring, beam: w.beam, mesh: null,
+                    x: x, z: z, ring: w.ring, beam: w.beam, mesh: null, hanger: hanger || null,
                     state: 'warning', telegraphT: telegraphT, fallT: 0, lifeT: 9,
                     active: true, vis: debrisVisual(), dropY: dropY
                 });
@@ -7614,14 +7652,16 @@ function startGaragePreview(carId) {
                 }
             }
             try {
-                const lanesN = gapRampLanes(difficulty);
-                SETPIECE_LAYOUT.gaps.forEach(function(frac, gi) {
+                let prevLane = -1;
+                gapLayout(difficulty).forEach(function(frac, gi) {
                     const zNear = _zAt(frac);
                     clearZone(zNear + 45, zNear - GAP_LEN - 15);
-                    // какие полосы с трамплином: на сложной — случайная одна, на средней — две соседние
-                    const order = [0, 1, 2].sort(function() { return Math.random() - 0.5; });
-                    let lanes = order.slice(0, lanesN);
-                    if (lanesN === 2 && Math.abs(lanes[0] - lanes[1]) !== 1) lanes = [1, order[0] === 1 ? order[1] : order[0]];
+                    // разлом во всю ширину, трамплин — в одной полосе (не там же, где в прошлый раз):
+                    // объехал трамплин — провалился
+                    let li0 = Math.floor(Math.random() * 3);
+                    if (li0 === prevLane) li0 = (li0 + 1 + Math.floor(Math.random() * 2)) % 3;
+                    prevLane = li0;
+                    const lanes = [li0];
                     lanes.forEach(function(li) {
                         const r = createRamp(zNear + 0.8 + 2.0, _rampLaneXs[li], 0.85);
                         r.gapRamp = true;
@@ -7636,20 +7676,21 @@ function startGaragePreview(carId) {
                     });
                     const mesh = createGapMesh(TRACK_WIDTH, zNear, GAP_LEN, _gapStyle);
                     scene.add(mesh);
-                    const signText = lanesN === 3 ? ['⚠ РАЗЛОМ', 'ПРЫГАЙ!'] : ['⚠ РАЗЛОМ', 'ТРАМПЛИН →', lanesN === 1 ? 'ОДНА ПОЛОСА' : 'ДВЕ ПОЛОСЫ'];
-                    scene.add(createRoadSign(signText, -TRACK_WIDTH / 2 - 1.6, zNear + 70));
-                    scene.add(createRoadSign(signText, TRACK_WIDTH / 2 + 1.6, zNear + 70));
+                    // знак со схемой полос: где трамплин (↑), где провал (✕)
+                    scene.add(createRoadSign(['⚠ РАЗЛОМ'], -TRACK_WIDTH / 2 - 1.8, zNear + 52, { laneMark: li0, big: true }));
+                    scene.add(createRoadSign(['⚠ РАЗЛОМ'], TRACK_WIDTH / 2 + 1.8, zNear + 52, { laneMark: li0, big: true }));
+                    scene.add(createGapCones(_rampLaneXs, li0, zNear));
                     gaps.push({ zNear: zNear, zFar: zNear - GAP_LEN, mesh: mesh, lanes: lanes, used: false });
                 });
                 const srcKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
                 const dropsN = difficulty === 'easy' ? 1 : 2;
                 SETPIECE_LAYOUT.debrisZones.forEach(function(frac) {
                     const z = _zAt(frac);
-                    const src = createDebrisSource(srcKind, TRACK_WIDTH, z);
+                    const src = createDebrisSource(srcKind, TRACK_WIDTH, z, debrisLaneXs);
                     scene.add(src);
-                    const warn = srcKind === 'promzona' || srcKind === 'svalka' ? ['ОСТОРОЖНО', 'РАБОТАЕТ КРАН'] : (srcKind === 'snow' ? ['ОСТОРОЖНО', 'СОСУЛЬКИ'] : ['ОСТОРОЖНО', 'ЭСТАКАДА', 'РУШИТСЯ']);
+                    const warn = srcKind === 'snow' ? ['ОСТОРОЖНО', 'СОСУЛЬКИ'] : srcKind === 'promzona' ? ['ОСТОРОЖНО', 'ГРУЗ НАД ДОРОГОЙ'] : srcKind === 'svalka' ? ['ОСТОРОЖНО', 'ПАДАЕТ ХЛАМ'] : ['ОСТОРОЖНО', 'АРКА РУШИТСЯ'];
                     scene.add(createRoadSign(warn, TRACK_WIDTH / 2 + 1.6, z + 55));
-                    debrisZones.push({ z: z, src: src, dropY: src.userData.dropY || 4, drops: dropsN, fired: false, trolleyX: 0, targetX: 0 });
+                    debrisZones.push({ z: z, src: src, hangers: src.userData.hangers || [], drops: dropsN, fired: false });
                 });
             } catch (eSet) { console.warn('setpieces', eSet); }
 
@@ -8090,6 +8131,7 @@ function startGaragePreview(carId) {
             let stunTimer = 0;
             let shakeTime = 0;
             let gameState = 'countdown';
+            let briefingChecked = false;
             let countdownT = 3.2;
             let countdownLast = -1;
             let _lastLaneIdx = 0;
@@ -8332,7 +8374,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; },
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; },
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8703,7 +8745,9 @@ function startGaragePreview(carId) {
                             // не происходит. Поэтому дополнительно проверяем отрезок движения за кадр:
                             // если машина была перед трамплином, а стала за ним (или уже в зоне
                             // p>0.9 прошла его насквирь), считаем, что съезд с трамплина случился.
-                            const crossedRamp = !insideNow && zPosBeforeMove >= rp.zEnter && zPos <= rp.zExit;
+                            // Считаем по краю съезда: кадр мог начаться на трамплине при p≈0.85–0.9
+                            // (за кадр ~10% длины) и закончиться уже за ним — раньше это был «съезд без прыжка»
+                            const crossedRamp = !insideNow && zPosBeforeMove >= rp.zExit && zPos <= rp.zExit;
                             if (insideNow || crossedRamp) {
                                 const prog = (rp.zEnter - zPos) / Math.max(0.1, rp.len);
                                 const p = Math.max(0, Math.min(1, prog));
@@ -9040,19 +9084,15 @@ function startGaragePreview(carId) {
                         const dist = zPos - dz0.z;
                         if (!dz0.fired && dist > 8 && dist < ups * 1.9 + 4) {
                             dz0.fired = true;
-                            const laneOrder = debrisLaneXs.slice().sort(function() { return Math.random() - 0.5; });
-                            for (let k = 0; k < dz0.drops; k++) {
+                            // одна полоса всегда свободна; первым падает то, что над машиной
+                            const order = dz0.hangers.map(function(h, i) { return i; })
+                                .sort(function(a, b) { return Math.abs(dz0.hangers[a].x - xPos) - Math.abs(dz0.hangers[b].x - xPos); });
+                            const n = Math.min(dz0.drops, Math.max(0, dz0.hangers.length - 1));
+                            for (let k = 0; k < n; k++) {
+                                const hg = dz0.hangers[order[k]];
                                 const tArrive = dist / ups;
-                                spawnDebrisAt(laneOrder[k], dz0.z - k * 1.5, Math.max(0.55, tArrive - 0.28 - 0.1 + k * 0.08), dz0.dropY);
+                                spawnDebrisAt(hg.x, dz0.z, Math.max(0.55, tArrive - 0.32 - 0.1 + k * 0.08), 0, hg.mesh);
                             }
-                            dz0.targetX = laneOrder[0];
-                        }
-                        // тележка крана подъезжает к полосе сброса
-                        const tr = dz0.src && dz0.src.userData.trolley;
-                        if (tr) {
-                            dz0.trolleyX += (dz0.targetX - dz0.trolleyX) * Math.min(1, deltaTime * 3);
-                            if (!dz0.fired) dz0.targetX = Math.sin(performance.now() * 0.0007 + zi) * TRACK_WIDTH * 0.3;
-                            tr.position.x = dz0.trolleyX;
                         }
                     }
                 }
@@ -9068,23 +9108,38 @@ function startGaragePreview(carId) {
                             d.ring.scale.set(sc, sc, sc);
                         }
                         if (d.beam) d.beam.material.opacity = 0.25 + Math.abs(Math.sin(d.telegraphT * 14)) * 0.3;
+                        if (d.hanger) {
+                            const amp = 0.08 + (1 - Math.min(1, d.telegraphT)) * 0.22;
+                            d.hanger.rotation.z = Math.sin(performance.now() * 0.03) * amp;
+                        }
                         if (d.telegraphT <= 0) {
                             d.state = 'falling';
                             d.fallT = 0.28;
-                            d.mesh = createDebrisMesh(d.vis);
-                            d.dropY = d.dropY || 3.2;
-                            d.mesh.position.set(d.x, d.dropY, d.z);
-                            scene.add(d.mesh);
+                            if (d.hanger) {
+                                // отрывается то, что висело: переносим в сцену с тем же мировым положением
+                                scene.attach(d.hanger);
+                                d.hanger.rotation.z = 0;
+                                d.mesh = d.hanger;
+                                d.dropY = d.hanger.position.y;
+                                d.groundY = (d.hanger.userData.height || 0.6) - 0.05;
+                                d.hanger = null;
+                            } else {
+                                d.mesh = createDebrisMesh(d.vis);
+                                d.dropY = d.dropY || 3.2;
+                                d.mesh.position.set(d.x, d.dropY, d.z);
+                                scene.add(d.mesh);
+                            }
                             if (d.ring) { scene.remove(d.ring); d.ring = null; }
                             if (d.beam) { scene.remove(d.beam); d.beam = null; }
                         }
                     } else if (d.state === 'falling') {
                         d.fallT -= deltaTime;
                         const t = Math.max(0, d.fallT / 0.28);
-                        if (d.mesh) d.mesh.position.y = 0.3 + t * ((d.dropY || 3.2) - 0.3);
+                        const gy = d.groundY != null ? d.groundY : 0.3;
+                        if (d.mesh) d.mesh.position.y = gy + t * t * ((d.dropY || 3.2) - gy);
                         if (d.fallT <= 0) {
                             d.state = 'active';
-                            if (d.mesh) d.mesh.position.y = 0.3;
+                            if (d.mesh) d.mesh.position.y = d.groundY != null ? d.groundY : 0.3;
                             try {
                                 for (let s = 0; s < 8; s++) {
                                     particleSystem.emit(
@@ -9100,7 +9155,8 @@ function startGaragePreview(carId) {
                         d.lifeT -= deltaTime;
                         const dx = xPos - d.x;
                         const dz = zPos - d.z;
-                        if (Math.abs(dx) < 0.55 && Math.abs(dz) < 0.55) {
+                        const hitR = d.groundY != null ? 0.7 : 0.55; // предметы с арки крупнее
+                        if (Math.abs(dx) < hitR && Math.abs(dz) < hitR) {
                             if (carAirborne || carYOffset > 0.45) {
                                 try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
                             } else {
@@ -10035,8 +10091,13 @@ function startGaragePreview(carId) {
 
                 // ---- 3-2-1-GO ----
                 if (gameState === 'countdown') {
+                    // первый заезд: «Даю установку:» — отсчёт ждёт кнопку «Погнали»
+                    if (!briefingChecked) {
+                        briefingChecked = true;
+                        try { showRaceBriefing(); } catch (eBr) { window.__briefingOpen = false; }
+                    }
                     // пауза должна останавливать и отсчёт, не только саму гонку
-                    if (window.__racePaused) {
+                    if (window.__racePaused || window.__briefingOpen) {
                         lastTime = currentTime;
                         try { renderer.render(scene, camera); } catch (e) {}
                         return;
@@ -10109,7 +10170,6 @@ function startGaragePreview(carId) {
                             if (window.soundEngine) window.soundEngine.playSfx('go', 1.2);
                         } catch (e) {}
                         gameState = 'racing';
-                        try { showFirstRaceOnboarding(); } catch (eOnb) {}
                         try { if (typeof fovPunch !== 'undefined') fovPunch = 12; } catch (e) {}
                         try {
                             if (window.soundEngine) {
