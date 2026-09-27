@@ -7474,7 +7474,14 @@ function startGaragePreview(carId) {
                 );
                 beam.position.set(x, 1.5, z);
                 scene.add(beam);
-                return { ring: ring, beam: beam };
+                // тень: растёт и темнеет к моменту удара — видно, куда именно упадёт
+                const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 20), debrisShadowMat.clone());
+                shadow.rotation.x = -Math.PI / 2;
+                shadow.position.set(x, 0.045, z);
+                shadow.scale.setScalar(0.25);
+                shadow.material.opacity = 0.12;
+                scene.add(shadow);
+                return { ring: ring, beam: beam, shadow: shadow };
             }
             function createDebrisMesh(vis) {
                 const mat = new THREE.MeshLambertMaterial({ color: vis.color, emissive: vis.emissive, emissiveIntensity: 0.2 });
@@ -7492,13 +7499,14 @@ function startGaragePreview(carId) {
                 mesh.castShadow = true;
                 return mesh;
             }
+            const debrisShadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.12, depthWrite: false });
             function spawnDebrisAt(x, z, telegraphT, dropY, hanger) {
                 const w = createDebrisWarning(x, z);
                 // луч-маячок не нужен: видно сам предмет на арке, он раскачивается
                 if (hanger && w.beam) { scene.remove(w.beam); w.beam = null; }
                 fallingDebris.push({
-                    x: x, z: z, ring: w.ring, beam: w.beam, mesh: null, hanger: hanger || null,
-                    state: 'warning', telegraphT: telegraphT, fallT: 0, lifeT: 9,
+                    x: x, z: z, ring: w.ring, beam: w.beam, shadow: w.shadow, mesh: null, hanger: hanger || null,
+                    state: 'warning', telegraphT: telegraphT, telegraph0: telegraphT, fallT: 0, lifeT: 9,
                     active: true, vis: debrisVisual(), dropY: dropY
                 });
             }
@@ -7520,8 +7528,8 @@ function startGaragePreview(carId) {
                     if (z < FINISH_Z + 40 || z > START_Z - 25) return; // не спавним у старта/финиша
                     const w = createDebrisWarning(x, z);
                     fallingDebris.push({
-                        x: x, z: z, ring: w.ring, beam: w.beam, mesh: null,
-                        state: 'warning',
+                        x: x, z: z, ring: w.ring, beam: w.beam, shadow: w.shadow, mesh: null,
+                        state: 'warning', telegraph0: telegraphT,
                         telegraphT: telegraphT,
                         fallT: 0,
                         lifeT: 9,
@@ -9201,6 +9209,11 @@ function startGaragePreview(carId) {
                             d.ring.scale.set(sc, sc, sc);
                         }
                         if (d.beam) d.beam.material.opacity = 0.25 + Math.abs(Math.sin(d.telegraphT * 14)) * 0.3;
+                        if (d.shadow) {
+                            const k = 1 - Math.max(0, d.telegraphT) / Math.max(0.1, d.telegraph0 || 1);
+                            d.shadow.scale.setScalar(0.25 + k * 0.5);
+                            d.shadow.material.opacity = 0.12 + k * 0.25;
+                        }
                         if (d.hanger) {
                             const amp = 0.08 + (1 - Math.min(1, d.telegraphT)) * 0.22;
                             d.hanger.rotation.z = Math.sin(performance.now() * 0.03) * amp;
@@ -9230,9 +9243,11 @@ function startGaragePreview(carId) {
                         const t = Math.max(0, d.fallT / 0.28);
                         const gy = d.groundY != null ? d.groundY : 0.3;
                         if (d.mesh) d.mesh.position.y = gy + t * t * ((d.dropY || 3.2) - gy);
+                        if (d.shadow) { d.shadow.scale.setScalar(0.75 + (1 - t) * 0.35); d.shadow.material.opacity = 0.37 + (1 - t) * 0.25; }
                         if (d.fallT <= 0) {
                             d.state = 'active';
                             if (d.mesh) d.mesh.position.y = d.groundY != null ? d.groundY : 0.3;
+                            if (d.shadow) { scene.remove(d.shadow); d.shadow.material.dispose(); d.shadow = null; }
                             try {
                                 for (let s = 0; s < 8; s++) {
                                     particleSystem.emit(
