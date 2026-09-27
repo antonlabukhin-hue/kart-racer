@@ -19,6 +19,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
         import { gapStyle, gapLayout, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
         import { campaignHardConfig } from './balance.js';
+        import { loadSettings, saveSettings } from './settings.js';
         import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
@@ -3348,6 +3349,84 @@ function startGaragePreview(carId) {
         }
         window.showRaceBriefing = showRaceBriefing;
 
+        // ============================================================
+        // НАСТРОЙКИ — карточка поверх меню (src/settings.js хранит значения)
+        // ============================================================
+        function openSettingsScreen() {
+            if (document.getElementById('settings-screen')) return;
+            let st = loadSettings();
+            const el = document.createElement('div');
+            el.id = 'settings-screen';
+            el.setAttribute('role', 'dialog');
+            el.setAttribute('aria-modal', 'true');
+            const slider = function(key, label) {
+                const v = Math.round(st[key] * 100);
+                return '<label class="st-row"><span>' + label + '</span><input type="range" min="0" max="100" step="5" data-key="' + key + '" value="' + v + '"><b data-val="' + key + '">' + v + '%</b></label>';
+            };
+            const choice = function(key, opts) {
+                return '<div class="st-choice" data-key="' + key + '">' + opts.map(function(o) {
+                    return '<button type="button" data-v="' + o[0] + '"' + (String(st[key]) === String(o[0]) ? ' class="on"' : '') + '>' + o[1] + '</button>';
+                }).join('') + '</div>';
+            };
+            const toggle = function(key, label) {
+                return '<label class="st-toggle"><input type="checkbox" data-key="' + key + '"' + (st[key] ? ' checked' : '') + '><span>' + label + '</span></label>';
+            };
+            el.innerHTML =
+                '<div class="st-card">' +
+                '<div class="st-title">⚙ Настройки</div>' +
+                '<div class="st-group">Звук</div>' +
+                slider('music', '🎵 Музыка') + slider('engine', '🏎 Двигатель') + slider('sfx', '💥 Эффекты') +
+                '<div class="st-group">Графика</div>' +
+                choice('quality', [['low', '🚀 Низкое'], ['medium', '⚡ Среднее'], ['high', '🔥 Высокое']]) +
+                '<div class="st-group">Камера в заезде</div>' +
+                choice('camera', [[0, 'Сзади'], [1, 'Капот'], [2, 'Салон'], [3, 'Сбоку']]) +
+                '<div class="st-group">Удобство</div>' +
+                toggle('shake', 'Тряска камеры при ударах') +
+                toggle('vibrate', 'Вибрация телефона при аварии') +
+                '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
+                '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
+                '</div>';
+            document.body.appendChild(el);
+            const save = function(patch) {
+                st = saveSettings(Object.assign(st, patch));
+                try { if (window.soundEngine && window.soundEngine.applySettings) window.soundEngine.applySettings(st); } catch (e) {}
+            };
+            el.querySelectorAll('input[type=range]').forEach(function(inp) {
+                inp.addEventListener('input', function() {
+                    const k = inp.dataset.key;
+                    el.querySelector('[data-val="' + k + '"]').textContent = inp.value + '%';
+                    save({ [k]: parseInt(inp.value, 10) / 100 });
+                });
+            });
+            // проба громкости эффектов — сразу слышно, что изменилось
+            el.querySelector('input[data-key="sfx"]').addEventListener('change', function() {
+                try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.0); } catch (e) {}
+            });
+            el.querySelectorAll('.st-choice').forEach(function(box) {
+                box.addEventListener('click', function(ev) {
+                    const b = ev.target.closest('button');
+                    if (!b) return;
+                    box.querySelectorAll('button').forEach(function(x) { x.classList.toggle('on', x === b); });
+                    const k = box.dataset.key;
+                    const v = k === 'camera' ? parseInt(b.dataset.v, 10) : b.dataset.v;
+                    save({ [k]: v });
+                    if (k === 'quality') applyQualityChoice(v);
+                });
+            });
+            el.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+                cb.addEventListener('change', function() { save({ [cb.dataset.key]: cb.checked }); });
+            });
+            el.querySelector('#settings-briefing').addEventListener('click', function(ev) {
+                try { localStorage.removeItem(BRIEFING_KEY); } catch (e) {}
+                ev.currentTarget.textContent = '✓ Покажем в следующем заезде';
+            });
+            const close = function() { el.remove(); document.removeEventListener('keydown', onKey); };
+            const onKey = function(ev) { if (ev.key === 'Escape') close(); };
+            el.querySelector('#settings-close').addEventListener('click', close);
+            document.addEventListener('keydown', onKey);
+        }
+        window.openSettingsScreen = openSettingsScreen;
+
         function exitRaceToMenu(openGarageAfter) {
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
@@ -4830,7 +4909,8 @@ function startGaragePreview(carId) {
             const _cont = document.getElementById('game-container');
             if (_cont) { while (_cont.firstChild) _cont.removeChild(_cont.firstChild); }
             document.querySelectorAll('#finish-screen,#game-hud,#nitro-vignette,#hud-menu-btn').forEach(el => { try { el.remove(); } catch(e){} });
-            window.__camMode = 0;
+            const _settings = loadSettings();
+            window.__camMode = _settings.camera; // камера по умолчанию — из «Настроек»
             const weatherMode = weatherId || 'day';
             window.weatherMode = weatherMode;
             // тема уже выставлена в начале initGame
@@ -8398,6 +8478,7 @@ function startGaragePreview(carId) {
                 if (gameState !== 'racing') return;
                 logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
                 strikes++;
+                try { if (_settings.vibrate && navigator.vibrate) navigator.vibrate(strikes >= MAX_STRIKES ? [80, 60, 160] : 70); } catch (e) {}
                 speed *= obs.penalty || 0.35;
                 stunTimer = 0.4;
                 shakeTime = 0.2;
@@ -10197,7 +10278,7 @@ function startGaragePreview(carId) {
 
                 if (shakeTime > 0) {
                     shakeTime = Math.max(0, shakeTime - deltaTime);
-                    if (!(typeof weatherMode !== 'undefined' && weatherMode === 'night')) {
+                    if (_settings.shake && !(typeof weatherMode !== 'undefined' && weatherMode === 'night')) {
                         const power = Math.min(shakeTime, 0.16) * 0.03;
                         const t = performance.now() * 0.04;
                         camera.position.x += Math.sin(t * 1.5) * power;
@@ -10677,13 +10758,21 @@ function startGaragePreview(carId) {
         // ============================================================
         // НАСТРОЙКИ КАЧЕСТВА
         // ============================================================
-        let selectedQuality = 'medium';
+        // качество по умолчанию — из настроек; выбор на экране сложности и в «Настройках» — одно и то же
+        let selectedQuality = loadSettings().quality;
+        function applyQualityChoice(q) {
+            selectedQuality = q;
+            try { window.__lastQuality = q; pendingQuality = q; } catch (e) {}
+            document.querySelectorAll('.quality-selector .q-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.quality === q); });
+        }
+        applyQualityChoice(selectedQuality);
 
         document.querySelectorAll('.quality-selector .q-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.quality-selector .q-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 selectedQuality = btn.dataset.quality;
+                saveSettings(Object.assign(loadSettings(), { quality: selectedQuality }));
             });
         });
 
@@ -11204,6 +11293,8 @@ function showLoreScreen(quality, difficulty) {
             if (rewardsClose) rewardsClose.addEventListener('click', function() {
                 if (typeof showMainMenu === 'function') showMainMenu();
             });
+            const settingsBtn = document.getElementById('main-menu-settings');
+            if (settingsBtn) settingsBtn.addEventListener('click', function() { openSettingsScreen(); });
             const eventsClose = document.getElementById('events-close');
             if (eventsClose) eventsClose.addEventListener('click', function() {
                 if (typeof showMainMenu === 'function') showMainMenu();
