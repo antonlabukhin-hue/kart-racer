@@ -20,6 +20,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { gapStyle, gapLayout, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, SETPIECE_LAYOUT } from './setpieces.js';
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
+        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { createMapEvent, MAP_EVENT_AT } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
@@ -2060,6 +2061,9 @@ function createProfile(name) {
                     if (key === 'trophies') {
                         try { renderGarageTrophies(); } catch (e) { console.warn('trophies', e); }
                     }
+                    if (key === 'upgrades') {
+                        try { renderGarageUpgrades(); } catch (e) { console.warn('upgrades', e); }
+                    }
                     if (key === 'achs') {
                         const achBox = document.getElementById('garage-achs');
                         if (achBox && typeof ACHIEVEMENTS !== 'undefined') {
@@ -2480,6 +2484,79 @@ function renderGaragePartsPanel() {
             return { w, h };
         }
 
+        /** Показать на машине купленные улучшения (уровень N включает всё до N). levels — { engine: 0..3, ... } */
+        function applyUpgradeVisuals(upgrades, levels) {
+            if (!upgrades || !upgrades.byLevel) return;
+            const L = normalizeLevels(levels);
+            Object.keys(upgrades.byLevel).forEach(function(key) {
+                const id = key.replace(/\d+$/, ''), lvl = parseInt(key.slice(id.length), 10);
+                upgrades.byLevel[key].visible = (L[id] || 0) >= lvl;
+            });
+            const wide = L.tires >= 1 ? 1.3 : 1;
+            (upgrades.wheels || []).forEach(function(w) { w.tire.scale.y = wide; w.disc.scale.y = wide; });
+        }
+        window.applyUpgradeVisuals = applyUpgradeVisuals;
+
+        /** Вкладка «Прокачка»: полосы характеристик выбранной машины и покупка уровней */
+        function renderGarageUpgrades() {
+            const box = document.getElementById('garage-panel-upgrades');
+            if (!box || !currentPlayer) return;
+            ensureProfileFields(currentPlayer);
+            const carId = currentPlayer.preferredCar || 'cheburashka';
+            const preset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
+            const levels = getUpgradeLevels(carId);
+            const chips = (currentPlayer.season && currentPlayer.season.chips) || 0;
+            const base = statBars(preset, {});
+            const now = statBars(preset, levels);
+            const bars = now.map(function(b, i) {
+                return '<div class="up-bar"><span>' + b.name + '</span><div class="up-track">' +
+                    '<i class="base" style="width:' + Math.round(base[i].v * 100) + '%"></i>' +
+                    '<i class="gain" style="left:' + Math.round(base[i].v * 100) + '%;width:' + Math.round((b.v - base[i].v) * 100) + '%"></i>' +
+                    '</div></div>';
+            }).join('');
+            const rows = UPGRADES.map(function(u) {
+                const lvl = levels[u.id];
+                const cost = nextCost(u.id, lvl);
+                const pips = [1, 2, 3].map(function(i) { return '<b class="' + (i <= lvl ? 'on' : '') + '"></b>'; }).join('');
+                const btn = cost == null
+                    ? '<button type="button" disabled>МАКС</button>'
+                    : '<button type="button" data-up="' + u.id + '"' + (chips < cost ? ' class="poor"' : '') + '>🪙 ' + cost + '</button>';
+                return '<div class="up-row"><div class="up-name">' + u.icon + ' ' + u.name + '<small>' + u.perLevel + '</small></div>' +
+                    '<div class="up-pips">' + pips + '</div>' + btn + '</div>';
+            }).join('');
+            box.innerHTML = '<div class="up-head">' + escapeHtml(preset.name) + ' · фишки: 🪙 ' + chips + '</div>' +
+                '<div class="up-bars">' + bars + '</div>' + rows +
+                '<div class="up-note">Улучшения видны на машине и работают в заезде. У каждой машины своя прокачка.</div>';
+            box.querySelectorAll('button[data-up]').forEach(function(b) {
+                b.addEventListener('click', function() {
+                    const id = b.dataset.up;
+                    const lv = getUpgradeLevels(carId);
+                    const c = nextCost(id, lv[id]);
+                    if (c == null) return;
+                    if ((currentPlayer.season.chips || 0) < c) {
+                        if (window.Notify) Notify.warn('Не хватает фишек', 'Нужно 🪙 ' + c + ' — заработай в заездах');
+                        return;
+                    }
+                    currentPlayer.season.chips -= c;
+                    lv[id] += 1;
+                    currentPlayer.upgrades[carId] = lv;
+                    saveCurrentPlayer();
+                    try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.1); } catch (e) {}
+                    try { applyUpgradeVisuals(window.__garageUpgrades, lv); } catch (e) {}
+                    try { updatePlayerBar(); } catch (e) {}
+                    renderGarageUpgrades();
+                });
+            });
+        }
+        window.renderGarageUpgrades = renderGarageUpgrades;
+
+        /** Уровни прокачки машины из профиля */
+        function getUpgradeLevels(carId) {
+            if (!currentPlayer) return normalizeLevels(null);
+            if (!currentPlayer.upgrades || typeof currentPlayer.upgrades !== 'object') currentPlayer.upgrades = {};
+            return normalizeLevels(currentPlayer.upgrades[carId]);
+        }
+
         function _buildShowroomCar(carId) {
             const THREE_REF = window.THREE || THREE;
             const preset = (typeof CAR_PRESETS !== 'undefined' && CAR_PRESETS[carId]) ? CAR_PRESETS[carId] : { color: 0xff2200, name: 'Авто' };
@@ -2773,11 +2850,13 @@ function renderGaragePartsPanel() {
                 [-wheelX, wheelY, wheelZ], [wheelX, wheelY, wheelZ],
                 [-wheelX, wheelY, -wheelZ], [wheelX, wheelY, -wheelZ]
             ];
+            const wheelMeshes = [];
             wheelPositions.forEach(p => {
                 const tire = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(wheelR, wheelR, 0.2, 18), rubberMat);
                 tire.rotation.z = Math.PI / 2; tire.position.set(p[0], p[1], p[2]); group.add(tire);
                 const disc = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(wheelR * 0.55, wheelR * 0.55, 0.22, 14), chromeMat);
                 disc.rotation.z = Math.PI / 2; disc.position.set(p[0], p[1], p[2]); group.add(disc);
+                wheelMeshes.push({ tire: tire, disc: disc, x: p[0], y: p[1], z: p[2] });
             });
 
             // Заводской маленький спойлер на спорт
@@ -2997,8 +3076,91 @@ function renderGaragePartsPanel() {
 
             const xenon = new THREE_REF.Group(); xenon.visible = false; group.add(xenon); parts.xenon = xenon;
 
+            // --- Прокачка: видимые улучшения по уровням (src/upgrades.js). Отдельно от косметики parts,
+            // чтобы код, прячущий некупленную косметику, их не трогал. Включает applyUpgradeVisuals().
+            const upgrades = { wheels: wheelMeshes, wheelR: wheelR, byLevel: {} };
+            {
+                const U = function(id, lvl) { const g = new THREE_REF.Group(); g.visible = false; group.add(g); upgrades.byLevel[id + lvl] = g; return g; };
+                const M = function(c, o) { return new THREE_REF.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.5, metalness: 0.4 }, o || {})); };
+                const B = function(g, mat, x, y, z, sx, sy, sz) { const m = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(sx, sy, sz), mat); m.position.set(x, y, z); g.add(m); return m; };
+                const C = function(g, mat, r1, r2, h, x, y, z, rx, rz) { const m = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(r1, r2, h, 12), mat); m.position.set(x, y, z); if (rx) m.rotation.x = rx; if (rz) m.rotation.z = rz; g.add(m); return m; };
+                const topY = bodyY + bodyH * 0.5;
+                const hoodZ = -bodyL * 0.5 + hoodLen * 0.55;
+                const frontZ = -bodyL * 0.5, rearZ = bodyL * 0.5;
+                const black = M(0x141414, { metalness: 0.3 }), chrome = M(0xc8ccd4, { metalness: 0.9, roughness: 0.2 });
+                const red = M(0xd01818), yellow = M(0xf0c020), steel = M(0x6a6e74, { metalness: 0.7 }), blue = M(0x1a5ad8, { metalness: 0.6, roughness: 0.3 });
+                const blueGlow = new THREE_REF.MeshBasicMaterial({ color: 0x55aaff });
+                // Двигатель: 1 — воздухозаборник, 2 — хромированный фильтр над ним, 3 — гоночные полосы
+                const e1 = U('engine', 1);
+                B(e1, black, 0, topY + 0.07, hoodZ, bodyW * 0.32, 0.1, hoodLen * 0.5);
+                B(e1, M(0x050505), 0, topY + 0.08, hoodZ - hoodLen * 0.25 - 0.01, bodyW * 0.26, 0.06, 0.02);
+                const e2 = U('engine', 2);
+                C(e2, chrome, 0.13, 0.15, 0.12, 0, topY + 0.18, hoodZ);
+                C(e2, black, 0.1, 0.1, 0.02, 0, topY + 0.25, hoodZ);
+                const e3 = U('engine', 3);
+                [-0.14, 0.14].forEach(function(x) { B(e3, M(0xf2f2f2), x, topY + 0.012, 0, 0.1, 0.012, bodyL * 0.98); });
+                // Коробка: 1 — задний диффузор, 2 — буксировочный крюк, 3 — золотая шестерня на решётке
+                const g1 = U('gearbox', 1);
+                for (let i = 0; i < 4; i++) B(g1, black, -0.3 + i * 0.2, 0.16, rearZ + 0.08, 0.04, 0.12, 0.18);
+                const g2 = U('gearbox', 2);
+                B(g2, red, bodyW * 0.3, 0.2, frontZ - 0.12, 0.08, 0.08, 0.12);
+                const g3 = U('gearbox', 3);
+                const gear = new THREE_REF.Mesh(new THREE_REF.TorusGeometry(0.07, 0.025, 6, 10), M(0xe8c040, { metalness: 0.9, roughness: 0.25 }));
+                gear.position.set(0, (isJeep ? bodyY + 0.02 : 0.42), frontZ - 0.06); g3.add(gear);
+                // Шины: 1 — шире, 2 — грубый протектор, 3 — красные гоночные диски
+                U('tires', 1); // ширину задаёт applyUpgradeVisuals
+                const t2 = U('tires', 2);
+                wheelMeshes.forEach(function(w) {
+                    for (let i = 0; i < 10; i++) {
+                        const a = i / 10 * Math.PI * 2;
+                        const lug = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.3, 0.05, 0.06), black);
+                        lug.position.set(w.x, w.y + Math.sin(a) * wheelR, w.z + Math.cos(a) * wheelR);
+                        lug.rotation.x = -a;
+                        t2.add(lug);
+                    }
+                });
+                const t3 = U('tires', 3);
+                wheelMeshes.forEach(function(w) {
+                    const rim = new THREE_REF.Mesh(new THREE_REF.TorusGeometry(wheelR * 0.62, 0.025, 6, 16), red);
+                    rim.rotation.y = Math.PI / 2;
+                    rim.position.set(w.x + Math.sign(w.x) * 0.16, w.y, w.z);
+                    t3.add(rim);
+                });
+                // Броня: 1 — кенгурятник, 2 — боковые листы с заклёпками, 3 — решётки на стёклах и дуги на крыше
+                const a1 = U('armor', 1);
+                [-0.35, 0.35].forEach(function(x) { C(a1, steel, 0.04, 0.04, 0.5, x * bodyW, 0.42, frontZ - 0.2); });
+                C(a1, steel, 0.04, 0.04, bodyW * 0.8, 0, 0.66, frontZ - 0.2, 0, Math.PI / 2);
+                C(a1, steel, 0.04, 0.04, bodyW * 0.8, 0, 0.36, frontZ - 0.22, 0, Math.PI / 2);
+                const a2 = U('armor', 2);
+                [-1, 1].forEach(function(sx) {
+                    B(a2, steel, sx * (bodyW * 0.5 + 0.03), bodyY - 0.02, 0, 0.03, bodyH * 0.6, bodyL * 0.5);
+                    for (let i = 0; i < 5; i++) B(a2, chrome, sx * (bodyW * 0.5 + 0.05), bodyY + 0.07, -bodyL * 0.2 + i * bodyL * 0.1, 0.02, 0.03, 0.03);
+                });
+                const a3 = U('armor', 3);
+                for (let i = 0; i < 4; i++) B(a3, steel, -bodyW * 0.27 + i * bodyW * 0.18, cabinY, cabinZ - cabinLen * 0.5 - 0.06, 0.025, cabinH * 0.7, 0.025);
+                [-1, 1].forEach(function(sx) { C(a3, steel, 0.03, 0.03, cabinLen, sx * bodyW * 0.38, cabinY + cabinH * 0.5 + 0.1, cabinZ, Math.PI / 2); });
+                // Нитро: 1 — два баллона сзади, 2 — синий шланг и надпись N2O по бокам, 3 — светящиеся выхлопы
+                const n1 = U('nitro', 1);
+                [-0.18, 0.18].forEach(function(x) {
+                    C(n1, blue, 0.08, 0.08, 0.45, x, topY + (isJeep ? 0.12 : 0.1), rearZ - 0.3, 0, Math.PI / 2);
+                    B(n1, chrome, x, topY + (isJeep ? 0.12 : 0.1), rearZ - 0.3, 0.46, 0.02, 0.17);
+                });
+                const n2 = U('nitro', 2);
+                [-1, 1].forEach(function(sx) {
+                    B(n2, blue, sx * (bodyW * 0.5 + 0.012), bodyY + 0.05, bodyL * 0.1, 0.01, 0.1, bodyL * 0.3);
+                    B(n2, M(0xffffff), sx * (bodyW * 0.5 + 0.016), bodyY + 0.05, bodyL * 0.1, 0.01, 0.04, bodyL * 0.12);
+                });
+                const n3 = U('nitro', 3);
+                [-0.3, 0.3].forEach(function(x) {
+                    C(n3, chrome, 0.05, 0.05, 0.18, x, 0.22, rearZ + 0.1, Math.PI / 2);
+                    const glow = new THREE_REF.Mesh(new THREE_REF.CircleGeometry(0.04, 12), blueGlow);
+                    glow.position.set(x, 0.22, rearZ + 0.2);
+                    n3.add(glow);
+                });
+            }
+
             group.userData.carId = carId;
-            return { group, parts, bodyMat };
+            return { group, parts, bodyMat, upgrades };
         }
 
 function startGaragePreview(carId) {
@@ -3050,6 +3212,8 @@ function startGaragePreview(carId) {
                         scene.add(built.group);
                         window.__garageCar = built.group;
                         window.__garageParts = built.parts;
+                        window.__garageUpgrades = built.upgrades;
+                        applyUpgradeVisuals(built.upgrades, getUpgradeLevels(carId || 'cheburashka'));
                         // простые фары без SpotLight (стабильнее)
                         window.__garageHeadLights = null;
                         if (typeof applyGarageLoadoutVisual === 'function') applyGarageLoadoutVisual();
@@ -7136,6 +7300,7 @@ function startGaragePreview(carId) {
                         }
                     }
                 });
+                applyUpgradeVisuals(built.upgrades, getUpgradeLevels(carId || 'cheburashka'));
                 console.log('Race car: showroom model', carId, 'parts', owned);
             } catch (e) {
                 console.error('showroom race car failed, fallback createCar', e);
@@ -8297,15 +8462,18 @@ function startGaragePreview(carId) {
             let _lastLaneIdx = 0;
             let _nitroSfxT = 0;
 
-            const MAX_SPEED = carPreset.maxSpeed;
-            const ACCELERATION = carPreset.accel;
+            // характеристики с учётом прокачки (src/upgrades.js)
+            const carStats = computeCarStats(carPreset, getUpgradeLevels(carId || 'cheburashka'));
+            const MAX_SPEED = carStats.maxSpeed;
+            const ACCELERATION = carStats.accel;
             const BRAKE_FORCE = 0.025;
             const FRICTION_FORCE = 0.008;
             const MAX_X_SPEED = 0.55;
             const DRY_DAMPING = 0.82;
-            const DRY_STEER = 3.2;
-            const OIL_GRIP = carPreset.oilGrip;
-            const DURABILITY = carPreset.durability; // множитель штрафа времени (меньше = танк)
+            const DRY_STEER = 3.2 * carStats.steerMul;
+            const OIL_GRIP = carStats.oilGrip;
+            const DURABILITY = carStats.durability; // множитель штрафа времени (меньше = танк); броня его снижает
+            const NITRO_TIME = carStats.nitroTime;
 
             // ---- МЕТА-СИСТЕМЫ ----
             let comboTime = 0;
@@ -8535,7 +8703,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = 3.2; }, stats: stats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -9484,7 +9652,7 @@ function startGaragePreview(carId) {
                             try { particleSystem.emit(_v.p1.set(c.x, carYOffset + 0.6, c.z), _v.vel.set(0, 1.5, 0), 16, 0.2); } catch (e) {}
                             updateHUD();
                         } else if (c.type === 'nitro') {
-                            nitroTimer = 3.2;
+                            nitroTimer = NITRO_TIME;
                             fovPunch = 14;
                             stats.nitroPicked++;
                             try { if (window.soundEngine) window.soundEngine.playSfx('pickup_nitro', 1.1); } catch (e) {}

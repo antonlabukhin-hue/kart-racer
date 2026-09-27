@@ -4279,3 +4279,30 @@
             #ach-plaque-root.compact { right: 84px; top: 34%; }
             .ach-plaque.compact { width: 180px; }
         }
+
+        /* ===== Гараж: прокачка ===== */
+        #garage-panel-upgrades { text-align: left; }
+        #garage-panel-upgrades .up-head { font-size: 13px; color: #ffdd00; font-weight: 700; margin: 4px 0 8px; }
+        #garage-panel-upgrades .up-bars { display: grid; gap: 5px; margin-bottom: 10px; }
+        #garage-panel-upgrades .up-bar { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 8px; font-size: 12px; color: #ccc; }
+        #garage-panel-upgrades .up-track { position: relative; height: 10px; border-radius: 5px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        #garage-panel-upgrades .up-track i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 5px; }
+        #garage-panel-upgrades .up-track i.base { background: #c8a030; }
+        #garage-panel-upgrades .up-track i.gain { background: #33ff88; }
+        #garage-panel-upgrades .up-row {
+            display: grid; grid-template-columns: 1fr auto 86px; align-items: center; gap: 8px;
+            padding: 8px 10px; margin: 6px 0; border-radius: 10px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+        }
+        #garage-panel-upgrades .up-name { font-size: 14px; font-weight: 700; color: #eee; }
+        #garage-panel-upgrades .up-name small { display: block; font-size: 11px; font-weight: 400; color: #999; }
+        #garage-panel-upgrades .up-pips { display: flex; gap: 4px; }
+        #garage-panel-upgrades .up-pips b { width: 12px; height: 12px; border-radius: 3px; background: rgba(255,255,255,0.15); }
+        #garage-panel-upgrades .up-pips b.on { background: #33ff88; box-shadow: 0 0 6px rgba(50,255,130,0.6); }
+        #garage-panel-upgrades .up-row button {
+            min-height: 36px; border-radius: 9px; cursor: pointer; font-weight: 700;
+            border: 2px solid rgba(255,220,0,0.55); background: rgba(255,220,0,0.12); color: #ffdd00;
+        }
+        #garage-panel-upgrades .up-row button.poor { opacity: 0.55; border-color: rgba(255,255,255,0.25); color: #bbb; }
+        #garage-panel-upgrades .up-row button:disabled { border-color: #33ff88; color: #33ff88; background: rgba(50,255,130,0.08); cursor: default; }
+        #garage-panel-upgrades .up-note { font-size: 11px; color: #888; margin-top: 6px; }
