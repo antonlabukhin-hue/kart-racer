@@ -133,7 +133,7 @@ const CAMPAIGN_BOSSES = [
     { id: 'BOAR_BRIGADE', name: 'Кабан «Бригада»', animal: 'BOAR', fur: 0x6b4423, jacket: 0x2a1810, trim: 0xffcc00, eye: 0xff6644, accent: 0xff2244, weapon: 'bat', attack: 'sweep', hp: 3, scale: 2.15, shout: 'Я вас Арсеньевских знаю!' },
     { id: 'WOLF_NIGHT', name: 'Волк-снайпер «Ночной»', animal: 'WOLF', fur: 0x3a3a48, jacket: 0x1a1a2a, trim: 0xff0000, eye: 0xffdd00, accent: 0x00ff88, weapon: 'rifle', attack: 'snipe', hp: 3, scale: 2.05, shout: 'Частота закрыта!' },
     { id: 'BEAR_VETERAN', name: 'Медведь-ветеран «Дед»', animal: 'BEAR', fur: 0x5a3a20, jacket: 0x8a7a5a, trim: 0xffcc00, eye: 0xffaa44, accent: 0x1a1a1a, weapon: 'ppsh', attack: 'burst', hp: 4, scale: 2.4, shout: 'За Родину, курьер!' },
-    { id: 'CROC_GUARD', name: 'Крокодил «Зубастик»', animal: 'CROC', fur: 0x228b22, jacket: 0x1a1a1a, trim: 0xff6600, eye: 0xffff44, accent: 0xffdd44, weapon: 'mouth', attack: 'mouth', hp: 3, scale: 2.15, shout: 'Промзона — мой двор!' },
+    { id: 'CROC_GUARD', name: 'Крокодил «Зубастик»', animal: 'CROC', fur: 0x3c9a3c, jacket: 0x2a4a78, trim: 0xff6600, eye: 0xffff44, accent: 0xffdd44, weapon: 'mouth', attack: 'mouth', hp: 3, scale: 2.15, shout: 'Промзона — мой двор!' },
     { id: 'RHINO_STORM', name: 'Носорог «Рог»', animal: 'RHINO', fur: 0xa9a9a9, jacket: 0x3a3a2a, trim: 0xffaa00, eye: 0xff8866, accent: 0xff3300, weapon: 'rpg', attack: 'rocket', hp: 4, scale: 2.25, shout: 'Цех №7 не для вас!' },
     { id: 'DINO_FOREMAN', name: 'Дино-бригадир «Рекс»', animal: 'DINO', fur: 0x4a6a2a, jacket: 0x8a5a20, trim: 0xffaa22, eye: 0xffee44, accent: 0x222222, weapon: 'pipe', attack: 'flame', hp: 4, scale: 2.2, shout: 'Красные трубы помнят!' },
     { id: 'LION_DUMP', name: 'Лев-свалщик «Грива»', animal: 'LION', fur: 0xdaa520, jacket: 0x1a1a1a, trim: 0xff2244, eye: 0xffaa00, accent: 0x8b4513, weapon: 'chain', attack: 'chain', hp: 3, scale: 2.15, shout: 'Надежда кончилась!' },
@@ -191,6 +191,9 @@ function bossMat(color, opts) {
     if (!window.__bossMatCache[key]) {
         const base = { color: c, fog: true };
         if (map) base.map = map;
+        // «аркадный самосвет»: солнце светит боссу в спину, и к игроку он повёрнут теневой стороной —
+        // на снегу и ночью силуэт выходил почти чёрным. Подсвечиваем собственным цветом (~30%).
+        const selfLit = mode !== 'basic' ? { emissive: c, emissiveIntensity: 0.3 } : {};
         if (mode === 'basic') {
             const mat = new THREE.MeshBasicMaterial(base);
             if (glow) {
@@ -203,15 +206,15 @@ function bossMat(color, opts) {
             window.__bossMatCache[key] = mat;
         } else if (mode === 'pbr') {
             window.__bossMatCache[key] = new THREE.MeshStandardMaterial(
-                Object.assign({}, base, { roughness: rough, metalness: metal })
+                Object.assign({}, base, selfLit, { roughness: rough, metalness: metal })
             );
         } else if (mode === 'toon') {
             window.__bossMatCache[key] = new THREE.MeshToonMaterial(
-                Object.assign({}, base, { gradientMap: window.__toonGradient })
+                Object.assign({}, base, selfLit, { gradientMap: window.__toonGradient })
             );
         } else {
             window.__bossMatCache[key] = new THREE.MeshLambertMaterial(
-                Object.assign({}, base, { flatShading: true })
+                Object.assign({}, base, selfLit, { flatShading: true })
             );
         }
     }
@@ -415,10 +418,9 @@ function addBossSignature(c) {
     }
     case 'CROC_GUARD': {
         // охранник промзоны: фуражка с кокардой, чёрные очки, рация, дубинка-фонарь, длинный хвост с гребнем
-        add(head, new THREE.CylinderGeometry(0.2, 0.18, 0.08, 12), M(0x1a2a4a), 0, 0.28, -0.04);
-        px(head, black, 0, 0.24, 0.14, 0.3, 0.02, 0.12); // козырёк
-        px(head, mats.gold, 0, 0.29, 0.14, 0.06, 0.05, 0.02);
-        px(head, black, 0, 0.17, 0.16, 0.3, 0.05, 0.03); // очки
+        add(head, new THREE.CylinderGeometry(0.19, 0.17, 0.09, 12), M(0x2a4a78), 0, 0.33, -0.14);
+        px(head, black, 0, 0.3, 0.02, 0.26, 0.02, 0.12); // козырёк
+        px(head, mats.gold, 0, 0.35, 0.03, 0.06, 0.05, 0.02); // кокарда
         px(root, black, 0.22, 0.8, 0.22, 0.08, 0.12, 0.05); // рация
         px(root, mats.gunL, 0.24, 0.9, 0.22, 0.01, 0.12, 0.01);
         tail(mats.fur, 7, 1.0, 0.45, -0.3);
@@ -674,7 +676,9 @@ function createArcadeBossMesh(def) {
     } else {
         torsoCore = px(root, matFur, 0, 0.88, 0, 0.54, 0.48, 0.38);
         // округлый живот (раньше — цилиндр, повёрнутый набок: читался как бочонок поперёк груди)
-        try { const belly = add(root, new THREE.SphereGeometry(0.25, seg0, seg0), matFurL, 0, 0.9, 0.1); belly.scale.set(1, 1.15, 0.62); } catch (e) {}
+        // живот выдвинут вперёд и сплющен: раньше его поверхность совпадала по глубине с карманами
+        // куртки (z ≈ 0.2) — две поверхности на одной глубине мерцали (z-fighting)
+        try { const belly = add(root, new THREE.SphereGeometry(0.25, seg0, seg0), matFurL, 0, 0.9, 0.16); belly.scale.set(1, 1.15, 0.4); } catch (e) {}
         px(root, matFur, 0, 1.18, -0.02, 0.5, 0.24, 0.32);
     }
     if (!thin) {
@@ -698,8 +702,15 @@ function createArcadeBossMesh(def) {
         px(vest, matJack, 0.28, 0, 0, 0.14, 0.5, 0.32);
         for (let i = 0; i < 4; i++) px(vest, matGold, -0.2 + i * 0.12, 0.15, 0.18, 0.04, 0.04, 0.04);
     } else if (id === 'CROC_GUARD') {
-        px(vest, matJack, 0, 0, 0, 0.55, 0.55, 0.4);
-        px(vest, matAcc, 0.2, 0.1, 0.22, 0.12, 0.1, 0.04); // бейдж
+        // куртка охранника нараспашку: видно светлое брюхо со щитками (сплошная куртка делала босса чёрным)
+        px(vest, matJack, -0.24, 0, 0, 0.16, 0.55, 0.4);
+        px(vest, matJack, 0.24, 0, 0, 0.16, 0.55, 0.4);
+        px(vest, matJack, 0, 0, -0.14, 0.5, 0.55, 0.12);
+        const bellyC = M(0xe6d9a0);
+        for (let bi = 0; bi < 4; bi++) px(vest, bellyC, 0, 0.2 - bi * 0.13, 0.19, 0.3, 0.1, 0.04);
+        px(vest, M(0xffcc00), -0.24, 0.12, 0.205, 0.14, 0.05, 0.01); // светоотражающие полосы
+        px(vest, M(0xffcc00), 0.24, 0.12, 0.205, 0.14, 0.05, 0.01);
+        px(vest, matAcc, 0.24, -0.05, 0.205, 0.1, 0.08, 0.02); // бейдж
         px(vest, matFurD, -0.35, 0.25, 0, 0.16, 0.14, 0.2); // наплечник-шина
         px(vest, matFurD, 0.35, 0.25, 0, 0.16, 0.14, 0.2);
     } else if (id === 'RHINO_STORM') {
@@ -739,8 +750,9 @@ function createArcadeBossMesh(def) {
     // пиксельные детали: ремень, пряжка, карманы, заклёпки, погоны
     px(root, matGun, 0, 0.72, 0.16, 0.52, 0.07, 0.1);
     px(root, matGold, 0, 0.72, 0.22, 0.1, 0.08, 0.04);
-    px(root, matJackD, -0.2, 0.88, 0.2, 0.14, 0.16, 0.06);
-    px(root, matJackD, 0.2, 0.88, 0.2, 0.14, 0.16, 0.06);
+    // карманы — по бокам, вне живота
+    px(root, matJackD, -0.3, 0.84, 0.19, 0.1, 0.14, 0.05);
+    px(root, matJackD, 0.3, 0.84, 0.19, 0.1, 0.14, 0.05);
     for (let bi = 0; bi < 4; bi++) {
         px(root, matGold, -0.22 + bi * 0.15, 1.05, 0.2, 0.035, 0.035, 0.035);
     }
@@ -750,7 +762,7 @@ function createArcadeBossMesh(def) {
     // цепь
     for (let i = 0; i < 6; i++) {
         const a = -0.5 + i * 0.2;
-        px(root, matGold, Math.sin(a)*0.18, 0.95+Math.cos(a)*0.05, 0.22, 0.05, 0.05, 0.05);
+        px(root, matGold, Math.sin(a)*0.18, 0.95+Math.cos(a)*0.05, 0.285, 0.05, 0.05, 0.05); // поверх живота, не на его поверхности
     }
 
     // --- руки (плечо / бицепс / предплечье / кисть) ---
@@ -779,10 +791,11 @@ function createArcadeBossMesh(def) {
         }
         // погон
         px(g, matTrim, 0, 0.06, 0, 0.16, 0.05, 0.12);
-        const ax = fat ? 0.42 : (thin ? 0.26 : 0.34);
+        // руки шире и отведены от корпуса: раньше плечо стояло внутри торса и руки «прилипали» к телу
+        const ax = fat ? 0.46 : (thin ? 0.3 : 0.44);
         const ay = fat ? 1.14 : (thin ? 1.04 : 1.12);
-        g.position.set(side * ax, ay, 0.02);
-        g.rotation.z = side * (thin ? 0.12 : 0.16);
+        g.position.set(side * ax, ay, 0.04);
+        g.rotation.z = side * (thin ? 0.2 : 0.28);
         g.userData.isBossArm = true;
         root.add(g);
         return g;
@@ -950,26 +963,54 @@ function createArcadeBossMesh(def) {
         brow(head, 0.14, 0.18, 0.26);
         eyePair(head, 0.08, 0.22, 0.11, 0.05);
     } else if (typeId === 'CROC' || typeId === 'CROCODILE') {
-        // вытянутая пасть
-        px(head, matFur, 0, 0.02, 0.05, 0.32, 0.26, 0.5);
-        skull(head, matFur, 0, 0.08, -0.05, 0.16);
+        // Крокодил: раньше «коробка» — теперь длинная сужающаяся морда, приоткрытая пасть с нёбом
+        // и рядами зубов, глаза-бугры с вертикальным зрачком, светлая нижняя челюсть
+        const matBelly = M(0xe6d9a0, usePix ? { map: bossPixelTex(0xe6d9a0, 'scale'), texKind: 'belly' } : {});
+        const matMouth = M(0xc0485a);
+        // сужающийся брус: у морды (z>0) уже и ниже
+        const taper = function(w, h, l, k) {
+            const g = new THREE.BoxGeometry(w, h, l, 1, 1, 2);
+            const pos = g.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                const t = (pos.getZ(i) + l / 2) / l; // 0 у затылка → 1 у носа
+                pos.setX(i, pos.getX(i) * (1 - t * k));
+                pos.setY(i, pos.getY(i) * (1 - t * k * 0.6));
+            }
+            g.computeVertexNormals();
+            return g;
+        };
+        skull(head, matFur, 0, 0.08, -0.08, 0.2);
+        add(head, taper(0.36, 0.16, 0.62, 0.45), matFur, 0, 0.06, 0.3);          // верхняя челюсть
+        px(head, matMouth, 0, -0.02, 0.28, 0.28, 0.02, 0.5);                      // нёбо
         jaw = new THREE.Group();
-        px(jaw, matFurD, 0, -0.06, 0.12, 0.28, 0.1, 0.42);
-        // зубы ряд
-        for (let ti = 0; ti < 6; ti++) {
-            const tx = -0.12 + ti * 0.05;
-            add(jaw, new THREE.ConeGeometry(0.02, 0.07, 4), matTooth, tx, 0.02, 0.2 + (ti%2)*0.04, Math.PI, 0, 0);
-            add(head, new THREE.ConeGeometry(0.02, 0.06, 4), matTooth, tx, -0.02, 0.22 + (ti%2)*0.03);
-        }
+        add(jaw, taper(0.32, 0.08, 0.58, 0.4), matBelly, 0, -0.07, 0.28);        // нижняя челюсть
+        px(jaw, matMouth, 0, -0.03, 0.26, 0.24, 0.02, 0.44);
+        jaw.rotation.x = 0.18;                                                     // пасть приоткрыта
         head.add(jaw);
-        // глаза сверху
-        px(head, matEyeW, -0.1, 0.16, 0.1, 0.08, 0.06, 0.06);
-        px(head, matEye, -0.1, 0.16, 0.14, 0.05, 0.04, 0.04);
-        px(head, matEyeW, 0.1, 0.16, 0.1, 0.08, 0.06, 0.06);
-        px(head, matEye, 0.1, 0.16, 0.14, 0.05, 0.04, 0.04);
-        // гребень
-        for (let ci = 0; ci < 5; ci++) {
-            add(head, new THREE.ConeGeometry(0.03, 0.08, 4), matFurL, 0, 0.18, -0.1 + ci * 0.06);
+        // зубы по краям обеих челюстей
+        for (let ti = 0; ti < 7; ti++) {
+            const tz = 0.06 + ti * 0.075;
+            const tx = 0.15 - ti * 0.011;
+            [-tx, tx].forEach(function(x) {
+                add(head, new THREE.ConeGeometry(0.018, 0.07, 4), matTooth, x, -0.05, tz, Math.PI, 0, 0);
+                add(jaw, new THREE.ConeGeometry(0.016, 0.06, 4), matTooth, x * 0.92, -0.01, tz, 0, 0, 0);
+            });
+        }
+        // ноздри на кончике
+        [-0.05, 0.05].forEach(function(x) {
+            add(head, new THREE.SphereGeometry(0.035, 8, 6), matFurL, x, 0.12, 0.58);
+            px(head, matNose, x, 0.15, 0.59, 0.02, 0.01, 0.02);
+        });
+        // глаза-бугры с вертикальным зрачком
+        [-0.11, 0.11].forEach(function(x) {
+            add(head, new THREE.SphereGeometry(0.075, 10, 8), matFur, x, 0.2, 0.02);
+            add(head, new THREE.SphereGeometry(0.055, 10, 8), M(0xffe040, { emissive: 0xffc000, emissiveIntensity: 0.6 }), x, 0.22, 0.06);
+            px(head, matNose, x, 0.22, 0.11, 0.012, 0.06, 0.012);
+            px(head, matFurD, x, 0.27, 0.02, 0.12, 0.03, 0.08); // надбровный щиток
+        });
+        // гребень по затылку
+        for (let ci = 0; ci < 4; ci++) {
+            add(head, new THREE.ConeGeometry(0.035, 0.09, 4), matFurD, 0, 0.26, -0.12 - ci * 0.06);
         }
     } else if (typeId === 'BEAR') {
         skull(head, matFur, 0, 0.08, 0, 0.22);
