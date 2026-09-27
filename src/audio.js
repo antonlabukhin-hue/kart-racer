@@ -2,6 +2,7 @@
  * SoundEngine — Web Audio (двигатель, SFX) + HTML5 (музыка гонки)
  */
 import { loadSettings, saveSettings } from './settings.js';
+import { mapAudioTheme, musicRate, startAmbientBed } from './map-audio.js';
 class SoundEngine {
     constructor() {
         this.audioCtx = null;
@@ -305,6 +306,7 @@ class SoundEngine {
                 this.raceAudio.preload = 'auto';
             }
             this.raceAudio.volume = Math.max(0, Math.min(1, this.musicVolume || 0.55));
+            this._applyMusicRate();
             const p = this.raceAudio.play();
             if (p && p.then) {
                 p.then(() => { this.isMusicPlaying = true; console.log('🎵 Race MP3 (HTML5)'); })
@@ -313,6 +315,43 @@ class SoundEngine {
                 this.isMusicPlaying = true;
             }
         } catch (e) {}
+    }
+    // ===== Звуковая тема карты (src/map-audio.js) =====
+    setMapTheme(mapId, trackTheme) {
+        this._mapTheme = mapAudioTheme(mapId, trackTheme);
+        this._bossActive = false;
+        this._applyMusicRate();
+        this.startAmbient();
+    }
+    setBossActive(on) {
+        this._bossActive = !!on;
+        this._applyMusicRate();
+    }
+    _applyMusicRate() {
+        const r = musicRate(this._mapTheme, this._bossActive);
+        if (this.raceAudio) {
+            try {
+                // тон вместе с темпом: промзона ниже и тяжелее, свалка — бодрее
+                this.raceAudio.preservesPitch = false;
+                this.raceAudio.mozPreservesPitch = false;
+                this.raceAudio.webkitPreservesPitch = false;
+                this.raceAudio.playbackRate = r;
+            } catch (e) {}
+        }
+        if (this.currentMusicSource) {
+            try { this.currentMusicSource.playbackRate.setTargetAtTime(r, this.audioCtx.currentTime, 0.5); } catch (e) {}
+        }
+    }
+    startAmbient() {
+        this.stopAmbient();
+        if (!this.enabled || !this.audioCtx || !this._mapTheme || !this.noiseBuffer || !window.__inRace) return;
+        try {
+            this._ambient = startAmbientBed(this.audioCtx, this.audioCtx.destination, this._mapTheme.bed, this.noiseBuffer,
+                this._mapTheme.gain * (this.sfxVolume != null ? this.sfxVolume : 1));
+        } catch (e) { console.warn('ambient', e); this._ambient = null; }
+    }
+    stopAmbient() {
+        if (this._ambient) { try { this._ambient.stop(); } catch (e) {} this._ambient = null; }
     }
     stopRaceMusicHTML() {
         if (this.raceAudio) {
@@ -325,6 +364,7 @@ class SoundEngine {
         this.setMusicVolume(st.music);
         this.engineVolumeMultiplier = st.engine;
         this.sfxVolume = st.sfx;
+        if (this._ambient && this._mapTheme) this._ambient.setVolume(this._mapTheme.gain * st.sfx);
         [['music-volume', st.music], ['engine-volume', st.engine]].forEach(function(p) {
             const el = document.getElementById(p[0]);
             const lbl = document.getElementById(p[0] + '-value');
@@ -413,6 +453,7 @@ class SoundEngine {
 
         this.currentMusicSource = source;
         this.isMusicPlaying = true;
+        this._applyMusicRate();
         console.log('🎵 MP3 loop запущен');
     }
 
@@ -469,6 +510,7 @@ class SoundEngine {
 
     stopMusic() {
         this.isMusicPlaying = false;
+        try { this.stopAmbient(); } catch (e) {}
         this.musicStarted = false;
         try { this.stopRaceMusicHTML(); } catch (e) {}
 

@@ -4580,6 +4580,7 @@ function startGaragePreview(carId) {
                             if (soundEngine.startMusic) {
                                 try { soundEngine.startMusic(); } catch (e) {}
                             }
+                            if (soundEngine.startAmbient && !soundEngine._ambient) soundEngine.startAmbient();
                         } catch (e) {}
                     };
                     if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
@@ -4589,6 +4590,7 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) { console.warn('ensureMusic', e); }
             };
+            try { if (soundEngine.setMapTheme) soundEngine.setMapTheme(mapId, window.__trackTheme); } catch (e) {}
             ensureMusic();
             setTimeout(ensureMusic, 800);
             const onceMusic = function() { ensureMusic(); };
@@ -7788,6 +7790,7 @@ function startGaragePreview(carId) {
 
                 bossSpawned = true;
                 window.__bossSpawnQueued = false;
+                try { if (soundEngine.setBossActive) soundEngine.setBossActive(true); } catch (e) {}
                 // одна уникальная фраза босса при появлении (у головы, 3 сек)
                 try {
                     const line = def.shout || def.name || 'С дороги!';
@@ -9374,7 +9377,7 @@ function startGaragePreview(carId) {
                             }
                         }
                         if (t >= 1) {
-                            boss.active = false;
+                            boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
                             try { if (boss.mesh) { try { disposeBossMesh(boss.mesh); } catch (eD) {} scene.remove(boss.mesh); } } catch (e) {}
                             try { if (boss.hpBar) { scene.remove(boss.hpBar); boss.hpBar = null; } } catch (e) {}
                             boss.mesh = null;
@@ -9869,7 +9872,7 @@ function startGaragePreview(carId) {
                     if (boss.active && !boss.dying && zPos < boss.z - 22) {
                         boss._overtakeT = (boss._overtakeT || 0) + deltaTime;
                         if (boss._overtakeT > 1.2) {
-                            boss.active = false;
+                            boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
                             if (boss.mesh) {
                                 try { disposeBossMesh(boss.mesh); scene.remove(boss.mesh); } catch (e) { try { boss.mesh.visible = false; } catch (e2) {} }
                             }
@@ -9889,7 +9892,7 @@ function startGaragePreview(carId) {
                     // Ушёл далеко — деспавн
                     if (boss.z < zPos - 90 || boss.z > zPos + 120) {
                         try { disposeBossMesh(boss.mesh); scene.remove(boss.mesh); } catch (e) {}
-                        boss.active = false;
+                        boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
                     }
                 }
 
