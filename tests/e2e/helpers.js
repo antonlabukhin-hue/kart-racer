@@ -72,3 +72,9 @@ export async function startCampaign(page) {
 export async function progress(page) {
     return page.evaluate(() => parseFloat(document.getElementById('progressBar')?.style.width) || 0);
 }
+
+// Дождаться, пока заезд реально пошёл (обработчики клавиш уже висят) — иначе на медленном CI
+// нажатие газа до конца загрузки сцены теряется и машина стоит
+export async function waitRacing(page, timeout = 30_000) {
+    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout }).toBe('racing');
+}

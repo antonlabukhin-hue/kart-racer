@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { watchProblems, login, startFreeRace, startCampaign, progress } from '../helpers.js';
+import { watchProblems, login, startFreeRace, startCampaign, progress, waitRacing } from '../helpers.js';
 
 // Тестовая сборка: ?start=… начинает заезд с этой доли трассы. Дальше тест только жмёт газ, как игрок
 const profile = page => page.evaluate(() => {
@@ -11,7 +11,8 @@ test('босс появляется после 42% трассы', async ({ page 
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.40');
     await startFreeRace(page, 'easy');
-    const boss = page.waitForEvent('console', { predicate: m => m.text().startsWith('🐻 БОСС:'), timeout: 60_000 });
+    await waitRacing(page);
+    const boss =page.waitForEvent('console', { predicate: m => m.text().startsWith('🐻 БОСС:'), timeout: 60_000 });
     await page.keyboard.down('w');
     await boss;
     // появился на пороге, а не сразу со старта на 40%
@@ -25,6 +26,7 @@ test('победа в свободном заезде засчитывается
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.99');
     await startFreeRace(page, 'easy');
+    await waitRacing(page);
     await page.keyboard.down('w');
     await expect(page.locator('#finish-screen')).toContainText(/ФИНИШ|ИДЕАЛЬНЫЙ ЗАЕЗД/, { timeout: 150_000 });
     await page.keyboard.up('w');
@@ -40,6 +42,7 @@ test('кампания: победа на 1-й трассе — «Заново»
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.99');
     await startCampaign(page);
+    await waitRacing(page);
     await page.keyboard.down('w');
     await expect(page.locator('#finish-screen')).toContainText('ГЛАВА 1 ПРОЙДЕНА', { timeout: 150_000 });
     await page.keyboard.up('w');

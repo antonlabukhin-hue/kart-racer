@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { watchProblems, login, startFreeRace } from '../helpers.js';
+import { watchProblems, login, startFreeRace, waitRacing } from '../helpers.js';
 
 // Локальная аналитика: старт и финиш заезда попадают в журнал, сводка их видит
 test('аналитика: заезд пишется в локальный журнал', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.99');
     await startFreeRace(page, 'easy');
+    await waitRacing(page);
     await page.keyboard.down('w');
     await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 60_000 });
     await page.keyboard.up('w');
