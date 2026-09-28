@@ -7185,6 +7185,8 @@ function startGaragePreview(carId) {
                     scene.add(src);
                     const warn = srcKind === 'snow' ? ['ОСТОРОЖНО', 'СОСУЛЬКИ'] : srcKind === 'promzona' ? ['ОСТОРОЖНО', 'ГРУЗ НАД ДОРОГОЙ'] : srcKind === 'svalka' ? ['ОСТОРОЖНО', 'ПАДАЕТ ХЛАМ'] : ['ОСТОРОЖНО', 'АРКА РУШИТСЯ'];
                     scene.add(createRoadSign(warn, TRACK_WIDTH / 2 + 1.6, z + 55));
+                    // с обеих сторон, как у разломов: знак справа легко пропустить, глядя на левую полосу
+                    scene.add(createRoadSign(warn, -TRACK_WIDTH / 2 - 1.6, z + 55));
                     debrisZones.push({ z: z, src: src, hangers: src.userData.hangers || [], drops: dropsN, fired: false });
                 });
                 // сцена карты
