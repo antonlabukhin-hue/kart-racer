@@ -32,7 +32,7 @@ test('рекламный щит в полосе: снёс — не авария,
     await waitRacing(page);
     await noAnimals(page);
     const boards = await page.evaluate(() => window.__raceDebug.smashBoards.map(b => ({ x: b.x, z: b.z })));
-    expect(boards.length).toBeGreaterThanOrEqual(2);
+    expect(boards.length).toBeGreaterThanOrEqual(1); // часть мест теперь занимают события (трактор, кран…)
     // держим полосу ближайшего щита впереди
     await page.evaluate(() => setInterval(() => {
         const d = window.__raceDebug;
