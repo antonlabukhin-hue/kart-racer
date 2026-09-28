@@ -4481,3 +4481,47 @@
         #boss-intro.pack { border-color: #ffb347; }
         #boss-intro.pack .bi-top { color: #ffb347; }
         @media (max-width: 600px) { #pack-meter { top: 64px; } }
+
+        /* ===== HUD v2: крупный таймер, сердца, спидометр-циферблат ===== */
+        #game-hud.hud-v2 { background: linear-gradient(160deg, rgba(14,12,20,0.82), rgba(6,6,10,0.7)) !important; border: 1px solid rgba(255,221,0,0.22) !important; border-radius: 14px !important; }
+        #game-hud .hud-lbl { color: #ffb070; font-size: 0.72em; letter-spacing: 1px; }
+        #game-hud .hud-time { display: flex; align-items: baseline; gap: 6px; line-height: 1; margin-bottom: 4px; }
+        #game-hud .hud-big { font-size: 2.1em; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 1px; text-shadow: 0 2px 10px rgba(0,0,0,0.9); }
+        #game-hud .hud-big.low { animation: hudTimeLow .5s infinite alternate; }
+        @keyframes hudTimeLow { to { transform: scale(1.08); text-shadow: 0 0 14px rgba(255,40,40,0.9); } }
+        #game-hud .hud-crash { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        #game-hud .hud-hearts { display: inline-flex; gap: 2px; }
+        #game-hud .hud-hearts i { font-style: normal; color: #ff3b4a; font-size: 1.05em; text-shadow: 0 0 6px rgba(255,40,60,0.6); display: inline-block; transition: color .2s, opacity .2s; }
+        #game-hud .hud-hearts i.lost { color: #3a3a44; text-shadow: none; opacity: .7; }
+        #game-hud .hud-hearts i.break { animation: heartBreak .5s; }
+        #game-hud .hud-hearts.last i:not(.lost) { animation: heartLast .45s infinite alternate; }
+        @keyframes heartBreak { 0% { transform: scale(1.8) rotate(0); color: #fff; } 60% { transform: scale(.7) rotate(-20deg); } 100% { transform: scale(1); } }
+        @keyframes heartLast { to { transform: scale(1.25); } }
+        #game-hud .hud-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+        #hud-speedo {
+            position: fixed; right: calc(env(safe-area-inset-right, 0px) + 18px); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+            width: 150px; z-index: 100; pointer-events: none; display: none;
+            font-family: system-ui, "Segoe UI", Arial, sans-serif; color: #fff;
+        }
+        body.race-mode #hud-speedo { display: block; }
+        #hud-speedo svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7)); }
+        #hud-speedo .sp-bg { fill: none; stroke: rgba(10,10,16,0.78); stroke-width: 12; stroke-linecap: round; }
+        #hud-speedo .sp-val { fill: none; stroke: url(#spGrad); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 235.6; stroke-dashoffset: 235.6; transition: stroke-dashoffset .12s linear; }
+        #hud-speedo.nitro .sp-val { stroke: #5ff0ff; filter: drop-shadow(0 0 4px #5ff0ff); }
+        #hud-speedo .sp-ticks line { stroke: rgba(255,255,255,0.55); stroke-width: 1.4; }
+        #hud-speedo .sp-needle { stroke: #ff4a2a; stroke-width: 3; stroke-linecap: round; transition: transform .12s linear; }
+        #hud-speedo .sp-hub { fill: #1a1a22; stroke: #ff4a2a; stroke-width: 2; }
+        #hud-speedo .sp-read { position: absolute; left: 0; right: 0; top: 58%; text-align: center; line-height: 1; }
+        #hud-speedo .sp-read span { display: block; font-size: 28px; font-weight: 900; font-variant-numeric: tabular-nums; text-shadow: 0 2px 8px #000; }
+        #hud-speedo .sp-read small { font-size: 10px; color: #bbb; letter-spacing: 1px; }
+        #hud-speedo .sp-read b { margin-left: 4px; font-size: 11px; color: #ffd84a; }
+        #hud-speedo .sp-nitro { display: flex; align-items: center; gap: 6px; margin: -4px 14px 0; font-size: 12px; }
+        #hud-speedo .sp-nitro > div { flex: 1; height: 6px; border-radius: 3px; background: rgba(10,10,16,0.8); overflow: hidden; }
+        #hud-speedo #nitroBar { height: 100%; width: 0; background: linear-gradient(90deg, #22ff66, #5ff0ff); }
+        /* на сенсорных экранах внизу педали — циферблат меньше и сверху справа, под паузой */
+        @media (pointer: coarse) {
+            #hud-speedo { width: 96px; top: calc(env(safe-area-inset-top, 0px) + 58px); bottom: auto; right: calc(env(safe-area-inset-right, 0px) + 6px); }
+            #hud-speedo .sp-read span { font-size: 18px; }
+            #hud-speedo .sp-nitro { margin: -2px 8px 0; }
+        }
