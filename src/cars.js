@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { CAR_PRESETS } from './data.js';
 import { normalizeLevels } from './upgrades.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 /** Показать на машине купленные улучшения (уровень N включает всё до N). levels — { engine: 0..3, ... } */
 export function applyUpgradeVisuals(upgrades, levels) {
@@ -52,13 +53,14 @@ export function buildShowroomCar(carId) {
     const bodyW = isJeep ? 1.28 : 1.22;
 
     // 1) Кузов
-    const main = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW, bodyH, bodyL), bodyMat);
+    // кузов скруглён: «игрушечный» силуэт читается лучше острых коробок
+    const main = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW, bodyH, bodyL, 3, Math.min(0.11, bodyH * 0.3)), bodyMat);
     main.position.y = bodyY; main.userData.bodyPaint = true; group.add(main);
 
     // Расширители арок
     const archZ = isJeep ? 0.58 : 0.72;
     [-1, 1].forEach(side => {
-        const f = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.12, bodyH * 0.65, isJeep ? 0.42 : 0.55), bodyMat2.clone());
+        const f = new THREE_REF.Mesh(new RoundedBoxGeometry(0.12, bodyH * 0.65, isJeep ? 0.42 : 0.55, 2, 0.04), bodyMat2.clone());
         f.position.set(side * (bodyW / 2 + 0.01), bodyY - 0.02, archZ);
         f.userData.bodyPaint = true; group.add(f);
         const r = f.clone(); r.position.z = -archZ; r.userData.bodyPaint = true; group.add(r);
@@ -67,7 +69,7 @@ export function buildShowroomCar(carId) {
     // 2) Капот (короткий у Нивы, спереди = -Z)
     const hoodLen = isJeep ? 0.48 : (isSport ? 1.03 : 0.7); // Волга капот ещё +10%
     const hood = new THREE_REF.Mesh(
-        new THREE_REF.BoxGeometry(bodyW * 0.9, 0.09, hoodLen),
+        new RoundedBoxGeometry(bodyW * 0.9, 0.09, hoodLen, 2, 0.035),
         bodyMat2.clone()
     );
     hood.position.set(0, bodyY + bodyH * 0.5 - 0.02, -bodyL * 0.5 + hoodLen * 0.55);
@@ -77,7 +79,7 @@ export function buildShowroomCar(carId) {
     // Багажник только у седана/спорта
     if (!isJeep) {
         const trunk = new THREE_REF.Mesh(
-            new THREE_REF.BoxGeometry(bodyW * 0.9, 0.12, 0.45),
+            new RoundedBoxGeometry(bodyW * 0.9, 0.12, 0.45, 2, 0.04),
             bodyMat2.clone()
         );
         trunk.position.set(0, bodyY + bodyH * 0.4, bodyL * 0.32);
@@ -92,7 +94,7 @@ export function buildShowroomCar(carId) {
 
     // Кабина: стекло как у остальных машин (прозрачное), каркас — тонкие стойки
     const cabinShell = new THREE_REF.Mesh(
-        new THREE_REF.BoxGeometry(bodyW * 0.88, cabinH, cabinLen),
+        new RoundedBoxGeometry(bodyW * 0.88, cabinH, cabinLen, 2, 0.06),
         glassMat.clone()
     );
     cabinShell.position.set(0, cabinY, cabinZ);
@@ -734,5 +736,41 @@ export function buildShowroomCar(carId) {
     }
 
     group.userData.carId = carId;
+    group.userData.dims = { bodyL: bodyL, bodyY: bodyY, bodyW: bodyW };
     return { group, parts, bodyMat, upgrades };
+}
+
+/**
+ * Пламя нитро из выхлопа (сзади машины, +Z): голубой конус с жёлтым ядром.
+ * Возвращает { group, update(t, on) } — on: нитро включено; t — время для мерцания.
+ */
+export function addNitroFlames(car) {
+    const d = (car.userData && car.userData.dims) || { bodyL: 2.25, bodyY: 0.42, bodyW: 1.22 };
+    const g = new THREE.Group();
+    const outerMat = new THREE.MeshBasicMaterial({ color: 0x55ccff, transparent: true, opacity: 0.85, depthWrite: false });
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xffe07a, transparent: true, opacity: 0.95, depthWrite: false });
+    const cones = [];
+    [-0.32, 0.32].forEach(function(x) {
+        const outer = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.5, 10), outerMat);
+        outer.rotation.x = Math.PI / 2;
+        outer.position.set(x, d.bodyY - 0.12, d.bodyL / 2 + 0.78);
+        const core = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.85, 8), coreMat);
+        core.rotation.x = Math.PI / 2;
+        core.position.set(x, d.bodyY - 0.12, d.bodyL / 2 + 0.45);
+        g.add(outer); g.add(core);
+        cones.push(outer, core);
+    });
+    g.visible = false;
+    car.add(g);
+    return {
+        group: g,
+        update: function(t, on) {
+            g.visible = !!on;
+            if (!on) return;
+            for (let i = 0; i < cones.length; i++) {
+                const k = 0.8 + Math.abs(Math.sin(t * 38 + i * 1.7)) * 0.45;
+                cones[i].scale.set(1, k, 1);
+            }
+        }
+    };
 }

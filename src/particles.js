@@ -105,6 +105,52 @@ emit(position, velocity, count = 2, customSize = 0.15) {
     try { if (this.geometry.attributes.color) this.geometry.attributes.color.needsUpdate = true; } catch (e) {}
 }
 
+/**
+ * Дым из-под капота: отдельные «клубы» с обычным смешиванием (у искр и пыли — аддитивное,
+ * на нём серый дым светился бы). dark 0..1 — темнее. Пул из 36 спрайтов, создаётся при первом дыме.
+ */
+smoke(position, dark) {
+    if (!this.enabled || !position) return;
+    if (!this.smokePool) {
+        const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+        const cx = cv.getContext('2d');
+        const gr = cx.createRadialGradient(32, 32, 4, 32, 32, 32);
+        gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+        cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
+        this.smokeTex = new THREE.CanvasTexture(cv);
+        this.smokePool = [];
+        for (let k = 0; k < 36; k++) {
+            const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.smokeTex, transparent: true, depthWrite: false, opacity: 0 }));
+            sp.visible = false;
+            this.scene.add(sp);
+            this.smokePool.push({ sp: sp, t: 0, life: 1, vx: 0, vy: 0, vz: 0, s0: 0.3 });
+        }
+        this.smokeIdx = 0;
+    }
+    const pf = this.smokePool[this.smokeIdx++ % this.smokePool.length];
+    const g = 0.7 - (dark || 0) * 0.55;
+    pf.sp.material.color.setRGB(g, g, g + 0.02);
+    pf.sp.position.set(position.x + (Math.random() - 0.5) * 0.25, position.y, position.z + (Math.random() - 0.5) * 0.2);
+    pf.vx = (Math.random() - 0.5) * 0.3; pf.vy = 0.9 + Math.random() * 0.5; pf.vz = 1.6 + Math.random() * 0.8;
+    pf.t = 0; pf.life = 0.9 + Math.random() * 0.5; pf.s0 = 0.35 + Math.random() * 0.2;
+    pf.sp.visible = true;
+}
+
+updateSmoke(dt) {
+    if (!this.smokePool) return;
+    for (let k = 0; k < this.smokePool.length; k++) {
+        const pf = this.smokePool[k];
+        if (!pf.sp.visible) continue;
+        pf.t += dt;
+        const u = pf.t / pf.life;
+        if (u >= 1) { pf.sp.visible = false; continue; }
+        pf.sp.position.x += pf.vx * dt; pf.sp.position.y += pf.vy * dt; pf.sp.position.z += pf.vz * dt;
+        const sc = pf.s0 * (1 + u * 2.2);
+        pf.sp.scale.set(sc, sc, 1);
+        pf.sp.material.opacity = 0.75 * (1 - u);
+    }
+}
+
 /** Искры: жёлто-оранжевые, быстрые, короткие (приземление, скрежет) */
 sparks(position, count, dirZ) {
     if (!this.enabled || !position) return;
@@ -179,6 +225,7 @@ explode(position, power) {
 }
 
 update(deltaTime) {
+    this.updateSmoke(deltaTime);
     if (!this.enabled || this.aliveCount <= 0) return;
     for (let i = 0; i < this.maxParticles; i++) {
         const i3 = i * 3;

@@ -24,8 +24,11 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { DIFFICULTY_CONFIG } from './difficulty.js';
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
+        import { startMenuBg, stopMenuBg } from './menu-bg.js';
+        import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
-        import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
+        import { buildShowroomCar, applyUpgradeVisuals, addNitroFlames } from './cars.js';
+        import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
         import { bossHudState, renderBossHud, removeBossHud } from './boss-hud.js';
@@ -418,8 +421,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
          * Если когда-нибудь понадобится чистый геттер — читайте loadAllProfiles()
          * напрямую, не вызывая эту функцию.
          */
-        // главы, у которых есть своя картинка превью (public/images/camp_NN.jpg)
-        const CAMPAIGN_THUMBS = ['01'];
+        // главы со своей картинкой превью (public/images/camp_NN.jpg, рендер tools/art — npm run art)
+        const CAMPAIGN_THUMBS = CAMPAIGN_TRACKS.map(function(t, i) { return (i < 9 ? '0' : '') + (i + 1); });
         function getCampaignProgress() {
             if (!currentPlayer) return { unlocked: 1, completed: [] };
             ensureProfileFields(currentPlayer);
@@ -1289,6 +1292,12 @@ function createProfile(name) { return Profile.createProfile(name); }
             });
             const mm = document.getElementById('main-menu-screen');
             if (mm) { mm.classList.add('active'); mm.style.display = 'flex'; }
+            // живой 3D-фон: машина игрока мчит по закатной трассе (на «низком» качестве — неподвижный кадр)
+            try {
+                const car = (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0) ? currentPlayer.preferredCar : 'cheburashka';
+                const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                startMenuBg({ carId: car, profile: currentPlayer, still: reduce || loadSettings().quality === 'low', lowPower: !!window.__isMobile });
+            } catch (e) { console.warn('menu bg', e); }
             const sub = document.getElementById('main-menu-sub');
             if (sub && currentPlayer) {
                 const se = currentPlayer.season;
@@ -1311,6 +1320,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         function hideMainMenu() {
             const mm = document.getElementById('main-menu-screen');
             if (mm) { mm.classList.remove('active'); mm.style.display = 'none'; }
+            try { stopMenuBg(); } catch (e) {}
         }
 
         function openRewardsScreen() {
@@ -2490,7 +2500,7 @@ function startGaragePreview(carId) {
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
             // всё временное, что рисует заезд: HUD, финиш, карточки босса и волн, подсказки, всплывашки
-            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#pack-meter,#endless-wave-card,#coach-tip,.unlock-plaque';
+            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#pack-meter,#hud-speedo,#endless-wave-card,#coach-tip,.unlock-plaque';
             try { clearTimeout(window.__coachTimer); } catch (e) {}
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque,.boss-shout').forEach(function(el) {
@@ -4005,6 +4015,9 @@ function startGaragePreview(carId) {
             return group;
         }
         window.createAnimalMesh = createAnimalMesh;
+        // только тестовая сборка: набор для рендера картинок игры (tools/art)
+        if (import.meta.env.MODE === 'test') window.__artKit = { renderDiorama: renderDiorama, lanes: ART_LANES, tracks: CAMPAIGN_TRACKS, buildCar: buildShowroomCar,
+            bossHeight: function(idx) { const b = new THREE.Box3().setFromObject(createArcadeBossMesh(CAMPAIGN_BOSSES[idx % CAMPAIGN_BOSSES.length])); return (b.max.y - b.min.y) * 1.5; } };
 
 
         // ============================================================
@@ -4274,19 +4287,16 @@ function startGaragePreview(carId) {
                     min-width: 200px;
                     z-index: 100;
                 `;
+                // новый HUD: крупный таймер, аварии сердцами; скорость и нитро — на циферблате (#hud-speedo)
+                hud.className = 'hud-v2';
                 hud.innerHTML = `
-                    <div style="color:#ff8844;">⏱ ВРЕМЯ: <span id="timeDisplay" style="color:#fff;">${formatTime(TIME_LIMIT)}</span></div>
+                    <div class="hud-time"><span class="hud-lbl">⏱ ВРЕМЯ:</span> <span id="timeDisplay" class="hud-big">${formatTime(TIME_LIMIT)}</span></div>
+                    <div class="hud-crash"><span class="hud-lbl">💥 АВАРИИ:</span> <span id="heartsDisplay" class="hud-hearts">${'<i>❤</i>'.repeat(MAX_STRIKES)}</span><span id="strikesDisplay" class="hud-sr">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
                     ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">🐾 ВОЛНА ' + window.__endless.wave + ' · ' + window.__endless.score + '</div>' : ''}
                     <div id="ghostDeltaDisplay" style="display:none;font-weight:800;">👻 РЕКОРД: <span></span></div>
-                    <div style="color:#ff5555;">💥 АВАРИИ: <span id="strikesDisplay" style="color:#fff;">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
-                    <div style="color:#88ccff;">⚡ СКОРОСТЬ: <span id="speedDisplay" style="color:#fff;">0</span> км/ч</div>
                     <div id="cleanDisplay" title="10 с без ударов — щит, дальше +2 🪙"><span class="cl-label">✨ ЧИСТО</span><span class="cl-shield">🛡</span><div class="cl-bar"><i></i></div></div>
                     <div id="comboDisplay" style="display:none;color:#ffaa66;margin-top:4px;font-size:13px;">🔥 КОМБО</div>
                     <div id="weatherDisplay" style="color:#88ccff;font-size:12px;margin-top:2px;">☀ ЯСНО</div>
-                    <div style="margin-top:6px;font-size:11px;color:#6f6;">⛽ НИТРО</div>
-                    <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:5px;overflow:hidden;margin-top:2px;">
-                        <div id="nitroBar" style="background:linear-gradient(90deg,#22ff66,#88ff22);height:100%;width:0%;"></div>
-                    </div>
                     <div style="margin-top:8px;">
                         <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:6px;overflow:hidden;">
                             <div id="progressBar" style="background:linear-gradient(90deg,#ffdd00,#ff8800);height:100%;width:0%;"></div>
@@ -4295,8 +4305,30 @@ function startGaragePreview(carId) {
                     <div style="font-size:10px;color:#666;margin-top:4px;">${config.label} · ${quality === 'high' ? '🔥' : quality === 'medium' ? '⚡' : '🚀'}</div>
                 `;
                 document.body.appendChild(hud);
+                // спидометр-циферблат: дуга 270°, стрелка, цифры, передача и нитро
+                document.querySelectorAll('#hud-speedo').forEach(function(n) { n.remove(); });
+                const sp = document.createElement('div');
+                sp.id = 'hud-speedo';
+                let ticks = '';
+                for (let i = 0; i <= 12; i++) {
+                    const a = (135 + i * 22.5) * Math.PI / 180, r0 = i % 3 ? 44 : 40;
+                    ticks += '<line x1="' + (60 + Math.cos(a) * r0).toFixed(1) + '" y1="' + (60 + Math.sin(a) * r0).toFixed(1) + '" x2="' + (60 + Math.cos(a) * 47).toFixed(1) + '" y2="' + (60 + Math.sin(a) * 47).toFixed(1) + '"/>';
+                }
+                sp.innerHTML = '<svg viewBox="0 0 120 120" aria-hidden="true">'
+                    + '<defs><linearGradient id="spGrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffe45c"/><stop offset=".65" stop-color="#ff9a1f"/><stop offset="1" stop-color="#ff3b1f"/></linearGradient></defs>'
+                    + '<path class="sp-bg" d="M 24.64 95.36 A 50 50 0 1 1 95.36 95.36"/>'
+                    + '<path class="sp-val" d="M 24.64 95.36 A 50 50 0 1 1 95.36 95.36"/>'
+                    + '<g class="sp-ticks">' + ticks + '</g>'
+                    + '<line class="sp-needle" x1="60" y1="60" x2="98" y2="60"/><circle class="sp-hub" cx="60" cy="60" r="5"/>'
+                    + '</svg>'
+                    + '<div class="sp-read"><span id="speedDisplay">0</span><small>км/ч</small><b id="gearDisplay"></b></div>'
+                    + '<div class="sp-nitro"><span>⛽</span><div><div id="nitroBar"></div></div></div>';
+                document.body.appendChild(sp);
             }
             createHUD();
+            // шкала циферблата — с запасом на нитро; считается при первом кадре (MAX_SPEED объявлен ниже)
+            let SPEEDO_MAX = 0;
+            let _heartsShown = -1;
 
             let _hudAcc = 0;
             function ensureHudRefs() {
@@ -4306,6 +4338,11 @@ function startGaragePreview(carId) {
                 window.__hudRefs = {
                     timeEl: document.getElementById('timeDisplay'),
                     speedEl: document.getElementById('speedDisplay'),
+                    gearEl: document.getElementById('gearDisplay'),
+                    heartsEl: document.getElementById('heartsDisplay'),
+                    speedArc: document.querySelector('#hud-speedo .sp-val'),
+                    speedNeedle: document.querySelector('#hud-speedo .sp-needle'),
+                    speedo: document.getElementById('hud-speedo'),
                     strikesEl: document.getElementById('strikesDisplay'),
                     progressBar: document.getElementById('progressBar'),
                     comboEl: document.getElementById('comboDisplay'),
@@ -4331,16 +4368,34 @@ function startGaragePreview(carId) {
                     const remaining = TIME_LIMIT - raceTime;
                     timeEl.textContent = formatTime(Math.max(0, remaining));
                     timeEl.style.color = remaining <= 15 ? '#ff3333' : '#fff';
+                    timeEl.classList.toggle('low', remaining <= 15);
                 }
                 if (speedEl) {
                     const kmh = Math.round(Math.abs(speed) * 580);
                     const gShow = (typeof _currentGear !== 'undefined' ? _currentGear : 0);
-                    speedEl.textContent = kmh + (gShow > 0 ? (' · ' + gShow + 'п') : '');
+                    speedEl.textContent = String(kmh);
+                    if (refs.gearEl) refs.gearEl.textContent = gShow > 0 ? gShow + 'п' : '';
+                    if (!SPEEDO_MAX) SPEEDO_MAX = Math.round(MAX_SPEED * 580 * 1.5 / 20) * 20 || 360;
+                    const k = Math.max(0, Math.min(1, kmh / SPEEDO_MAX));
+                    if (refs.speedArc) refs.speedArc.style.strokeDashoffset = String(235.6 * (1 - k));
+                    if (refs.speedNeedle) refs.speedNeedle.setAttribute('transform', 'rotate(' + (135 + 270 * k).toFixed(1) + ' 60 60)');
+                    if (refs.speedo) refs.speedo.classList.toggle('nitro', typeof nitroTimer !== 'undefined' && nitroTimer > 0);
                     if (typeof stats !== 'undefined' && kmh > stats.maxSpeedReached) stats.maxSpeedReached = kmh;
                 }
                 if (strikesEl) {
                     strikesEl.textContent = `${strikes} / ${MAX_STRIKES}`;
                     strikesEl.style.color = strikes >= MAX_STRIKES - 1 ? '#ff5555' : '#fff';
+                }
+                // аварии сердцами: целые — красные, потерянное сердце «разбивается»
+                if (refs.heartsEl && _heartsShown !== strikes) {
+                    const hs = refs.heartsEl.children;
+                    for (let hi = 0; hi < hs.length; hi++) {
+                        const lost = hi >= MAX_STRIKES - strikes;
+                        if (lost && !hs[hi].classList.contains('lost') && _heartsShown >= 0) hs[hi].classList.add('break');
+                        hs[hi].classList.toggle('lost', lost);
+                    }
+                    refs.heartsEl.classList.toggle('last', strikes >= MAX_STRIKES - 1);
+                    _heartsShown = strikes;
                 }
                 let cheb = document.getElementById('cheburashkaWarn');
                 if (strikes >= 4) {
@@ -6492,6 +6547,25 @@ function startGaragePreview(carId) {
                 raceCarParts = {};
             }
             if (!raceCarParts) raceCarParts = {};
+            // пламя нитро из выхлопа (видно на ускорении), вмятины и дым после аварий
+            let nitroFlames = null;
+            try { if (playerCar) nitroFlames = addNitroFlames(playerCar); } catch (e) { nitroFlames = null; }
+            let dentsShown = 0, smokeAcc = 0, prevSpeedForPitch = 0;
+            function addDent() {
+                try {
+                    const panels = [];
+                    playerCar.traverse(function(o) { if (o.isMesh && o.userData && o.userData.bodyPaint && !o.userData.dented) panels.push(o); });
+                    if (!panels.length) return;
+                    const pnl = panels[Math.floor(Math.random() * panels.length)];
+                    const d = dentFor();
+                    pnl.userData.dented = true;
+                    pnl.rotation.x += d.rx; pnl.rotation.z += d.rz; pnl.position.y += d.dy;
+                    // своя копия материала — общая краска остальных панелей не темнеет
+                    pnl.material = pnl.material.clone();
+                    pnl.material.color.multiplyScalar(d.darken);
+                    pnl.matrixAutoUpdate = true;
+                } catch (e) {}
+            }
             let zPos = START_Z;
             // Только в тестовой сборке (npm run build:test): ?start=0.4 — заезд начинается с 40% трассы,
             // чтобы тесты быстро доезжали до босса и финиша. В сборку для сайта этот блок не попадает.
@@ -8322,7 +8396,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8970,7 +9044,27 @@ function startGaragePreview(carId) {
                     });
                     playerCar.userData._nightEmissive = true;
                 }
-                playerCar.rotation.z = lerp(playerCar.rotation.z, -xVelocity * 0.028 - (playerCar.userData._leanKick || 0), 1 - Math.pow(0.88, deltaTime * 60));
+                // крен в повороте и наклон вперёд-назад: газ — нос вверх, тормоз и удар — вниз
+                playerCar.rotation.z = lerp(playerCar.rotation.z, -xVelocity * 0.036 - (playerCar.userData._leanKick || 0), 1 - Math.pow(0.88, deltaTime * 60));
+                {
+                    const acc = deltaTime > 0 ? (speed - prevSpeedForPitch) / deltaTime : 0;
+                    prevSpeedForPitch = speed;
+                    const pitchTarget = carAirborne ? playerCar.rotation.x : pitchFor(acc, ACCELERATION * 60 * 1.5);
+                    playerCar.rotation.x = lerp(playerCar.rotation.x, pitchTarget, 1 - Math.pow(0.85, deltaTime * 60));
+                }
+                if (nitroFlames) nitroFlames.update(raceTime, nitroTimer > 0);
+                // вмятины — по одной на аварию; дым из-под капота со второй аварии
+                while (dentsShown < strikes) { dentsShown++; addDent(); }
+                {
+                    const dl = damageLook(strikes, MAX_STRIKES);
+                    if (dl.smokeRate > 0 && particleSystem && particleSystem.smoke) {
+                        smokeAcc += dl.smokeRate * deltaTime;
+                        while (smokeAcc >= 1) {
+                            smokeAcc -= 1;
+                            particleSystem.smoke({ x: playerCar.position.x, y: playerCar.position.y + 0.45, z: playerCar.position.z - 0.55 }, dl.smokeDark);
+                        }
+                    }
+                }
                 if (playerCar.userData._leanKick) {
                     playerCar.userData._leanKick *= 0.88;
                     if (Math.abs(playerCar.userData._leanKick) < 0.01) playerCar.userData._leanKick = 0;

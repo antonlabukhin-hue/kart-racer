@@ -12,41 +12,57 @@
 |---|---|---|---|---|
 | music/menu-music.mp3 | музыка меню | не записан | ? | ⚠ |
 | music/race-music.mp3 | музыка заезда | не записан | ? | ⚠ |
-| images/splash.jpg | заставка | не записан (вероятно, генерация ИИ) | ? | ⚠ |
-| images/menu_main.jpg | меню: шапка | не записан | ? | ⚠ |
-| images/menu_campaign.jpg | меню: кампания | не записан | ? | ⚠ |
-| images/menu_race.jpg | меню: свободный заезд | не записан | ? | ⚠ |
-| images/menu_multiplayer.jpg | меню: «Звериный час» | не записан | ? | ⚠ |
-| images/menu_garage.jpg | меню: гараж | не записан | ? | ⚠ |
-| images/menu_rewards.jpg | меню: награды | не записан | ? | ⚠ |
-| images/menu_events.jpg | меню: события | не записан | ? | ⚠ |
-| images/camp_01.jpg | превью главы 1 | не записан | ? | ⚠ |
-| images/map_select.jpg | выбор карты | не записан | ? | ⚠ |
-| images/map_arsenev.jpg | карта «Арсеньев» | не записан | ? | ⚠ |
-| images/map_promzona.jpg | карта «Промзона» | не записан | ? | ⚠ |
-| images/map_svalka.jpg | карта «Свалка» | не записан | ? | ⚠ |
-| images/car_select.jpg | выбор машины | не записан | ? | ⚠ |
-| images/car_cheburashka.png | машина «Чебурашка» | не записан | ? | ⚠ |
-| images/car_kirpich.png | машина «Нива» | не записан | ? | ⚠ |
-| images/car_turbo.png | машина «Волга» | не записан | ? | ⚠ |
-| images/gum.png | жвачка | не записан | ? | ⚠ |
-| images/nitro.png | нитро | не записан | ? | ⚠ |
-| images/lore2.jpg | лор | не записан | ? | ⚠ |
-| images/villain_finish.jpg | финиш главы, злодей | не записан | ? | ⚠ |
-| images/win.jpg | победа | не записан | ? | ⚠ |
-| images/lose.jpg | поражение | не записан | ? | ⚠ |
-| images/trophy_first_win.png | трофей | не записан | ? | ⚠ |
-| images/trophy_first_perfect.png | трофей | не записан | ? | ⚠ |
-| images/trophy_night_rider.png | трофей | не записан | ? | ⚠ |
-| images/trophy_rain_man.png | трофей | не записан | ? | ⚠ |
-| images/trophy_hard_win.png | трофей | не записан | ? | ⚠ |
-| images/trophy_gum_2.png | трофей | не записан | ? | ⚠ |
-| images/trophy_no_nitro.png | трофей | не записан | ? | ⚠ |
-| images/trophy_oil_lover.png | трофей | не записан | ? | ⚠ |
-| images/trophy_bear_friend.png | трофей | не записан | ? | ⚠ |
-| images/trophy_season5.png | трофей | не записан | ? | ⚠ |
-| images/trophy_races10.png | трофей | не записан | ? | ⚠ |
-| images/trophy_wins5.png | трофей | не записан | ? | ⚠ |
+| images/splash.jpg | заставка | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/menu_main.jpg | меню: шапка | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/menu_campaign.jpg | меню: кампания | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/menu_race.jpg | меню: свободный заезд | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/menu_multiplayer.jpg | меню: «Звериный час» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/menu_garage.jpg | меню: гараж | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/menu_rewards.jpg | меню: награды | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/menu_events.jpg | меню: события | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_01.jpg | превью главы 1 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_02.jpg | превью главы 2 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_03.jpg | превью главы 3 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_04.jpg | превью главы 4 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_05.jpg | превью главы 5 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_06.jpg | превью главы 6 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_07.jpg | превью главы 7 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_08.jpg | превью главы 8 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_09.jpg | превью главы 9 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_10.jpg | превью главы 10 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_11.jpg | превью главы 11 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_12.jpg | превью главы 12 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_13.jpg | превью главы 13 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_14.jpg | превью главы 14 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_15.jpg | превью главы 15 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_16.jpg | превью главы 16 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/camp_17.jpg | превью главы 17 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/map_select.jpg | выбор карты | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/map_arsenev.jpg | карта «Арсеньев» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/map_promzona.jpg | карта «Промзона» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/map_svalka.jpg | карта «Свалка» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/car_select.jpg | выбор машины | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/car_cheburashka.png | машина «Чебурашка» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/car_kirpich.png | машина «Нива» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/car_turbo.png | машина «Волга» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/lore2.jpg | лор | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/villain_finish.jpg | финиш главы, злодей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/win.jpg | победа | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/lose.jpg | поражение | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_first_win.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_first_perfect.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_night_rider.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_rain_man.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_hard_win.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_gum_2.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_no_nitro.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_oil_lover.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_bear_friend.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_season5.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_races10.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/trophy_wins5.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+
+Все картинки — кадры из движка игры: диорамы из её же моделей (`src/art-scene.js`), рендер — `npm run art` (`tools/art/render.spec.js`); перерендер после изменения моделей — той же командой.
 
 Всё остальное нарисовано кодом: модели машин, боссов и зверей — Three.js-примитивы (`src/cars.js`, `src/boss.js`,
 `src/main.js`), текстуры трамплинов, знаков и разломов — canvas (`src/setpieces.js`), звуки эффектов и фон карт —
@@ -57,8 +73,7 @@
 2. **Музыка** — самый рискованный пункт: без лицензии на коммерческое использование её нельзя выпускать ни в Steam,
    ни в мобильных магазинах. Варианты: заказать композитору (права по договору), купить лицензию на стоке
    (например, с правом на игры), либо взять CC0.
-3. **Картинки, сгенерированные ИИ**: проверить, что условия сервиса разрешают коммерческое использование, и сохранить
-   это подтверждение. Steam требует раскрыть использование ИИ-контента в анкете при публикации.
+3. **Картинки** заменены рендерами из движка — сторонних и сгенерированных ИИ картинок в сборке нет.
 
 ## Сторонние компоненты (код)
 
