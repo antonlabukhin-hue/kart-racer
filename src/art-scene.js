@@ -296,12 +296,6 @@ export function createDiorama(spec) {
         scene.add(o);
         deco.push(o);
     }
-    for (let i = 0; i < 10; i++) {
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 3.2, 6), mat('pole', 0x5b5b62));
-        pole.position.set((i % 2 ? 1 : -1) * (ROAD_W / 2 + 1.1), 1.6, -12 + i * 15);
-        scene.add(pole);
-        deco.push(pole);
-    }
     (s.boards || []).forEach(function(b, i) {
         const bb = createSmashBoard(0, 0, b.ad != null ? b.ad : i * 2);
         bb.group.scale.setScalar(b.scale || 1.6);

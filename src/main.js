@@ -1300,11 +1300,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const mm = document.getElementById('main-menu-screen');
             if (mm) { mm.classList.add('active'); mm.style.display = 'flex'; }
             // живой 3D-фон: машина игрока мчит по закатной трассе (на «низком» качестве — неподвижный кадр)
-            try {
-                const car = (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0) ? currentPlayer.preferredCar : 'cheburashka';
-                const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                startMenuBg({ carId: car, profile: currentPlayer, still: reduce || loadSettings().quality === 'low', lowPower: !!window.__isMobile });
-            } catch (e) { console.warn('menu bg', e); }
+            ensureMenuBg();
             const sub = document.getElementById('main-menu-sub');
             if (sub && currentPlayer) {
                 const se = currentPlayer.season;
@@ -1327,7 +1323,16 @@ function createProfile(name) { return Profile.createProfile(name); }
         function hideMainMenu() {
             const mm = document.getElementById('main-menu-screen');
             if (mm) { mm.classList.remove('active'); mm.style.display = 'none'; }
-            try { stopMenuBg(); } catch (e) {}
+            // живой фон остаётся за остальными экранами меню (гараж, кампания, выбор трассы…);
+            // если меню открыли не из главного (например, с финиша) — запустить
+            setTimeout(function() { if (!window.__inRace) ensureMenuBg(); }, 0);
+        }
+        function ensureMenuBg() {
+            try {
+                const car = (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0) ? currentPlayer.preferredCar : 'cheburashka';
+                const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                startMenuBg({ carId: car, profile: currentPlayer, still: reduce || loadSettings().quality === 'low', lowPower: !!window.__isMobile });
+            } catch (e) { console.warn('menu bg', e); }
         }
 
         function openRewardsScreen() {
@@ -4107,6 +4112,7 @@ function startGaragePreview(carId) {
             if (typeof updateRotateLock === 'function') updateRotateLock();
 
             window.__forcePBR = false; // гонка — лёгкие шейдеры
+            try { stopMenuBg(); } catch (e) {}
             console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}, погода: ${weatherId}, тема: ${window.__trackThemeActive || "default"}`);
             window.__inRace = true;
             if (typeof window.stopMenuMusic === 'function') window.stopMenuMusic();

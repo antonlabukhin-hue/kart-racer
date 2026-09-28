@@ -7,10 +7,16 @@
  */
 import * as THREE from 'three';
 import { createDiorama, ROAD_W } from './art-scene.js';
+import { addNitroFlames } from './cars.js';
 
 const SPEED = 16;          // ед./с — скорость «прокрутки» мира
 const SPAN = 150;          // длина петли декораций
 const CRITTERS = ['DOG', 'FOX', 'DEER', 'BOAR', 'BEAR'];
+const CROSS_X = 11;          // от обочины до обочины: −11 → +11
+const CROSS_SPEED = 8;       // ед./с поперёк дороги
+// за время перебежки мир уезжает на SPEED·(2·CROSS_X/CROSS_SPEED) ≈ 44 ед. — стартуем дальше, чтобы зверь
+// ушёл с дороги задолго до машины (z = 0) и не прошёл сквозь неё
+const CRITTER_Z = SPEED * (2 * CROSS_X / CROSS_SPEED) + 14;
 
 let st = null;
 
@@ -39,7 +45,8 @@ export function startMenuBg(opts) {
     const carId = o.carId || 'cheburashka';
     const d = createDiorama({
         map: 'arsenev', time: 'sunset', seed: 5,
-        car: { id: carId, x: 0.9, paint: carPaint(o.profile, carId) },
+        // машина едет от камеры, в сторону движения (перёд модели — к −z, поэтому разворот на π)
+        car: { id: carId, x: 0.9, rotY: Math.PI, paint: carPaint(o.profile, carId) },
         boards: [{ x: -(ROAD_W / 2 + 2.6), z: 20, ad: 0 }, { x: ROAD_W / 2 + 2.6, z: 65, ad: 2 }, { x: -(ROAD_W / 2 + 2.6), z: 110, ad: 4 }]
     });
     d.apply(renderer);
@@ -48,6 +55,7 @@ export function startMenuBg(opts) {
         still: !!o.still, critters: [], nextCritter: 1.5,
         car: d.cars[0] ? d.cars[0].group : null, wheels: d.cars[0] ? d.cars[0].wheels : []
     };
+    try { if (st.car) st.flames = addNitroFlames(st.car); } catch (e) { st.flames = null; }
     const onResize = function() {
         if (!st) return;
         renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -76,7 +84,7 @@ function spawnCritter() {
         const dir = Math.random() < 0.5 ? 1 : -1;
         m.visible = true;
         m.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-        m.position.set(-dir * 11, 0, 34 + Math.random() * 14);
+        m.position.set(-dir * CROSS_X, 0, CRITTER_Z + Math.random() * 10);
         st.scene.add(m);
         st.critters.push({ mesh: m, dir: dir, t: 0 });
     } catch (e) {}
@@ -95,28 +103,31 @@ function step(dt) {
         st.car.position.y = Math.abs(Math.sin(t * 9)) * 0.015;
         st.car.rotation.z = Math.sin(t * 0.7) * 0.02;
         st.car.position.x = 0.9 + Math.sin(t * 0.35) * 0.35;
-        st.car.rotation.y = -Math.cos(t * 0.35) * 0.04;
-        st.wheels.forEach(function(w) { w.tire.rotation.x -= move / 0.34; w.disc.rotation.x -= move / 0.34; });
+        st.car.rotation.y = Math.PI - Math.cos(t * 0.35) * 0.04;
+        st.wheels.forEach(function(w) { w.tire.rotation.x += move / 0.34; w.disc.rotation.x += move / 0.34; });
+        // иногда — рывок на нитро
+        if (st.flames) st.flames.update(t, (t % 7) > 5.6);
     }
     // зверь иногда перебегает дорогу вдали
     st.nextCritter -= dt;
-    if (st.nextCritter <= 0 && st.critters.length < 2) { spawnCritter(); st.nextCritter = 3.5 + Math.random() * 3; }
+    // по одному зверю за раз — друг сквозь друга не проходят
+    if (st.nextCritter <= 0 && st.critters.length === 0) { spawnCritter(); st.nextCritter = 2.5 + Math.random() * 3; }
     for (let i = st.critters.length - 1; i >= 0; i--) {
         const c = st.critters[i];
         c.t += dt;
-        c.mesh.position.x += c.dir * 5.5 * dt;
+        c.mesh.position.x += c.dir * CROSS_SPEED * dt;
         c.mesh.position.z -= move;
         c.mesh.position.y = Math.abs(Math.sin(c.t * 12)) * 0.07;
         c.mesh.traverse(function(n) { if (n.userData && n.userData.isLeg) n.rotation.x = Math.sin(c.t * 12 + (n.userData.legIndex === 0 || n.userData.legIndex === 3 ? 0 : Math.PI)) * 0.55; });
-        if (Math.abs(c.mesh.position.x) > 12 || c.mesh.position.z < -10) {
+        if (Math.abs(c.mesh.position.x) > CROSS_X + 1 || c.mesh.position.z < 4) {
             st.scene.remove(c.mesh);
             st.critters.splice(i, 1);
         }
     }
     const cam = st.camera;
-    cam.position.set(2.6 + Math.sin(t * 0.21) * 0.5, 1.2 + Math.sin(t * 0.33) * 0.08, -5.4);
-    // широкий экран: меню слева — машина справа от центра кадра (камера смотрит к +z, +x — слева)
-    cam.lookAt(cam.aspect > 1.3 ? 3.4 : 0.2, 0.75, 3.5);
+    cam.position.set(2.4 + Math.sin(t * 0.21) * 0.4, 1.35 + Math.sin(t * 0.33) * 0.08, -5.2);
+    // широкий экран: меню справа — машина слева от центра кадра (камера смотрит к +z: +x на экране слева)
+    cam.lookAt(cam.aspect > 1.3 ? -2.6 : 0.6, 0.8, 6);
 }
 
 function loop() {

@@ -4527,12 +4527,32 @@
         }
 
         /* живой 3D-фон главного меню (src/menu-bg.js) */
-        #menu-bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 3890; display: block; pointer-events: none; }
+        #menu-bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; display: block; pointer-events: none; }
         body.menu-live #main-menu-screen { background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.05) 100%); }
         body.menu-live #main-menu-screen .content { background: rgba(10,10,14,0.84); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
         @media (min-width: 900px) and (min-aspect-ratio: 13/10) {
-            body.menu-live #main-menu-screen { justify-content: flex-start; padding-left: 5vw; background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0) 70%); }
+            /* меню справа, ближе к центру; машина — слева */
+            body.menu-live #main-menu-screen { justify-content: flex-end; padding-right: max(4vw, calc(50vw - 560px)); background: linear-gradient(270deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0) 70%); }
             body.menu-live #main-menu-screen .content { max-width: 470px; }
         }
 
         #endless-wave-card .ew-seed { margin-top: 6px; font-size: 11px; letter-spacing: 2px; color: #ffd23c; opacity: .75; font-variant-numeric: tabular-nums; }
+
+        /* все экраны меню поверх живого фона: полупрозрачное затемнение, на широком экране — справа, как главное меню */
+        body.menu-live :is(#campaign-screen, #rewards-screen, #events-screen, #shop-screen, #garage-screen, #difficulty-screen, #map-select-screen, #lore-screen, #car-select-screen) {
+            background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0.1) 100%) !important;
+        }
+        @media (min-width: 900px) and (min-aspect-ratio: 13/10) {
+            body.menu-live :is(#campaign-screen, #rewards-screen, #events-screen, #shop-screen, #garage-screen, #difficulty-screen, #map-select-screen, #lore-screen, #car-select-screen) {
+                justify-content: flex-end !important; padding-right: max(4vw, calc(50vw - 560px)) !important; box-sizing: border-box;
+                background: linear-gradient(270deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 45%, rgba(0,0,0,0) 70%) !important;
+            }
+        }
+        /* выбор трассы: картинка сверху, название под ней — карточки не вылезают за панель */
+        #map-select-screen .map-card { flex-direction: column !important; align-items: center !important; text-align: center; min-width: 0 !important; }
+        #map-select-screen .map-card .map-img { width: 100% !important; height: auto !important; aspect-ratio: 16 / 10; object-fit: cover; }
+        #map-select-screen .map-card .map-name, #map-select-screen .map-card h3, #map-select-screen .map-card span { white-space: normal; overflow-wrap: anywhere; }
+        #map-select-screen .map-options { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+        #map-select-screen .map-card { width: auto !important; max-width: none !important; padding: 8px !important; box-sizing: border-box; }
+        #map-select-screen .map-card { height: auto !important; min-height: 0 !important; overflow: visible !important; }
+        #map-select-screen .map-card .map-desc { font-size: 10px !important; line-height: 1.3; }
