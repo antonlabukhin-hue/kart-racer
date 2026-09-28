@@ -42,7 +42,7 @@ export function bossIntroHtml(def, chapterNo, hp) {
         + '<div class="bi-top">БОСС' + (chapterNo ? ' · глава ' + chapterNo : '') + '</div>'
         + '<div class="bi-title">' + esc(n.title) + '</div>'
         + '<div class="bi-nick" style="color:' + hex(def && def.eye, 0xffdd44) + '">«' + esc(n.nick) + '»</div>'
-        + '<div class="bi-hp">' + '❤'.repeat(Math.max(1, Math.min(8, hp || 3))) + ' <span>тарань ×' + (hp || 3) + ' или обгони</span></div>'
+        + '<div class="bi-hp">' + '❤'.repeat(Math.max(1, Math.min(8, hp || 3))) + ' <span>броня: увернись и тарань</span></div>'
         + '<div class="bi-hint">' + esc(hint) + '</div>'
         + (def && def.shout ? '<div class="bi-quote">— ' + esc(def.shout) + '</div>' : '');
 }
