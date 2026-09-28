@@ -50,3 +50,37 @@ test('фазы босса: баррикада в двух полосах; тар
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
+
+test('отбитый на нитро снаряд ранит босса сквозь броню; кувалда пробивает броню тараном', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?start=0.43');
+    await startFreeRace(page, 'medium');
+    await waitRacing(page);
+    await page.evaluate(() => window.__raceDebug.spawnBossNow());
+    await expect.poll(() => page.evaluate(() => !!(window.__raceDebug.boss && window.__raceDebug.boss.mesh)), { timeout: 5000 }).toBe(true);
+    await page.evaluate(() => { const b = window.__raceDebug.boss; b.hp = 7; b.maxHp = 8; });
+    // выстрел; держим нитро и стоим на линии огня
+    await page.evaluate(() => window.__raceDebug.forceBossAttack('shot'));
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.bullets), { timeout: 15_000 }).toBeGreaterThan(0);
+    await page.evaluate(() => new Promise(res => {
+        const d = window.__raceDebug; let n = 0;
+        const f = () => { d.giveNitro(); if (++n < 150 && d.boss.hp >= 7) requestAnimationFrame(f); else res(); };
+        f();
+    }));
+    expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBe(6);
+
+    // кувалда: подбираем, таран по броне проходит
+    await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.spawnHammer(); const pk = d.bossPickups[0]; d.setX(pk.x); });
+    await page.keyboard.down('w');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.hammer), { timeout: 8_000 }).toBe(true);
+    await page.keyboard.up('w');
+    // таран по броне с кувалдой (в залпе могли быть ещё отбитые снаряды — считаем от момента тарана)
+    const r = await page.evaluate(() => new Promise(res => {
+        const d = window.__raceDebug, b = d.boss; let n = 0; const hp0 = b.hp;
+        const f = () => { b.invuln = 0; b.vulnT = 0; b.x = d.x; b.z = d.z - 0.5; if (++n < 40 && b.hp === hp0) requestAnimationFrame(f); else res({ hp0, hp: b.hp }); };
+        f();
+    }));
+    expect(r.hp).toBeLessThan(r.hp0);
+    expect(await page.evaluate(() => window.__raceDebug.hammer)).toBe(false);
+    expect(problems).toEqual([]);
+});

@@ -7588,6 +7588,80 @@ function startGaragePreview(carId) {
                 try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: xPos, y: 0.5, z: zPos }, 1.1); } catch (e) {}
                 return true;
             }
+            /**
+             * Урон по боссу: HP, анимация, смерть и награда. contact — удар машиной
+             * (игрок притормаживает, босса отбрасывает); без него — отбитый снаряд.
+             */
+            function damageBoss(dmg, opts) {
+                const o = opts || {};
+                const heavy = !!o.heavy;
+                boss.vulnT = 0; // окно закрылось — нужен новый промах
+                boss.hp -= dmg;
+                try { playBossDamageAnim(boss, heavy); } catch (e) {}
+                try { if (window.soundEngine) window.soundEngine.playSfx('boss_hurt', heavy ? 1.15 : 0.9); } catch (e) {}
+                boss.invuln = heavy ? 0.7 : 1.0;
+                if (o.contact) {
+                    // только подброс/замедление — без handleObstacleHit
+                    speed *= heavy ? 0.85 : 0.65;
+                    xVelocity *= 0.5;
+                    shakeTime = Math.max(shakeTime, heavy ? 0.35 : 0.22);
+                    fovPunch = heavy ? 16 : 10;
+                    boss.x += ((xPos - boss.x) >= 0 ? -1.8 : 1.8);
+                    boss.z -= 3;
+                } else {
+                    boss.z -= 1.5;
+                }
+                try {
+                    particleSystem.emit(
+                        _v.p1.set(boss.x, 0.6, boss.z),
+                        _v.vel.set((Math.random()-0.5)*2, 1.2, -1),
+                        heavy ? 14 : 8, 0.25
+                    );
+                } catch (e) {}
+                if (boss.hp <= 0 && !boss.dying) {
+                    boss.dying = true;
+                    boss.dieT = 0;
+                    boss.state = 'die';
+                    boss.attackState = 'idle';
+                    boss.charging = false;
+                    // отлёт вперёд по дороге (−Z)
+                    boss._dieVz = -12;
+                    boss._dieVx = 0;
+                    boss._dieVy = 5.5;
+                    boss._dieSpin = 3.0 + Math.random() * 1.0;
+                    if (boss.mesh) boss._dieLockX = boss.mesh.position.x;
+                    try {
+                        if (particleSystem && particleSystem.explode && boss.mesh) {
+                            const pm = boss.mesh.position;
+                            particleSystem.explode({ x: pm.x, y: pm.y + 0.6, z: pm.z }, 1.2);
+                        }
+                        if (window.soundEngine) {
+                            window.soundEngine.playSfx('boss_die', 1.25);
+                            window.soundEngine.playSfx('boss_roar', 0.8);
+                            window.soundEngine.playSfx('explode', 1.15);
+                        }
+                    } catch (e) {}
+                    showBossShout('💥 ' + (boss.name || 'Босс') + ' сбит!');
+                    try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.5); } catch (e) {}
+                    try { particleSystem.emit(_v.p1.set(boss.x, 1.0, boss.z), _v.vel.set(0, 2, 0), 18, 0.35); } catch (e) {}
+                    updateBossHpBar(boss, camera);
+                    try { updateBossHeadQuote(boss); } catch (eQ) {}
+                    try {
+                        if (currentPlayer && currentPlayer.season) {
+                            currentPlayer.season.chips = (currentPlayer.season.chips || 0) + (heavy ? 5 : 4);
+                            if (typeof saveCurrentPlayer === 'function') saveCurrentPlayer();
+                        }
+                    } catch (e) {}
+                    try {
+                        if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ' сброшен! +фишки');
+                        raceTime = Math.max(0, raceTime - DEFEAT_TIME_BONUS);
+                        if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, '💥 Босс повержен! −' + DEFEAT_TIME_BONUS + ' с');
+                    } catch (e) {}
+                } else {
+                    showBossShout((boss.name || 'Босс') + ' HP ' + Math.max(0, boss.hp) + '/' + (boss.maxHp || 3));
+                    try { updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
+                }
+            }
             function removeBossExtras(b) {
                 try { if (b && b.stunFx) { scene.remove(b.stunFx.group); b.stunFx = null; } } catch (e) {}
                 try { if (b && b.warn) { scene.remove(b.warn); b.warn = null; } } catch (e) {}
@@ -7596,10 +7670,50 @@ function startGaragePreview(carId) {
             const BOSS_LANES = [-2, 0, 2];
             const laneOf = function(x) { return Math.max(0, Math.min(2, Math.round((x + 2) / 2))); };
             const bossBarricades = [];
+            let bossHammer = false; // подобранная кувалда: следующий таран пробивает броню
+            const bossPickups = [];
+            function spawnHammer() {
+                const g = new THREE.Group();
+                const wood = new THREE.MeshLambertMaterial({ color: 0x8a5a2a });
+                const steel = new THREE.MeshStandardMaterial({ color: 0x9aa4ae, metalness: 0.7, roughness: 0.35, emissive: 0x223344, emissiveIntensity: 0.4 });
+                const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.9, 8), wood);
+                handle.position.y = 0.45;
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.22, 0.22), steel);
+                head.position.y = 0.92;
+                g.add(handle, head);
+                const glow = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.6, 24), new THREE.MeshBasicMaterial({ color: 0xffd23c, transparent: true, opacity: 0.8, side: THREE.DoubleSide }));
+                glow.rotation.x = -Math.PI / 2;
+                glow.position.y = 0.03;
+                g.add(glow);
+                const lane = BOSS_LANES[Math.floor(Math.random() * 3)];
+                const z = zPos - 26;
+                g.position.set(lane, 0.2, z);
+                scene.add(g);
+                bossPickups.push({ mesh: g, x: lane, z: z, t: 0 });
+            }
             function bossOpen(text) {
                 if (!boss || !boss.active || boss.dying) return;
                 boss.vulnT = VULN_TIME;
-                try { showTimePenaltyPopup(0, text || '🎯 Промах! Тарань, пока открыт'); } catch (e) {}
+                // трамплин в полосе босса там, где машина его догонит (с запасом на полёт)
+                let withRamp = false;
+                try {
+                    const pv = Math.abs(speed) * 60;
+                    const gap = zPos - boss.z;
+                    if (pv > 10 && gap > 10) {
+                        const meetIn = gap / 12;
+                        const rz = zPos - pv * Math.max(0.25, meetIn - 0.32) - 2;
+                        const near = ramps.some(function(r) { return Math.abs(r.z - rz) < 20; });
+                        if (!near && zPos - rz > 12) {
+                            ramps.push(createRamp(rz, BOSS_LANES[laneOf(boss.x)], 0.85));
+                            withRamp = true;
+                        }
+                    }
+                } catch (e) {}
+                try { showTimePenaltyPopup(0, (text || '🎯 Промах!') + (withRamp ? ' Тарань — или прыгай с трамплина ×3' : ' Тарань, пока открыт')); } catch (e) {}
+                // иногда на дороге — кувалда (пробивает броню одним тараном)
+                try {
+                    if (!bossHammer && bossPickups.length === 0 && Math.random() < 0.35) spawnHammer();
+                } catch (e) {}
                 try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 0.8); } catch (e) {}
             }
             function spawnBoss() {
@@ -8211,7 +8325,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, bossBarricades: bossBarricades, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -9387,7 +9501,7 @@ function startGaragePreview(carId) {
                         if (boss.z < zPos - 10) {
                             const wasMiss = boss.returning === 'open';
                             boss.returning = false;
-                            if (wasMiss) bossOpen('🎯 Выдохся! Тарань, пока открыт');
+                            if (wasMiss) bossOpen('🎯 Выдохся!');
                         }
                     } else if (boss.vulnT > 0) {
                         // открыт после промаха: запыхался — игрок нагоняет его ~12 м/с, но за спину не отстаёт
@@ -9898,7 +10012,11 @@ function startGaragePreview(carId) {
                     if (boss.invuln <= 0 && !boss.returning && Math.abs(bdx) < boss.radius && Math.abs(bdz) < boss.radius * (boss.charging ? 1.2 : 0.95)
                         && !(boss.charging && !airborneHit && headOnBoss())) {
                         const nitroHit = (typeof nitroTimer !== 'undefined' && nitroTimer > 0);
-                        const dmg = airborneHit ? damageFor('stomp') : damageFor('ram', { vulnerable: boss.vulnT > 0, nitro: nitroHit });
+                        const dmg = airborneHit ? damageFor('stomp') : damageFor('ram', { vulnerable: boss.vulnT > 0, nitro: nitroHit, hammer: bossHammer });
+                        if (!airborneHit && bossHammer && !(boss.vulnT > 0) && dmg > 0) {
+                            bossHammer = false;
+                            try { showTimePenaltyPopup(0, '🔨 Кувалда пробила броню!'); } catch (e) {}
+                        }
                         if (airborneHit) {
                             try { showTimePenaltyPopup(0, '🦶 Сверху! ×' + dmg); } catch (e) {}
                             carAirVel = Math.max(carAirVel, 3.2); // отскок от босса
@@ -9918,75 +10036,7 @@ function startGaragePreview(carId) {
                                 try { showTimePenaltyPopup(0, '🛡 Броня! Увернись от атаки — после промаха он открыт'); } catch (e) {}
                             }
                         } else {
-                        boss.vulnT = 0; // окно закрылось — нужен новый промах
-                        boss.hp -= dmg;
-                        try { playBossDamageAnim(boss, nitroHit); } catch (e) {}
-                        try { if (window.soundEngine) window.soundEngine.playSfx('boss_hurt', nitroHit ? 1.15 : 0.9); } catch (e) {}
-                        boss.invuln = nitroHit ? 0.7 : 1.0;
-                        // только подброс/замедление — без handleObstacleHit
-                        speed *= nitroHit ? 0.85 : 0.65;
-                        xVelocity *= 0.5;
-                        shakeTime = Math.max(shakeTime, nitroHit ? 0.35 : 0.22);
-                        fovPunch = nitroHit ? 16 : 10;
-                        boss.x += (bdx >= 0 ? -1.8 : 1.8);
-                        boss.z -= 3;
-                        try {
-                            particleSystem.emit(
-                                _v.p1.set(boss.x, 0.6, boss.z),
-                                _v.vel.set((Math.random()-0.5)*2, 1.2, -1),
-                                nitroHit ? 14 : 8, 0.25
-                            );
-                        } catch (e) {}
-                        if (boss.hp <= 0 && !boss.dying) {
-                            boss.dying = true;
-                            boss.dieT = 0;
-                            boss.state = 'die';
-                            boss.attackState = 'idle';
-                            // отлёт вперёд по дороге (−Z) + лёгкий боковой толчок
-                            boss._dieVz = -12; // только вперёд по трассе (−Z)
-                            boss._dieVx = 0;
-                            boss._dieVy = 5.5;
-                            boss._dieSpin = 3.0 + Math.random() * 1.0;
-                            // зафиксировать X на полосе, не уезжать вбок
-                            if (boss.mesh) boss._dieLockX = boss.mesh.position.x;
-                            try {
-                                if (particleSystem && particleSystem.explode && boss.mesh) {
-                                    const p = boss.mesh.position;
-                                    particleSystem.explode({ x: p.x, y: p.y + 0.6, z: p.z }, 1.2);
-                                }
-                                if (window.soundEngine) {
-                                    window.soundEngine.playSfx('boss_die', 1.25);
-                                    window.soundEngine.playSfx('boss_roar', 0.8);
-                                    window.soundEngine.playSfx('explode', 1.15);
-                                }
-                            } catch (e) {}
-                            showBossShout('💥 ' + (boss.name || 'Босс') + ' сбит!');
-                            try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.5); } catch (e) {}
-                            try {
-                                particleSystem.emit(
-                                    _v.p1.set(boss.x, 1.0, boss.z),
-                                    _v.vel.set(0, 2, 0),
-                                    18, 0.35
-                                );
-                            } catch (e) {}
-                            updateBossHpBar(boss, camera);
-                            try { updateBossHeadQuote(boss); } catch (eQ) {}
-                            try {
-                                if (currentPlayer && currentPlayer.season) {
-                                    const reward = nitroHit ? 5 : 4;
-                                    currentPlayer.season.chips = (currentPlayer.season.chips || 0) + reward;
-                                    if (typeof saveCurrentPlayer === 'function') saveCurrentPlayer();
-                                }
-                            } catch (e) {}
-                            try {
-                                if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ' сброшен! +фишки');
-                                raceTime = Math.max(0, raceTime - DEFEAT_TIME_BONUS);
-                                if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, '💥 Босс повержен! −' + DEFEAT_TIME_BONUS + ' с');
-                            } catch (e) {}
-                        } else {
-                            showBossShout((boss.name || 'Босс') + ' HP ' + Math.max(0, boss.hp) + '/' + (boss.maxHp || 3));
-                            try { updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
-                        }
+                        damageBoss(dmg, { heavy: nitroHit || airborneHit, contact: true });
                         } // броня пробита
                     }
                     } // end !dying
@@ -10012,6 +10062,24 @@ function startGaragePreview(carId) {
                         try { disposeBossMesh(boss.mesh); scene.remove(boss.mesh); } catch (e) {}
                         removeBossExtras(boss);
                         boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
+                    }
+                }
+
+                // Кувалда на дороге
+                for (let pi = bossPickups.length - 1; pi >= 0; pi--) {
+                    const pk = bossPickups[pi];
+                    pk.t += deltaTime;
+                    pk.mesh.rotation.y += deltaTime * 2.5;
+                    pk.mesh.position.y = 0.2 + Math.sin(pk.t * 4) * 0.12;
+                    if (Math.abs(zPos - pk.z) < 1.2 && Math.abs(xPos - pk.x) < 1.0) {
+                        bossHammer = true;
+                        try { showTimePenaltyPopup(0, '🔨 Кувалда! Следующий таран пробьёт броню'); } catch (e) {}
+                        try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.1); } catch (e) {}
+                        try { scene.remove(pk.mesh); } catch (e) {}
+                        bossPickups.splice(pi, 1);
+                    } else if (zPos < pk.z - 10) {
+                        try { scene.remove(pk.mesh); } catch (e) {}
+                        bossPickups.splice(pi, 1);
                     }
                 }
 
@@ -10072,7 +10140,7 @@ function startGaragePreview(carId) {
                         const hdx = xPos - bu.x, hdz = zPos - bu.z;
                         const hlen = Math.sqrt(hdx * hdx + hdz * hdz) || 1;
                         // доводка только издалека: последние метры летит прямо — от него можно уйти в соседнюю полосу
-                        if (hlen < 22 && hlen > 10) {
+                        if (hlen < 22 && hlen > 10 && !bu.reflected) {
                             const home = 5;
                             bu.vx += (hdx / hlen) * home * deltaTime;
                             bu.vz += (hdz / hlen) * home * deltaTime;
@@ -10080,7 +10148,7 @@ function startGaragePreview(carId) {
                     }
                     bu.x += bu.vx * deltaTime;
                     bu.z += bu.vz * deltaTime;
-                    if (!bu.passed && bu.z > zPos + 2) {
+                    if (!bu.passed && !bu.reflected && bu.z > zPos + 2) {
                         bu.passed = true;
                         try { if (bu.volley && boss && boss.volleys) boss.volleys.gone(bu.volley); } catch (e) {}
                         bu.volley = 0;
@@ -10088,6 +10156,31 @@ function startGaragePreview(carId) {
                     if (bu.mesh) {
                         bu.mesh.position.set(bu.x, bu.y, bu.z);
                         bu.mesh.rotation.x += deltaTime * 4;
+                    }
+                    if (bu.reflected) {
+                        // отбитый снаряд летит в босса и ранит сквозь броню
+                        if (!boss || !boss.active || boss.dying) { try { scene.remove(bu.mesh); } catch (e) {} bossBullets.splice(bi, 1); continue; }
+                        const rdx = boss.x - bu.x, rdz = boss.z - bu.z;
+                        const rl = Math.sqrt(rdx * rdx + rdz * rdz) || 1;
+                        bu.vx = rdx / rl * 34; bu.vz = rdz / rl * 34;
+                        if (rl < 1.4) {
+                            try { scene.remove(bu.mesh); } catch (e) {}
+                            bossBullets.splice(bi, 1);
+                            try { showTimePenaltyPopup(0, '↩ Отбил! Снаряд — в босса'); } catch (e) {}
+                            try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: boss.x, y: 1.0, z: boss.z }, 0.7); } catch (e) {}
+                            damageBoss(damageFor('reflect'), { heavy: false });
+                        } else if (bu.life <= 0) { try { scene.remove(bu.mesh); } catch (e) {} bossBullets.splice(bi, 1); }
+                        continue;
+                    }
+                    if (Math.abs(bu.x - xPos) < 1.0 && Math.abs(bu.z - zPos) < 1.4 && nitroTimer > 0 && !bu.heavyOnly) {
+                        // на нитро снаряд отлетает обратно
+                        bu.reflected = true;
+                        bu.life = 3;
+                        if (bu.volley && boss && boss.volleys) { boss.volleys.gone(bu.volley); bu.volley = 0; }
+                        try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.9); } catch (e) {}
+                        try { if (particleSystem.sparks) particleSystem.sparks({ x: xPos, y: 0.8, z: zPos - 1 }, 12, -1); } catch (e) {}
+                        shakeTime = Math.max(shakeTime, 0.12);
+                        continue;
                     }
                     if (Math.abs(bu.x - xPos) < 1.0 && Math.abs(bu.z - zPos) < 1.4) {
                         bu.hit = true;
