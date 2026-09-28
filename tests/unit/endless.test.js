@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from '../../src/endless.js';
+import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from '../../src/endless.js';
 
 describe('Звериный час', () => {
-    it('волны ужесточаются: лёгкая → средняя → сложная, карты по кругу', () => {
+    it('волны ужесточаются: лёгкая → средняя → сложная (карты — по сиду, beast-seed.test.js)', () => {
         expect([1, 2, 3, 7].map(waveDifficulty)).toEqual(['easy', 'medium', 'hard', 'hard']);
-        expect([1, 2, 3, 4].map(waveMap)).toEqual(['arsenev', 'promzona', 'svalka', 'arsenev']);
     });
 
     it('с 4-й волны зверей больше, но не бесконечно', () => {
@@ -25,6 +24,15 @@ describe('Звериный час', () => {
     it('рекорд и новый забег', () => {
         expect(recordBest(500, 800)).toEqual({ best: 800, isNew: true });
         expect(recordBest(900, 800)).toEqual({ best: 900, isNew: false });
-        expect(newEndlessRun()).toEqual({ wave: 1, score: 0, strikes: 0, nearMiss: 0 });
+        expect(newEndlessRun(7)).toEqual({ wave: 1, score: 0, strikes: 0, nearMiss: 0, seed: 7, daily: false });
+    });
+});
+
+describe('сид забега', () => {
+    it('забег помнит сид и то, что он «дня»', () => {
+        const r = newEndlessRun(0xABCDEF01, true);
+        expect(r.seed).toBe(0xABCDEF01);
+        expect(r.daily).toBe(true);
+        expect(newEndlessRun(5).daily).toBe(false);
     });
 });

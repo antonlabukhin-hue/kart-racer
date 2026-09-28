@@ -12,9 +12,14 @@ test('Звериный час: волны идут подряд, конец за
     await unlockBeastHour(page);
     await page.locator('.menu-card[data-menu="endless"]').click();
     await expect(page.locator('#endlessDisplay')).toContainText('ВОЛНА 1', { timeout: 20_000 });
+    // забег по сиду дня: волна 1 идёт по раскладке из сида
+    const seed = await page.evaluate(() => window.__endless && window.__endless.seed);
+    expect(seed).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.__endless.daily)).toBe(true);
     await waitRacing(page);
     await page.keyboard.down('w');
     await expect(page.locator('#endless-wave-card')).toContainText('ВОЛНА 2', { timeout: 60_000 });
+    await expect(page.locator('#endless-wave-card .ew-seed')).toContainText('Звериный час дня');
     await expect(page.locator('#endlessDisplay')).toContainText('ВОЛНА 2', { timeout: 20_000 });
     const score = await page.locator('#endlessDisplay').textContent();
     expect(parseInt(score.split('·')[1], 10)).toBeGreaterThanOrEqual(1000);

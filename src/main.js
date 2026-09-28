@@ -51,7 +51,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta } from './ghost.js';
-        import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
+        import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
+        import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
         import { createMapEvent, createPipeDrop } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
@@ -652,11 +653,16 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             try { hideMainMenu(); } catch (e) {}
             const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
             const q = window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium';
-            initGame(q, waveDifficulty(run.wave), car, waveMap(run.wave), 'day');
+            // волна строится из сида: карта, погода и раскладка трассы (src/beast-seed.js)
+            const plan = wavePlan(run.seed, run.wave);
+            window.__layoutOverride = plan.layout;
+            initGame(q, waveDifficulty(run.wave), car, plan.map, plan.weather);
         }
-        function startEndlessRun() {
+        /** seed не задан — «Звериный час дня» (сид общий для всех в этот день) */
+        function startEndlessRun(seed) {
             clearCampaignGlobals();
-            window.__endless = newEndlessRun();
+            const daily = seed == null;
+            window.__endless = newEndlessRun(daily ? dailySeed() : seed, daily);
             launchEndlessWave();
         }
         window.startEndlessRun = startEndlessRun;
@@ -666,7 +672,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             el.id = 'endless-wave-card';
             el.innerHTML = '<div class="ew-sub">Волна ' + (run.wave - 1) + ' пройдена · +' + gained + '</div>'
                 + '<div class="ew-title">🐾 ВОЛНА ' + run.wave + '</div>'
-                + '<div class="ew-sub">Счёт: ' + run.score + ' · Аварии: ' + run.strikes + ' / 5</div>';
+                + '<div class="ew-sub">Счёт: ' + run.score + ' · Аварии: ' + run.strikes + ' / 5</div>'
+                + '<div class="ew-seed">' + (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '</div>';
             document.body.appendChild(el);
             setTimeout(function() { try { el.remove(); } catch (e) {} onDone(); }, 1800);
         }
@@ -4539,7 +4546,8 @@ function startGaragePreview(carId) {
                     const run = window.__endless;
                     title = '🐾 ЗВЕРИНЫЙ ЧАС ОКОНЧЕН';
                     color = '#ffd23c';
-                    message = 'Волна: ' + run.wave + ' · Счёт: ' + run.score
+                    message = (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '\n'
+                        + 'Волна: ' + run.wave + ' · Счёт: ' + run.score
                         + '\n' + (state === 'timeout' ? 'Время волны вышло' : 'Аварий: ' + strikes + ' / ' + MAX_STRIKES)
                         + '\n' + (run.isNewBest ? '🎉 НОВЫЙ РЕКОРД!' : '🏆 Рекорд: ' + (currentPlayer.endlessBest || 0));
                 } else if (state === 'timeout') {
@@ -7311,7 +7319,7 @@ function startGaragePreview(carId) {
             }
             try {
                 // раскладка участков — из данных (src/tracks/layouts.json): карта → глава кампании
-                const _layout = resolveLayout(null, { mapId: mapId, difficulty: difficulty, campaignId: window.__campaignTrackId || null });
+                const _layout = (isEndlessMode() && window.__layoutOverride) || resolveLayout(null, { mapId: mapId, difficulty: difficulty, campaignId: window.__campaignTrackId || null });
                 window.__trackLayout = _layout;
                 let prevLane = -1;
                 _layout.gaps.forEach(function(frac, gi) {
