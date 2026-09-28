@@ -18,9 +18,10 @@ test('погоня стаи: на финальном отрезке стая б�
     await expect(page.locator('#pack-meter')).toBeVisible();
     expect(await page.evaluate(() => window.__raceDebug.pack.meshes)).toBe(4);
     await page.keyboard.up('w');
-    const strikes0 = await page.evaluate(() => window.__raceDebug.strikes);
+    // укус — не авария: каждая авария (если машина по пути во что-то врезалась) записана в hitLog, укусы — нет
+    const before = await page.evaluate(() => window.__raceDebug.strikes - window.__raceDebug.hitLog.length);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.pack.bites), { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
-    expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(strikes0);
+    expect(await page.evaluate(() => window.__raceDebug.strikes - window.__raceDebug.hitLog.length)).toBe(before);
     expect(problems).toEqual([]);
 });
 
