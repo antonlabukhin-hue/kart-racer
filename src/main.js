@@ -1770,7 +1770,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             if (!gs) return;
             gs.classList.add('active');
             gs.style.display = 'flex';
-            document.getElementById('garage-player-name').textContent = currentPlayer.name + ' · 🪙' + currentPlayer.season.chips + ' · 🍬' + currentPlayer.season.gum;
+            refreshGarageHeader();
             const st = currentPlayer.stats;
             const se = currentPlayer.season;
             const need = seasonXpToNext(se.level);
@@ -1966,7 +1966,7 @@ function renderGaragePartsPanel() {
             if (window.Notify) Notify.success('🎨 Покраска', p.name);
             renderGaragePartsPanel();
             applyGarageLoadoutVisual();
-            document.getElementById('garage-player-name').textContent = currentPlayer.name + ' · 🪙' + currentPlayer.season.chips;
+            refreshGarageHeader();
         }
 
         function buyOrToggleGaragePart(partId) {
@@ -1993,7 +1993,7 @@ function renderGaragePartsPanel() {
             }
             renderGaragePartsPanel();
             applyGarageLoadoutVisual();
-            document.getElementById('garage-player-name').textContent = currentPlayer.name + ' · 🪙' + currentPlayer.season.chips;
+            refreshGarageHeader();
         }
 
         function previewGaragePaint(paintId) {
@@ -2209,6 +2209,11 @@ function renderGaragePartsPanel() {
 
         window.applyUpgradeVisuals = applyUpgradeVisuals;
 
+        /** Шапка гаража: имя, фишки и жвачка — после любой покупки */
+        function refreshGarageHeader() {
+            const el = document.getElementById('garage-player-name');
+            if (el && currentPlayer && currentPlayer.season) el.textContent = currentPlayer.name + ' · 🪙' + (currentPlayer.season.chips || 0) + ' · 🍬' + (currentPlayer.season.gum || 0);
+        }
         /** Вкладка «Прокачка»: полосы характеристик выбранной машины и покупка уровней */
         function renderGarageUpgrades() {
             const box = document.getElementById('garage-panel-upgrades');
@@ -2258,6 +2263,7 @@ function renderGaragePartsPanel() {
                     try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.1); } catch (e) {}
                     try { applyUpgradeVisuals(window.__garageUpgrades, lv); } catch (e) {}
                     try { updatePlayerBar(); } catch (e) {}
+                    try { refreshGarageHeader(); } catch (e) {}
                     renderGarageUpgrades();
                 });
             });
@@ -4973,14 +4979,14 @@ function startGaragePreview(carId) {
                     const cineDur = 5.5;
                     const cx = xPos, cy = 1.0, cz = zPos;
                     const orbitR = 7.5;
+                    // машина стоит ровно на месте — облетает только камера
+                    try { if (playerCar) { playerCar.rotation.set(0, 0, 0); if (nitroFlames) nitroFlames.update(0, false); } } catch (e) {}
                     function cineFrame() {
                         // по реальному времени: на слабом устройстве облёт не растягивается на минуту
                         const cineNow = performance.now();
                         tCine += Math.min(0.1, (cineNow - cineLast) / 1000);
                         cineLast = cineNow;
                         const k = Math.min(1, tCine / cineDur);
-                    // машина стоит ровно на месте — облетает только камера
-                    try { if (playerCar) { playerCar.rotation.set(0, 0, 0); if (nitroFlames) nitroFlames.update(0, false); } } catch (e) {}
                         // 1.2 оборота вокруг машины
                         const ang = -0.4 + k * Math.PI * 2.4;
                         const h = 2.2 + Math.sin(k * Math.PI) * 1.4;
@@ -6480,18 +6486,18 @@ function startGaragePreview(carId) {
             const RACE_CAR_SCALE = 0.62;
             let playerCar;
             let raceCarParts = null;
+            let raceWheels = [], raceWheelR = 0.24; // колёса крутятся по скорости
             try {
                 if (typeof _buildShowroomCar !== 'function') {
-            let raceWheels = [], raceWheelR = 0.24; // колёса крутятся по скорости
                     throw new Error('_buildShowroomCar missing');
                 }
                 const built = _buildShowroomCar(carId || 'cheburashka');
                 if (!built || !built.group) throw new Error('empty showroom build');
                 playerCar = built.group;
                 raceCarParts = built.parts || {};
+                if (built.upgrades) { raceWheels = built.upgrades.wheels || []; raceWheelR = built.upgrades.wheelR || 0.24; }
                 playerCar.scale.setScalar(RACE_CAR_SCALE);
                 // cast shadows on body
-                if (built.upgrades) { raceWheels = built.upgrades.wheels || []; raceWheelR = built.upgrades.wheelR || 0.24; }
                 playerCar.traverse(function(o) {
                     if (o.isMesh) {
                         o.castShadow = true;
@@ -8084,8 +8090,6 @@ function startGaragePreview(carId) {
             // «Чистый отрезок» (src/clean-run.js): 10 с без ударов — щит, потом фишки
             const cleanRun = createCleanRun();
             let shieldMesh = null;
-            function setShieldVisible(on) {
-                try {
             /** Крупная выскакивающая плашка по центру (броня и т. п.) — один слот */
             function showBigPlaque(title, sub, cls) {
                 document.querySelectorAll('.big-plaque').forEach(function(n) { try { n.remove(); } catch (e) {} });
@@ -8098,6 +8102,8 @@ function startGaragePreview(carId) {
                 setTimeout(function() { el.classList.add('out'); }, 1700);
                 setTimeout(function() { try { el.remove(); } catch (e) {} }, 2100);
             }
+            function setShieldVisible(on) {
+                try {
                     if (on && !shieldMesh && playerCar) {
                         shieldMesh = new THREE.Mesh(
                             new THREE.SphereGeometry(1.25, 18, 12),
@@ -9077,6 +9083,11 @@ function startGaragePreview(carId) {
                     playerCar.rotation.x = lerp(playerCar.rotation.x, pitchTarget, 1 - Math.pow(0.85, deltaTime * 60));
                 }
                 if (nitroFlames) nitroFlames.update(raceTime, nitroTimer > 0);
+                // колёса: путь за кадр / радиус (модель в заезде уменьшена — радиус тоже); перёд к −z → вращение «−x»
+                if (raceWheels.length) {
+                    const ang = (speed * 60 * deltaTime) / (raceWheelR * RACE_CAR_SCALE);
+                    for (let wi = 0; wi < raceWheels.length; wi++) raceWheels[wi].hub.rotation.x -= ang;
+                }
                 // вмятины — по одной на аварию; дым из-под капота со второй аварии
                 while (dentsShown < strikes) { dentsShown++; addDent(); }
                 {
@@ -9091,11 +9102,6 @@ function startGaragePreview(carId) {
                 }
                 if (playerCar.userData._leanKick) {
                     playerCar.userData._leanKick *= 0.88;
-                // колёса: путь за кадр / радиус (модель в заезде уменьшена — радиус тоже); перёд к −z → вращение «−x»
-                if (raceWheels.length) {
-                    const ang = (speed * 60 * deltaTime) / (raceWheelR * RACE_CAR_SCALE);
-                    for (let wi = 0; wi < raceWheels.length; wi++) raceWheels[wi].hub.rotation.x -= ang;
-                }
                     if (Math.abs(playerCar.userData._leanKick) < 0.01) playerCar.userData._leanKick = 0;
                 }
 
