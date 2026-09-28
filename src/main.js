@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
-        import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
+        import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
         import { bossHudState, renderBossHud, removeBossHud } from './boss-hud.js';
         import { createCleanRun } from './clean-run.js';
@@ -529,7 +529,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 body.innerHTML = '<div class="ct-name"></div><div class="ct-desc"></div><div class="ct-meta"></div>';
                 body.querySelector('.ct-name').textContent = t.name;
                 body.querySelector('.ct-desc').textContent = t.desc;
-                const tdone = (prog.tasks && prog.tasks[t.id]) || [];
+                const tdone = chapterTaskProgress(prog.tasks, t.id, idx);
                 const tcount = tdone.filter(Boolean).length;
                 body.querySelector('.ct-meta').textContent = wIcon(t.weather) + ' · ' + diffLabel(t.diff) + (open ? ' · задания ' + tcount + '/3' : '');
                 if (open) body.querySelector('.ct-meta').title = tasksForChapter(idx, t.diff).map(function(tk, i) { return (tdone[i] ? '✓ ' : '○ ') + tk.text; }).join('\n');
@@ -878,8 +878,8 @@ function startCampaignTrack(idx, opts) {
                 const diff = CAMPAIGN_TRACKS[idx].diff;
                 const now = evaluateTasks(idx, diff, Object.assign({ state: 'win', strikes: strikes }, meta || {}));
                 if (!prog.tasks || typeof prog.tasks !== 'object') prog.tasks = {};
-                const merged = mergeTaskProgress(prog.tasks[trackId], now);
-                prog.tasks[trackId] = merged.done;
+                const merged = mergeTaskProgress(chapterTaskProgress(prog.tasks, trackId, idx), now);
+                prog.tasks[taskKey(trackId)] = merged.done;
                 const reward = merged.newly * TASK_REWARD_CHIPS;
                 if (reward > 0 && currentPlayer.season) currentPlayer.season.chips = (currentPlayer.season.chips || 0) + reward;
                 window.__lastCampaignTasks = { trackId: trackId, list: tasksForChapter(idx, diff), now: now, done: merged.done, reward: reward };
@@ -4869,7 +4869,8 @@ function startGaragePreview(carId) {
                     if (state === 'win' && wasCampaign && campaignTrackId) {
                         onCampaignRaceWon(campaignTrackId, typeof strikes !== 'undefined' ? strikes : 0, {
                             time: timeTaken, starsPicked: stats.starsPicked || 0, nearMiss: (typeof nearMissCount !== "undefined" ? nearMissCount : 0),
-                            nitroPicked: stats.nitroPicked || 0, gumPicked: stats.gumPicked || 0
+                            nitroPicked: stats.nitroPicked || 0, gumPicked: stats.gumPicked || 0,
+                            animalsJumped: stats.animalsJumped || 0, bossRams: stats.bossRams || 0, cleanSegments: cleanRun.segments
                         });
                     }
                 } catch (e) { console.warn('campaign win', e); }
@@ -7247,6 +7248,20 @@ function startGaragePreview(carId) {
                     (coneGroup.userData.cones || []).forEach(function(cn) { gapCones.push(cn); });
                     gaps.push({ zNear: zNear, zFar: zNear - GAP_LEN, mesh: mesh, lanes: lanes, used: false });
                 });
+                // «Звериная тропа»: трамплин в средней полосе, сразу за ним зверь — перелети или объедь.
+                // Только в главах с заданием «Перелететь зверя» — там оно всегда выполнимо
+                if (chapterHasTask(window.__campaignIdx != null ? window.__campaignIdx : -1, 'jumpAnimal')) {
+                    const busy = [].concat(_layout.gaps, _layout.debris, (_layout.segments || []).map(function(sg) { return sg.at; }));
+                    const frac = [0.3, 0.24, 0.36, 0.18].find(function(f) { return busy.every(function(b) { return Math.abs(b - f) > 0.06; }); }) || 0.3;
+                    const zr = _zAt(frac);
+                    clearZone(zr + 40, zr - 20);
+                    const tr = createRamp(zr, 0, 0.85);
+                    tr.trailRamp = true;
+                    ramps.push(tr);
+                    scene.add(createLaneChevrons(0, zr + 34, 8));
+                    scene.add(createRoadSign(['🐾 ЗВЕРИНАЯ ТРОПА', 'ПРЫГАЙ'], -TRACK_WIDTH / 2 - 1.8, zr + 50, {}));
+                    window.__trailZ = zr - 7;
+                } else window.__trailZ = null;
                 const srcKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
                 const dropsN = difficulty === 'easy' ? 1 : 2;
                 _layout.debris.forEach(function(frac) {
@@ -7476,6 +7491,7 @@ function startGaragePreview(carId) {
                 try { if (window.soundEngine) { window.soundEngine.playSfx('boss_hurt', heavy ? 1.15 : 0.9); window.soundEngine.playSfx('boss_impact', o.stomp ? 1.3 : (heavy ? 1.1 : 0.85)); } } catch (e) {}
                 boss.invuln = heavy ? 0.7 : 1.0;
                 if (o.contact) {
+                    stats.bossRams++;
                     // только подброс/замедление — без handleObstacleHit
                     speed *= heavy ? 0.85 : 0.65;
                     xVelocity *= 0.5;
@@ -7945,7 +7961,7 @@ function startGaragePreview(carId) {
             }
             let radioCooldown = 0;
             let storyFlags = { p25: false, p50: false, p75: false };
-            let stats = { animalsHit: 0, oilHits: 0, nitroPicked: 0, gumPicked: 0, maxSpeedReached: 0 };
+            let stats = { animalsHit: 0, oilHits: 0, nitroPicked: 0, gumPicked: 0, maxSpeedReached: 0, animalsJumped: 0, bossRams: 0 };
             let weatherZone = 'clear'; // clear | dust
             let finishNarrow = false;
 
@@ -8175,6 +8191,21 @@ function startGaragePreview(carId) {
                 config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
             animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
+            // зверь на «звериной тропе» за трамплином: виден заранее, медленно бредёт через середину.
+            // Появляется, когда машина подъезжает (спавнер убирает зверей дальше 150 впереди)
+            let trailPendingZ = window.__trailZ;
+            function spawnTrailAnimal() {
+                try {
+                    const tz = trailPendingZ;
+                    trailPendingZ = null;
+                    const an = animalSpawner.createAnimal(tz);
+                    an.startX = -1.3; an.endX = 1.3; an.x = -1.3; an.duration = 4.5;
+                    an.mesh.position.x = an.x;
+                    an.mesh.visible = true;
+                    an.trail = true;
+                    animalSpawner.animals.push(an);
+                } catch (e) { console.warn('trail animal', e); }
+            }
             // ритм заезда: разгон → слалом → босс → финал; на ремонте и развилке реже (src/rhythm.js)
             animalSpawner.densityFn = function(z) { return densityAt((START_Z - z) / (START_Z - FINISH_Z), window.__trackLayout); };
             // Только в тестовой сборке: состояние заезда для автопилота в тестах. На сайт не попадает.
@@ -10207,6 +10238,7 @@ function startGaragePreview(carId) {
 
                 // Животные
                 // mobile: AI/спавн зверей через кадр
+                if (trailPendingZ != null && zPos - trailPendingZ < 110) spawnTrailAnimal();
                 if (!_perfMobile || (window.__frameParity = 1 - (window.__frameParity || 0))) {
                     animalSpawner.update(deltaTime * (_perfMobile ? 1.15 : 1), zPos);
                 } else if (animalSpawner && animalSpawner.animals) {
@@ -10229,6 +10261,7 @@ function startGaragePreview(carId) {
                         if (dist < obs.radius + 0.45) {
                             if (carAirborne || carYOffset > 0.4) {
                                 obs.hit = true;
+                                stats.animalsJumped++;
                                 try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
                             } else {
                                 obs.hit = true;
