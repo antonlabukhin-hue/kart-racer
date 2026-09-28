@@ -161,6 +161,8 @@ export default {
         'Даю установку:': 'Your briefing:',
         'Погнали →': "Let's ride →",
         '▶ ИГРАТЬ': '▶ PLAY',
+        'БЕЙ!': 'HIT!',
+        'тарань, пока открыт': 'ram it while it is open',
         'Фаза 1 · обстрел': 'Phase 1 · volleys',
         'Фаза 2 · баррикады': 'Phase 2 · barricades',
         'Фаза 3 · ярость': 'Phase 3 · rage',

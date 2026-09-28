@@ -4418,3 +4418,16 @@
         @media (max-width: 600px) { #boss-hud { top: 64px; width: 62vw; } }
         /* пока на экране полоска босса — радио-строка уходит под неё */
         body.race-mode:has(#boss-hud.on) .radio-line { top: calc(env(safe-area-inset-top, 0px) + 104px) !important; }
+
+        /* «БЕЙ!» — окно уязвимости босса */
+        #boss-cue {
+            position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(.6); z-index: 135;
+            pointer-events: none; text-align: center; opacity: 0; transition: opacity .18s, transform .18s;
+        }
+        #boss-cue b {
+            display: block; font-size: clamp(54px, 11vw, 110px); font-weight: 900; letter-spacing: 4px; line-height: .95;
+            color: #7dff9e; -webkit-text-stroke: 3px #0b3a18; text-shadow: 0 0 24px rgba(90,255,140,.8), 0 6px 0 #0b3a18;
+        }
+        #boss-cue small { display: block; margin-top: 4px; font-size: 15px; font-weight: 800; color: #d8ffe2; text-shadow: 0 2px 6px #000; }
+        #boss-cue.on { opacity: 1; transform: translate(-50%, -50%) scale(1); animation: bossCuePulse .45s .2s infinite alternate; }
+        @keyframes bossCuePulse { to { transform: translate(-50%, -50%) scale(1.08); } }

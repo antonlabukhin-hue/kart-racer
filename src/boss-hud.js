@@ -35,6 +35,22 @@ export function bossHudKey(st) {
 
 let _el = null;
 let _key = null;
+let _cue = null;
+
+/** Крупное «БЕЙ!» по центру, пока босс открыт: появляется в момент открытия, гаснет с окном */
+function renderCue(open) {
+    if (open) {
+        if (!_cue || !_cue.isConnected) {
+            _cue = document.createElement('div');
+            _cue.id = 'boss-cue';
+            _cue.innerHTML = '<b>БЕЙ!</b><small>тарань, пока открыт</small>';
+            document.body.appendChild(_cue);
+        }
+        if (!_cue.classList.contains('on')) { void _cue.offsetWidth; _cue.classList.add('on'); }
+    } else if (_cue) {
+        _cue.classList.remove('on');
+    }
+}
 
 function ensureEl() {
     if (_el && _el.isConnected) return _el;
@@ -49,6 +65,7 @@ function ensureEl() {
 /** Обновить полоску (вызывать каждый кадр); st из bossHudState */
 export function renderBossHud(st) {
     const key = bossHudKey(st);
+    renderCue(!!(st && st.open));
     if (key === _key && (!st || (_el && _el.isConnected))) return;
     if (!st) {
         if (_el) _el.classList.remove('on');
@@ -75,6 +92,8 @@ export function renderBossHud(st) {
 /** Убрать полоску совсем (выход из заезда) */
 export function removeBossHud() {
     try { if (_el) _el.remove(); } catch (e) {}
+    try { if (_cue) _cue.remove(); } catch (e) {}
     _el = null;
+    _cue = null;
     _key = null;
 }
