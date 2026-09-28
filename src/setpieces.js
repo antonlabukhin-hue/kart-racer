@@ -187,6 +187,71 @@ export function createGapMesh(trackWidth, zNear, len, style) {
     return g;
 }
 
+/** Бело-красный дорожный блок босса (фаза 2): ставится поперёк полосы */
+let _barrMat = null;
+export function createBarricade(x, z) {
+    if (!_barrMat) {
+        const cv = document.createElement('canvas');
+        cv.width = 128; cv.height = 64;
+        const cx = cv.getContext('2d');
+        for (let i = -2; i < 8; i++) {
+            cx.fillStyle = i % 2 ? '#f2f2f2' : '#d8261c';
+            cx.beginPath();
+            cx.moveTo(i * 20, 64); cx.lineTo(i * 20 + 20, 64); cx.lineTo(i * 20 + 52, 0); cx.lineTo(i * 20 + 32, 0);
+            cx.fill();
+        }
+        const tex = new THREE.CanvasTexture(cv);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        _barrMat = {
+            face: new THREE.MeshLambertMaterial({ map: tex, emissive: 0x331010, emissiveIntensity: 0.4 }),
+            body: new THREE.MeshLambertMaterial({ color: 0x9a9a9a }),
+            lamp: new THREE.MeshBasicMaterial({ color: 0xffaa00 })
+        };
+    }
+    const g = new THREE.Group();
+    const w = 1.7, h = 0.85, d = 0.45;
+    // боковины серые, лицевые стороны полосатые
+    const mats = [_barrMat.body, _barrMat.body, _barrMat.body, _barrMat.body, _barrMat.face, _barrMat.face];
+    const block = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats);
+    block.position.y = h / 2;
+    block.castShadow = true;
+    g.add(block);
+    [-0.6, 0.6].forEach(function(lx) {
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), _barrMat.lamp);
+        lamp.position.set(lx, h + 0.07, 0);
+        g.add(lamp);
+    });
+    g.position.set(x, 0, z);
+    return g;
+}
+
+/** Красная метка на асфальте: сюда упадёт баррикада / по этой полосе побежит босс */
+let _warnMat = null;
+export function createWarnMark(x, z, len) {
+    if (!_warnMat) _warnMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.45, depthWrite: false });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.7, len || 1.2), _warnMat);
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(x, 0.03, z);
+    return m;
+}
+
+/** Красные стрелки навстречу игроку: по этой полосе босс пойдёт на таран */
+export function createChargeChevrons(x, zFrom, count) {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.9 });
+    for (let i = 0; i < count; i++) {
+        const shape = new THREE.Shape();
+        shape.moveTo(-0.45, 0); shape.lineTo(0, 0.45); shape.lineTo(0.45, 0);
+        shape.lineTo(0.45, -0.2); shape.lineTo(0, 0.25); shape.lineTo(-0.45, -0.2);
+        const m = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat);
+        m.rotation.x = -Math.PI / 2;
+        m.rotation.z = Math.PI; // остриём к игроку
+        m.position.set(x, 0.03, zFrom + i * 2.6);
+        g.add(m);
+    }
+    return g;
+}
+
 /** Жёлтые стрелки на асфальте, ведущие к трамплину (за 10–40 ед. до него) */
 export function createLaneChevrons(x, zFrom, count) {
     const g = new THREE.Group();
