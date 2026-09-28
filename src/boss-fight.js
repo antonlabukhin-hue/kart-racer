@@ -76,3 +76,15 @@ export function barricadeLanes(playerLane, prevGap, rnd) {
 export function arenaOpen(progress) {
     return progress < ARENA_END;
 }
+
+/**
+ * Стоп-кадр при попадании по боссу (секунды реального времени): игра почти замирает —
+ * удар «чувствуется». Прыжок сверху — дольше всех, отбитый снаряд — короче.
+ */
+export const HIT_STOP_TIME_SCALE = 0.05;
+export function hitStopFor(opts) {
+    const o = opts || {};
+    if (o.stomp) return 0.1;
+    if (o.heavy) return 0.08;
+    return o.contact ? 0.06 : 0.04;
+}

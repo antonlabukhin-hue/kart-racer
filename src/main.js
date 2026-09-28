@@ -29,7 +29,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml } from './boss-intro.js';
         import { bossHudState, renderBossHud, removeBossHud } from './boss-hud.js';
-        import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes } from './boss-fight.js';
+        import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes, hitStopFor, HIT_STOP_TIME_SCALE } from './boss-fight.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
         import * as curvedWorld from './curved-world.js';
@@ -2486,7 +2486,7 @@ function startGaragePreview(carId) {
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
             // всё временное, что рисует заезд: HUD, финиш, карточки босса и волн, подсказки, всплывашки
-            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,#endless-wave-card,#coach-tip,.unlock-plaque';
+            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#endless-wave-card,#coach-tip,.unlock-plaque';
             try { clearTimeout(window.__coachTimer); } catch (e) {}
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque,.boss-shout').forEach(function(el) {
@@ -7441,14 +7441,17 @@ function startGaragePreview(carId) {
                 const heavy = !!o.heavy;
                 boss.vulnT = 0; // окно закрылось — нужен новый промах
                 boss.hp -= dmg;
+                // удар «чувствуется»: стоп-кадр, вспышка, тяжёлый звук и тряска
+                slowmoT = Math.max(slowmoT, hitStopFor({ stomp: o.stomp, heavy: heavy, contact: o.contact }));
+                shakeTime = Math.max(shakeTime, o.stomp ? 0.5 : (heavy ? 0.38 : 0.26));
+                try { flashBossHit(o.stomp || heavy); } catch (e) {}
                 try { playBossDamageAnim(boss, heavy); } catch (e) {}
-                try { if (window.soundEngine) window.soundEngine.playSfx('boss_hurt', heavy ? 1.15 : 0.9); } catch (e) {}
+                try { if (window.soundEngine) { window.soundEngine.playSfx('boss_hurt', heavy ? 1.15 : 0.9); window.soundEngine.playSfx('boss_impact', o.stomp ? 1.3 : (heavy ? 1.1 : 0.85)); } } catch (e) {}
                 boss.invuln = heavy ? 0.7 : 1.0;
                 if (o.contact) {
                     // только подброс/замедление — без handleObstacleHit
                     speed *= heavy ? 0.85 : 0.65;
                     xVelocity *= 0.5;
-                    shakeTime = Math.max(shakeTime, heavy ? 0.35 : 0.22);
                     fovPunch = heavy ? 16 : 10;
                     boss.x += ((xPos - boss.x) >= 0 ? -1.8 : 1.8);
                     boss.z -= 3;
@@ -7504,6 +7507,14 @@ function startGaragePreview(carId) {
                     showBossShout((boss.name || 'Босс') + ' HP ' + Math.max(0, boss.hp) + '/' + (boss.maxHp || 3));
                     try { updateBossHpBar(boss, camera); } catch (e) {}
                 }
+            }
+            // белая вспышка по краям экрана при попадании по боссу
+            function flashBossHit(big) {
+                document.querySelectorAll('.boss-hit-flash').forEach(function(n) { try { n.remove(); } catch (e) {} });
+                const el = document.createElement('div');
+                el.className = 'boss-hit-flash' + (big ? ' big' : '');
+                document.body.appendChild(el);
+                setTimeout(function() { try { el.remove(); } catch (e) {} }, 320);
             }
             // броня слетает кусками: переносим деталь в сцену (мировые координаты сохраняются) и роняем
             const bossArmorDebris = [];
@@ -9886,7 +9897,7 @@ function startGaragePreview(carId) {
                                 try { showTimePenaltyPopup(0, '🛡 Броня! Увернись от атаки — после промаха он открыт'); } catch (e) {}
                             }
                         } else {
-                        damageBoss(dmg, { heavy: nitroHit || airborneHit, contact: true });
+                        damageBoss(dmg, { heavy: nitroHit || airborneHit, stomp: airborneHit, contact: true });
                         } // броня пробита
                     }
                     } // end !dying
@@ -10414,7 +10425,7 @@ function startGaragePreview(carId) {
                 const _dtReal = Math.min(0.05, Math.max(0.001, rawDt));
                 // «На волоске!» — короткое замедление (время гонки тоже замедляется — честно для призрака и лимита)
                 let _timeScale = 1;
-                if (slowmoT > 0 && gameState === 'racing') { slowmoT -= _dtReal; _timeScale = 0.4; }
+                if (slowmoT > 0 && gameState === 'racing') { slowmoT -= _dtReal; _timeScale = HIT_STOP_TIME_SCALE; }
                 const deltaTime = _dtReal * _timeScale;
                 lastTime = currentTime;
 

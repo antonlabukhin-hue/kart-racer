@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bossHp, phaseForHp, damageFor, createVolleyTracker, barricadeLanes, arenaOpen, ARENA_END } from '../../src/boss-fight.js';
+import { bossHp, phaseForHp, damageFor, createVolleyTracker, barricadeLanes, arenaOpen, ARENA_END, hitStopFor, HIT_STOP_TIME_SCALE } from '../../src/boss-fight.js';
 
 describe('бой с боссом', () => {
     it('HP главы +1, в разумных пределах', () => {
@@ -51,5 +51,17 @@ describe('бой с боссом', () => {
     it('арена закрывается к концу трассы', () => {
         expect(arenaOpen(0.5)).toBe(true);
         expect(arenaOpen(ARENA_END)).toBe(false);
+    });
+});
+
+describe('стоп-кадр при ударе', () => {
+    it('короткий (≤0.1 с — не «подвисание»), сверху — дольше тарана, снаряд — короче', () => {
+        const stomp = hitStopFor({ stomp: true, heavy: true, contact: true });
+        const ram = hitStopFor({ contact: true });
+        expect(stomp).toBeLessThanOrEqual(0.1);
+        expect(stomp).toBeGreaterThan(hitStopFor({ heavy: true, contact: true }));
+        expect(hitStopFor({ heavy: true, contact: true })).toBeGreaterThan(ram);
+        expect(hitStopFor({})).toBeLessThan(ram);
+        expect(HIT_STOP_TIME_SCALE).toBeLessThan(0.2);
     });
 });
