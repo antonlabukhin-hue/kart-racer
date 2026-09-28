@@ -304,12 +304,17 @@ export function buildShowroomCar(carId) {
         [-wheelX, wheelY, -wheelZ], [wheelX, wheelY, -wheelZ]
     ];
     const wheelMeshes = [];
+    // колесо — «ступица»: шина, диск, колпак и болты вращаются вместе (hub.rotation.x)
     wheelPositions.forEach(p => {
+        const hub = new THREE_REF.Group();
+        hub.userData.isWheel = true;
+        hub.position.set(p[0], p[1], p[2]);
+        group.add(hub);
         const tire = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(wheelR, wheelR, 0.2, 18), rubberMat);
-        tire.rotation.z = Math.PI / 2; tire.position.set(p[0], p[1], p[2]); group.add(tire);
+        tire.rotation.z = Math.PI / 2; hub.add(tire);
         const disc = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(wheelR * 0.55, wheelR * 0.55, 0.22, 14), chromeMat);
-        disc.rotation.z = Math.PI / 2; disc.position.set(p[0], p[1], p[2]); group.add(disc);
-        wheelMeshes.push({ tire: tire, disc: disc, x: p[0], y: p[1], z: p[2] });
+        disc.rotation.z = Math.PI / 2; hub.add(disc);
+        wheelMeshes.push({ tire: tire, disc: disc, hub: hub, x: p[0], y: p[1], z: p[2] });
     });
 
     // Заводской маленький спойлер на спорт
@@ -592,13 +597,16 @@ export function buildShowroomCar(carId) {
         wheelMeshes.forEach(function(w) {
             const s = Math.sign(w.x) || 1;
             const cap = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(wheelR * 0.25, wheelR * 0.25, 0.03, 12), chrome2);
-            cap.rotation.z = Math.PI / 2; cap.position.set(w.x + s * 0.115, w.y, w.z); group.add(cap);
+            cap.rotation.z = Math.PI / 2; cap.position.set(s * 0.115, 0, 0); w.hub.add(cap);
             for (let i = 0; i < 5; i++) {
                 const a = i / 5 * Math.PI * 2;
                 const bolt = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.02, 0.025, 0.025), dark);
-                bolt.position.set(w.x + s * 0.112, w.y + Math.sin(a) * wheelR * 0.38, w.z + Math.cos(a) * wheelR * 0.38);
-                group.add(bolt);
+                bolt.position.set(s * 0.112, Math.sin(a) * wheelR * 0.38, Math.cos(a) * wheelR * 0.38);
+                w.hub.add(bolt);
             }
+            // светлая полоса на боковине шины — видно, что колесо крутится
+            const mark = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.012, wheelR * 0.3, 0.05), chrome2);
+            mark.position.set(s * 0.101, wheelR * 0.78, 0); w.hub.add(mark);
             // брызговик за задним колесом
             // под кузовом: верх упирается в днище, наружу за борт не торчит
             if (w.z > 0) B(dark, Math.sign(w.x) * (bodyW * 0.5 - 0.1), bodyY - bodyH * 0.5 - 0.07, w.z + wheelR + 0.04, 0.18, 0.15, 0.02);

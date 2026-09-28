@@ -6486,6 +6486,7 @@ function startGaragePreview(carId) {
             let raceCarParts = null;
             try {
                 if (typeof _buildShowroomCar !== 'function') {
+            let raceWheels = [], raceWheelR = 0.24; // колёса крутятся по скорости
                     throw new Error('_buildShowroomCar missing');
                 }
                 const built = _buildShowroomCar(carId || 'cheburashka');
@@ -6494,6 +6495,7 @@ function startGaragePreview(carId) {
                 raceCarParts = built.parts || {};
                 playerCar.scale.setScalar(RACE_CAR_SCALE);
                 // cast shadows on body
+                if (built.upgrades) { raceWheels = built.upgrades.wheels || []; raceWheelR = built.upgrades.wheelR || 0.24; }
                 playerCar.traverse(function(o) {
                     if (o.isMesh) {
                         o.castShadow = true;
@@ -9081,6 +9083,11 @@ function startGaragePreview(carId) {
                 }
                 if (playerCar.userData._leanKick) {
                     playerCar.userData._leanKick *= 0.88;
+                // колёса: путь за кадр / радиус (модель в заезде уменьшена — радиус тоже); перёд к −z → вращение «−x»
+                if (raceWheels.length) {
+                    const ang = (speed * 60 * deltaTime) / (raceWheelR * RACE_CAR_SCALE);
+                    for (let wi = 0; wi < raceWheels.length; wi++) raceWheels[wi].hub.rotation.x -= ang;
+                }
                     if (Math.abs(playerCar.userData._leanKick) < 0.01) playerCar.userData._leanKick = 0;
                 }
 
