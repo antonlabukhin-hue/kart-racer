@@ -2512,7 +2512,7 @@ function startGaragePreview(carId) {
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
             // всё временное, что рисует заезд: HUD, финиш, карточки босса и волн, подсказки, всплывашки
-            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#pack-meter,#hud-speedo,#endless-wave-card,#coach-tip,.unlock-plaque';
+            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#pack-meter,#hud-speedo,.big-plaque,#endless-wave-card,#coach-tip,.unlock-plaque';
             try { clearTimeout(window.__coachTimer); } catch (e) {}
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque,.boss-shout').forEach(function(el) {
@@ -4307,7 +4307,7 @@ function startGaragePreview(carId) {
                     <div class="hud-crash"><span class="hud-lbl">💥 АВАРИИ:</span> <span id="heartsDisplay" class="hud-hearts">${'<i>❤</i>'.repeat(MAX_STRIKES)}</span><span id="strikesDisplay" class="hud-sr">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
                     ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">🐾 ВОЛНА ' + window.__endless.wave + ' · ' + window.__endless.score + '</div>' : ''}
                     <div id="ghostDeltaDisplay" style="display:none;font-weight:800;">👻 РЕКОРД: <span></span></div>
-                    <div id="cleanDisplay" title="10 с без ударов — щит, дальше +2 🪙"><span class="cl-label">✨ ЧИСТО</span><span class="cl-shield">🛡</span><div class="cl-bar"><i></i></div></div>
+                    <div id="cleanDisplay" title="10 с без ударов — броня, дальше +2 🪙"><span class="cl-label">✨ ЧИСТО</span><span class="cl-shield">🛡</span><div class="cl-bar"><i></i></div></div>
                     <div id="comboDisplay" style="display:none;color:#ffaa66;margin-top:4px;font-size:13px;">🔥 КОМБО</div>
                     <div id="weatherDisplay" style="color:#88ccff;font-size:12px;margin-top:2px;">☀ ЯСНО</div>
                     <div style="margin-top:8px;">
@@ -8090,6 +8090,18 @@ function startGaragePreview(carId) {
             let shieldMesh = null;
             function setShieldVisible(on) {
                 try {
+            /** Крупная выскакивающая плашка по центру (броня и т. п.) — один слот */
+            function showBigPlaque(title, sub, cls) {
+                document.querySelectorAll('.big-plaque').forEach(function(n) { try { n.remove(); } catch (e) {} });
+                const el = document.createElement('div');
+                el.className = 'big-plaque ' + (cls || '');
+                el.innerHTML = '<b></b><small></small>';
+                el.firstChild.textContent = title;
+                el.lastChild.textContent = sub || '';
+                document.body.appendChild(el);
+                setTimeout(function() { el.classList.add('out'); }, 1700);
+                setTimeout(function() { try { el.remove(); } catch (e) {} }, 2100);
+            }
                     if (on && !shieldMesh && playerCar) {
                         shieldMesh = new THREE.Mesh(
                             new THREE.SphereGeometry(1.25, 18, 12),
@@ -8280,7 +8292,7 @@ function startGaragePreview(carId) {
                     setShieldVisible(false);
                     speed *= 0.8;
                     shakeTime = Math.max(shakeTime, 0.15);
-                    try { showTimePenaltyPopup(0, '🛡 Щит принял удар'); } catch (e) {}
+                    try { showBigPlaque('🛡 БРОНЯ ПРИНЯЛА УДАР', 'Аварии нет — копи новый чистый отрезок', 'armor-used'); } catch (e) {}
                     try { if (window.soundEngine) window.soundEngine.playSfx('bump', 1.2); } catch (e) {}
                     try { particleSystem.emit(_v.p1.set(xPos, 0.6, zPos), _v.vel.set(0, 1.5, 0), 14, 0.3); } catch (e) {}
                     if (comboTime > comboMax) comboMax = comboTime;
@@ -8521,7 +8533,7 @@ function startGaragePreview(carId) {
                     const cleanGot = cleanRun.tick(deltaTime, speed > MAX_SPEED * 0.3);
                     if (cleanGot === 'shield') {
                         setShieldVisible(true);
-                        try { showTimePenaltyPopup(0, '🛡 Чистый отрезок — щит!'); } catch (e) {}
+                        try { showBigPlaque('🛡 БРОНЯ', '10 с без ударов — следующий удар не считается', 'armor'); } catch (e) {}
                         try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.1); } catch (e) {}
                     } else if (cleanGot === 'chips') {
                         try { showTimePenaltyPopup(0, '✨ Чистый отрезок — +2 🪙'); } catch (e) {}

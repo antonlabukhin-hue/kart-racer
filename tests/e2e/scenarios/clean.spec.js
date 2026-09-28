@@ -13,6 +13,7 @@ test('чистый отрезок: 10 с без ударов — щит на м�
     await expect.poll(() => page.evaluate(() => window.__raceDebug.cleanRun.progress), { timeout: 8_000 }).toBeGreaterThan(0.2);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.cleanRun.shield), { timeout: 25_000 }).toBe(true);
     await expect(page.locator('#cleanDisplay')).toHaveClass(/shield/);
+    await expect(page.locator('.big-plaque.armor')).toContainText('БРОНЯ');
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
