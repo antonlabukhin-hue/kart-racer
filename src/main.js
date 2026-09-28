@@ -32,6 +32,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
         import * as curvedWorld from './curved-world.js';
+        import { biomeAt, biomeIndexAt, biomePlan, BIOME_INFO, groundColorAt, createPine, createBirch, createRock, createLog, forestTrees, createForestInstanced } from './biomes.js';
+        import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
         curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
@@ -3096,9 +3098,21 @@ function startGaragePreview(carId) {
             }
             pos.needsUpdate = true;
             geo.computeVertexNormals();
+            // цвет земли по зонам трассы (src/biomes.js) — плавно меняется вдоль дороги
+            if (opts.colorAt) {
+                const cols = new Float32Array(pos.count * 3);
+                const cc = new THREE.Color();
+                for (let i = 0; i < pos.count; i++) {
+                    opts.colorAt(pos.getZ(i), cc);
+                    const v = 0.9 + 0.2 * fbm2D(pos.getX(i) * 0.08, pos.getZ(i) * 0.08, seed + 5, 2); // пятна
+                    cols[i * 3] = cc.r * v; cols[i * 3 + 1] = cc.g * v; cols[i * 3 + 2] = cc.b * v;
+                }
+                geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+            }
 
             const mat = new THREE.MeshLambertMaterial({
-                color: color,
+                color: opts.colorAt ? 0xffffff : color,
+                vertexColors: !!opts.colorAt,
                 flatShading: false
             });
             const mesh = new THREE.Mesh(geo, mat);
@@ -3134,7 +3148,9 @@ function startGaragePreview(carId) {
                 color: color,
                 mobile: !!isMobile,
                 segsZ: isMobile ? 40 : 72,
-                segsX: isMobile ? 8 : 14
+                segsX: isMobile ? 8 : 14,
+                // свои цвета зон — если глава не задала землю и это не снег
+                colorAt: (dims.colorAt && !(cm && cm.ground != null) && window.__trackThemeActive !== 'snow') ? dims.colorAt : null
             };
             createNoiseShoulder(scene, -1, Object.assign({}, common, { seed: seedBase }));
             createNoiseShoulder(scene, 1, Object.assign({}, common, { seed: seedBase + 17 }));
@@ -5383,7 +5399,10 @@ function startGaragePreview(carId) {
             ground.receiveShadow = true;
             scene.add(ground);
             try {
-                addNoiseLandscape(scene, mapId, !!(window.__isMobile), { trackWidth: TRACK_WIDTH, length: TRACK_LENGTH });
+                addNoiseLandscape(scene, mapId, !!(window.__isMobile), {
+                    trackWidth: TRACK_WIDTH, length: TRACK_LENGTH,
+                    colorAt: function(z, c) { return groundColorAt(mapId, (START_Z - z) / (START_Z - FINISH_Z), c); }
+                });
             } catch (e) { console.warn('noise landscape', e); }
 
             // === Снегопад — только на snow-теме, раньше с неба вообще ничего не падало ===
@@ -6261,7 +6280,8 @@ function startGaragePreview(carId) {
                 const scale = 0.7 + Math.random() * 1.1;
                 const r = Math.random();
 
-                if (mapId === 'promzona') {
+                const envStyle = biomeAt(mapId, (START_Z - z) / (START_Z - FINISH_Z));
+                if (envStyle === 'industrial') {
                     if (r < 0.28) createFactory(x, z, scale);
                     else if (r < 0.48) createPipeStack(x, z, scale);
                     else if (r < 0.62) createRuinedBuilding(x, z, scale * 0.8);
@@ -6269,7 +6289,7 @@ function startGaragePreview(carId) {
                     else if (r < 0.84) createRoadBarrier(x, z, scale);
                     else if (r < 0.92) createFence(x, z, scale);
                     else createDeadTree(x, z, scale);
-                } else if (mapId === 'svalka') {
+                } else if (envStyle === 'junk') {
                     if (r < 0.25) createScrapPile(x, z, scale);
                     else if (r < 0.42) createWreckCar(x, z, scale);
                     else if (r < 0.55) createBillboard(x, z, scale);
@@ -6277,6 +6297,19 @@ function startGaragePreview(carId) {
                     else if (r < 0.78) createCrateStack(x, z, scale);
                     else if (r < 0.88) createSatelliteDish(x, z, scale);
                     else createDeadTree(x, z, scale * 0.9);
+                } else if (envStyle === 'forest') {
+                    // тайга: сосны и берёзы стеной, валуны, брёвна
+                    if (r < 0.42) createPine(scene, x, z, scale * 1.15);
+                    else if (r < 0.62) createBirch(scene, x, z, scale);
+                    else if (r < 0.74) createBush(x, z, scale);
+                    else if (r < 0.86) createRock(scene, x, z, scale);
+                    else if (r < 0.94) createLog(scene, x, z, scale);
+                    else createDeadTree(x, z, scale);
+                    // лес гуще: ещё одно дерево дальше от дороги
+                    if (Math.random() < 0.7) {
+                        const fx = x + (x >= 0 ? 1 : -1) * (3 + Math.random() * 6);
+                        (Math.random() < 0.6 ? createPine : createBirch)(scene, fx, z + (Math.random() - 0.5) * 6, 0.9 + Math.random() * 0.7);
+                    }
                 } else {
                     // arsenev — руины + быт 90-х
                     if (r < 0.28) createRuinedBuilding(x, z, scale);
@@ -6316,14 +6349,22 @@ function startGaragePreview(carId) {
                 }
             }
 
+            // тайга стеной (src/biomes.js): сотни деревьев — несколько инстанс-мешей
+            try {
+                createForestInstanced(scene, forestTrees(mapId, function(pr) { return START_Z - pr * (START_Z - FINISH_Z); }, TRACK_WIDTH, window.__isMobile ? 160 : 320), mergeGeometries);
+            } catch (eF) { console.warn('forest', eF); }
+
 // Придорожный мусор / баррикады
             for (let i = 0; i < debrisCount; i++) {
                 const z = -TRACK_LENGTH / 2 + 40 + Math.random() * (TRACK_LENGTH - 80);
                 const side = Math.random() > 0.5 ? 1 : -1;
                 const x = side * (TRACK_WIDTH / 2 + 1.2 + Math.random() * 1.8);
-                if (mapId === 'svalka' && Math.random() < 0.5) {
+                const dStyle = biomeAt(mapId, (START_Z - z) / (START_Z - FINISH_Z));
+                if (dStyle === 'forest') {
+                    (Math.random() < 0.5 ? createRock : createLog)(scene, x, z, 0.5 + Math.random() * 0.3);
+                } else if (dStyle === 'junk' && Math.random() < 0.5) {
                     createScrapPile(x, z, 0.5 + Math.random() * 0.4);
-                } else if (mapId === 'promzona' && Math.random() < 0.4) {
+                } else if (dStyle === 'industrial' && Math.random() < 0.4) {
                     createPipeStack(x, z, 0.5 + Math.random() * 0.4);
                 } else {
                     const mat = new THREE.MeshStandardMaterial({ color: 0x5a554c, roughness: 0.9 });
@@ -7384,6 +7425,7 @@ function startGaragePreview(carId) {
                 });
             }
             let tunnelK = 0;
+            let lastBiome = -1;
             const gapCones = []; // сбиваемые конусы перед разломами
             let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
             const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
@@ -8433,7 +8475,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8847,6 +8889,13 @@ function startGaragePreview(carId) {
                     }
                 }
                 segLastZ = zPos;
+                {
+                    const bIdx = biomeIndexAt(mapId, progress);
+                    if (bIdx !== lastBiome) {
+                        if (lastBiome >= 0) { try { showStory(BIOME_INFO[biomePlan(mapId)[bIdx].style].label); } catch (e) {} }
+                        lastBiome = bIdx;
+                    }
+                }
                 tunnelK = approach(tunnelK, tunnelTarget, deltaTime, 2.2);
                 applyTunnelDim(tunnelK);
                 // смена полосы — whoosh
