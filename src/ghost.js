@@ -60,3 +60,29 @@ export function sampleGhost(g, t) {
 export function isBetterGhost(prev, time) {
     return !isValidGhost(prev) || time < prev.time;
 }
+
+/**
+ * Живое отставание от призрака: сколько секунд назад призрак был там, где машина сейчас.
+ * Возвращает функцию (z, t) → секунды: > 0 — отстаёшь от рекорда, < 0 — впереди;
+ * null — до старта записи или призрак уже финишировал. Курсор двигается вместе с машиной (O(1) на кадр).
+ */
+export function createGhostDelta(g) {
+    if (!isValidGhost(g)) return function() { return null; };
+    const zs = g.z, n = zs.length;
+    let i = 0;
+    return function(z, t) {
+        if (z > zs[0]) return null;
+        while (i < n - 1 && zs[i + 1] >= z) i++;
+        while (i > 0 && zs[i] < z) i--;
+        if (i >= n - 1) return null;
+        const z0 = zs[i], z1 = zs[i + 1];
+        const k = z0 !== z1 ? Math.max(0, Math.min(1, (z0 - z) / (z0 - z1))) : 0;
+        return t - (i + k) * g.step;
+    };
+}
+
+/** Подпись для HUD: «−0.8 с» / «+1.2 с» (одна цифра после запятой) */
+export function formatGhostDelta(d) {
+    const v = Math.round(d * 10) / 10;
+    return (v <= 0 ? '−' : '+') + Math.abs(v).toFixed(1) + ' с';
+}

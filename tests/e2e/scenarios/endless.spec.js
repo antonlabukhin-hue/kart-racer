@@ -23,6 +23,7 @@ test('Звериный час: волны идут подряд, конец за
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await expect(page.locator('#finish-screen')).toContainText('ЗВЕРИНЫЙ ЧАС ОКОНЧЕН', { timeout: 10_000 });
     await expect(page.locator('#finish-screen')).toContainText('НОВЫЙ РЕКОРД');
+    await expect(page.locator('#finish-screen .finish-rank .fr-letter')).toHaveText('C'); // дожил до 2-й волны
 
     await page.locator('#finish-menu-btn').click();
     await expect(page.locator('#menu-endless-best')).toContainText('🏆');
