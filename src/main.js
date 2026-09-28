@@ -18,7 +18,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
         import { gapStyle, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, createBarricade, createWarnMark, createChargeChevrons } from './setpieces.js';
-        import { resolveLayout } from './track-layout.js';
+        import { resolveLayout, SEGMENT_LEN } from './track-layout.js';
+        import { createRoadworks, createForkMedian, createTunnel, clampToForkSide, roadworksLane, approach } from './segments.js';
         import { MAP_ORDER, MAP_NAMES, CAMPAIGN_FINISH_LINES, VILLAIN_INTRO, ACHIEVEMENTS, CAR_SHOP_ORDER, CAR_PARTS, CAR_PAINTS, TROPHIES, SEASON_REWARDS, DAILY_CONTRACTS, ANIMAL_SHOUTS_LIST } from './content.js';
         import { DIFFICULTY_CONFIG } from './difficulty.js';
         import { campaignHardConfig } from './balance.js';
@@ -7339,6 +7340,50 @@ function startGaragePreview(carId) {
             // ============================================================
             const gaps = [];
             const debrisZones = [];
+            const roadSegments = []; // ремонт / развилка / тоннель (src/segments.js)
+            let segLastZ = null;
+            const TUNNEL_DARK = new THREE.Color(0x121216);
+            const _dimColor = new THREE.Color();
+            const tunnelDims = [];
+            function applyTunnelDim(k) {
+                if (!tunnelDims.length) {
+                    const num = function(get, set, mul) { return { kind: 'n', get: get, set: set, mul: mul }; };
+                    const col = function(get) { return { kind: 'c', get: get }; };
+                    tunnelDims.push(
+                        num(function() { return ambient.intensity; }, function(v) { ambient.intensity = v; }, 0.3),
+                        num(function() { return hemi.intensity; }, function(v) { hemi.intensity = v; }, 0.25),
+                        num(function() { return sunLight.intensity; }, function(v) { sunLight.intensity = v; }, 0.12),
+                        num(function() { return scene.fog.far; }, function(v) { scene.fog.far = v; }, 0.45),
+                        col(function() { return scene.fog.color; }),
+                        col(function() { return scene.background; })
+                    );
+                }
+                tunnelDims.forEach(function(e) {
+                    if (e.kind === 'n') {
+                        const cur = e.get();
+                        if (k <= 0) {
+                            if (e.applied !== undefined) { if (Math.abs(cur - e.applied) < 1e-6) e.set(e.base); e.applied = undefined; }
+                            return;
+                        }
+                        if (e.applied === undefined || Math.abs(cur - e.applied) > 1e-6) e.base = cur;
+                        const v = e.base * (1 - (1 - e.mul) * k);
+                        e.set(v); e.applied = v;
+                    } else {
+                        const c = e.get();
+                        if (!c || !c.isColor) return;
+                        const hex = c.getHex();
+                        if (k <= 0) {
+                            if (e.applied !== undefined) { if (hex === e.applied) c.setHex(e.base); e.applied = undefined; }
+                            return;
+                        }
+                        if (e.applied === undefined || hex !== e.applied) e.base = hex;
+                        _dimColor.setHex(e.base).lerp(TUNNEL_DARK, 0.85 * k);
+                        c.copy(_dimColor);
+                        e.applied = c.getHex();
+                    }
+                });
+            }
+            let tunnelK = 0;
             const gapCones = []; // сбиваемые конусы перед разломами
             let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
             const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
@@ -7454,6 +7499,41 @@ function startGaragePreview(carId) {
                 scene.add(mapEvent.group);
                 const evSign = evKind === 'promzona' ? ['ОСТОРОЖНО', 'ВЫБРОС ПАРА'] : evKind === 'svalka' ? ['ОСТОРОЖНО', 'ГОРЯЩИЕ ШИНЫ'] : ['⚠ Ж/Д ПЕРЕЕЗД', 'ОСТОРОЖНО, ПОЕЗД'];
                 scene.add(createRoadSign(evSign, -TRACK_WIDTH / 2 - 1.8, evZ + 60, { big: true }));
+                // новые участки: ремонт, развилка, тоннель
+                (_layout.segments || []).forEach(function(sg, si) {
+                    const len = SEGMENT_LEN[sg.type] || 60;
+                    const z0 = _zAt(sg.at);
+                    if (sg.type === 'roadworks') {
+                        clearZone(z0 + 16, z0 - len - 4);
+                        const x = [-2, 0, 2][roadworksLane(si, curveSeed)];
+                        const rw = createRoadworks(x, z0, len);
+                        scene.add(rw.group);
+                        scene.add(createRoadSign(['⚠ РЕМОНТ', 'ПОЛОСА ЗАКРЫТА'], (x < 0 ? -1 : 1) * (TRACK_WIDTH / 2 + 1.8), z0 + 55, { big: true }));
+                        roadSegments.push({ type: 'roadworks', z0: z0, z1: z0 - len, x: x, barriers: rw.barriers, cd: 0 });
+                    } else if (sg.type === 'fork') {
+                        clearZone(z0 + 6, z0 - len - 4);
+                        const mx = -1;
+                        scene.add(createForkMedian(mx, z0, len).group);
+                        scene.add(createRoadSign(['⇐ ЖВАЧКИ + МАСЛО', 'СПОКОЙНО ⇒'], -TRACK_WIDTH / 2 - 1.8, z0 + 55, { big: true }));
+                        // левая ветка: награда и риск
+                        [0.2, 0.5, 0.8].forEach(function(k) {
+                            const c = createCollectible(z0 - len * k, 'gum');
+                            c.x = -2; c.mesh.position.x = -2;
+                            collectibles.push(c);
+                        });
+                        [0.35, 0.65].forEach(function(k) {
+                            const o = createObstacle(z0 - len * k, 'oil');
+                            o.x = -2; o.mesh.position.x = -2;
+                            obstacles.push(o);
+                        });
+                        roadSegments.push({ type: 'fork', z0: z0, z1: z0 - len, x: mx, side: 0, cd: 0 });
+                    } else if (sg.type === 'tunnel') {
+                        const style = isSnowTrack ? 'snow' : mapId;
+                        scene.add(createTunnel(TRACK_WIDTH, z0, len, style).group);
+                        scene.add(createRoadSign(['ТОННЕЛЬ', 'ВКЛЮЧИ ФАРЫ'], TRACK_WIDTH / 2 + 1.8, z0 + 50));
+                        roadSegments.push({ type: 'tunnel', z0: z0, z1: z0 - len });
+                    }
+                });
             } catch (eSet) { console.warn('setpieces', eSet); }
 
             // ============================================================
@@ -7589,6 +7669,7 @@ function startGaragePreview(carId) {
                 if (boss.warn) { try { scene.remove(boss.warn); } catch (e) {} boss.warn = null; }
                 logHit('boss');
                 strikes = Math.min(MAX_STRIKES, strikes + 1);
+                if (strikes >= MAX_STRIKES) { endGame('crash'); return true; }
                 raceTime += 2;
                 speed *= 0.2;
                 shakeTime = Math.max(shakeTime, 0.5);
@@ -8352,7 +8433,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8721,6 +8802,53 @@ function startGaragePreview(carId) {
 
                 const globalMaxX = TRACK_WIDTH / 2 - CAR_WIDTH / 2 - 0.1;
                 xPos = clamp(xPos, -globalMaxX, globalMaxX);
+                // участки трассы: ремонт / развилка / тоннель (src/segments.js)
+                let tunnelTarget = 0;
+                for (let si = 0; si < roadSegments.length; si++) {
+                    const sg = roadSegments[si];
+                    const inside = zPos <= sg.z0 && zPos >= sg.z1;
+                    if (sg.type === 'tunnel') {
+                        if (zPos <= sg.z0 + 8 && zPos >= sg.z1 - 4) tunnelTarget = 1;
+                        continue;
+                    }
+                    if (sg.cd > 0) sg.cd -= deltaTime;
+                    if (sg.type === 'roadworks') {
+                        if (inside && sg.cd <= 0 && carYOffset < 0.6 && Math.abs(xPos - sg.x) < 1.15) {
+                            sg.cd = 1.2;
+                            let near = null, nd = 1e9;
+                            sg.barriers.forEach(function(b) { const d = Math.abs(b.position.z - zPos); if (b.visible && d < nd) { nd = d; near = b; } });
+                            if (near && nd < 6) near.visible = false;
+                            xPos = sg.x + (sg.x < 0 ? 2 : -2);
+                            xVelocity = 0;
+                            handleObstacleHit({ cause: 'ремонт', type: 'roadworks', timePenalty: 3, penalty: 0.35 });
+                        }
+                    } else if (sg.type === 'fork') {
+                        const crossed = segLastZ != null && segLastZ > sg.z0 && zPos <= sg.z0;
+                        if (crossed && Math.abs(xPos - sg.x) < 0.6 && carYOffset < 0.8) {
+                            // в нос разделителя
+                            xPos = xPos < sg.x ? sg.x - 0.7 : sg.x + 0.7;
+                            xVelocity = 0;
+                            handleObstacleHit({ cause: 'разделитель', type: 'fork', timePenalty: 3, penalty: 0.3 });
+                        }
+                        if (inside && !sg.side) sg.side = xPos < sg.x ? -1 : 1;
+                        if (inside) {
+                            const r = clampToForkSide(xPos, sg.x, sg.side, 0.68);
+                            if (r.scraped) {
+                                xPos = r.x;
+                                if (Math.abs(xVelocity) > 0.04 && sg.cd <= 0) {
+                                    sg.cd = 0.25;
+                                    speed *= 0.96;
+                                    try { if (particleSystem.sparks) particleSystem.sparks({ x: sg.x + sg.side * 0.3, y: 0.4, z: zPos }, 8, 1); } catch (e) {}
+                                    try { if (window.soundEngine) window.soundEngine.playSfx('hit', 0.35); } catch (e) {}
+                                }
+                                xVelocity = 0;
+                            }
+                        } else if (zPos < sg.z1) sg.side = 0;
+                    }
+                }
+                segLastZ = zPos;
+                tunnelK = approach(tunnelK, tunnelTarget, deltaTime, 2.2);
+                applyTunnelDim(tunnelK);
                 // смена полосы — whoosh
                 try {
                     const laneW = TRACK_WIDTH / 3;
@@ -8995,6 +9123,10 @@ function startGaragePreview(carId) {
                     if (nightOverlay && nightOverlay.material) nightOverlay.material.opacity = 0;
                     headlight1.intensity = 0;
                     headlight2.intensity = 0;
+                }
+                if (tunnelK > 0) {
+                    headlight1.intensity = Math.max(headlight1.intensity, 7.5 * tunnelK);
+                    headlight2.intensity = Math.max(headlight2.intensity, 7.5 * tunnelK);
                 }
 
                 // Попутные машины
@@ -9586,7 +9718,8 @@ function startGaragePreview(carId) {
                         // фаза 2 — баррикады, фаза 3 — ещё и таран навстречу (src/boss-fight.js)
                         const aph = phaseForHp(boss.hp, boss.maxHp);
                         const rr = Math.random();
-                        boss.nextAttack = boss._forceAtk ? boss._forceAtk : (aph >= 3 && rr < 0.5) ? 'charge'
+                        const segBusy = roadSegments.some(function(sg) { return sg.type !== 'tunnel' && zPos <= sg.z0 + 45 && zPos >= sg.z1 - 10; });
+                        boss.nextAttack = boss._forceAtk ? boss._forceAtk : segBusy ? 'shot' : (aph >= 3 && rr < 0.5) ? 'charge'
                             : (aph >= 2 && boss._lastAtk !== 'barricade' && rr < 0.8) ? 'barricade' : 'shot';
                         boss._lastAtk = boss.nextAttack;
                         try {
@@ -10266,6 +10399,7 @@ function startGaragePreview(carId) {
                         if (bu.heavy && typeof strikes !== 'undefined') {
                             logHit('boss');
                             strikes = Math.min((typeof MAX_STRIKES !== 'undefined' ? MAX_STRIKES : 5), strikes + 1);
+                            if (strikes >= MAX_STRIKES) endGame('crash');
                         }
                         try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.35); } catch (e) {}
                         try { scene.remove(bu.mesh); } catch (e) {}
