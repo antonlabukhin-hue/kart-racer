@@ -134,3 +134,17 @@ test('снежная трасса: босс стреляет льдом — по
     expect(slid).toBeGreaterThan(1);
     expect(problems).toEqual([]);
 });
+
+test('босс не добит до конца арены — сбегает с обещанием реванша', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?start=0.78');
+    await startFreeRace(page, 'easy');
+    await waitRacing(page);
+    await page.evaluate(() => window.__raceDebug.spawnBossNow());
+    await page.evaluate(() => setInterval(() => { (window.__raceDebug.animals || []).forEach(an => { an.hit = true; if (an.mesh) an.mesh.visible = false; }); }, 100));
+    await page.keyboard.down('w');
+    await expect(page.locator('#boss-intro.escape')).toContainText('Догоним в следующем заезде', { timeout: 30_000 });
+    await page.keyboard.up('w');
+    await expect(page.locator('#boss-hud')).not.toHaveClass(/on/);
+    expect(problems).toEqual([]);
+});

@@ -57,3 +57,15 @@ export function bossPhaseHtml(def, phase) {
     return '<div class="bi-top">ФАЗА 3</div><div class="bi-nick" style="color:#ff4422">«' + esc(n.nick) + '» в ярости</div>'
         + '<div class="bi-hint">Бежит навстречу — уйди с полосы или прыгай на него с трамплина</div>';
 }
+
+/**
+ * Босс сбежал с арены: не «провал», а обещание реванша.
+ * nextChapterNo — номер следующей главы кампании (или null — свободный заезд / последняя глава).
+ */
+export function bossEscapeHtml(def, nextChapterNo) {
+    const n = splitBossName(def && def.name);
+    const next = nextChapterNo ? 'Догоним в главе ' + nextChapterNo : 'Догоним в следующем заезде';
+    return '<div class="bi-top">УШЁЛ</div>'
+        + '<div class="bi-nick" style="color:#ffcc44">«' + esc(n.nick) + '» сбежал</div>'
+        + '<div class="bi-hint">' + esc(next) + ' →</div>';
+}

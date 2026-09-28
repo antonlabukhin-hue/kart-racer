@@ -27,7 +27,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
-        import { bossIntroHtml, bossPhaseHtml } from './boss-intro.js';
+        import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
         import { bossHudState, renderBossHud, removeBossHud } from './boss-hud.js';
         import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes, hitStopFor, HIT_STOP_TIME_SCALE } from './boss-fight.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
@@ -9914,7 +9914,12 @@ function startGaragePreview(carId) {
                         }
                         try { if (boss.hpBar) { scene.remove(boss.hpBar); boss.hpBar = null; } } catch (e) {}
                         removeBossExtras(boss);
-                        showBossShout('💨 ' + (boss.name || 'Босс') + ' сбежал!');
+                        // не провал, а обещание реванша: «Догоним в главе N+1»
+                        try {
+                            const ci = window.__campaignIdx;
+                            const nextNo = (ci != null && ci >= 0 && ci + 1 < CAMPAIGN_TRACKS.length) ? ci + 2 : null;
+                            showBossCard(bossEscapeHtml({ name: boss.name }, nextNo), 'escape', 2600);
+                        } catch (e) { showBossShout('💨 ' + (boss.name || 'Босс') + ' сбежал!'); }
                         try { if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ': «В следующий раз, курьер!»'); } catch (e) {}
                     }
 
