@@ -12,7 +12,7 @@ test('выход в меню посреди боя: интерфейс гонк�
     await page.keyboard.press('Escape');
     await page.locator('#pause-menu').click();
     await expect(page.locator('#main-menu-screen')).toBeVisible();
-    for (const sel of ['#game-hud', '#boss-intro', '#boss-hud', '#boss-cue', '#coach-tip', '#finish-screen', '#endless-wave-card', '.boss-shout']) {
+    for (const sel of ['#game-hud', '#boss-intro', '#boss-hud', '#boss-cue', '#pack-meter', '#coach-tip', '#finish-screen', '#endless-wave-card', '.boss-shout']) {
         await expect(page.locator(sel), sel).toHaveCount(0);
     }
     expect(await page.evaluate(() => [window.__inRace, document.body.classList.contains('race-mode'), !!window.__gameRenderer])).toEqual([false, false, false]);
