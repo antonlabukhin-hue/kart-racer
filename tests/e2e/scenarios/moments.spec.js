@@ -23,3 +23,24 @@ test('погоня стаи: на финальном отрезке стая б�
     expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(strikes0);
     expect(problems).toEqual([]);
 });
+
+test('рекламный щит в полосе: снёс — не авария, +щит в статистике', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?start=0.02');
+    await startFreeRace(page, 'easy');
+    await waitRacing(page);
+    await noAnimals(page);
+    const boards = await page.evaluate(() => window.__raceDebug.smashBoards.map(b => ({ x: b.x, z: b.z })));
+    expect(boards.length).toBeGreaterThanOrEqual(2);
+    // держим полосу ближайшего щита впереди
+    await page.evaluate(() => setInterval(() => {
+        const d = window.__raceDebug;
+        const b = d.smashBoards.filter(x => !x.smashed && x.z < d.z).sort((a, c) => c.z - a.z)[0];
+        if (b) d.setX(b.x);
+    }, 30));
+    await page.keyboard.down('w');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.billboards || 0), { timeout: 30_000 }).toBeGreaterThanOrEqual(1);
+    await page.keyboard.up('w');
+    expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
+    expect(problems).toEqual([]);
+});

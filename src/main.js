@@ -32,6 +32,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { createCleanRun } from './clean-run.js';
         import { raceRank, beastRank } from './rank.js';
         import { createPackChase, PACK_SPEED_K, BITE_PENALTY } from './pack-chase.js';
+        import { smashSpots, createSmashBoard, smashBoard, stepSmashParts, SMASH_CHIPS } from './smash.js';
         import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes, hitStopFor, HIT_STOP_TIME_SCALE } from './boss-fight.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
@@ -4612,7 +4613,7 @@ function startGaragePreview(carId) {
                         if (isEndlessMode()) rk = beastRank(window.__endless && window.__endless.wave);
                         else if (state === 'win' && pendingMode === 'race') {
                             rk = raceRank({ time: timeTaken, timeLimit: TIME_LIMIT, strikes: strikes, maxStrikes: MAX_STRIKES,
-                                nearMiss: nearMissCount, cleanSegments: cleanRun.segments, animalsJumped: stats.animalsJumped, bossDefeated: !!stats.bossDefeated });
+                                nearMiss: nearMissCount, cleanSegments: cleanRun.segments, animalsJumped: stats.animalsJumped, billboards: stats.billboards || 0, bossDefeated: !!stats.bossDefeated });
                         }
                         if (rk) {
                             window.__lastRank = rk.letter;
@@ -4843,7 +4844,7 @@ function startGaragePreview(carId) {
                             difficulty: (typeof difficulty !== 'undefined' ? difficulty : 'medium'),
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
-                            bonusChips: cleanRun.chips,
+                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS,
                             cleanSegments: cleanRun.segments
                         }) || raceRewards;
                         try { updatePlayerBar(); } catch (e) {}
@@ -7171,6 +7172,9 @@ function startGaragePreview(carId) {
             let tunnelK = 0;
             let lastBiome = -1;
             const gapCones = []; // сбиваемые конусы перед разломами
+            // сносимые рекламные щиты 90-х (src/smash.js)
+            const smashBoards = [];
+            const smashParts = [];
             let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
             const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
             const _starGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, depthWrite: false });
@@ -7282,6 +7286,18 @@ function startGaragePreview(carId) {
                     scene.add(createRoadSign(['🐾 ЗВЕРИНАЯ ТРОПА', 'ПРЫГАЙ'], -TRACK_WIDTH / 2 - 1.8, zr + 50, {}));
                     window.__trailZ = zr - 7;
                 } else window.__trailZ = null;
+                // рекламные щиты 90-х прямо в полосах: снёс — не авария, а стиль и фишка
+                {
+                    const busy = [].concat(_layout.gaps, _layout.debris, (_layout.segments || []).map(function(sg) { return sg.at; }));
+                    if (window.__trailZ != null) busy.push((START_Z - window.__trailZ) / _trackSpan);
+                    smashSpots(difficulty === 'easy' ? 3 : 4, busy).forEach(function(sp) {
+                        const z = _zAt(sp.frac);
+                        clearZone(z + 6, z - 6);
+                        const b = createSmashBoard(_rampLaneXs[sp.lane], z, sp.ad);
+                        scene.add(b.group);
+                        smashBoards.push(b);
+                    });
+                }
                 const srcKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
                 const dropsN = difficulty === 'easy' ? 1 : 2;
                 _layout.debris.forEach(function(frac) {
@@ -8290,7 +8306,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8807,6 +8823,21 @@ function startGaragePreview(carId) {
                 // машину вытаскивает на дальний край разлома
                 _nmCooldown -= deltaTime;
                 // сцена карты: поезд — авария (как зверь), пар и шины — ожог: скорость и время
+                // щиты: снёс — обломки, лёгкое торможение, +стиль и фишка (не авария, отрезок не сбивает)
+                if (gameState === 'racing') {
+                    for (let si = 0; si < smashBoards.length; si++) {
+                        const b = smashBoards[si];
+                        if (b.smashed || Math.abs(zPos - b.z) > 0.9 || Math.abs(xPos - b.x) > 1.25 || carYOffset > 1.1) continue;
+                        smashBoard(b, scene, Math.abs(speed) * 60).forEach(function(pt) { smashParts.push(pt); });
+                        stats.billboards = (stats.billboards || 0) + 1;
+                        speed *= 0.9;
+                        shakeTime = Math.max(shakeTime, 0.12);
+                        fovPunch = Math.max(fovPunch || 0, 6);
+                        try { showTimePenaltyPopup(0, '💥 Реклама снесена! +' + SMASH_CHIPS + ' 🪙'); } catch (e) {}
+                        try { if (window.soundEngine) { window.soundEngine.playSfx('bump', 1.2); window.soundEngine.playSfx('explode', 0.35); } } catch (e) {}
+                    }
+                }
+                if (smashParts.length) stepSmashParts(smashParts, deltaTime, scene);
                 if (mapEvent && gameState === 'racing') {
                     const evHit = mapEvent.update({ x: xPos, z: zPos, dt: deltaTime, y: carYOffset,
                         ups: Math.max(Math.abs(speed) * 60, MAX_SPEED * 60 * 0.45) });
