@@ -43,7 +43,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
-        import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost } from './ghost.js';
+        import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { createMapEvent } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
@@ -4273,6 +4273,7 @@ function startGaragePreview(carId) {
                 hud.innerHTML = `
                     <div style="color:#ff8844;">⏱ ВРЕМЯ: <span id="timeDisplay" style="color:#fff;">${formatTime(TIME_LIMIT)}</span></div>
                     ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">🐾 ВОЛНА ' + window.__endless.wave + ' · ' + window.__endless.score + '</div>' : ''}
+                    <div id="ghostDeltaDisplay" style="display:none;font-weight:800;">👻 РЕКОРД: <span></span></div>
                     <div style="color:#ff5555;">💥 АВАРИИ: <span id="strikesDisplay" style="color:#fff;">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
                     <div style="color:#88ccff;">⚡ СКОРОСТЬ: <span id="speedDisplay" style="color:#fff;">0</span> км/ч</div>
                     <div id="comboDisplay" style="display:none;color:#ffaa66;margin-top:4px;font-size:13px;">🔥 КОМБО</div>
@@ -4346,6 +4347,19 @@ function startGaragePreview(carId) {
                         document.body.appendChild(cheb);
                     }
                 } else if (cheb) cheb.remove();
+                // живое отставание от призрака рекорда: зелёное — впереди, красное — отстаёшь
+                try {
+                    const gd = document.getElementById('ghostDeltaDisplay');
+                    const d = (ghostDeltaAt && ghostClock > 1) ? ghostDeltaAt(zPos, ghostClock) : null;
+                    if (gd) {
+                        if (d == null) gd.style.display = 'none';
+                        else {
+                            gd.style.display = 'block';
+                            gd.style.color = d <= 0 ? '#5dff8a' : '#ff6a5a';
+                            gd.lastChild.textContent = formatGhostDelta(d);
+                        }
+                    }
+                } catch (e) {}
                 if (progressBar) {
                     const progress = Math.min(100, ((START_Z - zPos) / (START_Z - FINISH_Z)) * 100);
                     progressBar.style.width = Math.max(0, progress) + '%';
@@ -6501,6 +6515,7 @@ function startGaragePreview(carId) {
             let ghostClock = 0;
             let ghostData = null;
             let ghostCar = null;
+            let ghostDeltaAt = null;
             window.__ghostSaved = false;
             if (!isEndlessMode() && _settings.ghost !== false) {
                 try { ghostData = JSON.parse(localStorage.getItem(ghostStoreKey) || 'null'); } catch (e) { ghostData = null; }
@@ -6525,6 +6540,7 @@ function startGaragePreview(carId) {
                         ghostCar.position.set(ghostData.x[0], ghostData.y[0], ghostData.z[0]);
                         scene.add(ghostCar);
                     } catch (e) { console.warn('ghost', e); ghostCar = null; }
+                    ghostDeltaAt = createGhostDelta(ghostData);
                 } else ghostData = null;
             }
 
