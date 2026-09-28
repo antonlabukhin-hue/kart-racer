@@ -37,6 +37,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
         import * as Profile from './profile.js';
+        import { stepRamps, stepAir, timeToLand, landingSpeed } from './race-physics.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
@@ -8518,72 +8519,39 @@ function startGaragePreview(carId) {
                     }
                 }
 
-                // Рампы + полёт
+                // Трамплины, прыжок, полёт — src/race-physics.js (с тестами)
                 if (!carAirborne) {
-                    let onRamp = false;
-                    try {
-                        for (let ri = 0; ri < ramps.length; ri++) {
-                            const rp = ramps[ri];
-                            if (!rp) continue;
-                            if (Math.abs(xPos - rp.x) >= rp.width * 0.55) continue;
-                            const insideNow = zPos <= rp.zEnter && zPos >= rp.zExit;
-                            // На высокой скорости (особенно после нитро) один кадр может целиком
-                            // пронести машину через узкую зону старта прыжка (последние 10% трамплина),
-                            // и точечная проверка insideNow с p>0.9 её просто не увидит — прыжок молча
-                            // не происходит. Поэтому дополнительно проверяем отрезок движения за кадр:
-                            // если машина была перед трамплином, а стала за ним (или уже в зоне
-                            // p>0.9 прошла его насквирь), считаем, что съезд с трамплина случился.
-                            // Считаем по краю съезда: кадр мог начаться на трамплине при p≈0.85–0.9
-                            // (за кадр ~10% длины) и закончиться уже за ним — раньше это был «съезд без прыжка»
-                            const crossedRamp = !insideNow && zPosBeforeMove >= rp.zExit && zPos <= rp.zExit;
-                            if (insideNow || crossedRamp) {
-                                const prog = (rp.zEnter - zPos) / Math.max(0.1, rp.len);
-                                const p = Math.max(0, Math.min(1, prog));
-                                onRamp = true;
-                                // трамплин перед разломом всегда перебрасывает: иначе авария прямо перед ним
-                                // (скорость ×0.35) означала вторую аварию — провал
-                                if (rp.gapRamp && speed < MAX_SPEED * 0.6) speed = MAX_SPEED * 0.6;
-                                if ((crossedRamp || p > 0.9) && speed > 0.12) {
-                                    carAirborne = true;
-                                    carAirVel = (1.0 + speed * 2.4) * rp.height;
-                                    carYOffset = rp.height;
-                                    // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
-                                    if (rp.bossRamp) carAirVel *= 1.7;
-                                    if (nitroTimer > 0) {
-                                        carAirVel *= 1.6;
-                                        try { showTimePenaltyPopup(0, '🚀 Нитро-прыжок!'); } catch (e) {}
-                                    }
-                                } else {
-                                    carYOffset = rp.height * p;
-                                }
-                                break;
-                            }
-                        }
-                    } catch (eRp) {}
-                    if (!onRamp) {
-                        if (carBumpTimer > 0) {
-                            carBumpTimer -= deltaTime;
-                            if (carBumpTimer <= 0) { carBumpTimer = 0; carYOffset = 0; }
-                        } else {
-                            carYOffset = 0;
-                        }
+                    const rs = stepRamps({ x: xPos, z: zPos, zPrev: zPosBeforeMove, speed: speed, nitro: nitroTimer > 0, maxSpeed: MAX_SPEED }, ramps);
+                    if (rs.mode === 'launch') {
+                        speed = rs.speed;
+                        carAirborne = true;
+                        carAirVel = rs.airVel;
+                        carYOffset = rs.y;
+                        // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
+                        if (rs.nitroJump) { try { showTimePenaltyPopup(0, '🚀 Нитро-прыжок!'); } catch (e) {} }
+                    } else if (rs.mode === 'ride') {
+                        speed = rs.speed;
+                        carYOffset = rs.y;
+                    } else if (carBumpTimer > 0) {
+                        carBumpTimer -= deltaTime;
+                        if (carBumpTimer <= 0) { carBumpTimer = 0; carYOffset = 0; }
+                    } else {
+                        carYOffset = 0;
                     }
                 } else {
-                    carAirVel -= 9.5 * deltaTime;
-                    carYOffset += carAirVel * deltaTime;
-                    if (carYOffset <= 0) {
-                        carYOffset = 0;
+                    const air = stepAir(carYOffset, carAirVel, deltaTime);
+                    carYOffset = air.y;
+                    carAirVel = air.vel;
+                    if (air.landed) {
                         carAirborne = false;
-                        const landBoost = speed > 0.08;
-                        carAirVel = 0;
                         try {
                             if (particleSystem && particleSystem.sparks) particleSystem.sparks({ x: xPos, y: 0.05, z: zPos + 0.6 }, 14, 1);
                             if (_settings.shake !== false) shakeTime = Math.max(shakeTime, 0.14);
                             fovPunch = Math.max(fovPunch, 6);
                         } catch (e) {}
-                        if (landBoost) {
-                            const cap = (typeof MAX_SPEED !== 'undefined' ? MAX_SPEED : 0.45) * 1.08;
-                            speed = Math.min(speed * 1.14, cap);
+                        const land = landingSpeed(speed, MAX_SPEED);
+                        speed = land.speed;
+                        if (land.boosted) {
                             try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Прыжок!'); } catch (e) {}
                             try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('whoosh', 0.65); } catch (e) {}
                         }
@@ -9276,7 +9244,7 @@ function startGaragePreview(carId) {
                         }
                         else if (carAirborne && pvNow > 8 && zPos - boss.z > 1.5) {
                             // уже в воздухе (взлетел ещё на замахе) — успеть под машину до приземления
-                            const tLand = (carAirVel + Math.sqrt(Math.max(0, carAirVel * carAirVel + 19 * carYOffset))) / 9.5;
+                            const tLand = timeToLand(carYOffset, carAirVel);
                             const tm = Math.max(0.12, tLand * 0.6);
                             boss.chargeSpeed = Math.max(-20, Math.min(45, (zPos - boss.z - 1.5) / tm - pvNow));
                         }
