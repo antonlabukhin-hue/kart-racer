@@ -13,7 +13,8 @@ export const DEFAULT_SETTINGS = {
     shake: true,      // тряска камеры при ударах
     vibrate: true,    // вибрация телефона при аварии
     ghost: true,      // призрак лучшего заезда
-    lang: 'auto'      // auto (по языку браузера) | ru | en
+    lang: 'auto',     // auto (по языку браузера) | ru | en
+    curve: true       // «кривой мир»: повороты и холмы
 };
 
 const clamp01 = function(v, d) { const n = Number(v); return isFinite(n) ? Math.max(0, Math.min(1, n)) : d; };
@@ -30,7 +31,8 @@ export function normalizeSettings(raw) {
         shake: r.shake == null ? d.shake : !!r.shake,
         vibrate: r.vibrate == null ? d.vibrate : !!r.vibrate,
         ghost: r.ghost == null ? d.ghost : !!r.ghost,
-        lang: ['auto', 'ru', 'en'].indexOf(r.lang) >= 0 ? r.lang : d.lang
+        lang: ['auto', 'ru', 'en'].indexOf(r.lang) >= 0 ? r.lang : d.lang,
+        curve: r.curve == null ? d.curve : !!r.curve
     };
 }
 

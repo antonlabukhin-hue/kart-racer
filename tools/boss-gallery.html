@@ -6,106 +6,60 @@
     <title>Галерея боссов</title>
     <style>
         /* Инструмент разработки: npm run dev → http://localhost:5173/tools/boss-gallery.html
-           В сборку сайта не попадает (vite собирает только index.html). */
+           ?one=BOAR_BRIGADE — один крупно, ?q=low|medium|high — качество, ?armor=0 — без брони */
         :root { color-scheme: dark; }
         body { margin: 0; background: #14121a; color: #eee; font: 13px system-ui, sans-serif; overflow: hidden; }
-        #bar { position: fixed; top: 0; left: 0; right: 0; padding: 8px 12px; background: rgba(0,0,0,.6); display: flex; gap: 12px; align-items: center; z-index: 2; flex-wrap: wrap; }
-        #bar button { background: #2a2635; color: #eee; border: 1px solid #555; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-        #bar button.on { border-color: #ffcc00; color: #ffcc00; }
-        .lbl { position: fixed; transform: translate(-50%, 0); text-align: center; pointer-events: none; font-weight: 600; text-shadow: 0 1px 3px #000; white-space: nowrap; }
-        .lbl small { display: block; font-weight: 400; opacity: .7; }
+        .lbl { position: fixed; transform: translate(-50%, 0); pointer-events: none; font-weight: 600; text-shadow: 0 1px 3px #000; font-size: 11px; white-space: nowrap; }
     </style>
 </head>
 <body>
-<div id="bar">
-    <b>Боссы кампании</b>
-    <span>Качество:</span>
-    <button data-q="low">low</button><button data-q="medium">medium</button><button data-q="high" class="on">high</button>
-    <button id="spin" class="on">вращение</button>
-    <button id="prev">◀</button><button id="mode">по одному</button><button id="next">▶</button>
-    <span id="info"></span>
-</div>
 <script type="module">
     import * as THREE from 'three';
-    import { CAMPAIGN_BOSSES, createArcadeBossMesh, disposeBossMesh } from '../src/boss.js';
-    import { CAMPAIGN_TRACKS } from '../src/data.js';
-
-    const params = new URLSearchParams(location.search);
-    window.__lastQuality = params.get('q') || 'high';
-    document.querySelectorAll('[data-q]').forEach(b => {
-        b.classList.toggle('on', b.dataset.q === window.__lastQuality);
-        b.onclick = () => { params.set('q', b.dataset.q); location.search = params.toString(); };
-    });
-    let spin = params.get('spin') !== '0';
-    const yaw0 = parseFloat(params.get('yaw') || '0');
-    document.getElementById('spin').onclick = e => { spin = !spin; e.target.classList.toggle('on', spin); };
+    window.THREE = THREE;
+    const q = new URLSearchParams(location.search);
+    window.__lastQuality = q.get('q') || 'medium';
+    const { createArcadeBossMesh, CAMPAIGN_BOSSES } = await import('../src/boss.js');
+    const one = q.get('one');
+    const yaw = parseFloat(q.get('yaw') || '0.35');
+    const from = +(q.get('from') || 0), cnt = +(q.get('n') || 99);
+    const defs = one ? CAMPAIGN_BOSSES.filter(b => b.id === one) : CAMPAIGN_BOSSES.slice(from, from + cnt);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(2, devicePixelRatio));
     renderer.setSize(innerWidth, innerHeight);
-    renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1c1a24);
-    scene.fog = new THREE.Fog(0x1c1a24, 40, 90);
-    scene.add(new THREE.HemisphereLight(0xdde8ff, 0x3a3020, 1.6));
-    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
-    sun.position.set(6, 12, 10);
-    sun.castShadow = true;
-    scene.add(sun);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 40), new THREE.MeshLambertMaterial({ color: 0x2a2a30 }));
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    scene.background = new THREE.Color(0x8a7355);
+    scene.add(new THREE.AmbientLight(0xb0a090, 0.95));
+    scene.add(new THREE.HemisphereLight(0xffe8c8, 0x6a5a40, 0.95));
+    const sun = new THREE.DirectionalLight(0xfff0d0, 2.85); sun.position.set(40, 35, 15); scene.add(sun);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 40), new THREE.MeshLambertMaterial({ color: 0x3a3a40 }));
+    ground.rotation.x = -Math.PI / 2; scene.add(ground);
 
-    const oneIdx = params.has('one') ? Math.max(0, Math.min(CAMPAIGN_BOSSES.length - 1, parseInt(params.get('one'), 10) || 0)) : -1;
-    const go = n => { params.set('one', String((n + CAMPAIGN_BOSSES.length) % CAMPAIGN_BOSSES.length)); location.search = params.toString(); };
-    document.getElementById('mode').onclick = () => { if (oneIdx >= 0) { params.delete('one'); location.search = params.toString(); } else go(0); };
-    document.getElementById('mode').classList.toggle('on', oneIdx >= 0);
-    document.getElementById('prev').onclick = () => go((oneIdx < 0 ? 0 : oneIdx) - 1);
-    document.getElementById('next').onclick = () => go((oneIdx < 0 ? -1 : oneIdx) + 1);
-    addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(oneIdx + 1); if (e.key === 'ArrowLeft') go(oneIdx - 1); });
-    const cols = 6, gapX = 4.4, gapZ = 5.2;
-    const items = CAMPAIGN_BOSSES.map((def, i) => ({ def, i })).filter(o => oneIdx < 0 || o.i === oneIdx).map(({ def, i }) => {
-        const mesh = createArcadeBossMesh(def);
-        const sc = def.scale || 2;
-        mesh.scale.setScalar(sc * 0.9);
+    const cols = one ? 1 : +(q.get('cols') || 6);
+    const items = defs.map((def, i) => {
+        const g = createArcadeBossMesh(def);
+        const sc = (def.scale || 2.15) * 1.05;
+        g.scale.setScalar(sc);
         const c = i % cols, r = Math.floor(i / cols);
-        if (oneIdx < 0) mesh.position.set((c - (cols - 1) / 2) * gapX, 0, (r - 1) * gapZ);
-        scene.add(mesh);
-        const lbl = document.createElement('div');
-        lbl.className = 'lbl';
-        const tr = CAMPAIGN_TRACKS[i];
-        lbl.innerHTML = (i + 1) + '. ' + def.name + '<small>' + (tr ? tr.name : '') + ' · ' + def.attack + '</small>';
-        document.body.appendChild(lbl);
-        return { mesh, lbl, def };
+        g.position.set((c - (cols - 1) / 2) * 3.6, 0, -r * 7);
+        g.rotation.y = yaw;
+        if (q.get('armor') === '0' && g.userData.armor) { g.userData.armor.shoulders.forEach(p => p.visible = false); g.userData.armor.chest.visible = false; }
+        scene.add(g);
+        const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.textContent = def.name; document.body.appendChild(lbl);
+        return { g, lbl };
     });
-    let tris = 0;
-    scene.traverse(o => { if (o.isMesh && o.geometry) tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
-    document.getElementById('info').textContent = 'треугольников: ' + Math.round(tris) + ' · мешей на босса ≈ ' +
-        Math.round(items.reduce((s, it) => { let n = 0; it.mesh.traverse(o => { if (o.isMesh) n++; }); return s + n; }, 0) / items.length);
-
-    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 200);
-    if (oneIdx >= 0) { camera.position.set(0, 3.4, 9.5); camera.lookAt(0, 1.9, 0); }
-    else { camera.position.set(0, 9, 19); camera.lookAt(0, 1.6, 0); }
-    addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
-
+    const camera = new THREE.PerspectiveCamera(one ? 30 : 38, innerWidth / innerHeight, 0.1, 200);
+    if (one) { camera.position.set(0, 3.2, 9); camera.lookAt(0, 2.6, 0); }
+    else { camera.position.set(0, 5.5, 13); camera.lookAt(0, 2.2, -7); }
     const v = new THREE.Vector3();
-    let t = 0, last = performance.now();
-    function frame(now) {
-        const dt = Math.min(0.05, (now - last) / 1000); last = now;
-        if (spin) t += dt;
-        items.forEach((it, i) => {
-            it.mesh.rotation.y = oneIdx >= 0 ? yaw0 + t * 0.7 : Math.sin(t * 0.6 + i) * 0.9;
-            v.copy(it.mesh.position); v.y -= 0.35; v.project(camera);
-            it.lbl.style.left = ((v.x + 1) / 2 * innerWidth) + 'px';
-            it.lbl.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
-        });
-        renderer.render(scene, camera);
-        requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
-    window.__gallery = { items, scene, camera, renderer, dispose: () => items.forEach(it => disposeBossMesh(it.mesh)) };
+    renderer.render(scene, camera);
+    items.forEach(it => {
+        v.copy(it.g.position); v.project(camera);
+        it.lbl.style.left = ((v.x + 1) / 2 * innerWidth) + 'px';
+        it.lbl.style.top = ((1 - v.y) / 2 * innerHeight + 6) + 'px';
+    });
+    window.__galleryReady = true;
 </script>
 </body>
 </html>

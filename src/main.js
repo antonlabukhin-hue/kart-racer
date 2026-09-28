@@ -17,8 +17,9 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             disposeBossMesh
         } from './boss.js';
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
-        import { gapStyle, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource } from './setpieces.js';
-        import { resolveLayout } from './track-layout.js';
+        import { gapStyle, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, createBarricade, createWarnMark, createChargeChevrons } from './setpieces.js';
+        import { resolveLayout, SEGMENT_LEN } from './track-layout.js';
+        import { createRoadworks, createForkMedian, createTunnel, clampToForkSide, roadworksLane, approach } from './segments.js';
         import { MAP_ORDER, MAP_NAMES, CAMPAIGN_FINISH_LINES, VILLAIN_INTRO, ACHIEVEMENTS, CAR_SHOP_ORDER, CAR_PARTS, CAR_PAINTS, TROPHIES, SEASON_REWARDS, DAILY_CONTRACTS, ANIMAL_SHOUTS_LIST } from './content.js';
         import { DIFFICULTY_CONFIG } from './difficulty.js';
         import { campaignHardConfig } from './balance.js';
@@ -26,9 +27,14 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
-        import { bossIntroHtml, bossPhase2Html } from './boss-intro.js';
+        import { bossIntroHtml, bossPhaseHtml } from './boss-intro.js';
+        import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes } from './boss-fight.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
+        import * as curvedWorld from './curved-world.js';
+        import { biomeAt, biomeIndexAt, biomePlan, BIOME_INFO, groundColorAt, createPine, createBirch, createRock, createLog, forestTrees, createForestInstanced } from './biomes.js';
+        import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+        curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
@@ -602,6 +608,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         
         /** Полная очистка гонки без выхода в главное меню (рестарт/следующая глава) */
         function cleanupRaceKeepProfile() {
+            curvedWorld.setCurve(0, 0);
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { window.__hudRefs = null; } catch (e) {}
 
@@ -2830,7 +2837,7 @@ function startGaragePreview(carId) {
                 '<li><b>🐾 В зверей и машины не врезайся.</b> Каждое столкновение — авария и штраф по времени. <b>5 аварий — проигрыш.</b></li>' +
                 '<li><b>❤️ Жвачка-сердечко</b> снимает одну аварию, а если аварий нет — даёт +5 секунд.</li>' +
                 '<li><b>⛽ Зелёные стрелки — нитро.</b> Проскочил впритирку мимо зверя — «На волоске!», тоже нитро.</li>' +
-                '<li><b>👊 Босс: врежься в него 3 раза</b> — столько у первого босса HP (у следующих больше, на нитро удар двойной). Красное кольцо под ним — сейчас выстрелит, уходи в сторону.</li>' +
+                '<li><b>👊 Босс в броне.</b> Красное кольцо под ним — сейчас атакует: уйди в соседнюю полосу. Промахнулся — на спине мишень, он открыт 2 секунды: тарань (на нитро удар двойной). Не успел до конца арены — сбежит.</li>' +
                 '<li><b>🕳 Разлом через всю дорогу:</b> заезжай на трамплин по жёлтым стрелкам. Объедешь — провалишься. На нитро трамплин подбрасывает выше — за разломом висит ⭐ (−3 с).</li>' +
                 '<li><b>⚠ Под аркой</b> качается то, что сейчас упадёт, — меняй полосу.</li>' +
                 '</ul>' +
@@ -2894,6 +2901,7 @@ function startGaragePreview(carId) {
                 toggle('shake', 'Тряска камеры и линии скорости') +
                 toggle('vibrate', 'Вибрация телефона при аварии') +
                 toggle('ghost', '👻 Призрак лучшего заезда') +
+                toggle('curve', '🛣 Повороты и холмы дороги') +
                 '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
                 '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
                 '</div>';
@@ -2940,6 +2948,7 @@ function startGaragePreview(carId) {
         window.openSettingsScreen = openSettingsScreen;
 
         function exitRaceToMenu(openGarageAfter) {
+            curvedWorld.setCurve(0, 0);
             try {
                 const rs = window.__raceDebug ? window.__raceDebug.state : (window.__inRace && !document.getElementById('finish-screen') ? 'racing' : '');
                 if (window.__inRace && rs === 'racing') trackEvent('race_quit', { chapter: window.__campaignTrackId || null, mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race' });
@@ -3089,9 +3098,21 @@ function startGaragePreview(carId) {
             }
             pos.needsUpdate = true;
             geo.computeVertexNormals();
+            // цвет земли по зонам трассы (src/biomes.js) — плавно меняется вдоль дороги
+            if (opts.colorAt) {
+                const cols = new Float32Array(pos.count * 3);
+                const cc = new THREE.Color();
+                for (let i = 0; i < pos.count; i++) {
+                    opts.colorAt(pos.getZ(i), cc);
+                    const v = 0.9 + 0.2 * fbm2D(pos.getX(i) * 0.08, pos.getZ(i) * 0.08, seed + 5, 2); // пятна
+                    cols[i * 3] = cc.r * v; cols[i * 3 + 1] = cc.g * v; cols[i * 3 + 2] = cc.b * v;
+                }
+                geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+            }
 
             const mat = new THREE.MeshLambertMaterial({
-                color: color,
+                color: opts.colorAt ? 0xffffff : color,
+                vertexColors: !!opts.colorAt,
                 flatShading: false
             });
             const mesh = new THREE.Mesh(geo, mat);
@@ -3127,7 +3148,9 @@ function startGaragePreview(carId) {
                 color: color,
                 mobile: !!isMobile,
                 segsZ: isMobile ? 40 : 72,
-                segsX: isMobile ? 8 : 14
+                segsX: isMobile ? 8 : 14,
+                // свои цвета зон — если глава не задала землю и это не снег
+                colorAt: (dims.colorAt && !(cm && cm.ground != null) && window.__trackThemeActive !== 'snow') ? dims.colorAt : null
             };
             createNoiseShoulder(scene, -1, Object.assign({}, common, { seed: seedBase }));
             createNoiseShoulder(scene, 1, Object.assign({}, common, { seed: seedBase + 17 }));
@@ -5367,7 +5390,8 @@ function startGaragePreview(carId) {
             // ЗЕМЛЯ И ТРАССА
             // ============================================================
             const ground = new THREE.Mesh(
-                new THREE.PlaneGeometry(400, TRACK_LENGTH + 200),
+                // сетка, а не 4 вершины: «кривой мир» гнёт вершины (src/curved-world.js)
+                new THREE.PlaneGeometry(400, TRACK_LENGTH + 200, 16, Math.ceil((TRACK_LENGTH + 200) / 6)),
                 new THREE.MeshStandardMaterial({ map: createGrassTexture(), roughness: 1, metalness: 0 })
             );
             ground.rotation.x = -Math.PI / 2;
@@ -5375,7 +5399,10 @@ function startGaragePreview(carId) {
             ground.receiveShadow = true;
             scene.add(ground);
             try {
-                addNoiseLandscape(scene, mapId, !!(window.__isMobile), { trackWidth: TRACK_WIDTH, length: TRACK_LENGTH });
+                addNoiseLandscape(scene, mapId, !!(window.__isMobile), {
+                    trackWidth: TRACK_WIDTH, length: TRACK_LENGTH,
+                    colorAt: function(z, c) { return groundColorAt(mapId, (START_Z - z) / (START_Z - FINISH_Z), c); }
+                });
             } catch (e) { console.warn('noise landscape', e); }
 
             // === Снегопад — только на snow-теме, раньше с неба вообще ничего не падало ===
@@ -5416,7 +5443,7 @@ function startGaragePreview(carId) {
                 metalness: 0.1,
                 side: THREE.DoubleSide
             });
-            const track = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_WIDTH, TRACK_LENGTH), trackMat);
+            const track = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_WIDTH, TRACK_LENGTH, 1, Math.ceil(TRACK_LENGTH / 3)), trackMat);
             track.rotation.x = -Math.PI / 2;
             track.position.set(0, 0.01, 0);
             track.receiveShadow = true;
@@ -6253,7 +6280,8 @@ function startGaragePreview(carId) {
                 const scale = 0.7 + Math.random() * 1.1;
                 const r = Math.random();
 
-                if (mapId === 'promzona') {
+                const envStyle = biomeAt(mapId, (START_Z - z) / (START_Z - FINISH_Z));
+                if (envStyle === 'industrial') {
                     if (r < 0.28) createFactory(x, z, scale);
                     else if (r < 0.48) createPipeStack(x, z, scale);
                     else if (r < 0.62) createRuinedBuilding(x, z, scale * 0.8);
@@ -6261,7 +6289,7 @@ function startGaragePreview(carId) {
                     else if (r < 0.84) createRoadBarrier(x, z, scale);
                     else if (r < 0.92) createFence(x, z, scale);
                     else createDeadTree(x, z, scale);
-                } else if (mapId === 'svalka') {
+                } else if (envStyle === 'junk') {
                     if (r < 0.25) createScrapPile(x, z, scale);
                     else if (r < 0.42) createWreckCar(x, z, scale);
                     else if (r < 0.55) createBillboard(x, z, scale);
@@ -6269,6 +6297,19 @@ function startGaragePreview(carId) {
                     else if (r < 0.78) createCrateStack(x, z, scale);
                     else if (r < 0.88) createSatelliteDish(x, z, scale);
                     else createDeadTree(x, z, scale * 0.9);
+                } else if (envStyle === 'forest') {
+                    // тайга: сосны и берёзы стеной, валуны, брёвна
+                    if (r < 0.42) createPine(scene, x, z, scale * 1.15);
+                    else if (r < 0.62) createBirch(scene, x, z, scale);
+                    else if (r < 0.74) createBush(x, z, scale);
+                    else if (r < 0.86) createRock(scene, x, z, scale);
+                    else if (r < 0.94) createLog(scene, x, z, scale);
+                    else createDeadTree(x, z, scale);
+                    // лес гуще: ещё одно дерево дальше от дороги
+                    if (Math.random() < 0.7) {
+                        const fx = x + (x >= 0 ? 1 : -1) * (3 + Math.random() * 6);
+                        (Math.random() < 0.6 ? createPine : createBirch)(scene, fx, z + (Math.random() - 0.5) * 6, 0.9 + Math.random() * 0.7);
+                    }
                 } else {
                     // arsenev — руины + быт 90-х
                     if (r < 0.28) createRuinedBuilding(x, z, scale);
@@ -6308,14 +6349,22 @@ function startGaragePreview(carId) {
                 }
             }
 
+            // тайга стеной (src/biomes.js): сотни деревьев — несколько инстанс-мешей
+            try {
+                createForestInstanced(scene, forestTrees(mapId, function(pr) { return START_Z - pr * (START_Z - FINISH_Z); }, TRACK_WIDTH, window.__isMobile ? 160 : 320), mergeGeometries);
+            } catch (eF) { console.warn('forest', eF); }
+
 // Придорожный мусор / баррикады
             for (let i = 0; i < debrisCount; i++) {
                 const z = -TRACK_LENGTH / 2 + 40 + Math.random() * (TRACK_LENGTH - 80);
                 const side = Math.random() > 0.5 ? 1 : -1;
                 const x = side * (TRACK_WIDTH / 2 + 1.2 + Math.random() * 1.8);
-                if (mapId === 'svalka' && Math.random() < 0.5) {
+                const dStyle = biomeAt(mapId, (START_Z - z) / (START_Z - FINISH_Z));
+                if (dStyle === 'forest') {
+                    (Math.random() < 0.5 ? createRock : createLog)(scene, x, z, 0.5 + Math.random() * 0.3);
+                } else if (dStyle === 'junk' && Math.random() < 0.5) {
                     createScrapPile(x, z, 0.5 + Math.random() * 0.4);
-                } else if (mapId === 'promzona' && Math.random() < 0.4) {
+                } else if (dStyle === 'industrial' && Math.random() < 0.4) {
                     createPipeStack(x, z, 0.5 + Math.random() * 0.4);
                 } else {
                     const mat = new THREE.MeshStandardMaterial({ color: 0x5a554c, roughness: 0.9 });
@@ -6697,6 +6746,10 @@ function startGaragePreview(carId) {
             const ghostStoreKey = ghostKey(currentPlayer && (currentPlayer.id || currentPlayer.name),
                 window.__campaignTrackId ? ('camp_' + window.__campaignTrackId) : mapId, difficulty);
             const ghostRec = createGhostRecorder();
+            // кривой мир: свой рисунок поворотов у каждой трассы (src/curved-world.js)
+            const curveSeed = (function(k) { let h = 0; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 1000; return h / 97; })(String(window.__campaignTrackId || mapId));
+            const curveOn = _settings.curve !== false;
+            curvedWorld.setCurve(0, 0);
             // Обучение: главы 1–3, пока глава не пройдена (src/tutorial.js)
             let coachSteps = [];
             try {
@@ -7328,6 +7381,51 @@ function startGaragePreview(carId) {
             // ============================================================
             const gaps = [];
             const debrisZones = [];
+            const roadSegments = []; // ремонт / развилка / тоннель (src/segments.js)
+            let segLastZ = null;
+            const TUNNEL_DARK = new THREE.Color(0x121216);
+            const _dimColor = new THREE.Color();
+            const tunnelDims = [];
+            function applyTunnelDim(k) {
+                if (!tunnelDims.length) {
+                    const num = function(get, set, mul) { return { kind: 'n', get: get, set: set, mul: mul }; };
+                    const col = function(get) { return { kind: 'c', get: get }; };
+                    tunnelDims.push(
+                        num(function() { return ambient.intensity; }, function(v) { ambient.intensity = v; }, 0.3),
+                        num(function() { return hemi.intensity; }, function(v) { hemi.intensity = v; }, 0.25),
+                        num(function() { return sunLight.intensity; }, function(v) { sunLight.intensity = v; }, 0.12),
+                        num(function() { return scene.fog.far; }, function(v) { scene.fog.far = v; }, 0.45),
+                        col(function() { return scene.fog.color; }),
+                        col(function() { return scene.background; })
+                    );
+                }
+                tunnelDims.forEach(function(e) {
+                    if (e.kind === 'n') {
+                        const cur = e.get();
+                        if (k <= 0) {
+                            if (e.applied !== undefined) { if (Math.abs(cur - e.applied) < 1e-6) e.set(e.base); e.applied = undefined; }
+                            return;
+                        }
+                        if (e.applied === undefined || Math.abs(cur - e.applied) > 1e-6) e.base = cur;
+                        const v = e.base * (1 - (1 - e.mul) * k);
+                        e.set(v); e.applied = v;
+                    } else {
+                        const c = e.get();
+                        if (!c || !c.isColor) return;
+                        const hex = c.getHex();
+                        if (k <= 0) {
+                            if (e.applied !== undefined) { if (hex === e.applied) c.setHex(e.base); e.applied = undefined; }
+                            return;
+                        }
+                        if (e.applied === undefined || hex !== e.applied) e.base = hex;
+                        _dimColor.setHex(e.base).lerp(TUNNEL_DARK, 0.85 * k);
+                        c.copy(_dimColor);
+                        e.applied = c.getHex();
+                    }
+                });
+            }
+            let tunnelK = 0;
+            let lastBiome = -1;
             const gapCones = []; // сбиваемые конусы перед разломами
             let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
             const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
@@ -7443,6 +7541,41 @@ function startGaragePreview(carId) {
                 scene.add(mapEvent.group);
                 const evSign = evKind === 'promzona' ? ['ОСТОРОЖНО', 'ВЫБРОС ПАРА'] : evKind === 'svalka' ? ['ОСТОРОЖНО', 'ГОРЯЩИЕ ШИНЫ'] : ['⚠ Ж/Д ПЕРЕЕЗД', 'ОСТОРОЖНО, ПОЕЗД'];
                 scene.add(createRoadSign(evSign, -TRACK_WIDTH / 2 - 1.8, evZ + 60, { big: true }));
+                // новые участки: ремонт, развилка, тоннель
+                (_layout.segments || []).forEach(function(sg, si) {
+                    const len = SEGMENT_LEN[sg.type] || 60;
+                    const z0 = _zAt(sg.at);
+                    if (sg.type === 'roadworks') {
+                        clearZone(z0 + 16, z0 - len - 4);
+                        const x = [-2, 0, 2][roadworksLane(si, curveSeed)];
+                        const rw = createRoadworks(x, z0, len);
+                        scene.add(rw.group);
+                        scene.add(createRoadSign(['⚠ РЕМОНТ', 'ПОЛОСА ЗАКРЫТА'], (x < 0 ? -1 : 1) * (TRACK_WIDTH / 2 + 1.8), z0 + 55, { big: true }));
+                        roadSegments.push({ type: 'roadworks', z0: z0, z1: z0 - len, x: x, barriers: rw.barriers, cd: 0 });
+                    } else if (sg.type === 'fork') {
+                        clearZone(z0 + 6, z0 - len - 4);
+                        const mx = -1;
+                        scene.add(createForkMedian(mx, z0, len).group);
+                        scene.add(createRoadSign(['⇐ ЖВАЧКИ + МАСЛО', 'СПОКОЙНО ⇒'], -TRACK_WIDTH / 2 - 1.8, z0 + 55, { big: true }));
+                        // левая ветка: награда и риск
+                        [0.2, 0.5, 0.8].forEach(function(k) {
+                            const c = createCollectible(z0 - len * k, 'gum');
+                            c.x = -2; c.mesh.position.x = -2;
+                            collectibles.push(c);
+                        });
+                        [0.35, 0.65].forEach(function(k) {
+                            const o = createObstacle(z0 - len * k, 'oil');
+                            o.x = -2; o.mesh.position.x = -2;
+                            obstacles.push(o);
+                        });
+                        roadSegments.push({ type: 'fork', z0: z0, z1: z0 - len, x: mx, side: 0, cd: 0 });
+                    } else if (sg.type === 'tunnel') {
+                        const style = isSnowTrack ? 'snow' : mapId;
+                        scene.add(createTunnel(TRACK_WIDTH, z0, len, style).group);
+                        scene.add(createRoadSign(['ТОННЕЛЬ', 'ВКЛЮЧИ ФАРЫ'], TRACK_WIDTH / 2 + 1.8, z0 + 50));
+                        roadSegments.push({ type: 'tunnel', z0: z0, z1: z0 - len });
+                    }
+                });
             } catch (eSet) { console.warn('setpieces', eSet); }
 
             // ============================================================
@@ -7570,6 +7703,169 @@ function startGaragePreview(carId) {
 
             // createBossHpBar / updateBossHpBar / createArcadeBossMesh — src/boss.js
 
+            // таран фазы 3 встретил машину на земле: авария, босс проскакивает вперёд
+            function headOnBoss() {
+                boss.charging = false;
+                boss.returning = true;
+                boss.invuln = 1.0;
+                if (boss.warn) { try { scene.remove(boss.warn); } catch (e) {} boss.warn = null; }
+                logHit('boss');
+                strikes = Math.min(MAX_STRIKES, strikes + 1);
+                if (strikes >= MAX_STRIKES) { endGame('crash'); return true; }
+                raceTime += 2;
+                speed *= 0.2;
+                shakeTime = Math.max(shakeTime, 0.5);
+                try { playPlayerDamageAnim(1.4); } catch (e) {}
+                try { showTimePenaltyPopup(2, '💥 Лоб в лоб с боссом'); } catch (e) {}
+                try { if (window.soundEngine) { window.soundEngine.playSfx('hit'); window.soundEngine.playSfx('explode', 0.9); } } catch (e) {}
+                try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: xPos, y: 0.5, z: zPos }, 1.1); } catch (e) {}
+                return true;
+            }
+            /**
+             * Урон по боссу: HP, анимация, смерть и награда. contact — удар машиной
+             * (игрок притормаживает, босса отбрасывает); без него — отбитый снаряд.
+             */
+            function damageBoss(dmg, opts) {
+                const o = opts || {};
+                const heavy = !!o.heavy;
+                boss.vulnT = 0; // окно закрылось — нужен новый промах
+                boss.hp -= dmg;
+                try { playBossDamageAnim(boss, heavy); } catch (e) {}
+                try { if (window.soundEngine) window.soundEngine.playSfx('boss_hurt', heavy ? 1.15 : 0.9); } catch (e) {}
+                boss.invuln = heavy ? 0.7 : 1.0;
+                if (o.contact) {
+                    // только подброс/замедление — без handleObstacleHit
+                    speed *= heavy ? 0.85 : 0.65;
+                    xVelocity *= 0.5;
+                    shakeTime = Math.max(shakeTime, heavy ? 0.35 : 0.22);
+                    fovPunch = heavy ? 16 : 10;
+                    boss.x += ((xPos - boss.x) >= 0 ? -1.8 : 1.8);
+                    boss.z -= 3;
+                } else {
+                    boss.z -= 1.5;
+                }
+                try {
+                    particleSystem.emit(
+                        _v.p1.set(boss.x, 0.6, boss.z),
+                        _v.vel.set((Math.random()-0.5)*2, 1.2, -1),
+                        heavy ? 14 : 8, 0.25
+                    );
+                } catch (e) {}
+                if (boss.hp <= 0 && !boss.dying) {
+                    boss.dying = true;
+                    boss.dieT = 0;
+                    boss.state = 'die';
+                    boss.attackState = 'idle';
+                    boss.charging = false;
+                    // отлёт вперёд по дороге (−Z)
+                    boss._dieVz = -12;
+                    boss._dieVx = 0;
+                    boss._dieVy = 5.5;
+                    boss._dieSpin = 3.0 + Math.random() * 1.0;
+                    if (boss.mesh) boss._dieLockX = boss.mesh.position.x;
+                    try {
+                        if (particleSystem && particleSystem.explode && boss.mesh) {
+                            const pm = boss.mesh.position;
+                            particleSystem.explode({ x: pm.x, y: pm.y + 0.6, z: pm.z }, 1.2);
+                        }
+                        if (window.soundEngine) {
+                            window.soundEngine.playSfx('boss_die', 1.25);
+                            window.soundEngine.playSfx('boss_roar', 0.8);
+                            window.soundEngine.playSfx('explode', 1.15);
+                        }
+                    } catch (e) {}
+                    showBossShout('💥 ' + (boss.name || 'Босс') + ' сбит!');
+                    try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.5); } catch (e) {}
+                    try { particleSystem.emit(_v.p1.set(boss.x, 1.0, boss.z), _v.vel.set(0, 2, 0), 18, 0.35); } catch (e) {}
+                    updateBossHpBar(boss, camera);
+                    try { updateBossHeadQuote(boss); } catch (eQ) {}
+                    try {
+                        if (currentPlayer && currentPlayer.season) {
+                            currentPlayer.season.chips = (currentPlayer.season.chips || 0) + (heavy ? 5 : 4);
+                            if (typeof saveCurrentPlayer === 'function') saveCurrentPlayer();
+                        }
+                    } catch (e) {}
+                    try {
+                        if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ' сброшен! +фишки');
+                        raceTime = Math.max(0, raceTime - DEFEAT_TIME_BONUS);
+                        if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, '💥 Босс повержен! −' + DEFEAT_TIME_BONUS + ' с');
+                    } catch (e) {}
+                } else {
+                    showBossShout((boss.name || 'Босс') + ' HP ' + Math.max(0, boss.hp) + '/' + (boss.maxHp || 3));
+                    try { updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
+                }
+            }
+            // броня слетает кусками: переносим деталь в сцену (мировые координаты сохраняются) и роняем
+            const bossArmorDebris = [];
+            function shedBossArmor(pieces) {
+                (pieces || []).forEach(function(piece, i) {
+                    if (!piece || !piece.parent) return;
+                    try {
+                        scene.attach(piece);
+                        const side = piece.position.x >= (boss ? boss.x : 0) ? 1 : -1;
+                        bossArmorDebris.push({ o: piece, t: 0, vx: side * (2 + Math.random() * 1.5), vy: 4 + Math.random() * 2, vz: 2.5 + i, spin: (Math.random() - 0.5) * 12 });
+                    } catch (e) {}
+                });
+                try { if (window.soundEngine) window.soundEngine.playCrashSound(0.3); } catch (e) {}
+                try { if (particleSystem.sparks && boss) particleSystem.sparks({ x: boss.x, y: 2.2, z: boss.z }, 18, 1); } catch (e) {}
+            }
+            function removeBossExtras(b) {
+                try { if (b && b.stunFx) { scene.remove(b.stunFx.group); b.stunFx = null; } } catch (e) {}
+                try { if (b && b.warn) { scene.remove(b.warn); b.warn = null; } } catch (e) {}
+            }
+            // полосы боя: центры -2 / 0 / 2
+            const BOSS_LANES = [-2, 0, 2];
+            const laneOf = function(x) { return Math.max(0, Math.min(2, Math.round((x + 2) / 2))); };
+            const bossBarricades = [];
+            let bossHammer = false; // подобранная кувалда: следующий таран пробивает броню
+            const bossPickups = [];
+            function spawnHammer() {
+                const g = new THREE.Group();
+                const wood = new THREE.MeshLambertMaterial({ color: 0x8a5a2a });
+                const steel = new THREE.MeshStandardMaterial({ color: 0x9aa4ae, metalness: 0.7, roughness: 0.35, emissive: 0x223344, emissiveIntensity: 0.4 });
+                const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.9, 8), wood);
+                handle.position.y = 0.45;
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.22, 0.22), steel);
+                head.position.y = 0.92;
+                g.add(handle, head);
+                const glow = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.6, 24), new THREE.MeshBasicMaterial({ color: 0xffd23c, transparent: true, opacity: 0.8, side: THREE.DoubleSide }));
+                glow.rotation.x = -Math.PI / 2;
+                glow.position.y = 0.03;
+                g.add(glow);
+                // до босса и не в его полосе — иначе он загораживает её собой
+                const bl = boss ? laneOf(boss.x) : -1;
+                const free = [0, 1, 2].filter(function(l) { return l !== bl; });
+                const lane = BOSS_LANES[free[Math.floor(Math.random() * free.length)]];
+                const z = zPos - 12;
+                g.position.set(lane, 0.2, z);
+                scene.add(g);
+                bossPickups.push({ mesh: g, x: lane, z: z, t: 0 });
+            }
+            function bossOpen(text) {
+                if (!boss || !boss.active || boss.dying) return;
+                boss.vulnT = VULN_TIME;
+                // трамплин в полосе босса там, где машина его догонит (с запасом на полёт)
+                let withRamp = false;
+                try {
+                    const pv = Math.abs(speed) * 60;
+                    const gap = zPos - boss.z;
+                    if (pv > 10 && gap > 10) {
+                        const meetIn = gap / 12;
+                        const rz = zPos - pv * Math.max(0.25, meetIn - 0.32) - 2;
+                        const near = ramps.some(function(r) { return Math.abs(r.z - rz) < 20; });
+                        if (!near && zPos - rz > 12) {
+                            ramps.push(createRamp(rz, BOSS_LANES[laneOf(boss.x)], 0.85));
+                            withRamp = true;
+                        }
+                    }
+                } catch (e) {}
+                try { showTimePenaltyPopup(0, (text || '🎯 Промах!') + (withRamp ? ' Тарань — или прыгай с трамплина ×3' : ' Тарань, пока открыт')); } catch (e) {}
+                // иногда на дороге — кувалда (пробивает броню одним тараном)
+                try {
+                    if (!bossHammer && bossPickups.length === 0 && Math.random() < 0.35) spawnHammer();
+                } catch (e) {}
+                try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 0.8); } catch (e) {}
+            }
             function spawnBoss() {
                 try {
                     _spawnBossImpl();
@@ -7615,7 +7911,8 @@ function startGaragePreview(carId) {
                 scene.add(group);
 
                 // HP растёт по главам; фаза 0 = «вход», давление на полосы
-                const chapterHp = (def.hp != null) ? def.hp : Math.min(6, 3 + Math.floor(bossIdx / 3));
+                // броня + окна уязвимости: HP главы +1 (src/boss-fight.js)
+                const chapterHp = bossHp((def.hp != null) ? def.hp : Math.min(6, 3 + Math.floor(bossIdx / 3)));
                 try {
                     if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('boss', 1.0);
                 } catch (eSfx) {}
@@ -7657,6 +7954,8 @@ function startGaragePreview(carId) {
                     attack: def.attack || 'default',
                     bossId: def.id || '',
                     invuln: 0,
+                    vulnT: 0,          // > 0 — открыт после промаха, таран ранит
+                    _armorMsgT: 0,
                     dying: false,
                     dieT: 0,
                     state: 'idle'
@@ -7673,6 +7972,33 @@ function startGaragePreview(carId) {
 
                 bossSpawned = true;
                 window.__bossSpawnQueued = false;
+                // залпы: промах всего залпа открывает босса
+                boss.volleys = createVolleyTracker(function() { bossOpen(); });
+                // мишень на спине и звёздочки над головой — видны, пока босс открыт
+                try {
+                    const fx = new THREE.Group();
+                    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffdd33, transparent: true, opacity: 0.95, depthTest: false, side: THREE.DoubleSide });
+                    const dotMat = new THREE.MeshBasicMaterial({ color: 0xff2a00, depthTest: false, side: THREE.DoubleSide });
+                    const target = new THREE.Group();
+                    target.add(new THREE.Mesh(new THREE.RingGeometry(0.42, 0.56, 28), ringMat));
+                    target.add(new THREE.Mesh(new THREE.RingGeometry(0.2, 0.28, 24), ringMat));
+                    target.add(new THREE.Mesh(new THREE.CircleGeometry(0.1, 16), dotMat));
+                    fx.add(target);
+                    const stars = new THREE.Group();
+                    const starMat = new THREE.MeshBasicMaterial({ color: 0xffee55 });
+                    for (let si = 0; si < 3; si++) {
+                        const st = new THREE.Mesh(new THREE.OctahedronGeometry(0.13), starMat);
+                        st.userData.a = si * Math.PI * 2 / 3;
+                        stars.add(st);
+                    }
+                    fx.add(stars);
+                    fx.traverse(function(o) { o.renderOrder = 5; });
+                    fx.visible = false;
+                    const bb = new THREE.Box3().setFromObject(group);
+                    boss._h = Math.max(1.2, bb.max.y - bb.min.y);
+                    boss.stunFx = { group: fx, target: target, stars: stars };
+                    scene.add(fx);
+                } catch (eFx) { console.warn('stunFx', eFx); }
                 try { if (soundEngine.setBossActive) soundEngine.setBossActive(true); } catch (e) {}
                 // одна уникальная фраза босса при появлении (у головы, 3 сек)
                 try {
@@ -7690,7 +8016,7 @@ function startGaragePreview(carId) {
                 bossShouted = true;
                 // подсказка механики — не реплика босса
                 setTimeout(function() {
-                    try { if (typeof radioSay === 'function') radioSay('📡 Таран ×3 или обгони босса'); } catch (e) {}
+                    try { if (typeof radioSay === 'function') radioSay('📡 Увернись от атаки — после промаха тарань'); } catch (e) {}
                 }, 3200);
                 console.log('🐻 БОСС:', def.name, def.animal, wt, style);
             }
@@ -8149,7 +8475,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8251,6 +8577,7 @@ function startGaragePreview(carId) {
                 const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
                 ghostClock += deltaTime;
                 ghostRec.update(deltaTime, xPos, zPos, carYOffset);
+                if (curveOn) { const cv = curvedWorld.curveAt(START_Z - zPos, curveSeed); curvedWorld.setCurve(cv.x, cv.y); }
                 if (coachSteps.length && coachShown.size < coachSteps.length && (coachAcc += deltaTime) > 0.2) {
                     coachAcc = 0;
                     // не чаще раза в 3 с — подсказки не налезают друг на друга
@@ -8517,6 +8844,60 @@ function startGaragePreview(carId) {
 
                 const globalMaxX = TRACK_WIDTH / 2 - CAR_WIDTH / 2 - 0.1;
                 xPos = clamp(xPos, -globalMaxX, globalMaxX);
+                // участки трассы: ремонт / развилка / тоннель (src/segments.js)
+                let tunnelTarget = 0;
+                for (let si = 0; si < roadSegments.length; si++) {
+                    const sg = roadSegments[si];
+                    const inside = zPos <= sg.z0 && zPos >= sg.z1;
+                    if (sg.type === 'tunnel') {
+                        if (zPos <= sg.z0 + 8 && zPos >= sg.z1 - 4) tunnelTarget = 1;
+                        continue;
+                    }
+                    if (sg.cd > 0) sg.cd -= deltaTime;
+                    if (sg.type === 'roadworks') {
+                        if (inside && sg.cd <= 0 && carYOffset < 0.6 && Math.abs(xPos - sg.x) < 1.15) {
+                            sg.cd = 1.2;
+                            let near = null, nd = 1e9;
+                            sg.barriers.forEach(function(b) { const d = Math.abs(b.position.z - zPos); if (b.visible && d < nd) { nd = d; near = b; } });
+                            if (near && nd < 6) near.visible = false;
+                            xPos = sg.x + (sg.x < 0 ? 2 : -2);
+                            xVelocity = 0;
+                            handleObstacleHit({ cause: 'ремонт', type: 'roadworks', timePenalty: 3, penalty: 0.35 });
+                        }
+                    } else if (sg.type === 'fork') {
+                        const crossed = segLastZ != null && segLastZ > sg.z0 && zPos <= sg.z0;
+                        if (crossed && Math.abs(xPos - sg.x) < 0.6 && carYOffset < 0.8) {
+                            // в нос разделителя
+                            xPos = xPos < sg.x ? sg.x - 0.7 : sg.x + 0.7;
+                            xVelocity = 0;
+                            handleObstacleHit({ cause: 'разделитель', type: 'fork', timePenalty: 3, penalty: 0.3 });
+                        }
+                        if (inside && !sg.side) sg.side = xPos < sg.x ? -1 : 1;
+                        if (inside) {
+                            const r = clampToForkSide(xPos, sg.x, sg.side, 0.68);
+                            if (r.scraped) {
+                                xPos = r.x;
+                                if (Math.abs(xVelocity) > 0.04 && sg.cd <= 0) {
+                                    sg.cd = 0.25;
+                                    speed *= 0.96;
+                                    try { if (particleSystem.sparks) particleSystem.sparks({ x: sg.x + sg.side * 0.3, y: 0.4, z: zPos }, 8, 1); } catch (e) {}
+                                    try { if (window.soundEngine) window.soundEngine.playSfx('hit', 0.35); } catch (e) {}
+                                }
+                                xVelocity = 0;
+                            }
+                        } else if (zPos < sg.z1) sg.side = 0;
+                    }
+                }
+                segLastZ = zPos;
+                {
+                    const bIdx = biomeIndexAt(mapId, progress);
+                    if (bIdx !== lastBiome) {
+                        if (lastBiome >= 0) { try { showStory(BIOME_INFO[biomePlan(mapId)[bIdx].style].label); } catch (e) {} }
+                        lastBiome = bIdx;
+                    }
+                }
+                tunnelK = approach(tunnelK, tunnelTarget, deltaTime, 2.2);
+                applyTunnelDim(tunnelK);
                 // смена полосы — whoosh
                 try {
                     const laneW = TRACK_WIDTH / 3;
@@ -8791,6 +9172,10 @@ function startGaragePreview(carId) {
                     if (nightOverlay && nightOverlay.material) nightOverlay.material.opacity = 0;
                     headlight1.intensity = 0;
                     headlight2.intensity = 0;
+                }
+                if (tunnelK > 0) {
+                    headlight1.intensity = Math.max(headlight1.intensity, 7.5 * tunnelK);
+                    headlight2.intensity = Math.max(headlight2.intensity, 7.5 * tunnelK);
                 }
 
                 // Попутные машины
@@ -9268,6 +9653,7 @@ function startGaragePreview(carId) {
                             const sc = (boss._baseScale || 1) * (1 - t * 0.35);
                             boss.mesh.scale.setScalar(Math.max(0.15, sc));
                             if (boss.hpBar) boss.hpBar.visible = false;
+                            if (boss.stunFx) boss.stunFx.group.visible = false;
                             // дым / пыль по траектории
                             if (particleSystem && (Math.random() < 0.55 || t > 0.7)) {
                                 try {
@@ -9300,20 +9686,54 @@ function startGaragePreview(carId) {
                             boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
                             try { if (boss.mesh) { try { disposeBossMesh(boss.mesh); } catch (eD) {} scene.remove(boss.mesh); } } catch (e) {}
                             try { if (boss.hpBar) { scene.remove(boss.hpBar); boss.hpBar = null; } } catch (e) {}
+                            removeBossExtras(boss);
                             boss.mesh = null;
                         }
                         // во время смерти не атакует и не двигается логикой ниже
                     } else {
+                    if (boss.charging) {
+                        // фаза 3: бежит навстречу по своей полосе
+                        boss.chargeT = (boss.chargeT || 0) + deltaTime;
+                        boss.x += (boss.chargeX - boss.x) * Math.min(1, deltaTime * 6);
+                        boss.z += 14 * deltaTime;
+                        if (boss.z > zPos + 3 || boss.chargeT > 3.5) {
+                            // промахнулся — пробежал мимо, разворачивается
+                            boss.charging = false;
+                            boss.returning = 'open';
+                            try { showTimePenaltyPopup(0, '💨 Мимо! Сейчас выдохнется'); } catch (e) {}
+                        }
+                    } else if (boss.returning) {
+                        if (boss.warn && boss.nextAttack === 'charge') { try { scene.remove(boss.warn); } catch (e) {} boss.warn = null; }
+                        // возвращается вперёд сквозь поток, не сталкиваясь
+                        const dz0 = zPos - 16;
+                        boss.z += (dz0 - boss.z) * Math.min(1, deltaTime * 4);
+                        if (boss.z < zPos - 10) {
+                            const wasMiss = boss.returning === 'open';
+                            boss.returning = false;
+                            if (wasMiss) bossOpen('🎯 Выдохся!');
+                        }
+                    } else if (boss.vulnT > 0) {
+                        // открыт после промаха: запыхался — игрок нагоняет его ~12 м/с, но за спину не отстаёт
+                        boss.vulnT -= deltaTime;
+                        const pv = Math.abs(speed) * 60;
+                        boss.z -= Math.max(0, pv - 12) * deltaTime;
+                        if (boss.z > zPos - 0.6) boss.z = zPos - 0.6;
+                    } else {
                     // Держится впереди игрока, медленно уходит в -Z
-                    const desiredZ = zPos - 18 - Math.sin(boss.phase * 0.4) * 4;
-                    boss.z += (desiredZ - boss.z) * Math.min(1, deltaTime * 1.2);
+                    const chargeWindup = boss.attackState === 'windup' && boss.nextAttack === 'charge';
+                    const desiredZ = chargeWindup ? zPos - 24 : zPos - 18 - Math.sin(boss.phase * 0.4) * 4;
+                    // обогнали — рывком возвращается вперёд (обгон бой не заканчивает)
+                    // рывок — только если его обогнали (иначе к закованному боссу с кувалдой не подобраться)
+                    const followK = (boss.z > zPos + 1 || chargeWindup) ? 3.5 : 1.2;
+                    boss.z += (desiredZ - boss.z) * Math.min(1, deltaTime * followK);
                     boss.z -= boss.speed * 8 * deltaTime;
+                    }
 
                     // Рыскает по полосам, целится в игрока
-                    if (Math.sin(boss.phase * 0.85) > 0.9) {
-                        boss.laneTarget = Math.max(0, Math.min(2, Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2)));
+                    if (Math.sin(boss.phase * 0.85) > 0.9 && !boss.charging) {
+                        boss.laneTarget = laneOf(xPos);
                     }
-                    const targetX = -TRACK_WIDTH / 2 + 0.5 + boss.laneTarget * 2;
+                    const targetX = BOSS_LANES[boss.laneTarget] != null ? BOSS_LANES[boss.laneTarget] : 0;
                     const weave = Math.sin(boss.phase * 1.6) * 0.35;
                     boss.x += (targetX + weave - boss.x) * Math.min(1, deltaTime * 2.2);
 
@@ -9332,7 +9752,7 @@ function startGaragePreview(carId) {
 
                     // Таймер атаки
                     boss.shotTimer -= deltaTime;
-                    if (boss.attackState === 'idle' && boss.shotTimer <= 0 && Math.abs(zPos - boss.z) < 38 && Math.abs(xPos - boss.x) < TRACK_WIDTH * 0.9) {
+                    if (boss.attackState === 'idle' && boss.shotTimer <= 0 && !(boss.vulnT > 0) && !boss.charging && !boss.returning && Math.abs(zPos - boss.z) < 38 && Math.abs(xPos - boss.x) < TRACK_WIDTH * 0.9) {
                         boss.attackState = 'windup';
                         boss.attackT = 0;
                         try { if (window.soundEngine) window.soundEngine.playSfx('boss_windup', 0.85); } catch (e) {}
@@ -9344,6 +9764,43 @@ function startGaragePreview(carId) {
                         boss._projSpeedMul = bc.projSpeedMul || 1;
                         boss._projSizeMul = bc.projSizeMul || 1;
                         boss._projMulti = bc.multi || 1;
+                        // фаза 2 — баррикады, фаза 3 — ещё и таран навстречу (src/boss-fight.js)
+                        const aph = phaseForHp(boss.hp, boss.maxHp);
+                        const rr = Math.random();
+                        const segBusy = roadSegments.some(function(sg) { return sg.type !== 'tunnel' && zPos <= sg.z0 + 45 && zPos >= sg.z1 - 10; });
+                        boss.nextAttack = boss._forceAtk ? boss._forceAtk : segBusy ? 'shot' : (aph >= 3 && rr < 0.5) ? 'charge'
+                            : (aph >= 2 && boss._lastAtk !== 'barricade' && rr < 0.8) ? 'barricade' : 'shot';
+                        boss._lastAtk = boss.nextAttack;
+                        try {
+                            if (boss.warn) { scene.remove(boss.warn); boss.warn = null; }
+                            if (boss.nextAttack === 'barricade') {
+                                const bl = barricadeLanes(laneOf(xPos), boss._lastGap);
+                                boss._lastGap = bl.gap;
+                                boss._barr = { z: boss.z - 16, lanes: bl.blocked };
+                                boss._windupNeed = Math.max(0.9, boss._windupNeed || 0);
+                                const wg = new THREE.Group();
+                                bl.blocked.forEach(function(li) { wg.add(createWarnMark(BOSS_LANES[li], boss._barr.z, 1.4)); });
+                                scene.add(wg);
+                                boss.warn = wg;
+                            } else if (boss.nextAttack === 'charge') {
+                                const cl = laneOf(xPos);
+                                boss.chargeX = BOSS_LANES[cl];
+                                boss.laneTarget = cl;
+                                boss._windupNeed = 1.3;
+                                // на замахе босс отходит на ~24 м (см. движение) — стрелки от него к игроку
+                                const cg = createChargeChevrons(boss.chargeX, zPos - 30, 7);
+                                scene.add(cg);
+                                boss.warn = cg;
+                                // трамплин в этой полосе — в точке, где машина встретит босса (с запасом на полёт):
+                                // можно не уходить, а прыгнуть на него сверху
+                                const pv = Math.max(12, Math.abs(speed) * 60);
+                                const meetIn = 1.3 + 24 / (pv + 14);
+                                const rpz = zPos - pv * meetIn + pv * 0.3 + 2;
+                                boss._chargeRamp = createRamp(rpz, boss.chargeX, 0.85);
+                                ramps.push(boss._chargeRamp);
+                                try { showTimePenaltyPopup(0, '⚠ ТАРАН! Уйди с полосы — или прыгай на него'); } catch (e) {}
+                            }
+                        } catch (eAtk) { console.warn('boss attack pick', eAtk); boss.nextAttack = 'shot'; }
                         // визуальный telegraph: подсветка + кольцо на земле
                         try {
                             if (boss.mesh) {
@@ -9419,6 +9876,37 @@ function startGaragePreview(carId) {
                             boss.attackT = 0;
                             if (boss._laser) { try { scene.remove(boss._laser); } catch (e) {} boss._laser = null; } // legacy cleanup
                             try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(isMelee ? 0.3 : 0.22); } catch (e) {}
+                            try { if (boss.warn && boss.nextAttack === 'barricade') { scene.remove(boss.warn); boss.warn = null; } } catch (e) {}
+                            if (boss.nextAttack === 'barricade' && boss._barr) {
+                                // блоки падают сверху на красные метки
+                                const b0 = boss._barr;
+                                const meshes = b0.lanes.map(function(li) {
+                                    const m = createBarricade(BOSS_LANES[li], b0.z);
+                                    m.position.y = 5;
+                                    scene.add(m);
+                                    return m;
+                                });
+                                bossBarricades.push({ z: b0.z, xs: b0.lanes.map(function(li) { return BOSS_LANES[li]; }), meshes: meshes, t: 0, done: false, volley: boss.volleys ? boss.volleys.fire(1) : 0 });
+                                boss._barr = null;
+                            } else if (boss.nextAttack === 'charge') {
+                                boss.charging = true;
+                                boss.chargeT = 0;
+                                // трамплин — в точку встречи по ТЕКУЩЕЙ скорости (за замах игрок мог притормозить)
+                                try {
+                                    const cr = boss._chargeRamp;
+                                    const pv = Math.abs(speed) * 60;
+                                    const t = (zPos - boss.z) / (pv + 14);
+                                    if (cr && pv > 8 && t > 0.5) {
+                                        const exitZ = zPos - pv * (t - 0.32);
+                                        const nz = exitZ + cr.len / 2;
+                                        if (zPos - (nz + cr.len / 2) > 3) {
+                                            cr.z = nz; cr.zEnter = nz + cr.len / 2; cr.zExit = nz - cr.len / 2;
+                                            cr.mesh.position.z = nz;
+                                        }
+                                    }
+                                } catch (eR) {}
+                                try { if (window.soundEngine) window.soundEngine.playSfx('boss_roar', 1.0); } catch (e) {}
+                            } else
                             // Уникальный снаряд по типу босса
                             try {
                                 const ud = (boss.mesh && boss.mesh.userData) || {};
@@ -9458,6 +9946,7 @@ function startGaragePreview(carId) {
                                 // у PROJ свои (другие) значения multi, из-за чего burst стрелял 5 вместо 3,
                                 // а flame/riff/neon — 1 вместо 2
                                 const nShot = boss._projMulti || pr.multi || 1;
+                                const volleyId = boss.volleys ? boss.volleys.fire(nShot) : 0;
                                 for (let si = 0; si < nShot; si++) {
                                     const spread = nShot > 1 ? (si - (nShot-1)/2) * 0.35 : 0;
                                     let meshI = ball;
@@ -9479,7 +9968,8 @@ function startGaragePreview(carId) {
                                         laneKick: !!pr.laneKick,
                                         timePenalty: pr.timePenalty || 2,
                                         pull: !!pr.pull,
-                                        heavy: !!pr.heavy
+                                        heavy: !!pr.heavy,
+                                        volley: volleyId
                                     });
                                 }
                                 if (particleSystem && particleSystem.emit) {
@@ -9508,11 +9998,20 @@ function startGaragePreview(carId) {
                     // Фаза 2 при ≤50% HP — чаще атаки
                     // (boss.phase — непрерывный таймер для sin()-анимации, растёт каждый кадр;
                     // флаг ярости должен жить отдельно, иначе это условие никогда не срабатывает)
-                    if (!boss.enraged && boss.hp <= boss.maxHp * 0.5) {
+                    const fph = phaseForHp(boss.hp, boss.maxHp);
+                    if (fph === 2 && !(boss.fightPhase >= 2) && boss.hp > 0) {
+                        boss.fightPhase = 2;
+                        try { showBossCard(bossPhaseHtml({ name: boss.name }, 2), 'phase2', 2200); } catch (e) {}
+                        try { const ar = boss.mesh && boss.mesh.userData.armor; if (ar) shedBossArmor(ar.shoulders); } catch (e) {}
+                        try { if (window.soundEngine) window.soundEngine.playSfx('boss', 0.8); } catch (e) {}
+                    }
+                    if (!boss.enraged && fph >= 3 && boss.hp > 0) {
                         boss.enraged = true;
+                        boss.fightPhase = 3;
+                        try { const ar = boss.mesh && boss.mesh.userData.armor; if (ar) shedBossArmor([].concat(ar.shoulders, [ar.chest])); } catch (e) {}
                         boss.speed *= 1.12;
                         try {
-                            showBossCard(bossPhase2Html({ name: boss.name }), 'phase2', 2000);
+                            showBossCard(bossPhaseHtml({ name: boss.name }, 3), 'phase2', 2200);
                             // свои копии материалов (общие лежат в кэше) — пульсируют красным
                             const seen = new Map();
                             boss._rageMats = [];
@@ -9603,11 +10102,11 @@ function startGaragePreview(carId) {
                             const legR = ud.rightLeg;
                             if (legL) {
                                 legL.rotation.x = swing * 0.6 * (runMul > 0 ? 1 : 0);
-                                legL.position.y = Math.max(0, -swing) * 0.07;
+                                legL.position.y = (legL.userData.baseY || 0) + Math.max(0, -swing) * 0.07;
                             }
                             if (legR) {
                                 legR.rotation.x = -swing * 0.6 * (runMul > 0 ? 1 : 0);
-                                legR.position.y = Math.max(0, swing) * 0.07;
+                                legR.position.y = (legR.userData.baseY || 0) + Math.max(0, swing) * 0.07;
                             }
                         } catch (eLeg) {}
                         // руки: в противофазе к ногам + замах оружия на правой
@@ -9702,6 +10201,29 @@ function startGaragePreview(carId) {
                         }
                     }
 
+                    // открыт: мишень на спине, звёздочки, шатается
+                    if (boss.stunFx) {
+                        const open = boss.vulnT > 0;
+                        boss.stunFx.group.visible = open;
+                        if (open && boss.mesh) {
+                            const h = boss._h || 2;
+                            boss.stunFx.target.position.set(boss.x, h * 0.55, boss.z + 0.9);
+                            const pulse = 1 + Math.sin(boss.phase * 10) * 0.12;
+                            boss.stunFx.target.scale.setScalar(pulse * (boss.vulnT < 0.6 ? 0.7 : 1));
+                            boss.stunFx.stars.position.set(boss.x, h + 0.25, boss.z);
+                            boss.stunFx.stars.children.forEach(function(st) {
+                                const a = st.userData.a + boss.phase * 5;
+                                st.position.set(Math.cos(a) * 0.55, Math.sin(boss.phase * 7 + st.userData.a) * 0.08, Math.sin(a) * 0.55);
+                                st.rotation.y += deltaTime * 6;
+                            });
+                            boss.mesh.rotation.z = Math.sin(boss.phase * 9) * 0.1;
+                        } else if (boss.mesh && boss._wasOpen) {
+                            boss.mesh.rotation.z = 0;
+                        }
+                        boss._wasOpen = open;
+                    }
+                    if (boss._armorMsgT > 0) boss._armorMsgT -= deltaTime;
+
                     // Крик (редко, вне атаки)
                     boss.shoutTimer -= deltaTime;
                     if (boss.attackState === 'idle' && boss.shoutTimer <= 0 && Math.abs(zPos - boss.z) < 35) {
@@ -9714,111 +10236,136 @@ function startGaragePreview(carId) {
                     // Урон: 1 обычный / 2 на нитро. 3 HP → победа. Обгон → босс уходит.
                     const bdx = xPos - boss.x;
                     const bdz = zPos - boss.z;
-                    if (boss.invuln <= 0 && Math.abs(bdx) < boss.radius && Math.abs(bdz) < boss.radius * 0.95) {
+                    const airborneHit = carAirborne || carYOffset > 0.3;
+                    if (boss.invuln <= 0 && !boss.returning && Math.abs(bdx) < boss.radius && Math.abs(bdz) < boss.radius * (boss.charging ? 1.2 : 0.95)
+                        && !(boss.charging && !airborneHit && headOnBoss())) {
                         const nitroHit = (typeof nitroTimer !== 'undefined' && nitroTimer > 0);
-                        const dmg = nitroHit ? 2 : 1;
-                        boss.hp -= dmg;
-                        try { playBossDamageAnim(boss, nitroHit); } catch (e) {}
-                        try { if (window.soundEngine) window.soundEngine.playSfx('boss_hurt', nitroHit ? 1.15 : 0.9); } catch (e) {}
-                        boss.invuln = nitroHit ? 0.7 : 1.0;
-                        // только подброс/замедление — без handleObstacleHit
-                        speed *= nitroHit ? 0.85 : 0.65;
-                        xVelocity *= 0.5;
-                        shakeTime = Math.max(shakeTime, nitroHit ? 0.35 : 0.22);
-                        fovPunch = nitroHit ? 16 : 10;
-                        boss.x += (bdx >= 0 ? -1.8 : 1.8);
-                        boss.z -= 3;
-                        try {
-                            particleSystem.emit(
-                                _v.p1.set(boss.x, 0.6, boss.z),
-                                _v.vel.set((Math.random()-0.5)*2, 1.2, -1),
-                                nitroHit ? 14 : 8, 0.25
-                            );
-                        } catch (e) {}
-                        if (boss.hp <= 0 && !boss.dying) {
-                            boss.dying = true;
-                            boss.dieT = 0;
-                            boss.state = 'die';
-                            boss.attackState = 'idle';
-                            // отлёт вперёд по дороге (−Z) + лёгкий боковой толчок
-                            boss._dieVz = -12; // только вперёд по трассе (−Z)
-                            boss._dieVx = 0;
-                            boss._dieVy = 5.5;
-                            boss._dieSpin = 3.0 + Math.random() * 1.0;
-                            // зафиксировать X на полосе, не уезжать вбок
-                            if (boss.mesh) boss._dieLockX = boss.mesh.position.x;
-                            try {
-                                if (particleSystem && particleSystem.explode && boss.mesh) {
-                                    const p = boss.mesh.position;
-                                    particleSystem.explode({ x: p.x, y: p.y + 0.6, z: p.z }, 1.2);
-                                }
-                                if (window.soundEngine) {
-                                    window.soundEngine.playSfx('boss_die', 1.25);
-                                    window.soundEngine.playSfx('boss_roar', 0.8);
-                                    window.soundEngine.playSfx('explode', 1.15);
-                                }
-                            } catch (e) {}
-                            showBossShout('💥 ' + (boss.name || 'Босс') + ' сбит!');
-                            try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.5); } catch (e) {}
-                            try {
-                                particleSystem.emit(
-                                    _v.p1.set(boss.x, 1.0, boss.z),
-                                    _v.vel.set(0, 2, 0),
-                                    18, 0.35
-                                );
-                            } catch (e) {}
-                            updateBossHpBar(boss, camera);
-                            try { updateBossHeadQuote(boss); } catch (eQ) {}
-                            try {
-                                if (currentPlayer && currentPlayer.season) {
-                                    const reward = nitroHit ? 5 : 4;
-                                    currentPlayer.season.chips = (currentPlayer.season.chips || 0) + reward;
-                                    if (typeof saveCurrentPlayer === 'function') saveCurrentPlayer();
-                                }
-                            } catch (e) {}
-                            try {
-                                if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ' сброшен! +фишки');
-                                if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, '💥 Босс повержен');
-                            } catch (e) {}
-                        } else {
-                            showBossShout((boss.name || 'Босс') + ' HP ' + Math.max(0, boss.hp) + '/' + (boss.maxHp || 3));
-                            try { updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
+                        const dmg = airborneHit ? damageFor('stomp') : damageFor('ram', { vulnerable: boss.vulnT > 0, nitro: nitroHit, hammer: bossHammer });
+                        if (!airborneHit && bossHammer && !(boss.vulnT > 0) && dmg > 0) {
+                            bossHammer = false;
+                            try { showTimePenaltyPopup(0, '🔨 Кувалда пробила броню!'); } catch (e) {}
                         }
+                        if (airborneHit) {
+                            try { showTimePenaltyPopup(0, '🦶 Сверху! ×' + dmg); } catch (e) {}
+                            carAirVel = Math.max(carAirVel, 3.2); // отскок от босса
+                            if (boss.charging) { boss.charging = false; boss.returning = true; }
+                        }
+                        if (dmg === 0) {
+                            // броня: отскок и искры, без урона
+                            boss.invuln = 0.6;
+                            speed *= 0.45;
+                            xVelocity *= 0.3;
+                            boss.z -= 2.5;
+                            shakeTime = Math.max(shakeTime, 0.18);
+                            try { if (particleSystem.sparks) particleSystem.sparks({ x: xPos, y: 0.7, z: zPos - 0.8 }, 16, 1); } catch (e) {}
+                            try { if (window.soundEngine) { window.soundEngine.playSfx('hit', 0.7); } } catch (e) {}
+                            if (boss._armorMsgT <= 0) {
+                                boss._armorMsgT = 2.5;
+                                try { showTimePenaltyPopup(0, '🛡 Броня! Увернись от атаки — после промаха он открыт'); } catch (e) {}
+                            }
+                        } else {
+                        damageBoss(dmg, { heavy: nitroHit || airborneHit, contact: true });
+                        } // броня пробита
                     }
                     } // end !dying
                     try { if (!boss.dying) updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
 
-                    // Обгон: уехали вперёд от босса — он сдаётся
-                    if (boss.active && !boss.dying && zPos < boss.z - 22) {
-                        boss._overtakeT = (boss._overtakeT || 0) + deltaTime;
-                        if (boss._overtakeT > 1.2) {
-                            boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
-                            if (boss.mesh) {
-                                try { disposeBossMesh(boss.mesh); scene.remove(boss.mesh); } catch (e) { try { boss.mesh.visible = false; } catch (e2) {} }
-                            }
-                            showBossShout('🏁 ' + (boss.name || 'Босс') + ' отстал!');
-                            try {
-                                if (currentPlayer && currentPlayer.season) {
-                                    currentPlayer.season.chips = (currentPlayer.season.chips || 0) + 2;
-                                    if (typeof saveCurrentPlayer === 'function') saveCurrentPlayer();
-                                }
-                                if (typeof radioSay === 'function') radioSay('📡 Обогнал босса! +2🪙');
-                            } catch (e) {}
+                    // Арена закончилась, а босс жив — сбегает без награды (обгон бой не заканчивает: он догоняет)
+                    if (boss.active && !boss.dying && !arenaOpen(progress)) {
+                        boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
+                        try {
+                            if (particleSystem && particleSystem.explode && boss.mesh) particleSystem.explode({ x: boss.x, y: 0.4, z: boss.z }, 0.6);
+                        } catch (e) {}
+                        if (boss.mesh) {
+                            try { disposeBossMesh(boss.mesh); scene.remove(boss.mesh); } catch (e) { try { boss.mesh.visible = false; } catch (e2) {} }
                         }
-                    } else if (boss.active) {
-                        boss._overtakeT = 0;
+                        try { if (boss.hpBar) { scene.remove(boss.hpBar); boss.hpBar = null; } } catch (e) {}
+                        removeBossExtras(boss);
+                        showBossShout('💨 ' + (boss.name || 'Босс') + ' сбежал!');
+                        try { if (typeof radioSay === 'function') radioSay('📡 ' + boss.name + ': «В следующий раз, курьер!»'); } catch (e) {}
                     }
 
                     // Ушёл далеко — деспавн
-                    if (boss.z < zPos - 90 || boss.z > zPos + 120) {
+                    if (boss.active && (boss.z < zPos - 90 || boss.z > zPos + 120)) {
                         try { disposeBossMesh(boss.mesh); scene.remove(boss.mesh); } catch (e) {}
+                        removeBossExtras(boss);
                         boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
+                    }
+                }
+
+                // слетевшая броня босса
+                for (let ai = bossArmorDebris.length - 1; ai >= 0; ai--) {
+                    const d = bossArmorDebris[ai];
+                    d.t += deltaTime;
+                    d.vy -= 14 * deltaTime;
+                    d.o.position.x += d.vx * deltaTime;
+                    d.o.position.y = Math.max(0.1, d.o.position.y + d.vy * deltaTime);
+                    d.o.position.z += d.vz * deltaTime;
+                    d.o.rotation.x += d.spin * deltaTime;
+                    d.o.rotation.z += d.spin * 0.7 * deltaTime;
+                    if (d.o.position.y <= 0.1 && d.vy < 0) { d.vy = -d.vy * 0.3; d.vx *= 0.6; d.vz *= 0.6; }
+                    if (d.t > 2.5 || d.o.position.z > zPos + 20) { try { scene.remove(d.o); } catch (e) {} bossArmorDebris.splice(ai, 1); }
+                }
+
+                // Кувалда на дороге
+                for (let pi = bossPickups.length - 1; pi >= 0; pi--) {
+                    const pk = bossPickups[pi];
+                    pk.t += deltaTime;
+                    pk.mesh.rotation.y += deltaTime * 2.5;
+                    pk.mesh.position.y = 0.2 + Math.sin(pk.t * 4) * 0.12;
+                    if (Math.abs(zPos - pk.z) < 1.2 && Math.abs(xPos - pk.x) < 1.0) {
+                        bossHammer = true;
+                        try { showTimePenaltyPopup(0, '🔨 Кувалда! Следующий таран пробьёт броню'); } catch (e) {}
+                        try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.1); } catch (e) {}
+                        try { scene.remove(pk.mesh); } catch (e) {}
+                        bossPickups.splice(pi, 1);
+                    } else if (zPos < pk.z - 10) {
+                        try { scene.remove(pk.mesh); } catch (e) {}
+                        bossPickups.splice(pi, 1);
+                    }
+                }
+
+                // Баррикады босса (фаза 2)
+                for (let bi = bossBarricades.length - 1; bi >= 0; bi--) {
+                    const br = bossBarricades[bi];
+                    br.t += deltaTime;
+                    const y = Math.max(0, 5 - br.t * br.t * 30);
+                    br.meshes.forEach(function(m) { if (m.visible) m.position.y = y; });
+                    if (y === 0 && !br.landed) {
+                        br.landed = true;
+                        try { if (window.soundEngine) window.soundEngine.playCrashSound(0.25); } catch (e) {}
+                        try { if (particleSystem && particleSystem.emit) br.xs.forEach(function(x) { particleSystem.emit({ x: x, y: 0.1, z: br.z }, { x: 0, y: 0.6, z: 0 }, 6, 0.3); }); } catch (e) {}
+                    }
+                    if (!br.done && y < 0.6 && Math.abs(zPos - br.z) < 0.9 && carYOffset < 0.7) {
+                        for (let xi = 0; xi < br.xs.length; xi++) {
+                            if (Math.abs(xPos - br.xs[xi]) < 1.2) {
+                                br.done = true;
+                                br.meshes[xi].visible = false;
+                                if (boss && boss.volleys && br.volley) { boss.volleys.hit(br.volley); boss.volleys.gone(br.volley); }
+                                raceTime += 2;
+                                speed *= 0.35;
+                                shakeTime = Math.max(shakeTime, 0.3);
+                                try { showTimePenaltyPopup(2, '🧱 Баррикада!'); } catch (e) {}
+                                try { if (window.soundEngine) window.soundEngine.playCrashSound(0.4); } catch (e) {}
+                                try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: br.xs[xi], y: 0.5, z: br.z }, 0.8); } catch (e) {}
+                                break;
+                            }
+                        }
+                    }
+                    if (!br.done && zPos < br.z - 1.2) {
+                        br.done = true;
+                        if (boss && boss.volleys && br.volley) boss.volleys.gone(br.volley); // чисто проскочил — босс открыт
+                    }
+                    if (zPos < br.z - 30) {
+                        br.meshes.forEach(function(m) { try { scene.remove(m); } catch (e) {} });
+                        bossBarricades.splice(bi, 1);
                     }
                 }
 
                 // Пули босса — медленные, крупные
                 while (bossBullets.length > 24) {
                     const old = bossBullets.shift();
+                    try { if (old && old.volley && boss && boss.volleys) boss.volleys.gone(old.volley); } catch (e) {}
                     try {
                         if (old && old.mesh) {
                             scene.remove(old.mesh);
@@ -9834,20 +10381,52 @@ function startGaragePreview(carId) {
                     {
                         const hdx = xPos - bu.x, hdz = zPos - bu.z;
                         const hlen = Math.sqrt(hdx * hdx + hdz * hdz) || 1;
-                        if (hlen < 20) {
-                            const home = hlen < 8 ? 14 : 6;
+                        // доводка только издалека: последние метры летит прямо — от него можно уйти в соседнюю полосу
+                        if (hlen < 22 && hlen > 10 && !bu.reflected) {
+                            const home = 5;
                             bu.vx += (hdx / hlen) * home * deltaTime;
                             bu.vz += (hdz / hlen) * home * deltaTime;
                         }
                     }
                     bu.x += bu.vx * deltaTime;
                     bu.z += bu.vz * deltaTime;
+                    if (!bu.passed && !bu.reflected && bu.z > zPos + 2) {
+                        bu.passed = true;
+                        try { if (bu.volley && boss && boss.volleys) boss.volleys.gone(bu.volley); } catch (e) {}
+                        bu.volley = 0;
+                    }
                     if (bu.mesh) {
                         bu.mesh.position.set(bu.x, bu.y, bu.z);
                         bu.mesh.rotation.x += deltaTime * 4;
                     }
-                    if (Math.abs(bu.x - xPos) < 1.2 && Math.abs(bu.z - zPos) < 1.5) {
+                    if (bu.reflected) {
+                        // отбитый снаряд летит в босса и ранит сквозь броню
+                        if (!boss || !boss.active || boss.dying) { try { scene.remove(bu.mesh); } catch (e) {} bossBullets.splice(bi, 1); continue; }
+                        const rdx = boss.x - bu.x, rdz = boss.z - bu.z;
+                        const rl = Math.sqrt(rdx * rdx + rdz * rdz) || 1;
+                        bu.vx = rdx / rl * 34; bu.vz = rdz / rl * 34;
+                        if (rl < 1.4) {
+                            try { scene.remove(bu.mesh); } catch (e) {}
+                            bossBullets.splice(bi, 1);
+                            try { showTimePenaltyPopup(0, '↩ Отбил! Снаряд — в босса'); } catch (e) {}
+                            try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: boss.x, y: 1.0, z: boss.z }, 0.7); } catch (e) {}
+                            damageBoss(damageFor('reflect'), { heavy: false });
+                        } else if (bu.life <= 0) { try { scene.remove(bu.mesh); } catch (e) {} bossBullets.splice(bi, 1); }
+                        continue;
+                    }
+                    if (Math.abs(bu.x - xPos) < 1.0 && Math.abs(bu.z - zPos) < 1.4 && nitroTimer > 0 && !bu.heavyOnly) {
+                        // на нитро снаряд отлетает обратно
+                        bu.reflected = true;
+                        bu.life = 3;
+                        if (bu.volley && boss && boss.volleys) { boss.volleys.gone(bu.volley); bu.volley = 0; }
+                        try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.9); } catch (e) {}
+                        try { if (particleSystem.sparks) particleSystem.sparks({ x: xPos, y: 0.8, z: zPos - 1 }, 12, -1); } catch (e) {}
+                        shakeTime = Math.max(shakeTime, 0.12);
+                        continue;
+                    }
+                    if (Math.abs(bu.x - xPos) < 1.0 && Math.abs(bu.z - zPos) < 1.4) {
                         bu.hit = true;
+                        try { if (bu.volley && boss && boss.volleys) { boss.volleys.hit(bu.volley); boss.volleys.gone(bu.volley); } } catch (e) {}
                         const pen = bu.timePenalty || 2;
                         raceTime += pen;
                         showTimePenaltyPopup(pen, (boss && boss.name ? boss.name : 'Босс') + ': попадание!'); try { if (window.soundEngine) window.soundEngine.playSfx('hit'); window.soundEngine.playSfx('explode', 0.85); } catch(e) {}
@@ -9869,6 +10448,7 @@ function startGaragePreview(carId) {
                         if (bu.heavy && typeof strikes !== 'undefined') {
                             logHit('boss');
                             strikes = Math.min((typeof MAX_STRIKES !== 'undefined' ? MAX_STRIKES : 5), strikes + 1);
+                            if (strikes >= MAX_STRIKES) endGame('crash');
                         }
                         try { if (soundEngine && soundEngine.playCrashSound) soundEngine.playCrashSound(0.35); } catch (e) {}
                         try { scene.remove(bu.mesh); } catch (e) {}
@@ -9879,6 +10459,7 @@ function startGaragePreview(carId) {
                         try {
                             if (bu.mesh) scene.remove(bu.mesh);
                         } catch (e) {}
+                        try { if (bu.volley && boss && boss.volleys) boss.volleys.gone(bu.volley); } catch (e) {}
                         bossBullets.splice(bi, 1);
                     }
                 }

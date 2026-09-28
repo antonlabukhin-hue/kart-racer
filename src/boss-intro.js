@@ -37,18 +37,23 @@ export function splitBossName(name) {
 
 export function bossIntroHtml(def, chapterNo, hp) {
     const n = splitBossName(def && def.name);
-    const hint = ATTACK_HINTS[def && def.attack] || 'Тарань ×' + hp + ' или обгони';
+    const hint = ATTACK_HINTS[def && def.attack] || 'Увернись от атаки — после промаха тарань';
     return '<div class="bi-stripe" style="background:' + hex(def && def.trim, 0xffcc00) + '"></div>'
         + '<div class="bi-top">БОСС' + (chapterNo ? ' · глава ' + chapterNo : '') + '</div>'
         + '<div class="bi-title">' + esc(n.title) + '</div>'
         + '<div class="bi-nick" style="color:' + hex(def && def.eye, 0xffdd44) + '">«' + esc(n.nick) + '»</div>'
-        + '<div class="bi-hp">' + '❤'.repeat(Math.max(1, Math.min(8, hp || 3))) + ' <span>тарань ×' + (hp || 3) + ' или обгони</span></div>'
+        + '<div class="bi-hp">' + '❤'.repeat(Math.max(1, Math.min(8, hp || 3))) + ' <span>броня: увернись и тарань</span></div>'
         + '<div class="bi-hint">' + esc(hint) + '</div>'
         + (def && def.shout ? '<div class="bi-quote">— ' + esc(def.shout) + '</div>' : '');
 }
 
-export function bossPhase2Html(def) {
+/** Карточка смены фазы: 2 — баррикады, 3 — ярость и таран навстречу */
+export function bossPhaseHtml(def, phase) {
     const n = splitBossName(def && def.name);
-    return '<div class="bi-top">ФАЗА 2</div><div class="bi-nick" style="color:#ff4422">«' + esc(n.nick) + '» в ярости</div>'
-        + '<div class="bi-hint">Быстрее и злее — атаки чаще</div>';
+    if (phase === 2) {
+        return '<div class="bi-top">ФАЗА 2</div><div class="bi-nick" style="color:#ffaa22">«' + esc(n.nick) + '» строит баррикады</div>'
+            + '<div class="bi-hint">Ищи просвет — проскочил чисто, он открыт</div>';
+    }
+    return '<div class="bi-top">ФАЗА 3</div><div class="bi-nick" style="color:#ff4422">«' + esc(n.nick) + '» в ярости</div>'
+        + '<div class="bi-hint">Бежит навстречу — уйди с полосы или прыгай на него с трамплина</div>';
 }
