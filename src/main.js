@@ -594,7 +594,11 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         window.playTrackTransition = playTrackTransition;
 
         
-        /** Полная очистка гонки без выхода в главное меню (рестарт/следующая глава) */
+        /**
+         * Единая очистка заезда: остановить цикл, звук и WebGL, убрать весь интерфейс гонки.
+         * Через неё идут все выходы: «Заново», «Дальше», «Меню», «Гараж», пауза, волны «Звериного часа».
+         * exitRaceToMenu = эта очистка + показ меню.
+         */
         function cleanupRaceKeepProfile() {
             curvedWorld.setCurve(0, 0);
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
@@ -609,19 +613,6 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                     try { r.dispose(); } catch (e) {}
                     try { if (r.forceContextLoss) r.forceContextLoss(); } catch (e) {}
                     window.__gameRenderer = null;
-                }
-            } catch (e) {}
-            try {
-                document.querySelectorAll('#finish-screen,#game-hud,#coach-tip,.animal-shout,.radio-line,#hud-menu-btn').forEach(function(el) {
-                    try { el.remove(); } catch (e) {}
-                });
-            } catch (e) {}
-            try {
-                const mc = document.getElementById('mobile-controls');
-                if (mc) {
-                    mc.classList.remove('active');
-                    mc.style.display = '';
-                    mc.style.pointerEvents = '';
                 }
             } catch (e) {}
             try {
@@ -2465,9 +2456,11 @@ function startGaragePreview(carId) {
             try { document.body.classList.remove('finish-open', 'race-paused'); } catch (e) {}
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
-            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown';
+            // всё временное, что рисует заезд: HUD, финиш, карточки босса и волн, подсказки, всплывашки
+            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#endless-wave-card,#coach-tip,.unlock-plaque';
+            try { clearTimeout(window.__coachTimer); } catch (e) {}
             try {
-                document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque').forEach(function(el) {
+                document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque,.boss-shout').forEach(function(el) {
                     try { el.remove(); } catch (e2) {}
                 });
             } catch (e) {}
@@ -2673,33 +2666,12 @@ function startGaragePreview(carId) {
                 const rs = window.__raceDebug ? window.__raceDebug.state : (window.__inRace && !document.getElementById('finish-screen') ? 'racing' : '');
                 if (window.__inRace && rs === 'racing') trackEvent('race_quit', { chapter: window.__campaignTrackId || null, mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race' });
             } catch (e) {}
-            try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
-            try { if (window.__stopRace) window.__stopRace(); } catch (e) {}
-            try { if (window.soundEngine && soundEngine.stopMusic) soundEngine.stopMusic(); } catch (e) {}
-            try { if (window.soundEngine && soundEngine._stopEngineNow) soundEngine._stopEngineNow(); } catch (e) {}
-            // dispose WebGL
-            try {
-                const r = window.__gameRenderer;
-                if (r) {
-                    r.dispose();
-                    if (r.forceContextLoss) r.forceContextLoss();
-                    window.__gameRenderer = null;
-                }
-            } catch (e) {}
-            document.querySelectorAll('#finish-screen,#game-hud,#coach-tip,.animal-shout,.radio-line,#hud-menu-btn').forEach(el => {
-                try { el.remove(); } catch (e) {}
-            });
-            const mc = document.getElementById('mobile-controls');
-            if (mc) mc.classList.remove('active');
-            const cont = document.getElementById('game-container');
-            if (cont) { while (cont.firstChild) cont.removeChild(cont.firstChild); }
+            cleanupRaceKeepProfile();
             try {
                 if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
                 else if (typeof pendingMode !== 'undefined') pendingMode = 'race';
             } catch (e) {}
-            window.__inRace = false;
             window.__waitingLandscape = false;
-            try { document.body.classList.remove('race-mode'); } catch (e) {}
             try {
                 const pb = document.getElementById('player-bar');
                 if (pb && currentPlayer) pb.style.display = 'flex';
@@ -7919,14 +7891,11 @@ function startGaragePreview(carId) {
                 if (k === 's' || k === 'ы' || k === 'arrowdown') { keys.s = true; e.preventDefault(); }
                 if (k === 'a' || k === 'ф' || k === 'arrowleft') { keys.a = true; e.preventDefault(); }
                 if (k === 'd' || k === 'в' || k === 'arrowright') { keys.d = true; e.preventDefault(); }
-                if (k === 'q') {
-                    if (gameState === 'racing') {
-                        if (confirm('Выйти из заезда и начать заново?')) location.reload();
-                    } else {
-                        location.reload();
-                    }
+                // Q — выйти в меню через общий выход (раньше перезагружал страницу).
+                // «R — заново» убран: обработчик клавиш снимается на финише, клавиша там не работала
+                if (k === 'q' && (gameState !== 'racing' || confirm('Выйти из заезда в меню?'))) {
+                    if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
                 }
-                if (k === 'r' && gameState !== 'racing') { location.reload(); }
                 if (soundEngine && soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
                     soundEngine.audioCtx.resume();
                     soundEngine.startMusic();
