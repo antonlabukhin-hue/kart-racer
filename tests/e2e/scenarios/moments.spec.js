@@ -32,7 +32,7 @@ test('рекламный щит в полосе: снёс — не авария,
     await waitRacing(page);
     await noAnimals(page);
     const boards = await page.evaluate(() => window.__raceDebug.smashBoards.map(b => ({ x: b.x, z: b.z })));
-    expect(boards.length).toBeGreaterThanOrEqual(2);
+    expect(boards.length).toBeGreaterThanOrEqual(1); // часть мест теперь занимают события (трактор, кран…)
     // держим полосу ближайшего щита впереди
     await page.evaluate(() => setInterval(() => {
         const d = window.__raceDebug;
@@ -75,3 +75,34 @@ test('промзона: труба рушится с эстакады попер
     expect(await page.evaluate(() => window.__raceDebug.hitLog.filter(h => h.cause === 'pipe').length)).toBe(0);
     expect(problems).toEqual([]);
 });
+
+for (const map of ['arsenev', 'promzona', 'svalka']) {
+    test('узнаваемые детали: ' + map + ' — события в полосах и приметы у обочины, проезд без ошибок', async ({ page }) => {
+        const problems = watchProblems(page);
+        await login(page, 'Тестер', './?start=0.05');
+        await page.evaluate(() => {
+            const list = JSON.parse(localStorage.getItem('road_racing_profiles_v1') || '[]');
+            list.forEach(p => { p.unlockedMaps = ['arsenev', 'promzona', 'svalka']; p.hasSeenShop = true; });
+            localStorage.setItem('road_racing_profiles_v1', JSON.stringify(list));
+        });
+        await page.reload();
+        await page.locator('#splash-screen').click();
+        await page.locator('#profile-list').getByText('Тестер').click();
+        await page.locator('.menu-card[data-menu="race"]').click();
+        await page.locator('.difficulty-btn[data-diff="easy"]').click();
+        await skipLoreIfShown(page);
+        await page.locator('.map-card[data-map="' + map + '"]').click();
+        await page.locator('#map-select-go').click();
+        await waitRacing(page);
+        const evs = await page.evaluate(() => window.__raceDebug.setEvents.map(e => ({ kind: e.kind, z: e.z })));
+        expect(evs.length).toBeGreaterThanOrEqual(1);
+        // проехать сквозь первое событие: оно срабатывает (двигается/падает) и не ломает заезд
+        await noAnimals(page);
+        await page.evaluate((z) => window.__raceDebug.setZ(z + 70), evs[0].z);
+        await page.keyboard.down('w');
+        await expect.poll(() => page.evaluate((z) => window.__raceDebug.z < z - 5, evs[0].z), { timeout: 20_000 }).toBe(true);
+        await page.keyboard.up('w');
+        expect(await page.evaluate(() => { const s = window.__raceDebug.setEvents[0].debug; return s.state || 'swing'; })).not.toBe('wait');
+        expect(problems).toEqual([]);
+    });
+}

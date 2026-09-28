@@ -104,7 +104,7 @@ function step(dt) {
         st.car.rotation.z = Math.sin(t * 0.7) * 0.02;
         st.car.position.x = 0.9 + Math.sin(t * 0.35) * 0.35;
         st.car.rotation.y = Math.PI - Math.cos(t * 0.35) * 0.04;
-        st.wheels.forEach(function(w) { w.tire.rotation.x += move / 0.34; w.disc.rotation.x += move / 0.34; });
+        st.wheels.forEach(function(w) { if (w.hub) w.hub.rotation.x += move / 0.24; });
         // иногда — рывок на нитро
         if (st.flames) st.flames.update(t, (t % 7) > 5.6);
     }
