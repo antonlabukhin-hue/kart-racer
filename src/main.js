@@ -7104,12 +7104,13 @@ function startGaragePreview(carId) {
             }
             let nearMissCount = 0;
             let _nmCooldown = 0;
-            let slowmoT = 0; // секунды реального времени в замедлении
+            // стоп-кадр: секунды реального времени, пока игра почти стоит (только короткий удар по боссу).
+            // Замедление на «На волоске!» и при появлении босса убрано — ощущалось как подвисание
+            let slowmoT = 0;
             function nearMiss() {
                 if (gameState !== 'racing' || _nmCooldown > 0) return;
                 _nmCooldown = 1.2;
                 nearMissCount++;
-                slowmoT = 0.3;
                 nitroTimer = Math.max(nitroTimer, ABILITY === 'nimble' ? 1.4 : 0.9);
                 try {
                     const el = document.createElement('div');
@@ -7691,7 +7692,6 @@ function startGaragePreview(carId) {
                     const line = def.shout || def.name || 'С дороги!';
                     // реплика — в карточке (пузырь над головой наезжал на неё)
                     showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp), '', 3000);
-                    slowmoT = Math.max(slowmoT, 0.45);
                 } catch (e) {}
                 try {
                     if (window.soundEngine) {
