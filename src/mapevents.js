@@ -291,7 +291,7 @@ export function createMapEvent(kind, trackWidth, z0, laneXs) {
 // ---------------------------------------------------------------- падающая труба (промзона)
 /**
  * Эстакада с трубами над дорогой; одна секция висит на цепях над двумя полосами.
- * Когда машина подъезжает (~2.2 с), цепи раскачиваются и искрят — телеграф; за ~1.1 с секция
+ * Свободна всегда крайняя полоса. Когда машина подъезжает (~2.2 с), цепи раскачиваются и искрят — телеграф; за ~1.1 с секция
  * рушится и ложится поперёк двух полос. Свободна одна полоса (freeLane) — её видно заранее:
  * над ней секции нет. Лежащая труба — авария; в полёте над ней (трамплин) — мимо.
  */
@@ -322,9 +322,11 @@ export function createPipeDrop(trackWidth, z0, laneXs, freeLane) {
         g.add(p);
     });
     // висящая секция над двумя занятыми полосами
+    // свободна крайняя полоса (0 или 2): секция над двумя соседними — одна цельная труба
+    freeLane = freeLane === 0 ? 0 : 2;
     const blocked = [0, 1, 2].filter(function(i) { return i !== freeLane; });
     const xA = laneXs[blocked[0]], xB = laneXs[blocked[1]];
-    const cx = (xA + xB) / 2, span = Math.abs(xB - xA) + 2.1;
+    const cx = (xA + xB) / 2, span = Math.abs(xB - xA) + 1.7;
     const sec = new THREE.Group();
     const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, span, 14), rust);
     tube.rotation.z = Math.PI / 2;

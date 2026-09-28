@@ -7296,7 +7296,7 @@ function startGaragePreview(carId) {
                     if (pipeFrac != null) {
                         const pz = _zAt(pipeFrac);
                         clearZone(pz + 30, pz - 12);
-                        pipeDrop = createPipeDrop(TRACK_WIDTH, pz, _rampLaneXs, Math.floor(Math.random() * 3));
+                        pipeDrop = createPipeDrop(TRACK_WIDTH, pz, _rampLaneXs, Math.random() < 0.5 ? 0 : 2);
                         scene.add(pipeDrop.group);
                         scene.add(createRoadSign(['ОСТОРОЖНО', 'ТРУБЫ НАД ДОРОГОЙ'], TRACK_WIDTH / 2 + 1.8, pz + 55, { big: true }));
                     }

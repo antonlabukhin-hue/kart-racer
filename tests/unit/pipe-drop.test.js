@@ -28,6 +28,10 @@ describe('падающая труба', () => {
         expect(drive(createPipeDrop(6, 0, LANES, 2), LANES[1])).toMatchObject({ kind: 'pipe' });
         expect(drive(createPipeDrop(6, 0, LANES, 2), LANES[2])).toBeNull();
         expect(drive(createPipeDrop(6, 0, LANES, 0), LANES[0])).toBeNull();
+        // средняя полоса свободной не бывает (труба была бы через всю дорогу) — сдвигается к краю
+        const mid = createPipeDrop(6, 0, LANES, 1);
+        expect(mid.freeLane).toBe(2);
+        expect(drive(mid, LANES[2])).toBeNull();
     });
 
     it('перелёт над лежащей трубой — мимо', () => {
