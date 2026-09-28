@@ -29,6 +29,8 @@ test('победа в свободном заезде засчитывается
     await waitRacing(page);
     await page.keyboard.down('w');
     await expect(page.locator('#finish-screen')).toContainText(/ФИНИШ|ИДЕАЛЬНЫЙ ЗАЕЗД/, { timeout: 150_000 });
+    // ранг D–S — у свободного заезда есть, у кампании нет (там звёзды)
+    await expect(page.locator('#finish-screen .finish-rank .fr-letter')).toHaveText(/^[DCBAS]$/);
     await page.keyboard.up('w');
     const p = await profile(page);
     expect(p.stats.wins).toBe(1);
@@ -48,6 +50,7 @@ test('кампания: победа на 1-й трассе — «Заново»
     await page.keyboard.up('w');
     // за победу минимум одна звезда
     await expect(page.locator('#finish-screen .finish-stars span.on').first()).toBeVisible();
+    await expect(page.locator('#finish-screen .finish-rank')).toHaveCount(0);
     // три задания главы; «Не больше 1 аварии» на автопилоте выполняется
     await expect(page.locator('#finish-screen .finish-tasks > div:not(.reward)')).toHaveCount(3);
     await expect(page.locator('#finish-screen .finish-tasks')).toContainText('Не больше 1 аварии');

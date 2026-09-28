@@ -30,6 +30,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
         import { bossHudState, renderBossHud, removeBossHud } from './boss-hud.js';
         import { createCleanRun } from './clean-run.js';
+        import { raceRank, beastRank } from './rank.js';
         import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes, hitStopFor, HIT_STOP_TIME_SCALE } from './boss-fight.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
@@ -4603,10 +4604,27 @@ function startGaragePreview(carId) {
                         + '</div>'
                     );
                 } else {
+                    // ранг D–S — только свободный заезд (победа) и «Звериный час»
+                    let rankHtml = '';
+                    try {
+                        let rk = null;
+                        if (isEndlessMode()) rk = beastRank(window.__endless && window.__endless.wave);
+                        else if (state === 'win' && pendingMode === 'race') {
+                            rk = raceRank({ time: timeTaken, timeLimit: TIME_LIMIT, strikes: strikes, maxStrikes: MAX_STRIKES,
+                                nearMiss: nearMissCount, cleanSegments: cleanRun.segments, animalsJumped: stats.animalsJumped, bossDefeated: !!stats.bossDefeated });
+                        }
+                        if (rk) {
+                            window.__lastRank = rk.letter;
+                            rankHtml = '<div class="finish-rank r' + rk.letter + '"><span class="fr-letter">' + rk.letter + '</span>'
+                                + '<span class="fr-side"><span class="fr-label">РАНГ</span>'
+                                + (rk.tip ? '<span class="fr-tip">' + escapeHtml(rk.tip) + '</span>' : '<span class="fr-tip">Лучше не бывает</span>') + '</span></div>';
+                        }
+                    } catch (eR) { console.warn('rank', eR); }
                     screen.innerHTML = (
                         '<div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ' + color + ';text-align:center;max-width:400px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">'
                         + (imgHtml || '')
                         + '<h1 style="font-size:28px;color:' + color + ';margin-bottom:10px;">' + escapeHtml(title) + '</h1>'
+                        + rankHtml
                         + '<div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">' + escapeHtml(message) + '</div>'
                         + '</div>'
                         + '<div class="finish-actions" id="finish-actions" style="width:min(400px,100%);margin:12px auto 0;display:flex;flex-direction:column;gap:8px;">'
@@ -7510,6 +7528,7 @@ function startGaragePreview(carId) {
                 } catch (e) {}
                 if (boss.hp <= 0 && !boss.dying) {
                     boss.dying = true;
+                    stats.bossDefeated = true;
                     boss.dieT = 0;
                     boss.state = 'die';
                     boss.attackState = 'idle';
