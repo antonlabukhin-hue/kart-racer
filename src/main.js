@@ -4979,6 +4979,8 @@ function startGaragePreview(carId) {
                         tCine += Math.min(0.1, (cineNow - cineLast) / 1000);
                         cineLast = cineNow;
                         const k = Math.min(1, tCine / cineDur);
+                    // машина стоит ровно на месте — облетает только камера
+                    try { if (playerCar) { playerCar.rotation.set(0, 0, 0); if (nitroFlames) nitroFlames.update(0, false); } } catch (e) {}
                         // 1.2 оборота вокруг машины
                         const ang = -0.4 + k * Math.PI * 2.4;
                         const h = 2.2 + Math.sin(k * Math.PI) * 1.4;
@@ -5000,12 +5002,6 @@ function startGaragePreview(carId) {
                         camera.lookAt(cx, cy, cz);
                         camera.fov = 52 - Math.sin(k * Math.PI) * 6;
                         camera.updateProjectionMatrix();
-                        // медленное вращение машины для «красоты»
-                        try {
-                            if (typeof playerCar !== 'undefined' && playerCar) {
-                                playerCar.rotation.y += 0.012;
-                            }
-                        } catch (e) {}
                         renderer.render(scene, camera);
                         if (k < 1) requestAnimationFrame(cineFrame);
                         else {
