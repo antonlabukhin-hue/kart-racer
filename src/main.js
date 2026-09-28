@@ -24,6 +24,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { DIFFICULTY_CONFIG } from './difficulty.js';
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
+        import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
@@ -1289,6 +1290,12 @@ function createProfile(name) { return Profile.createProfile(name); }
             });
             const mm = document.getElementById('main-menu-screen');
             if (mm) { mm.classList.add('active'); mm.style.display = 'flex'; }
+            // живой 3D-фон: машина игрока мчит по закатной трассе (на «низком» качестве — неподвижный кадр)
+            try {
+                const car = (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0) ? currentPlayer.preferredCar : 'cheburashka';
+                const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                startMenuBg({ carId: car, profile: currentPlayer, still: reduce || loadSettings().quality === 'low', lowPower: !!window.__isMobile });
+            } catch (e) { console.warn('menu bg', e); }
             const sub = document.getElementById('main-menu-sub');
             if (sub && currentPlayer) {
                 const se = currentPlayer.season;
@@ -1311,6 +1318,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         function hideMainMenu() {
             const mm = document.getElementById('main-menu-screen');
             if (mm) { mm.classList.remove('active'); mm.style.display = 'none'; }
+            try { stopMenuBg(); } catch (e) {}
         }
 
         function openRewardsScreen() {

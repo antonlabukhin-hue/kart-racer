@@ -4525,3 +4525,12 @@
             #hud-speedo .sp-read span { font-size: 18px; }
             #hud-speedo .sp-nitro { margin: -2px 8px 0; }
         }
+
+        /* живой 3D-фон главного меню (src/menu-bg.js) */
+        #menu-bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 3890; display: block; pointer-events: none; }
+        body.menu-live #main-menu-screen { background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.05) 100%); }
+        body.menu-live #main-menu-screen .content { background: rgba(10,10,14,0.84); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+        @media (min-width: 900px) and (min-aspect-ratio: 13/10) {
+            body.menu-live #main-menu-screen { justify-content: flex-start; padding-left: 5vw; background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0) 70%); }
+            body.menu-live #main-menu-screen .content { max-width: 470px; }
+        }
