@@ -38,6 +38,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { resolveLang, applyLang } from './i18n.js';
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed } from './race-physics.js';
+        import { densityAt } from './rhythm.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
@@ -8051,6 +8052,8 @@ function startGaragePreview(carId) {
                 config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
             animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
+            // ритм заезда: разгон → слалом → босс → финал; на ремонте и развилке реже (src/rhythm.js)
+            animalSpawner.densityFn = function(z) { return densityAt((START_Z - z) / (START_Z - FINISH_Z), window.__trackLayout); };
             // Только в тестовой сборке: состояние заезда для автопилота в тестах. На сайт не попадает.
             if (import.meta.env.MODE === 'test') {
                 window.__raceDebug = {
