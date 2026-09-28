@@ -222,3 +222,14 @@ describe('награда за главу 1', () => {
         expect(grantChapterReward(p, 'c01', 'cheburashka')).toBeNull();
     });
 });
+
+describe('фишки за чистые отрезки', () => {
+    it('добавляются к награде, но не больше 20 за заезд', () => {
+        const a = createProfile('A', 1, () => 0.5); ensureProfileFields(a, 99);
+        const b = createProfile('B', 1, () => 0.5); ensureProfileFields(b, 99);
+        const base = applyRaceResult(a, 'crash', {}, {}).chips;
+        expect(applyRaceResult(b, 'crash', { bonusChips: 4 }, {}).chips).toBe(base + 4);
+        const c = createProfile('C', 1, () => 0.5); ensureProfileFields(c, 99);
+        expect(applyRaceResult(c, 'crash', { bonusChips: 999 }, {}).chips).toBe(base + 20);
+    });
+});

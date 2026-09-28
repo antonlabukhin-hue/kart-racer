@@ -235,6 +235,8 @@ export function applyRaceResult(profile, state, meta, ctx) {
         st.timeouts = (st.timeouts || 0) + 1;
         xp += 10;
     }
+    // фишки за «чистые отрезки» (src/clean-run.js) — за любой исход заезда
+    chips += Math.max(0, Math.min(20, m.bonusChips || 0));
     if (st.totalRaces >= 10) tryAch('races10');
     if (st.wins >= 5) tryAch('wins5');
 
