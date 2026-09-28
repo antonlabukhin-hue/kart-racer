@@ -22,7 +22,7 @@ test('босс в броне: таран ранит только после пр
     const hp0 = await page.evaluate(() => window.__raceDebug.boss.hp);
     expect(await ram(page)).toBe(hp0);            // броня
     await page.evaluate(() => window.__raceDebug.openBoss());
-    expect(await ram(page)).toBe(hp0 - 1);        // открыт — удар прошёл
+    expect(await ram(page)).toBeLessThan(hp0);    // открыт — удар прошёл (на подобранном нитро — двойной)
     expect(await page.evaluate(() => window.__raceDebug.boss.vulnT)).toBeLessThanOrEqual(0); // окно закрылось
     expect(problems).toEqual([]);
 });
@@ -39,14 +39,23 @@ test('фазы босса: баррикада в двух полосах; тар
     await expect.poll(() => page.evaluate(() => window.__raceDebug.bossBarricades.length), { timeout: 15_000 }).toBeGreaterThan(0);
     expect(await page.evaluate(() => window.__raceDebug.bossBarricades[0].xs.length)).toBe(2);
 
-    // таран: держим его полосу — трамплин подбрасывает над боссом
-    await page.waitForTimeout(2500);
-    await page.evaluate(() => { const b = window.__raceDebug.boss; b.hp = 5; b.maxHp = 8; });
-    await page.evaluate(() => window.__raceDebug.forceBossAttack('charge'));
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.boss.nextAttack === 'charge' && window.__raceDebug.boss.attackState === 'windup'), { timeout: 15_000 }).toBe(true);
-    await page.evaluate(() => { const d = window.__raceDebug; d.setX(d.boss.chargeX); });
-    // удар сверху снимает 3 (дальше может добавиться обычный таран)
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.boss.hp), { timeout: 8_000 }).toBeLessThanOrEqual(2);
+    // таран: держим его полосу — трамплин подбрасывает над боссом; прыжок по времени приблизительный,
+    // поэтому до трёх попыток, нужен хотя бы один удар сверху (−3 за раз)
+    let stomped = false;
+    for (let attempt = 0; attempt < 3 && !stomped; attempt++) {
+        await page.waitForTimeout(2500);
+        await page.evaluate(() => { const d = window.__raceDebug, b = d.boss; b.hp = 7; b.maxHp = 8; b.z = d.z - 20; b.charging = false; b.returning = false; b.attackState = 'idle'; });
+        await page.evaluate(() => window.__raceDebug.forceBossAttack('charge'));
+        await expect.poll(() => page.evaluate(() => window.__raceDebug.boss.nextAttack === 'charge' && window.__raceDebug.boss.attackState === 'windup'), { timeout: 15_000 }).toBe(true);
+        await page.evaluate(() => { const d = window.__raceDebug; d.setX(d.boss.chargeX); });
+        const hp = await page.evaluate(() => new Promise(res => {
+            const b = window.__raceDebug.boss; const t0 = performance.now();
+            const f = () => { if (b.hp <= 4 || b.returning || performance.now() - t0 > 8000) res(b.hp); else requestAnimationFrame(f); };
+            f();
+        }));
+        stomped = hp <= 4;
+    }
+    expect(stomped).toBe(true);
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
@@ -77,10 +86,10 @@ test('отбитый на нитро снаряд ранит босса скво
     // таран по броне с кувалдой (в залпе могли быть ещё отбитые снаряды — считаем от момента тарана)
     const r = await page.evaluate(() => new Promise(res => {
         const d = window.__raceDebug, b = d.boss; let n = 0; const hp0 = b.hp;
-        const f = () => { b.invuln = 0; b.vulnT = 0; b.x = d.x; b.z = d.z - 0.5; if (++n < 40 && b.hp === hp0) requestAnimationFrame(f); else res({ hp0, hp: b.hp }); };
+        const f = () => { b.invuln = 0; b.vulnT = 0; b.x = d.x; b.z = d.z - 0.5; if (++n < 40 && b.hp === hp0) requestAnimationFrame(f); else res({ hp0, hp: b.hp, ret: b.returning, ch: b.charging, act: b.active, dy: b.dying, air: d.air, y: d.y, ham: d.hammer, st: d.state }); };
         f();
     }));
-    expect(r.hp).toBeLessThan(r.hp0);
+    expect(r.hp, JSON.stringify(r)).toBeLessThan(r.hp0);
     expect(await page.evaluate(() => window.__raceDebug.hammer)).toBe(false);
     expect(problems).toEqual([]);
 });

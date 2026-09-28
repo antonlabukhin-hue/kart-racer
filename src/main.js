@@ -7685,8 +7685,11 @@ function startGaragePreview(carId) {
                 glow.rotation.x = -Math.PI / 2;
                 glow.position.y = 0.03;
                 g.add(glow);
-                const lane = BOSS_LANES[Math.floor(Math.random() * 3)];
-                const z = zPos - 26;
+                // до босса и не в его полосе — иначе он загораживает её собой
+                const bl = boss ? laneOf(boss.x) : -1;
+                const free = [0, 1, 2].filter(function(l) { return l !== bl; });
+                const lane = BOSS_LANES[free[Math.floor(Math.random() * free.length)]];
+                const z = zPos - 12;
                 g.position.set(lane, 0.2, z);
                 scene.add(g);
                 bossPickups.push({ mesh: g, x: lane, z: z, t: 0 });
@@ -9514,7 +9517,8 @@ function startGaragePreview(carId) {
                     const chargeWindup = boss.attackState === 'windup' && boss.nextAttack === 'charge';
                     const desiredZ = chargeWindup ? zPos - 24 : zPos - 18 - Math.sin(boss.phase * 0.4) * 4;
                     // обогнали — рывком возвращается вперёд (обгон бой не заканчивает)
-                    const followK = (boss.z > zPos - 6 || chargeWindup) ? 3.5 : 1.2;
+                    // рывок — только если его обогнали (иначе к закованному боссу с кувалдой не подобраться)
+                    const followK = (boss.z > zPos + 1 || chargeWindup) ? 3.5 : 1.2;
                     boss.z += (desiredZ - boss.z) * Math.min(1, deltaTime * followK);
                     boss.z -= boss.speed * 8 * deltaTime;
                     }
@@ -9585,7 +9589,8 @@ function startGaragePreview(carId) {
                                 const pv = Math.max(12, Math.abs(speed) * 60);
                                 const meetIn = 1.3 + 24 / (pv + 14);
                                 const rpz = zPos - pv * meetIn + pv * 0.3 + 2;
-                                ramps.push(createRamp(rpz, boss.chargeX, 0.85));
+                                boss._chargeRamp = createRamp(rpz, boss.chargeX, 0.85);
+                                ramps.push(boss._chargeRamp);
                                 try { showTimePenaltyPopup(0, '⚠ ТАРАН! Уйди с полосы — или прыгай на него'); } catch (e) {}
                             }
                         } catch (eAtk) { console.warn('boss attack pick', eAtk); boss.nextAttack = 'shot'; }
@@ -9679,6 +9684,20 @@ function startGaragePreview(carId) {
                             } else if (boss.nextAttack === 'charge') {
                                 boss.charging = true;
                                 boss.chargeT = 0;
+                                // трамплин — в точку встречи по ТЕКУЩЕЙ скорости (за замах игрок мог притормозить)
+                                try {
+                                    const cr = boss._chargeRamp;
+                                    const pv = Math.abs(speed) * 60;
+                                    const t = (zPos - boss.z) / (pv + 14);
+                                    if (cr && pv > 8 && t > 0.5) {
+                                        const exitZ = zPos - pv * (t - 0.32);
+                                        const nz = exitZ + cr.len / 2;
+                                        if (zPos - (nz + cr.len / 2) > 3) {
+                                            cr.z = nz; cr.zEnter = nz + cr.len / 2; cr.zExit = nz - cr.len / 2;
+                                            cr.mesh.position.z = nz;
+                                        }
+                                    }
+                                } catch (eR) {}
                                 try { if (window.soundEngine) window.soundEngine.playSfx('boss_roar', 1.0); } catch (e) {}
                             } else
                             // Уникальный снаряд по типу босса
