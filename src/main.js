@@ -28,6 +28,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml } from './boss-intro.js';
+        import { bossHudState, renderBossHud, removeBossHud } from './boss-hud.js';
         import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes } from './boss-fight.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
@@ -2485,7 +2486,7 @@ function startGaragePreview(carId) {
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
             // всё временное, что рисует заезд: HUD, финиш, карточки босса и волн, подсказки, всплывашки
-            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#endless-wave-card,#coach-tip,.unlock-plaque';
+            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#endless-wave-card,#coach-tip,.unlock-plaque';
             try { clearTimeout(window.__coachTimer); } catch (e) {}
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque,.boss-shout').forEach(function(el) {
@@ -4745,6 +4746,7 @@ function startGaragePreview(carId) {
             function endGame(state) {
                 if (gameState !== 'racing') return;
                 gameState = state;
+                try { removeBossHud(); } catch (e) {}
                 // Запомнить кампанию ДО любых сбросов pendingMode
                 const wasCampaign = (typeof pendingMode !== 'undefined' && pendingMode === 'campaign') || !!window.__campaignTrackId;
                 const campaignTrackId = window.__campaignTrackId || null;
@@ -9912,6 +9914,8 @@ function startGaragePreview(carId) {
                         boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
                     }
                 }
+                // полоска босса в HUD: имя, HP, фаза (DOM трогается только при изменении)
+                try { renderBossHud(bossHudState(boss, bossMaxPhase)); } catch (e) {}
 
                 // слетевшая броня босса
                 for (let ai = bossArmorDebris.length - 1; ai >= 0; ai--) {

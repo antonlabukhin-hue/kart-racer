@@ -21,10 +21,17 @@ test('босс в броне: таран ранит только после пр
     await page.evaluate(() => window.__raceDebug.spawnBossNow());
     await expect.poll(() => page.evaluate(() => !!(window.__raceDebug.boss && window.__raceDebug.boss.mesh)), { timeout: 5000 }).toBe(true);
     const hp0 = await page.evaluate(() => window.__raceDebug.boss.hp);
+    // полоска в HUD: имя, фаза и столько сегментов, сколько HP
+    await expect(page.locator('#boss-hud')).toHaveClass(/on/);
+    await expect(page.locator('#boss-hud .bh-phase')).toContainText('Фаза 1');
+    await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp0);
     expect(await ram(page)).toBe(hp0);            // броня
     await page.evaluate(() => window.__raceDebug.openBoss());
+    await expect(page.locator('#boss-hud')).toHaveClass(/open/);
     expect(await ram(page)).toBeLessThan(hp0);    // открыт — удар прошёл (на подобранном нитро — двойной)
     expect(await page.evaluate(() => window.__raceDebug.boss.vulnT)).toBeLessThanOrEqual(0); // окно закрылось
+    const hp1 = await page.evaluate(() => window.__raceDebug.boss.hp);
+    await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp1);
     expect(problems).toEqual([]);
 });
 
