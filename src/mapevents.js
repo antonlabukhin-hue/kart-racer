@@ -5,6 +5,7 @@
  *             но безопасно); на нитро прилетаешь раньше — в состав. Риск против награды.
  *  promzona — паровые трубы: из вентилей поперёк полосы бьёт пар (шипение и пыхтение — телеграф).
  *  svalka   — горящие шины скатываются с куч хлама через дорогу.
+ *  + на промзоне ещё падающая труба (createPipeDrop): рушится с эстакады поперёк двух полос.
  * Модуль не знает про игру: update(ctx) получает положение машины и возвращает попадание
  * { kind, strike, timePenalty, speedMul, text } — main.js применяет его сам.
  */
@@ -284,5 +285,104 @@ export function createMapEvent(kind, trackWidth, z0, laneXs) {
             return null;
         },
         debug: { crossing: c, st: st }
+    };
+}
+
+// ---------------------------------------------------------------- падающая труба (промзона)
+/**
+ * Эстакада с трубами над дорогой; одна секция висит на цепях над двумя полосами.
+ * Свободна всегда крайняя полоса. Когда машина подъезжает (~2.2 с), цепи раскачиваются и искрят — телеграф; за ~1.1 с секция
+ * рушится и ложится поперёк двух полос. Свободна одна полоса (freeLane) — её видно заранее:
+ * над ней секции нет. Лежащая труба — авария; в полёте над ней (трамплин) — мимо.
+ */
+export function createPipeDrop(trackWidth, z0, laneXs, freeLane) {
+    const g = new THREE.Group();
+    const hw = trackWidth / 2;
+    const steel = lambert(0x6a6f76), rust = lambert(0x8a4a22), warnMat = lambert(0xffcc00), dark = lambert(0x2a2a2e);
+    const topY = 4.2;
+    // опоры и балка эстакады
+    [-1, 1].forEach(function(side) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.45, topY, 0.45), steel);
+        post.position.set(side * (hw + 0.9), topY / 2, z0);
+        g.add(post);
+        for (let k = 0; k < 4; k++) {
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.18, 0.47), k % 2 ? dark : warnMat);
+            stripe.position.set(side * (hw + 0.9), 0.4 + k * 0.18, z0);
+            g.add(stripe);
+        }
+    });
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(trackWidth + 2.3, 0.35, 0.5), steel);
+    beam.position.set(0, topY, z0);
+    g.add(beam);
+    // две «целые» трубы вдоль балки — фон
+    [-0.35, 0.35].forEach(function(dz) {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, trackWidth + 2.3, 10), rust);
+        p.rotation.z = Math.PI / 2;
+        p.position.set(0, topY + 0.35, z0 + dz);
+        g.add(p);
+    });
+    // висящая секция над двумя занятыми полосами
+    // свободна крайняя полоса (0 или 2): секция над двумя соседними — одна цельная труба
+    freeLane = freeLane === 0 ? 0 : 2;
+    const blocked = [0, 1, 2].filter(function(i) { return i !== freeLane; });
+    const xA = laneXs[blocked[0]], xB = laneXs[blocked[1]];
+    const cx = (xA + xB) / 2, span = Math.abs(xB - xA) + 1.7;
+    const sec = new THREE.Group();
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, span, 14), rust);
+    tube.rotation.z = Math.PI / 2;
+    sec.add(tube);
+    [-1, 1].forEach(function(e) {
+        const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.14, 14), steel);
+        flange.rotation.z = Math.PI / 2;
+        flange.position.x = e * span / 2;
+        sec.add(flange);
+    });
+    const hangY = topY - 1.1;
+    sec.position.set(cx, hangY, z0);
+    g.add(sec);
+    const chains = [-1, 1].map(function(e) {
+        const ch = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.0, 0.06), dark);
+        ch.position.set(cx + e * span * 0.35, topY - 0.55, z0);
+        g.add(ch);
+        return ch;
+    });
+    const sparks = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffdd55 }));
+    sparks.visible = false;
+    g.add(sparks);
+    const st = { state: 'hang', t: 0, y: hangY, vy: 0, hitCd: 0 };
+    const x0 = cx - span / 2, x1 = cx + span / 2;
+    return {
+        kind: 'pipe', group: g, z: z0, freeLane: freeLane,
+        update: function(ctx) {
+            const dist = ctx.z - z0;
+            st.hitCd -= ctx.dt;
+            if (st.state === 'hang' && dist > 0 && dist < ctx.ups * 2.2 + 3) { st.state = 'warn'; st.t = 0; }
+            if (st.state === 'warn') {
+                st.t += ctx.dt;
+                sec.rotation.x = Math.sin(st.t * 18) * 0.05;
+                sec.position.y = st.y - Math.abs(Math.sin(st.t * 9)) * 0.08;
+                sparks.visible = Math.random() < 0.6;
+                sparks.position.set(chains[st.t * 10 % 2 < 1 ? 0 : 1].position.x, topY - 0.1, z0);
+                if (dist < ctx.ups * 1.1 + 1.5) { st.state = 'fall'; chains.forEach(function(c) { c.visible = false; }); sparks.visible = false; }
+            } else if (st.state === 'fall') {
+                st.vy -= 22 * ctx.dt;
+                st.y += st.vy * ctx.dt;
+                if (st.y <= 0.42) {
+                    st.y = 0.42;
+                    if (Math.abs(st.vy) > 3) st.vy = -st.vy * 0.25; else { st.vy = 0; st.state = 'down'; }
+                }
+                sec.position.y = st.y;
+                sec.rotation.x *= 0.9;
+            }
+            if (st.state === 'fall' || st.state === 'down') {
+                const low = st.y < 1.6;
+                if (low && st.hitCd <= 0 && ctx.y < st.y + 0.2 && Math.abs(ctx.z - z0) < 0.9 && ctx.x > x0 - 0.3 && ctx.x < x1 + 0.3) {
+                    st.hitCd = 3;
+                    return { kind: 'pipe', strike: true, timePenalty: 3, speedMul: 0, text: '🛢 Труба!', stopAt: z0 + 1.4 };
+                }
+            }
+            return null;
+        },
+        debug: st
     };
 }

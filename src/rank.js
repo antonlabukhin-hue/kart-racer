@@ -1,6 +1,6 @@
 /**
  * Ранг заезда D–S — только для свободного заезда и «Звериного часа» (у кампании свои звёзды).
- * Свободный заезд: 100 очков = время (40) + аварии (25) + стиль (25: «На волоске!», чистые отрезки, перелёты) + босс (10).
+ * Свободный заезд: 100 очков = время (40) + аварии (25) + стиль (25: «На волоске!», чистые отрезки, перелёты, снесённые щиты) + босс (10).
  * «Звериный час»: по номеру волны.
  */
 export const RANKS = ['D', 'C', 'B', 'A', 'S'];
@@ -25,14 +25,15 @@ export function raceRank(m) {
     // финиш за 60% лимита — полные очки за время, на последней секунде — ноль
     const time = 40 * clamp01((tl - (m.time || tl)) / (tl * 0.4));
     const crash = 25 * clamp01(1 - (m.strikes || 0) / Math.max(1, (m.maxStrikes || 5) - 1));
-    const style = Math.min(25, Math.min(8, m.nearMiss || 0) * 1.5 + Math.min(3, m.cleanSegments || 0) * 3 + Math.min(2, m.animalsJumped || 0) * 2.5);
+    const style = Math.min(25, Math.min(8, m.nearMiss || 0) * 1.5 + Math.min(3, m.cleanSegments || 0) * 3
+        + Math.min(2, m.animalsJumped || 0) * 2.5 + Math.min(3, m.billboards || 0) * 2);
     const boss = m.bossDefeated ? 10 : 0;
     const parts = { time: time, crash: crash, style: style, boss: boss };
     const score = Math.round(time + crash + style + boss);
     const miss = [
         ['time', 40 - time, 'Быстрее к финишу'],
         ['crash', 25 - crash, 'Меньше аварий'],
-        ['style', 25 - style, '«На волоске!», чистые отрезки и перелёты'],
+        ['style', 25 - style, '«На волоске!», чистые отрезки, щиты и перелёты'],
         ['boss', 10 - boss, 'Сбей босса']
     ].sort(function(a, b) { return b[1] - a[1]; })[0];
     const letter = letterFor(score);

@@ -31,6 +31,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { bossHudState, renderBossHud, removeBossHud } from './boss-hud.js';
         import { createCleanRun } from './clean-run.js';
         import { raceRank, beastRank } from './rank.js';
+        import { createPackChase, PACK_SPEED_K, BITE_PENALTY } from './pack-chase.js';
+        import { smashSpots, createSmashBoard, smashBoard, stepSmashParts, SMASH_CHIPS } from './smash.js';
         import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes, hitStopFor, HIT_STOP_TIME_SCALE } from './boss-fight.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
@@ -47,7 +49,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
-        import { createMapEvent } from './mapevents.js';
+        import { createMapEvent, createPipeDrop } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
@@ -2488,7 +2490,7 @@ function startGaragePreview(carId) {
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
             // всё временное, что рисует заезд: HUD, финиш, карточки босса и волн, подсказки, всплывашки
-            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#endless-wave-card,#coach-tip,.unlock-plaque';
+            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#pack-meter,#endless-wave-card,#coach-tip,.unlock-plaque';
             try { clearTimeout(window.__coachTimer); } catch (e) {}
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque,.boss-shout').forEach(function(el) {
@@ -4611,7 +4613,7 @@ function startGaragePreview(carId) {
                         if (isEndlessMode()) rk = beastRank(window.__endless && window.__endless.wave);
                         else if (state === 'win' && pendingMode === 'race') {
                             rk = raceRank({ time: timeTaken, timeLimit: TIME_LIMIT, strikes: strikes, maxStrikes: MAX_STRIKES,
-                                nearMiss: nearMissCount, cleanSegments: cleanRun.segments, animalsJumped: stats.animalsJumped, bossDefeated: !!stats.bossDefeated });
+                                nearMiss: nearMissCount, cleanSegments: cleanRun.segments, animalsJumped: stats.animalsJumped, billboards: stats.billboards || 0, bossDefeated: !!stats.bossDefeated });
                         }
                         if (rk) {
                             window.__lastRank = rk.letter;
@@ -4788,6 +4790,7 @@ function startGaragePreview(carId) {
                 if (gameState !== 'racing') return;
                 gameState = state;
                 try { removeBossHud(); } catch (e) {}
+                try { const pmEl = document.getElementById('pack-meter'); if (pmEl) pmEl.remove(); } catch (e) {}
                 // Запомнить кампанию ДО любых сбросов pendingMode
                 const wasCampaign = (typeof pendingMode !== 'undefined' && pendingMode === 'campaign') || !!window.__campaignTrackId;
                 const campaignTrackId = window.__campaignTrackId || null;
@@ -4841,7 +4844,7 @@ function startGaragePreview(carId) {
                             difficulty: (typeof difficulty !== 'undefined' ? difficulty : 'medium'),
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
-                            bonusChips: cleanRun.chips,
+                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS,
                             cleanSegments: cleanRun.segments
                         }) || raceRewards;
                         try { updatePlayerBar(); } catch (e) {}
@@ -7169,6 +7172,10 @@ function startGaragePreview(carId) {
             let tunnelK = 0;
             let lastBiome = -1;
             const gapCones = []; // сбиваемые конусы перед разломами
+            // сносимые рекламные щиты 90-х (src/smash.js)
+            const smashBoards = [];
+            const smashParts = [];
+            let pipeDrop = null; // промзона: падающая труба (src/mapevents.js)
             let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
             const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
             const _starGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, depthWrite: false });
@@ -7280,6 +7287,33 @@ function startGaragePreview(carId) {
                     scene.add(createRoadSign(['🐾 ЗВЕРИНАЯ ТРОПА', 'ПРЫГАЙ'], -TRACK_WIDTH / 2 - 1.8, zr + 50, {}));
                     window.__trailZ = zr - 7;
                 } else window.__trailZ = null;
+                // промзона: секция трубы рушится с эстакады поперёк двух полос — свободна одна
+                let pipeFrac = null;
+                if (mapId === 'promzona') {
+                    const busyP = [].concat(_layout.gaps, _layout.debris, [_layout.event], (_layout.segments || []).map(function(sg) { return sg.at; }));
+                    if (window.__trailZ != null) busyP.push((START_Z - window.__trailZ) / _trackSpan);
+                    pipeFrac = [0.3, 0.25, 0.35, 0.21, 0.66].find(function(f) { return busyP.every(function(b) { return Math.abs(b - f) > 0.06; }); });
+                    if (pipeFrac != null) {
+                        const pz = _zAt(pipeFrac);
+                        clearZone(pz + 30, pz - 12);
+                        pipeDrop = createPipeDrop(TRACK_WIDTH, pz, _rampLaneXs, Math.random() < 0.5 ? 0 : 2);
+                        scene.add(pipeDrop.group);
+                        scene.add(createRoadSign(['ОСТОРОЖНО', 'ТРУБЫ НАД ДОРОГОЙ'], TRACK_WIDTH / 2 + 1.8, pz + 55, { big: true }));
+                    }
+                }
+                // рекламные щиты 90-х прямо в полосах: снёс — не авария, а стиль и фишка
+                {
+                    const busy = [].concat(_layout.gaps, _layout.debris, (_layout.segments || []).map(function(sg) { return sg.at; }));
+                    if (window.__trailZ != null) busy.push((START_Z - window.__trailZ) / _trackSpan);
+                    if (pipeFrac != null) busy.push(pipeFrac);
+                    smashSpots(difficulty === 'easy' ? 3 : 4, busy).forEach(function(sp) {
+                        const z = _zAt(sp.frac);
+                        clearZone(z + 6, z - 6);
+                        const b = createSmashBoard(_rampLaneXs[sp.lane], z, sp.ad);
+                        scene.add(b.group);
+                        smashBoards.push(b);
+                    });
+                }
                 const srcKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
                 const dropsN = difficulty === 'easy' ? 1 : 2;
                 _layout.debris.forEach(function(frac) {
@@ -8210,6 +8244,62 @@ function startGaragePreview(carId) {
                 config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
             animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
+            // «Погоня стаи» на последних ~17% трассы (src/pack-chase.js). Не в «Звериным часе» и не в главе 1
+            const packChase = (!isEndlessMode() && window.__campaignIdx !== 0) ? createPackChase() : null;
+            const PACK_SPECIES = { arsenev: 'DOG', promzona: 'DINO', svalka: 'LION' };
+            const packMeshes = [];
+            let packMeter = null;
+            function packStart() {
+                const kind = PACK_SPECIES[mapId] || 'DOG';
+                for (let i = 0; i < 4; i++) {
+                    try {
+                        const m = animalSpawner.acquireMesh(kind);
+                        m.scale.setScalar(1.05 + (i % 2) * 0.15);
+                        m.rotation.set(0, Math.PI, 0);
+                        m.visible = true;
+                        packMeshes.push({ mesh: m, kind: kind, side: i % 2 ? 1 : -1, lag: Math.floor(i / 2) * 2.2 + (i % 2) * 0.9, ph: i * 1.7 });
+                    } catch (e) {}
+                }
+                try { showBossCard('<div class="bi-top">ФИНАЛ</div><div class="bi-nick" style="color:#ffb347">🐺 Стая на хвосте!</div><div class="bi-hint">Не сбавляй — догонят и укусят</div>', 'pack', 2400); } catch (e) {}
+                try { if (window.soundEngine) { window.soundEngine.playSfx('animal', 1.2); window.soundEngine.playSfx('boss_roar', 0.5); } } catch (e) {}
+                packMeter = document.createElement('div');
+                packMeter.id = 'pack-meter';
+                packMeter.innerHTML = '<span>🐺 СТАЯ</span><div class="pm-bar"><i></i></div>';
+                document.body.appendChild(packMeter);
+            }
+            function packStop() {
+                packMeshes.forEach(function(p) { try { animalSpawner.releaseMesh(p.kind, p.mesh); } catch (e) {} });
+                packMeshes.length = 0;
+                try { if (packMeter) packMeter.remove(); } catch (e) {}
+                packMeter = null;
+            }
+            function packFrame(dt) {
+                const ev = packChase.update(dt, (START_Z - zPos) / (START_Z - FINISH_Z), Math.abs(speed) * 60, MAX_SPEED * 60 * PACK_SPEED_K);
+                if (ev === 'start') packStart();
+                else if (ev === 'end') packStop();
+                else if (ev === 'bite') {
+                    raceTime += BITE_PENALTY;
+                    cleanRun.reset();
+                    shakeTime = Math.max(shakeTime, 0.3);
+                    try { showTimePenaltyPopup(BITE_PENALTY, '🐺 Стая догнала!'); } catch (e) {}
+                    try { if (window.soundEngine) window.soundEngine.playSfx('animal', 1.3); } catch (e) {}
+                    try { playPlayerDamageAnim(0.6); } catch (e) {}
+                }
+                if (!packChase.active) return;
+                const t = performance.now() / 1000;
+                const edge = TRACK_WIDTH / 2 + 0.35;
+                for (let i = 0; i < packMeshes.length; i++) {
+                    const pk = packMeshes[i];
+                    const cyc = t * 11 + pk.ph;
+                    pk.mesh.position.set(pk.side * edge, Math.abs(Math.sin(cyc)) * 0.12, zPos + packChase.gap + pk.lag);
+                    pk.mesh.rotation.z = Math.sin(cyc) * 0.06;
+                }
+                if (packMeter) {
+                    const d = packChase.danger;
+                    packMeter.lastChild.firstChild.style.width = Math.round(d * 100) + '%';
+                    packMeter.classList.toggle('close', d > 0.6);
+                }
+            }
             // зверь на «звериной тропе» за трамплином: виден заранее, медленно бредёт через середину.
             // Появляется, когда машина подъезжает (спавнер убирает зверей дальше 150 впереди)
             let trailPendingZ = window.__trailZ;
@@ -8232,7 +8322,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8336,6 +8426,7 @@ function startGaragePreview(carId) {
                 const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
                 ghostClock += deltaTime;
                 ghostRec.update(deltaTime, xPos, zPos, carYOffset);
+                if (packChase) packFrame(deltaTime);
                 {
                     const cleanGot = cleanRun.tick(deltaTime, speed > MAX_SPEED * 0.3);
                     if (cleanGot === 'shield') {
@@ -8748,8 +8839,25 @@ function startGaragePreview(carId) {
                 // машину вытаскивает на дальний край разлома
                 _nmCooldown -= deltaTime;
                 // сцена карты: поезд — авария (как зверь), пар и шины — ожог: скорость и время
-                if (mapEvent && gameState === 'racing') {
-                    const evHit = mapEvent.update({ x: xPos, z: zPos, dt: deltaTime, y: carYOffset,
+                // щиты: снёс — обломки, лёгкое торможение, +стиль и фишка (не авария, отрезок не сбивает)
+                if (gameState === 'racing') {
+                    for (let si = 0; si < smashBoards.length; si++) {
+                        const b = smashBoards[si];
+                        if (b.smashed || Math.abs(zPos - b.z) > 0.9 || Math.abs(xPos - b.x) > 1.25 || carYOffset > 1.1) continue;
+                        smashBoard(b, scene, Math.abs(speed) * 60).forEach(function(pt) { smashParts.push(pt); });
+                        stats.billboards = (stats.billboards || 0) + 1;
+                        speed *= 0.9;
+                        shakeTime = Math.max(shakeTime, 0.12);
+                        fovPunch = Math.max(fovPunch || 0, 6);
+                        try { showTimePenaltyPopup(0, '💥 Реклама снесена! +' + SMASH_CHIPS + ' 🪙'); } catch (e) {}
+                        try { if (window.soundEngine) { window.soundEngine.playSfx('bump', 1.2); window.soundEngine.playSfx('explode', 0.35); } } catch (e) {}
+                    }
+                }
+                if (smashParts.length) stepSmashParts(smashParts, deltaTime, scene);
+                for (let evi = 0; evi < 2; evi++) {
+                    const ev = evi === 0 ? mapEvent : pipeDrop;
+                    if (!ev || gameState !== 'racing') continue;
+                    const evHit = ev.update({ x: xPos, z: zPos, dt: deltaTime, y: carYOffset,
                         ups: Math.max(Math.abs(speed) * 60, MAX_SPEED * 60 * 0.45) });
                     if (evHit) {
                         if (evHit.strike) {

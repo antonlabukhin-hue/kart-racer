@@ -25,6 +25,14 @@ describe('ранг свободного заезда', () => {
     });
 });
 
+describe('стиль', () => {
+    it('снесённые щиты добавляют очки стиля', () => {
+        const a = raceRank(Object.assign({}, base, { time: 70, strikes: 1 }));
+        const b = raceRank(Object.assign({}, base, { time: 70, strikes: 1, billboards: 3 }));
+        expect(b.parts.style - a.parts.style).toBe(6);
+    });
+});
+
 describe('ранг «Звериного часа»', () => {
     it('по волне', () => {
         expect(beastRank(1).letter).toBe('D');
