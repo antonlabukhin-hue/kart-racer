@@ -4357,3 +4357,5 @@
 
         /* геймпад: видимый фокус при навигации по меню */
         body.pad-nav :focus { outline: 3px solid #ffd23c !important; outline-offset: 2px; box-shadow: 0 0 14px rgba(255,210,60,0.6) !important; }
+
+        #race-briefing .br-lead { color: #ffe08a; font-size: 15px; font-weight: 700; margin: 2px 0 10px; line-height: 1.35; }

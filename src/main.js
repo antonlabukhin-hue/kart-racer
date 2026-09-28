@@ -1415,14 +1415,9 @@ function createProfile(name) { return Profile.createProfile(name); }
                                 ds.style.display = 'none';
                                 let seenCampLore = false;
                                 try { if (currentPlayer) seenCampLore = !!currentPlayer.hasSeenCampaignLore; } catch (e) {}
-                                if (!seenCampLore && window.__campaignIdx === 0) {
-                                    try {
-                                        if (currentPlayer) { currentPlayer.hasSeenCampaignLore = true; saveCurrentPlayer(); }
-                                    } catch (e) {}
-                                    if (typeof showLoreScreen === 'function') {
-                                        showLoreScreen(pendingQuality, pendingDifficulty);
-                                        return;
-                                    }
+                                // длинный лор сам не выскакивает: первые минуты — за рулём, история — по кнопке «Кто это говорит?»
+                                if (!seenCampLore) {
+                                    try { if (currentPlayer) { currentPlayer.hasSeenCampaignLore = true; saveCurrentPlayer(); } } catch (e) {}
                                 }
                                 if (typeof proceedAfterLoreToRace === 'function' && proceedAfterLoreToRace()) return;
                                 if (typeof initGame === 'function') {
@@ -2543,15 +2538,13 @@ function startGaragePreview(carId) {
             el.setAttribute('aria-modal', 'true');
             el.innerHTML =
                 '<div class="br-card">' +
+                // коротко: остальному учит тренер прямо в заезде (главы 1–3)
                 '<div class="br-title">Даю установку:</div>' +
+                '<div class="br-lead">Довези антидот. Звери не шутят. Прыгай с разлома — или падай.</div>' +
                 '<ul class="br-list">' +
-                '<li><b>⏱ Доставь груз за 1:30.</b> Время на табло слева — не зевай.</li>' +
-                '<li><b>🐾 В зверей и машины не врезайся.</b> Каждое столкновение — авария и штраф по времени. <b>5 аварий — проигрыш.</b></li>' +
-                '<li><b>❤️ Жвачка-сердечко</b> снимает одну аварию, а если аварий нет — даёт +5 секунд.</li>' +
-                '<li><b>⛽ Зелёные стрелки — нитро.</b> Проскочил впритирку мимо зверя — «На волоске!», тоже нитро.</li>' +
-                '<li><b>👊 Босс в броне.</b> Красное кольцо под ним — сейчас атакует: уйди в соседнюю полосу. Промахнулся — на спине мишень, он открыт 2 секунды: тарань (на нитро удар двойной). Не успел до конца арены — сбежит.</li>' +
-                '<li><b>🕳 Разлом через всю дорогу:</b> заезжай на трамплин по жёлтым стрелкам. Объедешь — провалишься. На нитро трамплин подбрасывает выше — за разломом висит ⭐ (−3 с).</li>' +
-                '<li><b>⚠ Под аркой</b> качается то, что сейчас упадёт, — меняй полосу.</li>' +
+                '<li><b>🐾 Зверь или машина — авария.</b> 5 аварий — конец.</li>' +
+                '<li><b>❤️ Сердечко</b> снимает аварию, <b>⛽ зелёные стрелки</b> — нитро.</li>' +
+                '<li><b>🕳 Разлом</b> — только по трамплину. <b>👊 Босс</b> в броне: увернись, потом тарань.</li>' +
                 '</ul>' +
                 controls +
                 '<button type="button" class="br-go" id="race-briefing-go">Погнали →</button>' +
@@ -10939,7 +10932,14 @@ function showLoreScreen(quality, difficulty) {
                         applyCampaignRoute && applyCampaignRoute();
                         initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
                     }
+                } else if (currentPlayer && currentPlayer.hasSeenFreeLore) {
+                    // лор уже видел — сразу к выбору карты
+                    pendingQuality = quality;
+                    pendingDifficulty = difficulty;
+                    try { const ds = document.getElementById('difficulty-screen'); if (ds) ds.style.display = 'none'; } catch (e) {}
+                    window.finishLoreAndStart();
                 } else {
+                    if (currentPlayer) { currentPlayer.hasSeenFreeLore = true; saveCurrentPlayer(); }
                     showLoreScreen(quality, difficulty);
                 }
             });
