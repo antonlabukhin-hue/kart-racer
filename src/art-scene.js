@@ -6,7 +6,7 @@
  * Координаты как в заезде: дорога вдоль z, машины едут к −z (к камере), полосы x = −1.5 / 0 / 1.5.
  */
 import * as THREE from 'three';
-import { buildShowroomCar } from './cars.js';
+import { buildShowroomCar, addNitroFlames } from './cars.js';
 import { CAR_PAINTS } from './content.js';
 import { CAMPAIGN_BOSSES, createArcadeBossMesh } from './boss.js';
 import { createSmashBoard } from './smash.js';
@@ -225,19 +225,6 @@ export function nitroArrows() {
     return g;
 }
 
-function flames(car) {
-    // сопла нитро сзади машины (+z): синий конус с оранжевым ядром
-    const g = new THREE.Group();
-    [-0.35, 0.35].forEach(function(x) {
-        const outer = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.9, 10), new THREE.MeshBasicMaterial({ color: 0x55ccff, transparent: true, opacity: 0.8 }));
-        outer.rotation.x = Math.PI / 2; outer.position.set(x, 0.32, 1.95); g.add(outer);
-        const core = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.55, 8), new THREE.MeshBasicMaterial({ color: 0xffe07a }));
-        core.rotation.x = Math.PI / 2; core.position.set(x, 0.32, 1.78); g.add(core);
-    });
-    car.add(g);
-    return g;
-}
-
 export function paintHex(id) {
     const p = id && CAR_PAINTS.find(function(x) { return x.id === id; });
     return p && p.color != null ? p.color : null;
@@ -334,7 +321,7 @@ export function createDiorama(spec) {
         g.scale.setScalar(c.scale || 1);
         g.position.set(c.x || 0, c.y || 0, c.z || 0);
         g.rotation.set(c.tiltX || 0, c.rotY || 0, c.tilt || 0);
-        if (c.nitro) flames(g);
+        if (c.nitro) addNitroFlames(g).update(0.3, true);
         if (t.lights) { // фары светят вперёд (у модели перед — к −z)
             const hl = new THREE.PointLight(0xffe2a8, 22, 16, 1.6);
             hl.position.set(0, 0.7, -3.2);

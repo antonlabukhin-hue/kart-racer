@@ -27,7 +27,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
-        import { buildShowroomCar, applyUpgradeVisuals } from './cars.js';
+        import { buildShowroomCar, applyUpgradeVisuals, addNitroFlames } from './cars.js';
+        import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
         import { bossHudState, renderBossHud, removeBossHud } from './boss-hud.js';
@@ -6546,6 +6547,25 @@ function startGaragePreview(carId) {
                 raceCarParts = {};
             }
             if (!raceCarParts) raceCarParts = {};
+            // пламя нитро из выхлопа (видно на ускорении), вмятины и дым после аварий
+            let nitroFlames = null;
+            try { if (playerCar) nitroFlames = addNitroFlames(playerCar); } catch (e) { nitroFlames = null; }
+            let dentsShown = 0, smokeAcc = 0, prevSpeedForPitch = 0;
+            function addDent() {
+                try {
+                    const panels = [];
+                    playerCar.traverse(function(o) { if (o.isMesh && o.userData && o.userData.bodyPaint && !o.userData.dented) panels.push(o); });
+                    if (!panels.length) return;
+                    const pnl = panels[Math.floor(Math.random() * panels.length)];
+                    const d = dentFor();
+                    pnl.userData.dented = true;
+                    pnl.rotation.x += d.rx; pnl.rotation.z += d.rz; pnl.position.y += d.dy;
+                    // своя копия материала — общая краска остальных панелей не темнеет
+                    pnl.material = pnl.material.clone();
+                    pnl.material.color.multiplyScalar(d.darken);
+                    pnl.matrixAutoUpdate = true;
+                } catch (e) {}
+            }
             let zPos = START_Z;
             // Только в тестовой сборке (npm run build:test): ?start=0.4 — заезд начинается с 40% трассы,
             // чтобы тесты быстро доезжали до босса и финиша. В сборку для сайта этот блок не попадает.
@@ -8376,7 +8396,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -9024,7 +9044,27 @@ function startGaragePreview(carId) {
                     });
                     playerCar.userData._nightEmissive = true;
                 }
-                playerCar.rotation.z = lerp(playerCar.rotation.z, -xVelocity * 0.028 - (playerCar.userData._leanKick || 0), 1 - Math.pow(0.88, deltaTime * 60));
+                // крен в повороте и наклон вперёд-назад: газ — нос вверх, тормоз и удар — вниз
+                playerCar.rotation.z = lerp(playerCar.rotation.z, -xVelocity * 0.036 - (playerCar.userData._leanKick || 0), 1 - Math.pow(0.88, deltaTime * 60));
+                {
+                    const acc = deltaTime > 0 ? (speed - prevSpeedForPitch) / deltaTime : 0;
+                    prevSpeedForPitch = speed;
+                    const pitchTarget = carAirborne ? playerCar.rotation.x : pitchFor(acc, ACCELERATION * 60 * 1.5);
+                    playerCar.rotation.x = lerp(playerCar.rotation.x, pitchTarget, 1 - Math.pow(0.85, deltaTime * 60));
+                }
+                if (nitroFlames) nitroFlames.update(raceTime, nitroTimer > 0);
+                // вмятины — по одной на аварию; дым из-под капота со второй аварии
+                while (dentsShown < strikes) { dentsShown++; addDent(); }
+                {
+                    const dl = damageLook(strikes, MAX_STRIKES);
+                    if (dl.smokeRate > 0 && particleSystem && particleSystem.smoke) {
+                        smokeAcc += dl.smokeRate * deltaTime;
+                        while (smokeAcc >= 1) {
+                            smokeAcc -= 1;
+                            particleSystem.smoke({ x: playerCar.position.x, y: playerCar.position.y + 0.45, z: playerCar.position.z - 0.55 }, dl.smokeDark);
+                        }
+                    }
+                }
                 if (playerCar.userData._leanKick) {
                     playerCar.userData._leanKick *= 0.88;
                     if (Math.abs(playerCar.userData._leanKick) < 0.01) playerCar.userData._leanKick = 0;
