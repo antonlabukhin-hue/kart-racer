@@ -751,16 +751,16 @@ export function buildShowroomCar(carId) {
 export function addNitroFlames(car) {
     const d = (car.userData && car.userData.dims) || { bodyL: 2.25, bodyY: 0.42, bodyW: 1.22 };
     const g = new THREE.Group();
-    const outerMat = new THREE.MeshBasicMaterial({ color: 0x55ccff, transparent: true, opacity: 0.85, depthWrite: false });
-    const coreMat = new THREE.MeshBasicMaterial({ color: 0xffe07a, transparent: true, opacity: 0.95, depthWrite: false });
+    const outerMat = new THREE.MeshBasicMaterial({ color: 0x3aa8ff, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending });
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xffb040, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending });
     const cones = [];
     [-0.32, 0.32].forEach(function(x) {
-        const outer = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.5, 10), outerMat);
+        const outer = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.0, 10), outerMat);
         outer.rotation.x = Math.PI / 2;
-        outer.position.set(x, d.bodyY - 0.12, d.bodyL / 2 + 0.78);
-        const core = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.85, 8), coreMat);
+        outer.position.set(x, d.bodyY - 0.12, d.bodyL / 2 + 0.55);
+        const core = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.55, 8), coreMat);
         core.rotation.x = Math.PI / 2;
-        core.position.set(x, d.bodyY - 0.12, d.bodyL / 2 + 0.45);
+        core.position.set(x, d.bodyY - 0.12, d.bodyL / 2 + 0.33);
         g.add(outer); g.add(core);
         cones.push(outer, core);
     });
