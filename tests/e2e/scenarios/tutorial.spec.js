@@ -4,7 +4,7 @@ import { watchProblems, login, startCampaign } from '../helpers.js';
 // Главы 1–3 — обучение: подсказка тренера по ситуации; до разлома — про трамплин
 test('обучение: в 1-й главе тренер подсказывает руль и разлом до подъезда к нему', async ({ page }) => {
     const problems = watchProblems(page);
-    await login(page, 'Тестер', './?start=0.17');
+    await login(page, 'Тестер', './?start=0.1');
     await startCampaign(page);
     await expect(page.locator('#coach-tip.show')).toContainText('Меняй полосу', { timeout: 20_000 });
     await page.keyboard.down('w');

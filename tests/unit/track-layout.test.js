@@ -20,6 +20,13 @@ describe('трассы из данных', () => {
         });
     });
 
+    it('глава 1 учит прыгать: первый разлом раньше всего остального, до 20% трассы', () => {
+        const l = resolveLayout(LAYOUTS, { mapId: 'arsenev', difficulty: 'easy', campaignId: 'c01' });
+        expect(l.gaps[0]).toBeLessThanOrEqual(0.2);
+        expect(Math.min(...l.debris, l.event)).toBeGreaterThan(l.gaps[0]);
+        expect(validateLayout(l)).toEqual([]);
+    });
+
     it('у карт разные раскладки, у финала — четыре разлома', () => {
         const sig = m => JSON.stringify(resolveLayout(LAYOUTS, { mapId: m, difficulty: 'hard' }));
         expect(new Set(['arsenev', 'promzona', 'svalka'].map(sig)).size).toBe(3);
