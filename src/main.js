@@ -4088,9 +4088,14 @@ function startGaragePreview(carId) {
             
             // кампания: «сложные» главы плавно ужесточаются к финалу (src/balance.js)
             const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
-            const config = (difficulty === 'hard' && _campIdx >= 0)
+            const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
                 : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave) : DIFFICULTY_CONFIG[difficulty]);
+            // глава может задать свою длину трассы (глава 1 — короткая, ~45–60 с)
+            const _cmods = (_campIdx >= 0 && window.__campaignMods) || null;
+            const config = (_cmods && _cmods.trackLength) ? Object.assign({}, baseConfig, { trackLength: _cmods.trackLength }) : baseConfig;
+            // босс главы: своё HP и сколько фаз он показывает (в главе 1 — только первая)
+            const bossMaxPhase = (_cmods && _cmods.bossMaxPhase) || 3;
 
             if (window.soundEngine) {
                 window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35;
@@ -7599,7 +7604,7 @@ function startGaragePreview(carId) {
 
                 // HP растёт по главам; фаза 0 = «вход», давление на полосы
                 // броня + окна уязвимости: HP главы +1 (src/boss-fight.js)
-                const chapterHp = bossHp((def.hp != null) ? def.hp : Math.min(6, 3 + Math.floor(bossIdx / 3)));
+                const chapterHp = (_cmods && _cmods.bossHp) ? _cmods.bossHp : bossHp((def.hp != null) ? def.hp : Math.min(6, 3 + Math.floor(bossIdx / 3)));
                 try {
                     if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('boss', 1.0);
                 } catch (eSfx) {}
@@ -9335,7 +9340,7 @@ function startGaragePreview(carId) {
                         boss._projSizeMul = bc.projSizeMul || 1;
                         boss._projMulti = bc.multi || 1;
                         // фаза 2 — баррикады, фаза 3 — ещё и таран навстречу (src/boss-fight.js)
-                        const aph = phaseForHp(boss.hp, boss.maxHp);
+                        const aph = Math.min(bossMaxPhase, phaseForHp(boss.hp, boss.maxHp));
                         const rr = Math.random();
                         const segBusy = roadSegments.some(function(sg) { return sg.type !== 'tunnel' && zPos <= sg.z0 + 45 && zPos >= sg.z1 - 10; });
                         boss.nextAttack = boss._forceAtk ? boss._forceAtk : segBusy ? 'shot' : (aph >= 3 && rr < 0.5) ? 'charge'
@@ -9573,7 +9578,7 @@ function startGaragePreview(carId) {
                     // Фаза 2 при ≤50% HP — чаще атаки
                     // (boss.phase — непрерывный таймер для sin()-анимации, растёт каждый кадр;
                     // флаг ярости должен жить отдельно, иначе это условие никогда не срабатывает)
-                    const fph = phaseForHp(boss.hp, boss.maxHp);
+                    const fph = Math.min(bossMaxPhase, phaseForHp(boss.hp, boss.maxHp));
                     if (fph === 2 && !(boss.fightPhase >= 2) && boss.hp > 0) {
                         boss.fightPhase = 2;
                         try { showBossCard(bossPhaseHtml({ name: boss.name }, 2), 'phase2', 2200); } catch (e) {}
