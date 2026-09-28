@@ -161,6 +161,8 @@ export default {
         'Даю установку:': 'Your briefing:',
         'Погнали →': "Let's ride →",
         '▶ ИГРАТЬ': '▶ PLAY',
+        'ТРУБЫ НАД ДОРОГОЙ': 'PIPES OVERHEAD',
+        '🛢 Труба!': '🛢 Pipe!',
         'ФИНАЛ': 'FINAL',
         '🐺 Стая на хвосте!': '🐺 The pack is on your tail!',
         'Не сбавляй — догонят и укусят': 'Do not slow down — they will catch up and bite',
