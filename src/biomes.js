@@ -59,52 +59,14 @@ export function groundColorAt(mapId, progress, out) {
 
 // ---------------- декор тайги ----------------
 const mats = {};
+// декор неподвижен: матрицы один раз, без пересчёта каждый кадр
+function freeze(o) {
+    o.updateMatrixWorld(true);
+    o.traverse(function(c) { c.matrixAutoUpdate = false; c.matrixWorldAutoUpdate = false; });
+}
 function mat(key, color) {
     if (!mats[key]) mats[key] = new THREE.MeshLambertMaterial({ color: color });
     return mats[key];
-}
-
-/** Сосна: рыжий ствол, ярусы хвои */
-export function createPine(scene, x, z, scale) {
-    const s = scale || 1;
-    const g = new THREE.Group();
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.08 * s, 0.13 * s, 1.6 * s, 7), mat('pineTrunk', 0x8a4a22));
-    trunk.position.y = 0.8 * s;
-    g.add(trunk);
-    const needles = mat('pine' + (Math.random() < 0.5 ? 'A' : 'B'), Math.random() < 0.5 ? 0x24522c : 0x2e6232);
-    for (let i = 0; i < 4; i++) {
-        const r = (0.75 - i * 0.14) * s, h = (0.8 - i * 0.1) * s;
-        const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), needles);
-        c.position.y = (1.3 + i * 0.45) * s;
-        g.add(c);
-    }
-    g.position.set(x, 0, z);
-    g.rotation.y = Math.random() * Math.PI;
-    scene.add(g);
-    return g;
-}
-
-/** Берёза: белый ствол с чёрными полосками, круглая крона */
-export function createBirch(scene, x, z, scale) {
-    const s = scale || 1;
-    const g = new THREE.Group();
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06 * s, 0.09 * s, 2.0 * s, 7), mat('birch', 0xe8e4d8));
-    trunk.position.y = 1.0 * s;
-    g.add(trunk);
-    for (let i = 0; i < 4; i++) {
-        const band = new THREE.Mesh(new THREE.BoxGeometry(0.1 * s, 0.03 * s, 0.1 * s), mat('birchBand', 0x2a2a2a));
-        band.position.set(0.02 * s, (0.4 + i * 0.4) * s, 0.04 * s);
-        g.add(band);
-    }
-    const leaves = mat('birchLeaf' + (Math.random() < 0.3 ? 'Y' : 'G'), Math.random() < 0.3 ? 0xb8a030 : 0x5a8a34);
-    [[0, 2.3, 0, 0.7], [0.3, 2.0, 0.1, 0.5], [-0.28, 2.05, -0.1, 0.5]].forEach(function(p) {
-        const b = new THREE.Mesh(new THREE.IcosahedronGeometry(p[3] * s, 0), leaves);
-        b.position.set(p[0] * s, p[1] * s, p[2] * s);
-        g.add(b);
-    });
-    g.position.set(x, 0, z);
-    scene.add(g);
-    return g;
 }
 
 /** Валун в мху */
@@ -121,6 +83,7 @@ export function createRock(scene, x, z, scale) {
     moss.position.set(0.1 * s, 0.62 * s, 0);
     g.add(moss);
     g.position.set(x, 0, z);
+    freeze(g);
     scene.add(g);
     return g;
 }
@@ -132,6 +95,7 @@ export function createLog(scene, x, z, scale) {
     log.rotation.z = Math.PI / 2;
     log.rotation.y = Math.random() * Math.PI;
     log.position.set(x, 0.2 * s, z);
+    freeze(log);
     scene.add(log);
     return log;
 }
@@ -153,6 +117,7 @@ export function createForestInstanced(scene, trees, mergeGeometries) {
             mesh.setMatrixAt(i, m);
         });
         mesh.instanceMatrix.needsUpdate = true;
+        freeze(mesh);
         mesh.frustumCulled = false; // деревья по всей длине трассы — общий bbox не считаем
         scene.add(mesh);
     }

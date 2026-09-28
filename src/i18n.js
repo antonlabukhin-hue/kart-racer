@@ -86,8 +86,6 @@ function restore(root) {
     }
 }
 
-export function getLang() { return _lang; }
-
 /** Включить язык: перевести страницу и следить за новыми узлами */
 export function applyLang(lang) {
     _lang = lang === 'en' ? 'en' : 'ru';

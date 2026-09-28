@@ -4327,13 +4327,6 @@
         #endless-wave-card .ew-sub { color: #ddd; font-size: 14px; }
         @keyframes ewIn { from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 
-        /* линии скорости: лучи от центра, только по краям экрана */
-        #speed-lines { position: fixed; inset: -10%; pointer-events: none; z-index: 40; opacity: 0;
-            background: repeating-conic-gradient(from 0deg at 50% 45%, transparent 0deg 3.1deg, rgba(255,255,255,0.55) 3.3deg 3.5deg, transparent 3.7deg 8.3deg);
-            -webkit-mask-image: radial-gradient(ellipse at 50% 45%, transparent 38%, #000 78%);
-            mask-image: radial-gradient(ellipse at 50% 45%, transparent 38%, #000 78%);
-            animation: speedLinesSpin 0.35s steps(3) infinite; transition: opacity 0.15s linear; }
-        @keyframes speedLinesSpin { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(1.3deg) scale(1.02); } 100% { transform: rotate(-1deg) scale(1); } }
 
         /* карточка босса: сверху по центру, въезжает справа */
         #boss-intro { position: fixed; top: 56px; left: 50%; transform: translateX(-50%); z-index: 150; pointer-events: none;
