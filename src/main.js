@@ -11651,7 +11651,7 @@ function showLoreScreen(quality, difficulty) {
             const contentEl = sc.querySelector('.content') || sc;
             // не добавлять, если уже есть любые кнопки «Назад/Меню» в экране
             const texts = (contentEl.innerText || '');
-            if (texts.indexOf('Назад') >= 0 || texts.indexOf('Меню') >= 0) return;
+            if (/назад|меню/i.test(texts)) return; // «← В меню» тоже считается (раньше проверка была с учётом регистра — дубли)
             contentEl.appendChild(bar);
             if (opts.back) {
                 const b = document.createElement('button');
