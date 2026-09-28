@@ -302,6 +302,18 @@ export function markChapterWon(campaign, trackId, idx, tracksCount) {
     return { campaign: cp, unlockedNew: cp.unlocked > was };
 }
 
+/**
+ * Какую главу запускает большая кнопка «Играть»: первую открытую и не пройденную,
+ * а если все открытые пройдены — последнюю открытую.
+ */
+export function nextChapterIdx(campaign, tracks) {
+    const cp = campaign || {};
+    const open = Math.max(1, Math.min(tracks.length, cp.unlocked || 1));
+    const done = cp.completed || [];
+    for (let i = 0; i < open; i++) if (done.indexOf(tracks[i].id) < 0) return i;
+    return open - 1;
+}
+
 // ---------------- гараж ----------------
 
 /**

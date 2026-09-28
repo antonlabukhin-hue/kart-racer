@@ -60,6 +60,7 @@ test('кампания: победа на 1-й трассе — «Заново»
 
     await page.keyboard.press('Escape');
     await page.locator('#pause-menu').click();
+    await expect(page.locator('#main-menu-play-sub')).toContainText('Глава 2');
     await page.locator('.menu-card[data-menu="campaign"]').click();
     await expect(page.locator('.camp-track[data-idx="1"]')).not.toHaveClass(/locked/);
     await expect(page.locator('.camp-track[data-idx="2"]')).toHaveClass(/locked/);

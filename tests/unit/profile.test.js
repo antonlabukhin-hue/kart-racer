@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     createProfile, ensureProfileFields, loadProfiles, saveProfiles, saveProfile, PROFILES_KEY, SESSION_KEY,
     seasonXpToNext, addSeasonXp, grantAchievement, claimSeasonRewards, applyRaceResult,
-    mergeCampaignBackup, markChapterWon, buyPaint, toggleCarPart, MAX_SEASON_LEVEL
+    mergeCampaignBackup, markChapterWon, nextChapterIdx, buyPaint, toggleCarPart, MAX_SEASON_LEVEL
 } from '../../src/profile.js';
 import { TROPHIES, SEASON_REWARDS, CAR_PARTS, CAR_PAINTS, DAILY_CONTRACTS } from '../../src/content.js';
 import { mergeStars } from '../../src/campaign-stars.js';
@@ -185,5 +185,20 @@ describe('гараж', () => {
         expect(p.carLoadout.ownedParts).toEqual(['spoiler', 'spoiler2']);
         const poor = fresh();
         expect(toggleCarPart(poor, spoiler, CAR_PARTS)).toMatchObject({ ok: false, reason: 'no_chips' });
+    });
+});
+
+describe('кнопка «Играть»', () => {
+    const tracks = [{ id: 'c01' }, { id: 'c02' }, { id: 'c03' }];
+    it('новичок — глава 1, дальше — первая непройденная из открытых', () => {
+        expect(nextChapterIdx(null, tracks)).toBe(0);
+        expect(nextChapterIdx({ unlocked: 2, completed: ['c01'] }, tracks)).toBe(1);
+        // перепрошёл не по порядку — всё равно ведёт в пропущенную
+        expect(nextChapterIdx({ unlocked: 3, completed: ['c01', 'c03'] }, tracks)).toBe(1);
+    });
+    it('всё пройдено — последняя глава; мусор в профиле не ломает', () => {
+        expect(nextChapterIdx({ unlocked: 3, completed: ['c01', 'c02', 'c03'] }, tracks)).toBe(2);
+        expect(nextChapterIdx({ unlocked: 99 }, tracks)).toBe(0);
+        expect(nextChapterIdx({ unlocked: 0 }, tracks)).toBe(0);
     });
 });

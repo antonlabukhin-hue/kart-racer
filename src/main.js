@@ -786,6 +786,14 @@ function startCampaignTrack(idx, opts) {
                     const lore = document.getElementById('campaign-lore-screen');
                     if (lore) { lore.style.display = 'none'; lore.classList.remove('active'); }
                 } catch (e) {}
+                // «Играть» из меню: без магазина и выбора качества — качество из настроек
+                if (opts.direct && typeof proceedAfterLoreToRace === 'function') {
+                    try { hideMainMenu(); } catch (e) {}
+                    pendingQuality = pendingQuality || window.__lastQuality || 'medium';
+                    pendingDifficulty = t.diff || 'easy';
+                    pendingCar = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
+                    if (proceedAfterLoreToRace()) return;
+                }
                 if (typeof beginRaceFlow === 'function') beginRaceFlow();
                 else if (typeof showDifficultyScreen === 'function') showDifficultyScreen();
             };
@@ -1266,6 +1274,17 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const se = currentPlayer.season;
                 sub.textContent = currentPlayer.name + ' · S1 ур.' + se.level + ' · 🪙' + se.chips + ' · 🍬' + se.gum;
             }
+            try {
+                const ps = document.getElementById('main-menu-play-sub');
+                if (ps && currentPlayer) {
+                    const ni = Profile.nextChapterIdx(getCampaignProgress(), CAMPAIGN_TRACKS);
+                    // два текстовых узла — чтобы название главы переводилось словарём отдельно от номера
+                    ps.textContent = '';
+                    const a = document.createElement('span'); a.textContent = 'Глава ' + (ni + 1);
+                    const b = document.createElement('span'); b.textContent = CAMPAIGN_TRACKS[ni].name;
+                    ps.append(a, ' · ', b);
+                }
+            } catch (e) {}
             updatePlayerBar();
         }
 
@@ -11159,6 +11178,15 @@ function showLoreScreen(quality, difficulty) {
                         openEventsScreen();
                     }
                 });
+            });
+            // «▶ Играть» — сразу в следующую главу кампании
+            const playBtn = document.getElementById('main-menu-play');
+            if (playBtn) playBtn.addEventListener('click', function() {
+                if (!currentPlayer) return;
+                ensureProfileFields(currentPlayer);
+                const ni = Profile.nextChapterIdx(getCampaignProgress(), CAMPAIGN_TRACKS);
+                hideMainMenu();
+                startCampaignTrack(ni, { direct: true, fast: true });
             });
             const shopBtn = document.getElementById('main-menu-shop');
             if (shopBtn) shopBtn.addEventListener('click', function() {

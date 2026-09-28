@@ -160,6 +160,7 @@ export default {
         // «Даю установку:»
         'Даю установку:': 'Your briefing:',
         'Погнали →': "Let's ride →",
+        '▶ ИГРАТЬ': '▶ PLAY',
         'Довези антидот. Звери не шутят. Прыгай с разлома — или падай.': 'Deliver the antidote. The animals mean business. Jump the chasm — or fall.',
         '🐾 Зверь или машина — авария.': '🐾 Animal or car — that is a crash.',
         '5 аварий — конец.': '5 crashes and it is over.',
@@ -274,6 +275,7 @@ export default {
         [/^\+(\d+) 🪙 за новые задания$/, '+$1 🪙 for new tasks'],
         [/^БОСС · глава (\d+)$/, 'BOSS · chapter $1'],
         [/^БОСС$/, 'BOSS'],
+        [/^Глава (\d+)$/, 'Chapter $1'],
         [/^«(.+)» в ярости$/, '«$1» is enraged'],
         [/^«(.+)» строит баррикады$/, '«$1» builds barricades'],
         [/^🦶 Сверху! ×(\d+)$/, '🦶 From above! ×$1'],
