@@ -8061,7 +8061,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -9476,13 +9476,16 @@ function startGaragePreview(carId) {
                                     size: (pr0.size || 0.26) * sm,
                                     speed: (pr0.speed || 7.2) * spm
                                 });
-                                const col = isMelee ? 0xffcc44 : pr.color;
-                                const em = isMelee ? 0xffaa22 : (pr.emissive || col);
+                                // снежные главы: босс стреляет льдом — попал, и руль на пару секунд скользкий
+                                const icy = isSnowTrack;
+                                const col = icy ? 0x9fe8ff : (isMelee ? 0xffcc44 : pr.color);
+                                const em = icy ? 0xc8f4ff : (isMelee ? 0xffaa22 : (pr.emissive || col));
                                 const bulletMat = new THREE.MeshBasicMaterial({
                                     color: em || col, fog: true
                                 });
                                 let geo;
-                                if (pr.shape === 'box') geo = new THREE.BoxGeometry(pr.size, pr.size * 0.7, pr.size * 1.4);
+                                if (icy) geo = new THREE.OctahedronGeometry(pr.size * 1.1);
+                                else if (pr.shape === 'box') geo = new THREE.BoxGeometry(pr.size, pr.size * 0.7, pr.size * 1.4);
                                 else if (pr.shape === 'rocket') geo = new THREE.CylinderGeometry(pr.size * 0.35, pr.size * 0.5, pr.size * 1.8, 8);
                                 else if (pr.shape === 'barrel') geo = new THREE.CylinderGeometry(pr.size * 0.6, pr.size * 0.6, pr.size * 1.2, 8);
                                 else geo = new THREE.SphereGeometry(pr.size, 10, 10);
@@ -9528,6 +9531,7 @@ function startGaragePreview(carId) {
                                         timePenalty: pr.timePenalty || 2,
                                         pull: !!pr.pull,
                                         heavy: !!pr.heavy,
+                                        freeze: icy,
                                         volley: volleyId
                                     });
                                 }
@@ -10008,6 +10012,12 @@ function startGaragePreview(carId) {
                         }
                         if (bu.pull && boss) {
                             xPos += (boss.x - xPos) * 0.35;
+                        }
+                        if (bu.freeze) {
+                            // та же механика, что масло: руль слабеет, машину сносит
+                            oilSlideTimer = Math.max(oilSlideTimer, 2.2);
+                            try { showTimePenaltyPopup(0, '❄ Лёд на колёсах!'); } catch (e) {}
+                            try { if (particleSystem && particleSystem.emit) particleSystem.emit({ x: xPos, y: 0.3, z: zPos }, { x: 0, y: 0.8, z: 0.5 }, 12, 0.22); } catch (e) {}
                         }
                         if (bu.heavy && typeof strikes !== 'undefined') {
                             logHit('boss');
