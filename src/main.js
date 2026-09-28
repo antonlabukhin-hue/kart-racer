@@ -411,6 +411,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
          * Если когда-нибудь понадобится чистый геттер — читайте loadAllProfiles()
          * напрямую, не вызывая эту функцию.
          */
+        // главы, у которых есть своя картинка превью (public/images/camp_NN.jpg)
+        const CAMPAIGN_THUMBS = ['01'];
         function getCampaignProgress() {
             if (!currentPlayer) return { unlocked: 1, completed: [] };
             ensureProfileFields(currentPlayer);
@@ -486,8 +488,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const stars = (prog.stars && prog.stars[t.id]) || 0;
                 const n = idx + 1;
                 const num = (n < 10 ? '0' : '') + n;
-                const imgJpg = 'images/camp_' + num + '.jpg';
-                const imgPng = 'images/camp_' + num + '.png';
+                // своя картинка есть не у всех глав — остальным картинка их карты (без запросов «наугад» и 404)
+                const imgSrc = CAMPAIGN_THUMBS.indexOf(num) >= 0 ? 'images/camp_' + num + '.jpg' : 'images/map_' + (MAP_ORDER.indexOf(t.style) >= 0 ? t.style : 'arsenev') + '.jpg';
                 // пройдена до появления звёзд — звёзд нет, пока не перепройдёшь
                 let badge = done ? (stars ? starsText(stars) : '✅ Пройдено') : (open ? '▶ Играть' : '🔒 Закрыто');
 
@@ -501,15 +503,10 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const img = document.createElement('img');
                 img.className = 'ct-thumb';
                 img.alt = t.name;
-                img.src = imgJpg;
+                img.src = imgSrc;
                 img.onerror = function() {
-                    if (img.dataset.triedPng) {
-                        img.style.display = 'none';
-                        thumbWrap.classList.add('no-img');
-                        return;
-                    }
-                    img.dataset.triedPng = '1';
-                    img.src = imgPng;
+                    img.style.display = 'none';
+                    thumbWrap.classList.add('no-img');
                 };
                 const numEl = document.createElement('span');
                 numEl.className = 'ct-num';
