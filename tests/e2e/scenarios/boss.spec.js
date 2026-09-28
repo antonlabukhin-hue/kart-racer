@@ -21,10 +21,19 @@ test('босс в броне: таран ранит только после пр
     await page.evaluate(() => window.__raceDebug.spawnBossNow());
     await expect.poll(() => page.evaluate(() => !!(window.__raceDebug.boss && window.__raceDebug.boss.mesh)), { timeout: 5000 }).toBe(true);
     const hp0 = await page.evaluate(() => window.__raceDebug.boss.hp);
+    // полоска в HUD: имя, фаза и столько сегментов, сколько HP
+    await expect(page.locator('#boss-hud')).toHaveClass(/on/);
+    await expect(page.locator('#boss-hud .bh-phase')).toContainText('Фаза 1');
+    await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp0);
     expect(await ram(page)).toBe(hp0);            // броня
     await page.evaluate(() => window.__raceDebug.openBoss());
+    await expect(page.locator('#boss-hud')).toHaveClass(/open/);
+    await expect(page.locator('#boss-cue')).toHaveClass(/on/);
     expect(await ram(page)).toBeLessThan(hp0);    // открыт — удар прошёл (на подобранном нитро — двойной)
     expect(await page.evaluate(() => window.__raceDebug.boss.vulnT)).toBeLessThanOrEqual(0); // окно закрылось
+    const hp1 = await page.evaluate(() => window.__raceDebug.boss.hp);
+    await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp1);
+    await expect(page.locator('#boss-cue')).not.toHaveClass(/on/); // окно закрыто — «БЕЙ!» погас
     expect(problems).toEqual([]);
 });
 
@@ -123,5 +132,19 @@ test('снежная трасса: босс стреляет льдом — по
         f();
     }));
     expect(slid).toBeGreaterThan(1);
+    expect(problems).toEqual([]);
+});
+
+test('босс не добит до конца арены — сбегает с обещанием реванша', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?start=0.78');
+    await startFreeRace(page, 'easy');
+    await waitRacing(page);
+    await page.evaluate(() => window.__raceDebug.spawnBossNow());
+    await page.evaluate(() => setInterval(() => { (window.__raceDebug.animals || []).forEach(an => { an.hit = true; if (an.mesh) an.mesh.visible = false; }); }, 100));
+    await page.keyboard.down('w');
+    await expect(page.locator('#boss-intro.escape')).toContainText('Догоним в следующем заезде', { timeout: 30_000 });
+    await page.keyboard.up('w');
+    await expect(page.locator('#boss-hud')).not.toHaveClass(/on/);
     expect(problems).toEqual([]);
 });

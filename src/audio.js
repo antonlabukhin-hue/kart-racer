@@ -907,6 +907,21 @@ class SoundEngine {
                     mk('square', 50, 0.15, 0.1, 30);
                     break;
                 }
+                case 'boss_impact': {
+                    // тяжёлый удар: низкий «бум» + хлёсткий треск
+                    mk('sine', 110, 0.28, 0.3, 32);
+                    mk('square', 70, 0.18, 0.16, 30);
+                    if (this.noiseBuffer) {
+                        const n = this.audioCtx.createBufferSource();
+                        n.buffer = this.noiseBuffer;
+                        const ng = this.audioCtx.createGain();
+                        ng.gain.setValueAtTime(0.3 * vs, t0);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.14);
+                        n.connect(ng); ng.connect(this.audioCtx.destination);
+                        n.start(t0);
+                    }
+                    break;
+                }
                 case 'boss_die': {
                     mk('sawtooth', 70, 0.55, 0.24, 25);
                     mk('square', 45, 0.6, 0.18, 22);

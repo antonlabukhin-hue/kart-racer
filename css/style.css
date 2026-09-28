@@ -4329,7 +4329,7 @@
 
 
         /* карточка босса: сверху по центру, въезжает справа */
-        #boss-intro { position: fixed; top: 56px; left: 50%; transform: translateX(-50%); z-index: 150; pointer-events: none;
+        #boss-intro { position: fixed; top: 140px; left: 50%; transform: translateX(-50%); z-index: 150; pointer-events: none;
             min-width: 260px; max-width: 92vw; padding: 10px 22px 12px; text-align: center; overflow: hidden;
             background: linear-gradient(100deg, rgba(20,6,4,0.92), rgba(40,10,6,0.85)); border: 2px solid #ff5522; border-radius: 12px;
             box-shadow: 0 0 28px rgba(255,60,20,0.45); font-family: system-ui, "Segoe UI", Arial, sans-serif; animation: biIn 0.4s cubic-bezier(.2,1.4,.4,1); }
@@ -4392,3 +4392,54 @@
         }
         .chapter-gift .cg-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
         .chapter-gift .cg-swatch { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; flex: none; }
+
+        /* полоска босса в HUD */
+        #boss-hud {
+            position: fixed; top: 44px; left: 50%; transform: translateX(-50%) translateY(-8px); z-index: 140;
+            width: min(380px, 70vw); padding: 6px 12px 8px; border-radius: 12px; pointer-events: none;
+            background: rgba(12,8,8,0.82); border: 2px solid rgba(255,90,40,0.6); color: #fff;
+            opacity: 0; transition: opacity .3s, transform .3s, border-color .2s, box-shadow .2s;
+        }
+        #boss-hud.on { opacity: 1; transform: translateX(-50%); }
+        #boss-hud .bh-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+        #boss-hud .bh-name { font-weight: 800; font-size: 15px; color: #ffcf8a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #boss-hud .bh-phase { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+        #boss-hud .bh-phase.p1 { color: #ffd84a; }
+        #boss-hud .bh-phase.p2 { color: #ff9a2a; }
+        #boss-hud .bh-phase.p3 { color: #ff4a2a; }
+        #boss-hud .bh-hp { display: flex; gap: 4px; margin-top: 5px; }
+        #boss-hud .bh-hp i { flex: 1; height: 10px; border-radius: 3px; background: rgba(255,255,255,0.12); transition: background .25s; }
+        #boss-hud .bh-hp i.on { background: linear-gradient(180deg, #ff7a3a, #d92a10); }
+        #boss-hud.p3 .bh-hp i.on { background: linear-gradient(180deg, #ff4a4a, #a80e0e); }
+        #boss-hud.open { border-color: #5dff8a; box-shadow: 0 0 18px rgba(80,255,130,0.45); }
+        #boss-hud.open .bh-hp i.on { background: linear-gradient(180deg, #8dffb0, #27c25a); }
+        #boss-hud.hit { animation: bossHudHit .35s; }
+        @keyframes bossHudHit { 0% { transform: translateX(-50%) scale(1.08); } 30% { transform: translateX(calc(-50% - 6px)); } 60% { transform: translateX(calc(-50% + 5px)); } 100% { transform: translateX(-50%); } }
+        @media (max-width: 600px) { #boss-hud { top: 64px; width: 62vw; } }
+        /* пока на экране полоска босса — радио-строка уходит под неё */
+        body.race-mode:has(#boss-hud.on) .radio-line { top: calc(env(safe-area-inset-top, 0px) + 104px) !important; }
+
+        /* «БЕЙ!» — окно уязвимости босса */
+        #boss-cue {
+            position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(.6); z-index: 135;
+            pointer-events: none; text-align: center; opacity: 0; transition: opacity .18s, transform .18s;
+        }
+        #boss-cue b {
+            display: block; font-size: clamp(54px, 11vw, 110px); font-weight: 900; letter-spacing: 4px; line-height: .95;
+            color: #7dff9e; -webkit-text-stroke: 3px #0b3a18; text-shadow: 0 0 24px rgba(90,255,140,.8), 0 6px 0 #0b3a18;
+        }
+        #boss-cue small { display: block; margin-top: 4px; font-size: 15px; font-weight: 800; color: #d8ffe2; text-shadow: 0 2px 6px #000; }
+        #boss-cue.on { opacity: 1; transform: translate(-50%, -50%) scale(1); animation: bossCuePulse .45s .2s infinite alternate; }
+        @keyframes bossCuePulse { to { transform: translate(-50%, -50%) scale(1.08); } }
+
+        /* вспышка при попадании по боссу */
+        .boss-hit-flash {
+            position: fixed; inset: 0; z-index: 130; pointer-events: none;
+            box-shadow: inset 0 0 90px 30px rgba(255,255,255,0.75); animation: bossHitFlash .3s ease-out forwards;
+        }
+        .boss-hit-flash.big { box-shadow: inset 0 0 140px 60px rgba(255,240,200,0.9); }
+        @keyframes bossHitFlash { from { opacity: 1; } to { opacity: 0; } }
+
+        /* карточка «Ушёл — догоним» */
+        #boss-intro.escape { border-color: #ffcc44; box-shadow: 0 8px 30px rgba(255,200,60,0.3); }
+        #boss-intro.escape .bi-top { color: #ffcc44; }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ATTACK_HINTS, splitBossName, bossIntroHtml, bossPhaseHtml } from '../../src/boss-intro.js';
+import { ATTACK_HINTS, splitBossName, bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from '../../src/boss-intro.js';
 import { CAMPAIGN_BOSSES } from '../../src/boss.js';
 
 describe('карточка босса', () => {
@@ -21,5 +21,15 @@ describe('карточка босса', () => {
         expect(html).toContain('#ff2244');
         expect(bossPhaseHtml({ name: 'Кабан «Бригада»' }, 2)).toContain('ФАЗА 2');
         expect(bossPhaseHtml({ name: 'Кабан «Бригада»' }, 3)).toContain('в ярости');
+    });
+});
+
+describe('босс сбежал', () => {
+    it('обещает реванш в следующей главе или заезде', () => {
+        const h = bossEscapeHtml({ name: 'Кабан «Бригада»' }, 3);
+        expect(h).toContain('«Бригада» сбежал');
+        expect(h).toContain('Догоним в главе 3');
+        expect(bossEscapeHtml({ name: 'Лев' }, null)).toContain('Догоним в следующем заезде');
+        expect(bossEscapeHtml({ name: '<b>' }, null)).not.toContain('<b>');
     });
 });
