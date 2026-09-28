@@ -314,6 +314,36 @@ export function nextChapterIdx(campaign, tracks) {
     return open - 1;
 }
 
+/** Награда за первую главу: краска «Такси 90-х» и открытый «Звериный час» */
+export const CHAPTER1_ID = 'c01';
+export const CHAPTER1_PAINT = 'yellow';
+
+/** «Звериный час» открыт после главы 1 (или если в нём уже играли до этого правила) */
+export function beastHourOpen(profile) {
+    if (!profile) return false;
+    if ((profile.endlessBest || 0) > 0) return true;
+    const done = (profile.campaign && profile.campaign.completed) || [];
+    return done.indexOf(CHAPTER1_ID) >= 0;
+}
+
+/**
+ * Выдать награду за главу (один раз): краска в коллекцию и сразу на машину.
+ * Возвращает { paint } или null, если награды нет или уже выдана.
+ */
+export function grantChapterReward(profile, trackId, carId) {
+    if (trackId !== CHAPTER1_ID || !profile || !profile.carLoadout) return null;
+    const lo = profile.carLoadout;
+    if (!Array.isArray(lo.ownedPaints)) lo.ownedPaints = [];
+    if (lo.ownedPaints.indexOf(CHAPTER1_PAINT) >= 0) return null;
+    lo.ownedPaints.push(CHAPTER1_PAINT);
+    if (carId) {
+        if (!lo.paintByCar || typeof lo.paintByCar !== 'object') lo.paintByCar = {};
+        lo.paintByCar[carId] = CHAPTER1_PAINT;
+        lo.paint = CHAPTER1_PAINT;
+    }
+    return { paint: CHAPTER1_PAINT };
+}
+
 // ---------------- гараж ----------------
 
 /**

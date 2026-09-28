@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     createProfile, ensureProfileFields, loadProfiles, saveProfiles, saveProfile, PROFILES_KEY, SESSION_KEY,
     seasonXpToNext, addSeasonXp, grantAchievement, claimSeasonRewards, applyRaceResult,
-    mergeCampaignBackup, markChapterWon, nextChapterIdx, buyPaint, toggleCarPart, MAX_SEASON_LEVEL
+    mergeCampaignBackup, markChapterWon, nextChapterIdx, beastHourOpen, grantChapterReward, buyPaint, toggleCarPart, MAX_SEASON_LEVEL
 } from '../../src/profile.js';
 import { TROPHIES, SEASON_REWARDS, CAR_PARTS, CAR_PAINTS, DAILY_CONTRACTS } from '../../src/content.js';
 import { mergeStars } from '../../src/campaign-stars.js';
@@ -200,5 +200,25 @@ describe('кнопка «Играть»', () => {
         expect(nextChapterIdx({ unlocked: 3, completed: ['c01', 'c02', 'c03'] }, tracks)).toBe(2);
         expect(nextChapterIdx({ unlocked: 99 }, tracks)).toBe(0);
         expect(nextChapterIdx({ unlocked: 0 }, tracks)).toBe(0);
+    });
+});
+
+describe('награда за главу 1', () => {
+    it('«Звериный час» закрыт до главы 1; у старых игроков с рекордом — открыт', () => {
+        const p = createProfile('A', 1, () => 0.5);
+        expect(beastHourOpen(p)).toBe(false);
+        p.campaign = { unlocked: 2, completed: ['c01'] };
+        expect(beastHourOpen(p)).toBe(true);
+        expect(beastHourOpen({ endlessBest: 1200 })).toBe(true);
+        expect(beastHourOpen(null)).toBe(false);
+    });
+    it('краска выдаётся один раз и ставится на машину; за другие главы — ничего', () => {
+        const p = createProfile('A', 1, () => 0.5);
+        ensureProfileFields(p, 99);
+        expect(grantChapterReward(p, 'c02', 'cheburashka')).toBeNull();
+        expect(grantChapterReward(p, 'c01', 'cheburashka')).toEqual({ paint: 'yellow' });
+        expect(p.carLoadout.ownedPaints).toContain('yellow');
+        expect(p.carLoadout.paintByCar.cheburashka).toBe('yellow');
+        expect(grantChapterReward(p, 'c01', 'cheburashka')).toBeNull();
     });
 });

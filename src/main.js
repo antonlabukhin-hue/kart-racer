@@ -885,6 +885,12 @@ function startCampaignTrack(idx, opts) {
             // пройдена + открыта следующая; остальные поля кампании (текущая глава и т.п.) сохраняются
             const won = Profile.markChapterWon(prog, trackId, idx, CAMPAIGN_TRACKS.length);
             Object.assign(prog, won.campaign);
+            // награда за главу 1: краска сразу на машину + открыт «Звериный час» (показывается на финише)
+            try {
+                const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
+                const gift = Profile.grantChapterReward(currentPlayer, trackId, car);
+                window.__lastChapterReward = gift ? { trackId: trackId, paint: gift.paint } : null;
+            } catch (eR) { window.__lastChapterReward = null; }
             if (won.unlockedNew) {
                 try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 1.1); } catch (e) {}
                 try {
@@ -1196,6 +1202,15 @@ function createProfile(name) { return Profile.createProfile(name); }
             const bar = document.getElementById('player-bar');
             if (!bar || !currentPlayer) return;
             try { const eb = document.getElementById('menu-endless-best'); if (eb) eb.textContent = currentPlayer.endlessBest ? '🏆 ' + currentPlayer.endlessBest : ''; } catch (e) {}
+            // «Звериный час» — под замком до главы 1
+            try {
+                const ec = document.querySelector('.menu-card[data-menu="endless"]');
+                if (ec) {
+                    const open = Profile.beastHourOpen(currentPlayer);
+                    ec.classList.toggle('locked', !open);
+                    if (open) ec.removeAttribute('aria-disabled'); else ec.setAttribute('aria-disabled', 'true');
+                }
+            } catch (e) {}
             bar.classList.add('visible');
             const n = document.getElementById('player-bar-name');
             const s = document.getElementById('player-bar-season');
@@ -4516,6 +4531,14 @@ function startGaragePreview(carId) {
                                 const cls = lt.now[i] ? 'ok' : (lt.done[i] ? 'old' : 'no');
                                 return '<div class="' + cls + '">' + (lt.done[i] ? '✓' : '○') + ' ' + escapeHtml(tk.text) + '</div>';
                             }).join('') + (lt.reward ? '<div class="reward">+' + lt.reward + ' 🪙 за новые задания</div>' : '') + '</div>';
+                        }
+                        const cr = window.__lastChapterReward;
+                        if (cr && cr.trackId === window.__campaignTrackId) {
+                            const paint = CAR_PAINTS.find(function(x) { return x.id === cr.paint; });
+                            starsHtml += '<div class="chapter-gift">'
+                                + '<div class="cg-row"><span class="cg-swatch" style="background:#' + ((paint && paint.color) || 0).toString(16).padStart(6, '0') + '"></span>'
+                                + '<span>🎁 Краска «' + escapeHtml(paint ? paint.name : cr.paint) + '» — уже на машине</span></div>'
+                                + '<div class="cg-row">🐾 Открыт «Звериный час»</div></div>';
                         }
                     }
                     const head = (state === 'win')
@@ -11159,6 +11182,10 @@ function showLoreScreen(quality, difficulty) {
                         else alert('openCampaignScreen не найден');
                         return;
                     } else if (m === 'endless') {
+                        if (!Profile.beastHourOpen(currentPlayer)) {
+                            if (window.Notify) Notify.warn('Пройди главу 1 кампании', '«Звериный час» закрыт');
+                            return;
+                        }
                         startEndlessRun();
                     } else if (m === 'race' && typeof beginRaceFlow === 'function') {
                         if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
