@@ -199,6 +199,7 @@ export default {
         'Тряска камеры и линии скорости': 'Camera shake and speed lines',
         'Вибрация телефона при аварии': 'Vibrate on crash',
         '👻 Призрак лучшего заезда': '👻 Best-run ghost',
+        '🛣 Повороты и холмы дороги': '🛣 Road bends and hills',
         '📋 Показать «Даю установку:» снова': '📋 Show the briefing again',
         'Авто': 'Auto',
         'МУЗЫКА': 'MUSIC',

@@ -30,6 +30,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { VULN_TIME, DEFEAT_TIME_BONUS, bossHp, damageFor, createVolleyTracker, arenaOpen, phaseForHp, barricadeLanes } from './boss-fight.js';
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
+        import * as curvedWorld from './curved-world.js';
+        curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
@@ -603,6 +605,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         
         /** Полная очистка гонки без выхода в главное меню (рестарт/следующая глава) */
         function cleanupRaceKeepProfile() {
+            curvedWorld.setCurve(0, 0);
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { window.__hudRefs = null; } catch (e) {}
 
@@ -2895,6 +2898,7 @@ function startGaragePreview(carId) {
                 toggle('shake', 'Тряска камеры и линии скорости') +
                 toggle('vibrate', 'Вибрация телефона при аварии') +
                 toggle('ghost', '👻 Призрак лучшего заезда') +
+                toggle('curve', '🛣 Повороты и холмы дороги') +
                 '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
                 '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
                 '</div>';
@@ -2941,6 +2945,7 @@ function startGaragePreview(carId) {
         window.openSettingsScreen = openSettingsScreen;
 
         function exitRaceToMenu(openGarageAfter) {
+            curvedWorld.setCurve(0, 0);
             try {
                 const rs = window.__raceDebug ? window.__raceDebug.state : (window.__inRace && !document.getElementById('finish-screen') ? 'racing' : '');
                 if (window.__inRace && rs === 'racing') trackEvent('race_quit', { chapter: window.__campaignTrackId || null, mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race' });
@@ -5368,7 +5373,8 @@ function startGaragePreview(carId) {
             // ЗЕМЛЯ И ТРАССА
             // ============================================================
             const ground = new THREE.Mesh(
-                new THREE.PlaneGeometry(400, TRACK_LENGTH + 200),
+                // сетка, а не 4 вершины: «кривой мир» гнёт вершины (src/curved-world.js)
+                new THREE.PlaneGeometry(400, TRACK_LENGTH + 200, 16, Math.ceil((TRACK_LENGTH + 200) / 6)),
                 new THREE.MeshStandardMaterial({ map: createGrassTexture(), roughness: 1, metalness: 0 })
             );
             ground.rotation.x = -Math.PI / 2;
@@ -5417,7 +5423,7 @@ function startGaragePreview(carId) {
                 metalness: 0.1,
                 side: THREE.DoubleSide
             });
-            const track = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_WIDTH, TRACK_LENGTH), trackMat);
+            const track = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_WIDTH, TRACK_LENGTH, 1, Math.ceil(TRACK_LENGTH / 3)), trackMat);
             track.rotation.x = -Math.PI / 2;
             track.position.set(0, 0.01, 0);
             track.receiveShadow = true;
@@ -6698,6 +6704,10 @@ function startGaragePreview(carId) {
             const ghostStoreKey = ghostKey(currentPlayer && (currentPlayer.id || currentPlayer.name),
                 window.__campaignTrackId ? ('camp_' + window.__campaignTrackId) : mapId, difficulty);
             const ghostRec = createGhostRecorder();
+            // кривой мир: свой рисунок поворотов у каждой трассы (src/curved-world.js)
+            const curveSeed = (function(k) { let h = 0; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 1000; return h / 97; })(String(window.__campaignTrackId || mapId));
+            const curveOn = _settings.curve !== false;
+            curvedWorld.setCurve(0, 0);
             // Обучение: главы 1–3, пока глава не пройдена (src/tutorial.js)
             let coachSteps = [];
             try {
@@ -8342,7 +8352,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8444,6 +8454,7 @@ function startGaragePreview(carId) {
                 const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
                 ghostClock += deltaTime;
                 ghostRec.update(deltaTime, xPos, zPos, carYOffset);
+                if (curveOn) { const cv = curvedWorld.curveAt(START_Z - zPos, curveSeed); curvedWorld.setCurve(cv.x, cv.y); }
                 if (coachSteps.length && coachShown.size < coachSteps.length && (coachAcc += deltaTime) > 0.2) {
                     coachAcc = 0;
                     // не чаще раза в 3 с — подсказки не налезают друг на друга
