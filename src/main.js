@@ -51,7 +51,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta } from './ghost.js';
-        import { newEndlessRun, waveDifficulty, waveMap, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
+        import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
+        import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
         import { createMapEvent, createPipeDrop } from './mapevents.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
@@ -652,11 +653,16 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             try { hideMainMenu(); } catch (e) {}
             const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
             const q = window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium';
-            initGame(q, waveDifficulty(run.wave), car, waveMap(run.wave), 'day');
+            // волна строится из сида: карта, погода и раскладка трассы (src/beast-seed.js)
+            const plan = wavePlan(run.seed, run.wave);
+            window.__layoutOverride = plan.layout;
+            initGame(q, waveDifficulty(run.wave), car, plan.map, plan.weather);
         }
-        function startEndlessRun() {
+        /** seed не задан — «Звериный час дня» (сид общий для всех в этот день) */
+        function startEndlessRun(seed) {
             clearCampaignGlobals();
-            window.__endless = newEndlessRun();
+            const daily = seed == null;
+            window.__endless = newEndlessRun(daily ? dailySeed() : seed, daily);
             launchEndlessWave();
         }
         window.startEndlessRun = startEndlessRun;
@@ -666,7 +672,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             el.id = 'endless-wave-card';
             el.innerHTML = '<div class="ew-sub">Волна ' + (run.wave - 1) + ' пройдена · +' + gained + '</div>'
                 + '<div class="ew-title">🐾 ВОЛНА ' + run.wave + '</div>'
-                + '<div class="ew-sub">Счёт: ' + run.score + ' · Аварии: ' + run.strikes + ' / 5</div>';
+                + '<div class="ew-sub">Счёт: ' + run.score + ' · Аварии: ' + run.strikes + ' / 5</div>'
+                + '<div class="ew-seed">' + (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '</div>';
             document.body.appendChild(el);
             setTimeout(function() { try { el.remove(); } catch (e) {} onDone(); }, 1800);
         }
@@ -1293,11 +1300,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const mm = document.getElementById('main-menu-screen');
             if (mm) { mm.classList.add('active'); mm.style.display = 'flex'; }
             // живой 3D-фон: машина игрока мчит по закатной трассе (на «низком» качестве — неподвижный кадр)
-            try {
-                const car = (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0) ? currentPlayer.preferredCar : 'cheburashka';
-                const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                startMenuBg({ carId: car, profile: currentPlayer, still: reduce || loadSettings().quality === 'low', lowPower: !!window.__isMobile });
-            } catch (e) { console.warn('menu bg', e); }
+            ensureMenuBg();
             const sub = document.getElementById('main-menu-sub');
             if (sub && currentPlayer) {
                 const se = currentPlayer.season;
@@ -1320,7 +1323,16 @@ function createProfile(name) { return Profile.createProfile(name); }
         function hideMainMenu() {
             const mm = document.getElementById('main-menu-screen');
             if (mm) { mm.classList.remove('active'); mm.style.display = 'none'; }
-            try { stopMenuBg(); } catch (e) {}
+            // живой фон остаётся за остальными экранами меню (гараж, кампания, выбор трассы…);
+            // если меню открыли не из главного (например, с финиша) — запустить
+            setTimeout(function() { if (!window.__inRace) ensureMenuBg(); }, 0);
+        }
+        function ensureMenuBg() {
+            try {
+                const car = (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0) ? currentPlayer.preferredCar : 'cheburashka';
+                const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                startMenuBg({ carId: car, profile: currentPlayer, still: reduce || loadSettings().quality === 'low', lowPower: !!window.__isMobile });
+            } catch (e) { console.warn('menu bg', e); }
         }
 
         function openRewardsScreen() {
@@ -4100,6 +4112,7 @@ function startGaragePreview(carId) {
             if (typeof updateRotateLock === 'function') updateRotateLock();
 
             window.__forcePBR = false; // гонка — лёгкие шейдеры
+            try { stopMenuBg(); } catch (e) {}
             console.log(`🚀 Запуск: ${quality}, ${difficulty}, авто: ${carId}, карта: ${mapId}, погода: ${weatherId}, тема: ${window.__trackThemeActive || "default"}`);
             window.__inRace = true;
             if (typeof window.stopMenuMusic === 'function') window.stopMenuMusic();
@@ -4539,7 +4552,8 @@ function startGaragePreview(carId) {
                     const run = window.__endless;
                     title = '🐾 ЗВЕРИНЫЙ ЧАС ОКОНЧЕН';
                     color = '#ffd23c';
-                    message = 'Волна: ' + run.wave + ' · Счёт: ' + run.score
+                    message = (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '\n'
+                        + 'Волна: ' + run.wave + ' · Счёт: ' + run.score
                         + '\n' + (state === 'timeout' ? 'Время волны вышло' : 'Аварий: ' + strikes + ' / ' + MAX_STRIKES)
                         + '\n' + (run.isNewBest ? '🎉 НОВЫЙ РЕКОРД!' : '🏆 Рекорд: ' + (currentPlayer.endlessBest || 0));
                 } else if (state === 'timeout') {
@@ -7311,7 +7325,7 @@ function startGaragePreview(carId) {
             }
             try {
                 // раскладка участков — из данных (src/tracks/layouts.json): карта → глава кампании
-                const _layout = resolveLayout(null, { mapId: mapId, difficulty: difficulty, campaignId: window.__campaignTrackId || null });
+                const _layout = (isEndlessMode() && window.__layoutOverride) || resolveLayout(null, { mapId: mapId, difficulty: difficulty, campaignId: window.__campaignTrackId || null });
                 window.__trackLayout = _layout;
                 let prevLane = -1;
                 _layout.gaps.forEach(function(frac, gi) {

@@ -1,22 +1,19 @@
 /**
  * «Звериный час» — бесконечный режим волнами.
- * Каждая волна — полная трасса; карты сменяются по кругу, зверей больше с каждой волной,
+ * Каждая волна — полная трасса; карта, погода и раскладка — по сиду забега (src/beast-seed.js), зверей больше с каждой волной,
  * аварии копятся между волнами. Конец — 5 аварий или время волны вышло. Счёт — в рекорд профиля.
  */
 export const ENDLESS_MAPS = ['arsenev', 'promzona', 'svalka'];
 export const WAVE_BASE_POINTS = 1000;
 
-export function newEndlessRun() {
-    return { wave: 1, score: 0, strikes: 0, nearMiss: 0 };
+/** seed — сид забега (src/beast-seed.js); daily — это «Звериный час дня» */
+export function newEndlessRun(seed, daily) {
+    return { wave: 1, score: 0, strikes: 0, nearMiss: 0, seed: (seed >>> 0), daily: !!daily };
 }
 
 /** сложность волны: 1 — лёгкая, 2 — средняя, дальше — сложная */
 export function waveDifficulty(wave) {
     return wave <= 1 ? 'easy' : (wave === 2 ? 'medium' : 'hard');
-}
-
-export function waveMap(wave) {
-    return ENDLESS_MAPS[(Math.max(1, wave) - 1) % ENDLESS_MAPS.length];
 }
 
 /** с 4-й волны зверей больше и они чаще (до +60%), время волны не меняется */

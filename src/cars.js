@@ -30,7 +30,7 @@ export function buildShowroomCar(carId) {
     const bodyMat = new THREE_REF.MeshStandardMaterial({ color: col, metalness: 0.5, roughness: 0.32 });
     const bodyMat2 = bodyMat.clone();
     const blackMat = new THREE_REF.MeshStandardMaterial({ color: 0x151515, metalness: 0.55, roughness: 0.45 });
-    const chromeMat = new THREE_REF.MeshStandardMaterial({ color: 0x9a9aa8, metalness: 0.85, roughness: 0.28 });
+    const chromeMat = new THREE_REF.MeshStandardMaterial({ color: 0xc4c6d0, metalness: 0.4, roughness: 0.3 });
     const glassMat = new THREE_REF.MeshStandardMaterial({
         color: 0x1a3048, metalness: 0.6, roughness: 0.08, transparent: true, opacity: 0.78
     });
@@ -231,25 +231,13 @@ export function buildShowroomCar(carId) {
         group.add(grillG);
     }
 
-    // 6) Зеркала — у A-стойки + кронштейн
-    {
-        const mirrorZ = cabinZ - cabinLen * 0.42;
-        const mirrorY = cabinY - cabinH * 0.15;
-        [-1, 1].forEach(side => {
-            const arm = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.05, 0.02, 0.02), blackMat);
-            arm.position.set(side * (bodyW * 0.44), mirrorY, mirrorZ);
-            group.add(arm);
-            const m = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.07, 0.055, 0.06), blackMat);
-            m.position.set(side * bodyW * 0.48, mirrorY, mirrorZ);
-            group.add(m);
-        });
-    }
+    // 6) Зеркала — одна пара, в блоке «Детали кузова» ниже (раньше было две пары одна над другой)
 
     // 7) Фары — корпус и линза СОСНО (один x,y; линза чуть вперёд по -Z)
     {
         const hlY = isJeep ? bodyY + 0.04 : (isSport ? 0.42 : 0.44);
-        const hlZ = -bodyL * 0.5 - 0.04;
-        const hlX = isJeep ? bodyW * 0.38 : bodyW * 0.40;
+        const hlZ = -bodyL * 0.5 - (isJeep ? 0.02 : 0.04);
+        const hlX = isJeep ? bodyW * 0.33 : bodyW * 0.40;
         [-1, 1].forEach(side => {
             if (isJeep) {
                 // хромированный корпус (короткий цилиндр вдоль Z)
@@ -326,8 +314,13 @@ export function buildShowroomCar(carId) {
 
     // Заводской маленький спойлер на спорт
     if (isSport) {
-        const stockWing = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(1.15, 0.05, 0.28), blackMat);
-        stockWing.position.set(0, 0.72, bodyL * 0.4); group.add(stockWing);
+        const deck = bodyY + bodyH * 0.4 + 0.06; // верх крышки багажника
+        const stockWing = new THREE_REF.Mesh(new RoundedBoxGeometry(1.1, 0.05, 0.26, 2, 0.02), blackMat);
+        stockWing.position.set(0, deck + 0.12, bodyL * 0.36); group.add(stockWing);
+        [-0.36, 0.36].forEach(function(x) {
+            const post = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.05, 0.12, 0.07), blackMat);
+            post.position.set(x, deck + 0.06, bodyL * 0.36); group.add(post);
+        });
     }
 
     // === НИВА (kirpich): высокий кузов, запаска, круглая оптика, короткий капот ===
@@ -441,14 +434,14 @@ export function buildShowroomCar(carId) {
             new THREE_REF.BoxGeometry(0.08, 0.06, 0.25),
             chromeMat.clone()
         );
-        ornament.position.set(0, bodyY + bodyH * 0.55 + 0.08, -bodyL * 0.35);
+        ornament.position.set(0, bodyY + bodyH * 0.5 + 0.06, -bodyL * 0.35);
         group.add(ornament);
     }
 
     // --- Кастом-детали (примерка) ---
     const parts = {};
     const partBlack = new THREE_REF.MeshStandardMaterial({ color: 0x0e0e10, metalness: 0.4, roughness: 0.55 });
-    const partChrome = new THREE_REF.MeshStandardMaterial({ color: 0xb8b8c0, metalness: 0.92, roughness: 0.18 });
+    const partChrome = new THREE_REF.MeshStandardMaterial({ color: 0xcfd1d8, metalness: 0.45, roughness: 0.22 });
     const spoilerG = new THREE_REF.Group();
     // Нива: спойлер НА КРЫШЕ сзади; седан: на багажнике
     const spoilerOnRoof = isJeep;
@@ -511,7 +504,7 @@ export function buildShowroomCar(carId) {
     wheelPositions.forEach(p => {
         const rim = new THREE_REF.Mesh(
             new THREE_REF.CylinderGeometry(wheelR * 0.62, wheelR * 0.62, 0.24, 16),
-            new THREE_REF.MeshStandardMaterial({ color: 0xf0f0ff, metalness: 0.98, roughness: 0.1 })
+            new THREE_REF.MeshStandardMaterial({ color: 0xf0f0ff, metalness: 0.5, roughness: 0.15 })
         );
         rim.rotation.z = Math.PI / 2; rim.position.set(p[0], p[1], p[2]); rims.add(rim);
     });
@@ -547,7 +540,7 @@ export function buildShowroomCar(carId) {
         const topY = bodyY + bodyH * 0.5;
         const frontZ = -bodyL * 0.5, rearZ = bodyL * 0.5;
         const dark = new THREE_REF.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 });
-        const chrome2 = new THREE_REF.MeshStandardMaterial({ color: 0xd0d4dc, metalness: 0.9, roughness: 0.2 });
+        const chrome2 = new THREE_REF.MeshStandardMaterial({ color: 0xdcdfe6, metalness: 0.4, roughness: 0.25 });
         const B = function(mat, x, y, z, sx, sy, sz, paint) {
             const m = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(sx, sy, sz), mat);
             m.position.set(x, y, z); if (paint) m.userData.bodyPaint = true; group.add(m); return m;
@@ -571,11 +564,13 @@ export function buildShowroomCar(carId) {
         pf.rotation.y = Math.PI; pf.position.set(0, 0.2, frontZ - 0.14); group.add(pf); // перед бампером, не в его плоскости
         const pr = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.46, 0.1), plateMat);
         pr.position.set(0, isJeep ? 0.36 : 0.35, rearZ + 0.13); group.add(pr);
-        // зеркала на стойках у лобового
+        // зеркала на стойках у лобового: кронштейн от стенки кабины до корпуса зеркала (без зазоров)
         [-1, 1].forEach(function(sx) {
-            B(dark, sx * (bodyW * 0.5 + 0.02), topY + 0.08, cabinZ - cabinLen * 0.42, 0.1, 0.03, 0.03);
-            B(bodyMat, sx * (bodyW * 0.5 + 0.08), topY + 0.1, cabinZ - cabinLen * 0.42, 0.06, 0.08, 0.1, true);
-            B(chrome2, sx * (bodyW * 0.5 + 0.08), topY + 0.1, cabinZ - cabinLen * 0.42 + 0.051, 0.05, 0.065, 0.005);
+            const zM = cabinZ - cabinLen * 0.42;
+            const xIn = bodyW * 0.44, xOut = bodyW * 0.5 + 0.06;
+            B(dark, sx * (xIn + xOut) / 2, topY + 0.08, zM, xOut - xIn + 0.02, 0.03, 0.03);
+            B(bodyMat, sx * (bodyW * 0.5 + 0.09), topY + 0.1, zM, 0.07, 0.08, 0.1, true);
+            B(chrome2, sx * (bodyW * 0.5 + 0.09), topY + 0.1, zM + 0.051, 0.055, 0.065, 0.005);
         });
         // дворники на лобовом
         [-0.18, 0.12].forEach(function(x) {
@@ -605,7 +600,8 @@ export function buildShowroomCar(carId) {
                 group.add(bolt);
             }
             // брызговик за задним колесом
-            if (w.z > 0) B(dark, w.x, 0.14, w.z + wheelR + 0.05, 0.2, 0.2, 0.02);
+            // под кузовом: верх упирается в днище, наружу за борт не торчит
+            if (w.z > 0) B(dark, Math.sign(w.x) * (bodyW * 0.5 - 0.1), bodyY - bodyH * 0.5 - 0.07, w.z + wheelR + 0.04, 0.18, 0.15, 0.02);
         });
         if (!isJeep && !isSport) {
             // Чебурашка — «копейка»: сдвоенные круглые фары и хромированные бамперы с клыками
