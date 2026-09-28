@@ -36,6 +36,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
         curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
+        import * as Profile from './profile.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
@@ -419,21 +420,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             cp.stars = mergeStars(cp.stars, null);
             // бэкап на случай старых профилей
             try {
-                const raw = localStorage.getItem('road_racing_campaign_' + currentPlayer.id);
-                if (raw) {
-                    const bak = JSON.parse(raw);
-                    if (bak && bak.unlocked > cp.unlocked) cp.unlocked = bak.unlocked;
-                    if (bak && Array.isArray(bak.completed)) {
-                        bak.completed.forEach(function(id) {
-                            if (cp.completed.indexOf(id) < 0) cp.completed.push(id);
-                        });
-                    }
-                    if (bak && bak.stars) cp.stars = mergeStars(cp.stars, bak.stars);
-                    if (bak && bak.tasks) {
-                        if (!cp.tasks) cp.tasks = {};
-                        Object.keys(bak.tasks).forEach(function(id) { cp.tasks[id] = mergeTaskProgress(cp.tasks[id], bak.tasks[id] || []).done; });
-                    }
-                }
+                const raw = localStorage.getItem(Profile.campaignBackupKey(currentPlayer));
+                if (raw) Profile.mergeCampaignBackup(cp, JSON.parse(raw), mergeStars, mergeTaskProgress);
             } catch (e) {}
             currentPlayer.campaign = cp;
             return cp;
@@ -719,7 +707,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             };
             try { saveCurrentPlayer(); } catch (e) {}
             try {
-                localStorage.setItem('road_racing_campaign_' + (currentPlayer.id || currentPlayer.name || 'p'), JSON.stringify(currentPlayer.campaign));
+                localStorage.setItem(Profile.campaignBackupKey(currentPlayer), JSON.stringify(currentPlayer.campaign));
             } catch (e) {}
 
             window.__campaignIdx = idx;
@@ -787,7 +775,7 @@ function startCampaignTrack(idx, opts) {
                 prog.current = idx;
                 currentPlayer.campaign = prog;
                 saveCurrentPlayer();
-                localStorage.setItem('road_racing_campaign_' + (currentPlayer.id || currentPlayer.name || 'p'), JSON.stringify(prog));
+                localStorage.setItem(Profile.campaignBackupKey(currentPlayer), JSON.stringify(prog));
             } catch (e) {}
 
             const launch = function() {
@@ -881,7 +869,6 @@ function startCampaignTrack(idx, opts) {
             const prog = getCampaignProgress();
             const idx = CAMPAIGN_TRACKS.findIndex(function(t){ return t.id === trackId; });
             if (idx < 0) return;
-            if (prog.completed.indexOf(trackId) < 0) prog.completed.push(trackId);
             const prevStars = (prog.stars && prog.stars[trackId]) || 0;
             const gotStars = calcCampaignStars(strikes);
             prog.stars = mergeStars(prog.stars, { [trackId]: gotStars });
@@ -897,10 +884,10 @@ function startCampaignTrack(idx, opts) {
                 if (reward > 0 && currentPlayer.season) currentPlayer.season.chips = (currentPlayer.season.chips || 0) + reward;
                 window.__lastCampaignTasks = { trackId: trackId, list: tasksForChapter(idx, diff), now: now, done: merged.done, reward: reward };
             } catch (eT) { console.warn('tasks', eT); }
-            const need = idx + 2;
-            const wasUnlocked = prog.unlocked;
-            if (prog.unlocked < need) prog.unlocked = Math.min(CAMPAIGN_TRACKS.length, need);
-            if (prog.unlocked > wasUnlocked) {
+            // пройдена + открыта следующая; остальные поля кампании (текущая глава и т.п.) сохраняются
+            const won = Profile.markChapterWon(prog, trackId, idx, CAMPAIGN_TRACKS.length);
+            Object.assign(prog, won.campaign);
+            if (won.unlockedNew) {
                 try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 1.1); } catch (e) {}
                 try {
                     const next = CAMPAIGN_TRACKS[Math.min(CAMPAIGN_TRACKS.length - 1, prog.unlocked - 1)];
@@ -913,17 +900,14 @@ function startCampaignTrack(idx, opts) {
                     setTimeout(function(){ el.style.opacity='0'; setTimeout(function(){ try{el.remove();}catch(e){} }, 400); }, 2800);
                 } catch (e) {}
             }
-            // текущая (следующая открытая) всегда доступна
-            if (prog.unlocked < 1) prog.unlocked = 1;
-            currentPlayer.campaign = {
-                unlocked: prog.unlocked,
+            currentPlayer.campaign = Object.assign({}, prog, {
                 completed: prog.completed.slice(),
                 stars: Object.assign({}, prog.stars),
                 tasks: Object.assign({}, prog.tasks)
-            };
+            });
             try { saveCurrentPlayer(); } catch (e) {}
             try {
-                localStorage.setItem('road_racing_campaign_' + (currentPlayer.id || currentPlayer.name || 'p'), JSON.stringify(currentPlayer.campaign));
+                localStorage.setItem(Profile.campaignBackupKey(currentPlayer), JSON.stringify(currentPlayer.campaign));
             } catch (e) {}
             window.__pendingCampaignLore = idx;
             console.log('📖 Кампания сохранена', currentPlayer.campaign);
@@ -933,24 +917,16 @@ function startCampaignTrack(idx, opts) {
         // ============================================================
         // ПРОФИЛИ / СЕЗОН / ГАРАЖ (без донатов, localStorage)
         // ============================================================
-        const PROFILES_KEY = 'road_racing_profiles_v1';
-        const SESSION_KEY = 'road_racing_session_player';
+        // профили, сохранения, сезон, награды, кампания, гараж — логика в src/profile.js (с тестами)
+        const SESSION_KEY = Profile.SESSION_KEY;
         let currentPlayer = null;
         let garageRaf = null;
         let garageRenderer = null;
 
 
-        function defaultSeason() {
-            return { level: 1, xp: 0, gum: 0, chips: 0, contractsDone: 0, titles: [] };
-        }
+        function defaultSeason() { return Profile.defaultSeason(); }
 
-        function defaultStats() {
-            return {
-                wins: 0, crashes: 0, timeouts: 0, totalRaces: 0,
-                animalsHit: 0, oilHits: 0, nitroPicked: 0, gumPicked: 0,
-                nightWins: 0, rainWins: 0, perfectWins: 0, hardWins: 0
-            };
-        }
+        function defaultStats() { return Profile.defaultStats(); }
 
         
         // ============================================================
@@ -958,68 +934,9 @@ function startCampaignTrack(idx, opts) {
         // ============================================================
         // CAR_PRESETS — из ./data.js
 
-function createProfile(name) {
-            const id = 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-            return {
-                id,
-                name: String(name).trim().slice(0, 16),
-                createdAt: Date.now(),
-                preferredCar: 'cheburashka',
-                unlockedCars: ['cheburashka'],
-                hasSeenShop: false,
-                season: defaultSeason(),
-                stats: defaultStats(),
-                bestTimes: { easy: null, medium: null, hard: null },
-                achievements: {},
-                history: [],
-                unlockedMaps: ['arsenev'],
-                campaign: { unlocked: 1, completed: [] },
-                claimedRewards: {},
-                daily: { date: null, done: false, contractId: null }
-            };
-        }
+function createProfile(name) { return Profile.createProfile(name); }
 
-        function ensureProfileFields(p) {
-            if (!p.unlockedCars) p.unlockedCars = ['cheburashka'];
-            if (p.hasSeenShop == null) p.hasSeenShop = false;
-            if (!p.claimedRewards) p.claimedRewards = {};
-            if (!p.daily) p.daily = { date: null, done: false, contractId: null };
-            if (!p.season) p.season = defaultSeason();
-            if (!p.campaign) p.campaign = { unlocked: 1, completed: [] };
-            if (p.campaign.unlocked == null) p.campaign.unlocked = 1;
-            if (!Array.isArray(p.campaign.completed)) p.campaign.completed = [];
-            if (!p.campaign.stars || typeof p.campaign.stars !== 'object') p.campaign.stars = {};
-            // трассы и лимит времени поменялись (баланс v2: 90 с) — старые рекорды несравнимы
-            if (p.balanceVer !== BALANCE_VERSION) {
-                p.bestTimes = { easy: null, medium: null, hard: null };
-                p.balanceVer = BALANCE_VERSION;
-            }
-            if (p.season.chips == null) p.season.chips = 0;
-            if (p.season.gum == null) p.season.gum = 0;
-            if (!p.carLoadout) p.carLoadout = { parts: [], ownedParts: [], paint: 'stock', paintByCar: {} };
-            if (!p.carLoadout.parts) p.carLoadout.parts = [];
-            // миграция: раньше один и тот же список parts означал и «куплено», и «установлено» —
-            // снятие детали стирало и покупку, повторная установка списывала фишки заново.
-            // Теперь ownedParts — что куплено (навсегда), parts — что сейчас установлено.
-            if (!Array.isArray(p.carLoadout.ownedParts)) {
-                p.carLoadout.ownedParts = p.carLoadout.parts.slice();
-            }
-            if (!p.carLoadout.paintByCar || typeof p.carLoadout.paintByCar !== 'object') p.carLoadout.paintByCar = {};
-            // миграция: общий paint → текущей машине
-            if (p.carLoadout.paint && p.preferredCar && !p.carLoadout.paintByCar[p.preferredCar]) {
-                p.carLoadout.paintByCar[p.preferredCar] = p.carLoadout.paint;
-            }
-            // ownedPaints — купленные цвета (на все машины профиля). Раньше покупка нигде не
-            // запоминалась, и возврат к уже купленному цвету списывал фишки ещё раз.
-            // Миграция: всё, что сейчас стоит на машинах, считаем купленным.
-            if (!Array.isArray(p.carLoadout.ownedPaints)) {
-                const was = Object.values(p.carLoadout.paintByCar);
-                if (p.carLoadout.paint) was.push(p.carLoadout.paint);
-                p.carLoadout.ownedPaints = Array.from(new Set(was.filter(id => id && id !== 'stock')));
-            }
-            if (!p.trophies) p.trophies = {};
-            return p;
-        }
+        function ensureProfileFields(p) { return Profile.ensureProfileFields(p, BALANCE_VERSION); }
 
 
 
@@ -1051,26 +968,15 @@ function createProfile(name) {
         let shopRenderer = null;
 
 
-        function loadAllProfiles() {
-            try {
-                const raw = localStorage.getItem(PROFILES_KEY);
-                const list = raw ? JSON.parse(raw) : [];
-                return Array.isArray(list) ? list : [];
-            } catch (e) { return []; }
-        }
+        function loadAllProfiles() { return Profile.loadProfiles(localStorage); }
 
-        function saveAllProfiles(list) {
-            try { localStorage.setItem(PROFILES_KEY, JSON.stringify(list)); } catch (e) {}
-        }
+        function saveAllProfiles(list) { Profile.saveProfiles(list, localStorage); }
 
         function saveCurrentPlayer() {
             if (!currentPlayer) return;
-            const list = loadAllProfiles();
-            const i = list.findIndex(p => p.id === currentPlayer.id);
-            if (i >= 0) list[i] = currentPlayer;
-            else list.push(currentPlayer);
-            saveAllProfiles(list);
-            try { localStorage.setItem(SESSION_KEY, currentPlayer.id); } catch (e) {}
+            if (!Profile.saveProfile(currentPlayer, localStorage) && window.Notify) {
+                Notify.warn('Не удалось сохранить', 'Память браузера переполнена — прогресс этого заезда может не сохраниться');
+            }
             updatePlayerBar();
         }
 
@@ -1078,23 +984,12 @@ function createProfile(name) {
             return loadAllProfiles().find(p => p.id === id) || null;
         }
 
-        function seasonXpToNext(level) {
-            return 80 + (level - 1) * 25;
-        }
+        function seasonXpToNext(level) { return Profile.seasonXpToNext(level); }
 
         function addSeasonXp(amount) {
             if (!currentPlayer) return;
-            const s = currentPlayer.season;
-            s.xp += amount;
-            let guard = 0;
-            while (s.xp >= seasonXpToNext(s.level) && s.level < 30 && guard < 40) {
-                s.xp -= seasonXpToNext(s.level);
-                s.level += 1;
-                s.gum += 10;
-                if (s.level === 5) unlockAchievement('season5');
-                guard++;
-            }
-            if (s.level >= 30) s.xp = 0;
+            const r = Profile.addSeasonXp(currentPlayer.season, amount);
+            if (r.reached.indexOf(5) >= 0) unlockAchievement('season5');
         }
 
 
@@ -1277,23 +1172,12 @@ function createProfile(name) {
 
         function unlockAchievement(id, silent) {
             if (!currentPlayer || !id) return false;
-            if (!currentPlayer.achievements) currentPlayer.achievements = {};
-            if (currentPlayer.achievements[id]) return false;
-            currentPlayer.achievements[id] = Date.now();
-            // Трофей-фигурка по ачивке
-            try {
-                ensureProfileFields(currentPlayer);
-                TROPHIES.forEach(t => {
-                    if (t.need === id && !currentPlayer.trophies[t.id]) {
-                        currentPlayer.trophies[t.id] = Date.now();
-                        if (!silent && window.Notify) {
-                            Notify.success('🏆 Фигурка: ' + t.name, t.desc, 4000);
-                        }
-                    }
-                });
-            } catch (e) {}
+            ensureProfileFields(currentPlayer);
+            const r = Profile.grantAchievement(currentPlayer, id, TROPHIES);
+            if (!r.isNew) return false;
             // silent=true (расчёт в endGame) — без плашки; плашки один раз после финиша
             if (!silent) {
+                r.trophies.forEach(function(t) { if (window.Notify) Notify.success('🏆 Фигурка: ' + t.name, t.desc, 4000); });
                 try { showAchievementToast(id); } catch (e) {}
             }
             return true;
@@ -1301,20 +1185,9 @@ function createProfile(name) {
 
         /** Забрать все доступные награды сезона (уровни ≤ текущего). Возвращает {gum, chips, levels[]} */
         function claimAvailableSeasonRewards() {
-            const out = { gum: 0, chips: 0, levels: [] };
-            if (!currentPlayer) return out;
+            if (!currentPlayer) return { gum: 0, chips: 0, levels: [] };
             ensureProfileFields(currentPlayer);
-            const lv = currentPlayer.season.level;
-            SEASON_REWARDS.forEach(r => {
-                if (r.level <= lv && !currentPlayer.claimedRewards[r.level]) {
-                    currentPlayer.claimedRewards[r.level] = Date.now();
-                    currentPlayer.season.gum += r.gum;
-                    currentPlayer.season.chips += r.chips;
-                    out.gum += r.gum;
-                    out.chips += r.chips;
-                    out.levels.push(r.level);
-                }
-            });
+            const out = Profile.claimSeasonRewards(currentPlayer, SEASON_REWARDS);
             if (out.levels.length) saveCurrentPlayer();
             return out;
         }
@@ -1821,150 +1694,18 @@ function createProfile(name) {
             if (!currentPlayer) return empty;
             try {
                 ensureProfileFields(currentPlayer);
-                const st = currentPlayer.stats;
-                const levelBefore = currentPlayer.season.level;
-                // gumBefore / chipsBefore удалены — не использовались:
-                // прирост считается через gumGain / chipsGain (с нуля),
-                // а финальные значения читаются из currentPlayer.season.* после всех add.
-                const newAchs = [];
-
-                st.totalRaces = (st.totalRaces || 0) + 1;
-                st.animalsHit = (st.animalsHit || 0) + (meta.animalsHit || 0);
-                st.oilHits = (st.oilHits || 0) + (meta.oilHits || 0);
-                st.nitroPicked = (st.nitroPicked || 0) + (meta.nitroPicked || 0);
-                st.gumPicked = (st.gumPicked || 0) + (meta.gumPicked || 0);
-
-                let xp = 25;
-                let gumGain = 0;
-                let chipsGain = 0;
-                // Базовые фишки за любой заезд
-                const baseChips = state === 'win' ? 3 : 1;
-                chipsGain += baseChips;
-                currentPlayer.season.chips = (currentPlayer.season.chips || 0) + baseChips;
-
-                const tryAch = (id) => {
-                    // silent — тосты на финишной плашке, не во время расчёта
-                    if (unlockAchievement(id, true)) newAchs.push(id);
-                };
-
-                if (state === 'win') {
-                    st.wins = (st.wins || 0) + 1;
-                    xp += 60;
-                    chipsGain += 2;
-                    currentPlayer.season.chips += 2;
-                    tryAch('first_win');
-                    if (meta.strikes === 0) {
-                        st.perfectWins = (st.perfectWins || 0) + 1;
-                        tryAch('perfect');
-                        xp += 40;
-                        currentPlayer.season.chips += 1;
-                        chipsGain += 1;
-                    }
-                    if (meta.weather === 'night') {
-                        st.nightWins = (st.nightWins || 0) + 1;
-                        tryAch('night_rider');
-                        xp += 15;
-                    }
-                    if (meta.weather === 'rain') {
-                        st.rainWins = (st.rainWins || 0) + 1;
-                        tryAch('rain_man');
-                        xp += 15;
-                    }
-                    if (meta.difficulty === 'hard') {
-                        st.hardWins = (st.hardWins || 0) + 1;
-                        tryAch('hard_win');
-                        xp += 30;
-                    }
-                    if ((meta.gumPicked || 0) >= 2) tryAch('gum_2');
-                    if ((meta.nitroPicked || 0) === 0) tryAch('no_nitro');
-                    if ((meta.oilHits || 0) >= 5) tryAch('oil_lover');
-                    if ((meta.animalsHit || 0) >= 5) tryAch('bear_friend');
-
-                    gumGain += 5 + (meta.gumPicked || 0) * 3;
-                    currentPlayer.season.gum += gumGain;
-
-                    if (!currentPlayer.bestTimes) currentPlayer.bestTimes = { easy: null, medium: null, hard: null };
-                    const d = meta.difficulty;
-                    // экран финиша сравнивает время с рекордом уже после этой записи — флаг для «НОВЫЙ РЕКОРД!»
-                    window.__lastRaceNewBest = false;
-                    if (d && (currentPlayer.bestTimes[d] == null || meta.time < currentPlayer.bestTimes[d])) {
-                        currentPlayer.bestTimes[d] = meta.time;
-                        window.__lastRaceNewBest = true;
-                    }
-
-                    if (meta.difficulty === 'hard' && meta.mapId) {
-                        const order = ['arsenev', 'promzona', 'svalka'];
-                        const idx = order.indexOf(meta.mapId);
-                        if (idx >= 0 && idx < order.length - 1) {
-                            const next = order[idx + 1];
-                            if (!currentPlayer.unlockedMaps.includes(next)) currentPlayer.unlockedMaps.push(next);
-                        }
-                    }
-                } else if (state === 'crash') {
-                    st.crashes = (st.crashes || 0) + 1;
-                    xp += 10;
-                } else {
-                    st.timeouts = (st.timeouts || 0) + 1;
-                    xp += 10;
-                }
-
-                if (st.totalRaces >= 10) tryAch('races10');
-                if (st.wins >= 5) tryAch('wins5');
-
-                let contractDone = false;
-                let contractTitle = '';
-                try {
-                    const c = getTodayContract();
-                    if (typeof pendingMode !== 'undefined' && pendingMode === 'contract' &&
-                        currentPlayer.daily && !currentPlayer.daily.done && c && typeof c.check === 'function' &&
-                        c.check({
-                            state, strikes: meta.strikes, gumPicked: meta.gumPicked, nitroPicked: meta.nitroPicked,
-                            weather: meta.weather, difficulty: meta.difficulty
-                        })) {
-                        currentPlayer.daily.done = true;
-                        xp += c.xp;
-                        currentPlayer.season.gum += c.gum;
-                        currentPlayer.season.chips += c.chips;
-                        gumGain += c.gum;
-                        chipsGain += c.chips;
-                        currentPlayer.season.contractsDone = (currentPlayer.season.contractsDone || 0) + 1;
-                        contractDone = true;
-                        contractTitle = c.title;
-                    }
-                } catch (e) { console.warn('contract', e); }
-                // НЕ сбрасываем pendingMode здесь — endGame / меню сами решают
-
-                addSeasonXp(xp);
-                const levelAfter = currentPlayer.season.level;
-                if (levelAfter > levelBefore && window.Notify) {
-                    Notify.success('⬆️ Уровень сезона ' + levelAfter, 'Новые награды в меню «Награды»');
-                }
-                if (contractDone && window.Notify) {
-                    Notify.success('📋 Смена дня', contractTitle || 'Контракт выполнен');
-                }
-
-                currentPlayer.history = currentPlayer.history || [];
-                currentPlayer.history.unshift({
-                    at: Date.now(), state, map: meta.mapId, difficulty: meta.difficulty,
-                    weather: meta.weather, time: meta.time, strikes: meta.strikes, xp
+                const r = Profile.applyRaceResult(currentPlayer, state, meta, {
+                    trophies: TROPHIES,
+                    contract: getTodayContract(),
+                    contractMode: typeof pendingMode !== 'undefined' && pendingMode === 'contract'
                 });
-                if (currentPlayer.history.length > 25) currentPlayer.history.length = 25;
-
-                try {
-                    localStorage.setItem(MAP_UNLOCK_KEY, JSON.stringify(currentPlayer.unlockedMaps || ['arsenev']));
-                } catch (e) {}
+                // экран финиша сравнивает время с рекордом уже после этой записи — флаг для «НОВЫЙ РЕКОРД!»
+                window.__lastRaceNewBest = r.newBest;
+                if (r.levelAfter > r.levelBefore && window.Notify) Notify.success('⬆️ Уровень сезона ' + r.levelAfter, 'Новые награды в меню «Награды»');
+                if (r.contractDone && window.Notify) Notify.success('📋 Смена дня', r.contractTitle || 'Контракт выполнен');
+                try { localStorage.setItem(MAP_UNLOCK_KEY, JSON.stringify(currentPlayer.unlockedMaps || ['arsenev'])); } catch (e) {}
                 saveCurrentPlayer();
-
-                return {
-                    xp,
-                    gum: gumGain,
-                    chips: chipsGain,
-                    levelBefore,
-                    levelAfter,
-                    achievements: newAchs,
-                    contractDone,
-                    contractTitle
-                };
+                return r;
             } catch (e) {
                 console.warn('recordRaceResult', e);
                 return empty;
@@ -2169,20 +1910,12 @@ function renderGaragePartsPanel() {
             const p = CAR_PAINTS.find(x => x.id === paintId);
             if (!p || !currentPlayer) return;
             ensureProfileFields(currentPlayer);
-            const carId = currentPlayer.preferredCar || 'cheburashka';
-            if (getPaintForCar(carId) === paintId) return;
-            const ownedPaints = currentPlayer.carLoadout.ownedPaints;
-            const needPay = p.price > 0 && !ownedPaints.includes(paintId);
-            if (needPay && currentPlayer.season.chips < p.price) {
-                if (window.Notify) Notify.warn('Мало фишек', 'Нужно 🪙' + p.price);
+            const r = Profile.buyPaint(currentPlayer, currentPlayer.preferredCar || 'cheburashka', p);
+            if (!r.ok) {
+                if (r.reason === 'no_chips' && window.Notify) Notify.warn('Мало фишек', 'Нужно 🪙' + p.price);
                 return;
             }
-            if (needPay) {
-                currentPlayer.season.chips -= p.price;
-                ownedPaints.push(paintId);
-                trackEvent('buy', { item: 'paint', id: paintId, price: p.price });
-            }
-            setPaintForCar(carId, paintId);
+            if (r.paid) trackEvent('buy', { item: 'paint', id: paintId, price: r.paid });
             saveCurrentPlayer();
             if (window.Notify) Notify.success('🎨 Покраска', p.name);
             renderGaragePartsPanel();
@@ -2198,32 +1931,19 @@ function renderGaragePartsPanel() {
                 if (window.Notify) Notify.warn('Нива', 'На джип багажник на крышу не ставится');
                 return;
             }
-            const equipped = currentPlayer.carLoadout.parts;
-            const ownedParts = currentPlayer.carLoadout.ownedParts;
-            const isOwned = ownedParts.includes(partId);
-            if (equipped.includes(partId)) {
-                // снять — деталь остаётся купленной, просто больше не стоит на машине
-                currentPlayer.carLoadout.parts = equipped.filter(id => id !== partId);
-                saveCurrentPlayer();
+            const r = Profile.toggleCarPart(currentPlayer, part, CAR_PARTS);
+            if (!r.ok) {
+                if (r.reason === 'no_chips' && window.Notify) Notify.warn('Мало фишек', 'Нужно 🪙' + part.price);
+                return;
+            }
+            saveCurrentPlayer();
+            if (r.action === 'removed') {
                 if (window.Notify) Notify.info('Снято', part.name);
             } else {
-                if (!isOwned) {
-                    if (currentPlayer.season.chips < part.price) {
-                        if (window.Notify) Notify.warn('Мало фишек', 'Нужно 🪙' + part.price);
-                        return;
-                    }
-                    currentPlayer.season.chips -= part.price;
-                    ownedParts.push(partId);
-                    trackEvent('buy', { item: 'part', id: partId, price: part.price });
-                }
-                // один слот — заменяем деталь того же slot
-                const sameSlot = CAR_PARTS.filter(p => p.slot === part.slot).map(p => p.id);
-                currentPlayer.carLoadout.parts = equipped.filter(id => !sameSlot.includes(id));
-                currentPlayer.carLoadout.parts.push(partId);
-                saveCurrentPlayer();
+                if (r.paid) trackEvent('buy', { item: 'part', id: partId, price: r.paid });
                 try { if (window.soundEngine) window.soundEngine.playSfx('coins', 1.0); } catch (e) {}
                 window.__garageSpinT = 0.7; try { tickGarageSpin(); } catch(e) {} try { if (window.__garageCar) window.__garageCar.rotation.y += 0.12; } catch(e) {}
-                if (window.Notify) Notify.success(isOwned ? '🛠️ Установлено' : '🛠️ Куплено и установлено', part.name);
+                if (window.Notify) Notify.success(r.paid ? '🛠️ Куплено и установлено' : '🛠️ Установлено', part.name);
             }
             renderGaragePartsPanel();
             applyGarageLoadoutVisual();
