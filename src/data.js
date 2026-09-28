@@ -78,7 +78,8 @@ export const CAMPAIGN_TRACKS = [
 ];
 
 export const CAMPAIGN_STAGE_MODS = {
-    c01: null,
+    // глава 1 — знакомство: короткая трасса (~45–60 с), у босса 2 удара и только первая фаза
+    c01: { trackLength: 1100, bossHp: 2, bossMaxPhase: 1 },
     c02: {
         terrainSeed: 202, terrainScale: 0.028, terrainAmp: 1.4,
         sky: 0x6a7a88, fog: 0x6a7a88, fogNear: 18, fogFar: 95,

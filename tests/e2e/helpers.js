@@ -50,9 +50,33 @@ export async function startFreeRace(page, difficulty = 'easy') {
     const shop = page.locator('#shop-action');
     if (await shop.isVisible()) await shop.click();
     await page.locator(`.difficulty-btn[data-diff="${difficulty}"]`).click();
-    await page.getByRole('button', { name: /Пропустить/ }).click();
+    // лор показывается только перед первым свободным заездом
+    const skip = page.getByRole('button', { name: /Пропустить/ });
+    await skipLoreIfShown(page);
     await page.locator('#map-select-go').click();
     await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
+}
+
+// «Звериный час» открывается после главы 1: отметить её пройденной в сохранении и перезайти
+export async function unlockBeastHour(page, name = 'Тестер') {
+    await page.evaluate(() => {
+        const list = JSON.parse(localStorage.getItem('road_racing_profiles_v1') || '[]');
+        list.forEach(p => { p.campaign = Object.assign({}, p.campaign, { unlocked: 2, completed: ['c01'] }); });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(list));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText(name).click();
+    await expect(page.locator('.menu-card[data-menu="endless"]')).not.toHaveClass(/locked/);
+}
+
+// Лор свободного заезда показывается только в первый раз: ждём либо его, либо экран карт
+export async function skipLoreIfShown(page) {
+    const skip = page.getByRole('button', { name: /Пропустить/ });
+    const map = page.locator('#map-select-screen');
+    await expect.poll(async () => (await skip.isVisible()) || (await map.isVisible()), { timeout: 10_000 }).toBe(true);
+    if (await skip.isVisible()) await skip.click();
+    await expect(map).toBeVisible();
 }
 
 // Первая трасса кампании: список трасс → (магазин) → качество → лор → старт

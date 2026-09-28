@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login, startFreeRace, watchProblems, waitRacing } from '../helpers.js';
+import { login, startFreeRace, watchProblems, waitRacing, skipLoreIfShown } from '../helpers.js';
 
 // Держать босса вплотную к машине несколько кадров — таран. Ставим чуть ПОЗАДИ машины: за кадр он сам
 // смещается вперёд и попадает в касание (если поставить впереди, на медленном CI за кадр он успевает отойти)
@@ -108,7 +108,7 @@ test('снежная трасса: босс стреляет льдом — по
     const shop = page.locator('#shop-action');
     if (await shop.isVisible()) await shop.click();
     await page.locator('.difficulty-btn[data-diff="easy"]').click();
-    await page.getByRole('button', { name: /Пропустить/ }).click();
+    await skipLoreIfShown(page);
     await page.evaluate(() => { window.__trackTheme = 'snow'; });
     await page.locator('#map-select-go').click();
     await waitRacing(page);

@@ -786,6 +786,14 @@ function startCampaignTrack(idx, opts) {
                     const lore = document.getElementById('campaign-lore-screen');
                     if (lore) { lore.style.display = 'none'; lore.classList.remove('active'); }
                 } catch (e) {}
+                // «Играть» из меню: без магазина и выбора качества — качество из настроек
+                if (opts.direct && typeof proceedAfterLoreToRace === 'function') {
+                    try { hideMainMenu(); } catch (e) {}
+                    pendingQuality = pendingQuality || window.__lastQuality || 'medium';
+                    pendingDifficulty = t.diff || 'easy';
+                    pendingCar = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
+                    if (proceedAfterLoreToRace()) return;
+                }
                 if (typeof beginRaceFlow === 'function') beginRaceFlow();
                 else if (typeof showDifficultyScreen === 'function') showDifficultyScreen();
             };
@@ -877,6 +885,12 @@ function startCampaignTrack(idx, opts) {
             // пройдена + открыта следующая; остальные поля кампании (текущая глава и т.п.) сохраняются
             const won = Profile.markChapterWon(prog, trackId, idx, CAMPAIGN_TRACKS.length);
             Object.assign(prog, won.campaign);
+            // награда за главу 1: краска сразу на машину + открыт «Звериный час» (показывается на финише)
+            try {
+                const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
+                const gift = Profile.grantChapterReward(currentPlayer, trackId, car);
+                window.__lastChapterReward = gift ? { trackId: trackId, paint: gift.paint } : null;
+            } catch (eR) { window.__lastChapterReward = null; }
             if (won.unlockedNew) {
                 try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 1.1); } catch (e) {}
                 try {
@@ -1188,6 +1202,15 @@ function createProfile(name) { return Profile.createProfile(name); }
             const bar = document.getElementById('player-bar');
             if (!bar || !currentPlayer) return;
             try { const eb = document.getElementById('menu-endless-best'); if (eb) eb.textContent = currentPlayer.endlessBest ? '🏆 ' + currentPlayer.endlessBest : ''; } catch (e) {}
+            // «Звериный час» — под замком до главы 1
+            try {
+                const ec = document.querySelector('.menu-card[data-menu="endless"]');
+                if (ec) {
+                    const open = Profile.beastHourOpen(currentPlayer);
+                    ec.classList.toggle('locked', !open);
+                    if (open) ec.removeAttribute('aria-disabled'); else ec.setAttribute('aria-disabled', 'true');
+                }
+            } catch (e) {}
             bar.classList.add('visible');
             const n = document.getElementById('player-bar-name');
             const s = document.getElementById('player-bar-season');
@@ -1266,6 +1289,17 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const se = currentPlayer.season;
                 sub.textContent = currentPlayer.name + ' · S1 ур.' + se.level + ' · 🪙' + se.chips + ' · 🍬' + se.gum;
             }
+            try {
+                const ps = document.getElementById('main-menu-play-sub');
+                if (ps && currentPlayer) {
+                    const ni = Profile.nextChapterIdx(getCampaignProgress(), CAMPAIGN_TRACKS);
+                    // два текстовых узла — чтобы название главы переводилось словарём отдельно от номера
+                    ps.textContent = '';
+                    const a = document.createElement('span'); a.textContent = 'Глава ' + (ni + 1);
+                    const b = document.createElement('span'); b.textContent = CAMPAIGN_TRACKS[ni].name;
+                    ps.append(a, ' · ', b);
+                }
+            } catch (e) {}
             updatePlayerBar();
         }
 
@@ -1415,14 +1449,9 @@ function createProfile(name) { return Profile.createProfile(name); }
                                 ds.style.display = 'none';
                                 let seenCampLore = false;
                                 try { if (currentPlayer) seenCampLore = !!currentPlayer.hasSeenCampaignLore; } catch (e) {}
-                                if (!seenCampLore && window.__campaignIdx === 0) {
-                                    try {
-                                        if (currentPlayer) { currentPlayer.hasSeenCampaignLore = true; saveCurrentPlayer(); }
-                                    } catch (e) {}
-                                    if (typeof showLoreScreen === 'function') {
-                                        showLoreScreen(pendingQuality, pendingDifficulty);
-                                        return;
-                                    }
+                                // длинный лор сам не выскакивает: первые минуты — за рулём, история — по кнопке «Кто это говорит?»
+                                if (!seenCampLore) {
+                                    try { if (currentPlayer) { currentPlayer.hasSeenCampaignLore = true; saveCurrentPlayer(); } } catch (e) {}
                                 }
                                 if (typeof proceedAfterLoreToRace === 'function' && proceedAfterLoreToRace()) return;
                                 if (typeof initGame === 'function') {
@@ -2543,15 +2572,13 @@ function startGaragePreview(carId) {
             el.setAttribute('aria-modal', 'true');
             el.innerHTML =
                 '<div class="br-card">' +
+                // коротко: остальному учит тренер прямо в заезде (главы 1–3)
                 '<div class="br-title">Даю установку:</div>' +
+                '<div class="br-lead">Довези антидот. Звери не шутят. Прыгай с разлома — или падай.</div>' +
                 '<ul class="br-list">' +
-                '<li><b>⏱ Доставь груз за 1:30.</b> Время на табло слева — не зевай.</li>' +
-                '<li><b>🐾 В зверей и машины не врезайся.</b> Каждое столкновение — авария и штраф по времени. <b>5 аварий — проигрыш.</b></li>' +
-                '<li><b>❤️ Жвачка-сердечко</b> снимает одну аварию, а если аварий нет — даёт +5 секунд.</li>' +
-                '<li><b>⛽ Зелёные стрелки — нитро.</b> Проскочил впритирку мимо зверя — «На волоске!», тоже нитро.</li>' +
-                '<li><b>👊 Босс в броне.</b> Красное кольцо под ним — сейчас атакует: уйди в соседнюю полосу. Промахнулся — на спине мишень, он открыт 2 секунды: тарань (на нитро удар двойной). Не успел до конца арены — сбежит.</li>' +
-                '<li><b>🕳 Разлом через всю дорогу:</b> заезжай на трамплин по жёлтым стрелкам. Объедешь — провалишься. На нитро трамплин подбрасывает выше — за разломом висит ⭐ (−3 с).</li>' +
-                '<li><b>⚠ Под аркой</b> качается то, что сейчас упадёт, — меняй полосу.</li>' +
+                '<li><b>🐾 Зверь или машина — авария.</b> 5 аварий — конец.</li>' +
+                '<li><b>❤️ Сердечко</b> снимает аварию, <b>⛽ зелёные стрелки</b> — нитро.</li>' +
+                '<li><b>🕳 Разлом</b> — только по трамплину. <b>👊 Босс</b> в броне: увернись, потом тарань.</li>' +
                 '</ul>' +
                 controls +
                 '<button type="button" class="br-go" id="race-briefing-go">Погнали →</button>' +
@@ -4088,9 +4115,14 @@ function startGaragePreview(carId) {
             
             // кампания: «сложные» главы плавно ужесточаются к финалу (src/balance.js)
             const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
-            const config = (difficulty === 'hard' && _campIdx >= 0)
+            const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
                 : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave) : DIFFICULTY_CONFIG[difficulty]);
+            // глава может задать свою длину трассы (глава 1 — короткая, ~45–60 с)
+            const _cmods = (_campIdx >= 0 && window.__campaignMods) || null;
+            const config = (_cmods && _cmods.trackLength) ? Object.assign({}, baseConfig, { trackLength: _cmods.trackLength }) : baseConfig;
+            // босс главы: своё HP и сколько фаз он показывает (в главе 1 — только первая)
+            const bossMaxPhase = (_cmods && _cmods.bossMaxPhase) || 3;
 
             if (window.soundEngine) {
                 window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35;
@@ -4499,6 +4531,14 @@ function startGaragePreview(carId) {
                                 const cls = lt.now[i] ? 'ok' : (lt.done[i] ? 'old' : 'no');
                                 return '<div class="' + cls + '">' + (lt.done[i] ? '✓' : '○') + ' ' + escapeHtml(tk.text) + '</div>';
                             }).join('') + (lt.reward ? '<div class="reward">+' + lt.reward + ' 🪙 за новые задания</div>' : '') + '</div>';
+                        }
+                        const cr = window.__lastChapterReward;
+                        if (cr && cr.trackId === window.__campaignTrackId) {
+                            const paint = CAR_PAINTS.find(function(x) { return x.id === cr.paint; });
+                            starsHtml += '<div class="chapter-gift">'
+                                + '<div class="cg-row"><span class="cg-swatch" style="background:#' + ((paint && paint.color) || 0).toString(16).padStart(6, '0') + '"></span>'
+                                + '<span>🎁 Краска «' + escapeHtml(paint ? paint.name : cr.paint) + '» — уже на машине</span></div>'
+                                + '<div class="cg-row">🐾 Открыт «Звериный час»</div></div>';
                         }
                     }
                     const head = (state === 'win')
@@ -7104,12 +7144,13 @@ function startGaragePreview(carId) {
             }
             let nearMissCount = 0;
             let _nmCooldown = 0;
-            let slowmoT = 0; // секунды реального времени в замедлении
+            // стоп-кадр: секунды реального времени, пока игра почти стоит (только короткий удар по боссу).
+            // Замедление на «На волоске!» и при появлении босса убрано — ощущалось как подвисание
+            let slowmoT = 0;
             function nearMiss() {
                 if (gameState !== 'racing' || _nmCooldown > 0) return;
                 _nmCooldown = 1.2;
                 nearMissCount++;
-                slowmoT = 0.3;
                 nitroTimer = Math.max(nitroTimer, ABILITY === 'nimble' ? 1.4 : 0.9);
                 try {
                     const el = document.createElement('div');
@@ -7598,7 +7639,7 @@ function startGaragePreview(carId) {
 
                 // HP растёт по главам; фаза 0 = «вход», давление на полосы
                 // броня + окна уязвимости: HP главы +1 (src/boss-fight.js)
-                const chapterHp = bossHp((def.hp != null) ? def.hp : Math.min(6, 3 + Math.floor(bossIdx / 3)));
+                const chapterHp = (_cmods && _cmods.bossHp) ? _cmods.bossHp : bossHp((def.hp != null) ? def.hp : Math.min(6, 3 + Math.floor(bossIdx / 3)));
                 try {
                     if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('boss', 1.0);
                 } catch (eSfx) {}
@@ -7691,7 +7732,6 @@ function startGaragePreview(carId) {
                     const line = def.shout || def.name || 'С дороги!';
                     // реплика — в карточке (пузырь над головой наезжал на неё)
                     showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp), '', 3000);
-                    slowmoT = Math.max(slowmoT, 0.45);
                 } catch (e) {}
                 try {
                     if (window.soundEngine) {
@@ -9335,7 +9375,7 @@ function startGaragePreview(carId) {
                         boss._projSizeMul = bc.projSizeMul || 1;
                         boss._projMulti = bc.multi || 1;
                         // фаза 2 — баррикады, фаза 3 — ещё и таран навстречу (src/boss-fight.js)
-                        const aph = phaseForHp(boss.hp, boss.maxHp);
+                        const aph = Math.min(bossMaxPhase, phaseForHp(boss.hp, boss.maxHp));
                         const rr = Math.random();
                         const segBusy = roadSegments.some(function(sg) { return sg.type !== 'tunnel' && zPos <= sg.z0 + 45 && zPos >= sg.z1 - 10; });
                         boss.nextAttack = boss._forceAtk ? boss._forceAtk : segBusy ? 'shot' : (aph >= 3 && rr < 0.5) ? 'charge'
@@ -9573,7 +9613,7 @@ function startGaragePreview(carId) {
                     // Фаза 2 при ≤50% HP — чаще атаки
                     // (boss.phase — непрерывный таймер для sin()-анимации, растёт каждый кадр;
                     // флаг ярости должен жить отдельно, иначе это условие никогда не срабатывает)
-                    const fph = phaseForHp(boss.hp, boss.maxHp);
+                    const fph = Math.min(bossMaxPhase, phaseForHp(boss.hp, boss.maxHp));
                     if (fph === 2 && !(boss.fightPhase >= 2) && boss.hp > 0) {
                         boss.fightPhase = 2;
                         try { showBossCard(bossPhaseHtml({ name: boss.name }, 2), 'phase2', 2200); } catch (e) {}
@@ -10934,7 +10974,14 @@ function showLoreScreen(quality, difficulty) {
                         applyCampaignRoute && applyCampaignRoute();
                         initGame(pendingQuality, pendingDifficulty, pendingCar, pendingMap, pendingWeather);
                     }
+                } else if (currentPlayer && currentPlayer.hasSeenFreeLore) {
+                    // лор уже видел — сразу к выбору карты
+                    pendingQuality = quality;
+                    pendingDifficulty = difficulty;
+                    try { const ds = document.getElementById('difficulty-screen'); if (ds) ds.style.display = 'none'; } catch (e) {}
+                    window.finishLoreAndStart();
                 } else {
+                    if (currentPlayer) { currentPlayer.hasSeenFreeLore = true; saveCurrentPlayer(); }
                     showLoreScreen(quality, difficulty);
                 }
             });
@@ -11135,6 +11182,10 @@ function showLoreScreen(quality, difficulty) {
                         else alert('openCampaignScreen не найден');
                         return;
                     } else if (m === 'endless') {
+                        if (!Profile.beastHourOpen(currentPlayer)) {
+                            if (window.Notify) Notify.warn('Пройди главу 1 кампании', '«Звериный час» закрыт');
+                            return;
+                        }
                         startEndlessRun();
                     } else if (m === 'race' && typeof beginRaceFlow === 'function') {
                         if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
@@ -11154,6 +11205,15 @@ function showLoreScreen(quality, difficulty) {
                         openEventsScreen();
                     }
                 });
+            });
+            // «▶ Играть» — сразу в следующую главу кампании
+            const playBtn = document.getElementById('main-menu-play');
+            if (playBtn) playBtn.addEventListener('click', function() {
+                if (!currentPlayer) return;
+                ensureProfileFields(currentPlayer);
+                const ni = Profile.nextChapterIdx(getCampaignProgress(), CAMPAIGN_TRACKS);
+                hideMainMenu();
+                startCampaignTrack(ni, { direct: true, fast: true });
             });
             const shopBtn = document.getElementById('main-menu-shop');
             if (shopBtn) shopBtn.addEventListener('click', function() {

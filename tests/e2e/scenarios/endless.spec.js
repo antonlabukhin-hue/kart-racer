@@ -1,10 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { watchProblems, login, waitRacing } from '../helpers.js';
+import { watchProblems, login, waitRacing, unlockBeastHour } from '../helpers.js';
 
 // «Звериный час»: волна пройдена → карточка → следующая волна с накопленным счётом; авария → итог и рекорд
 test('Звериный час: волны идут подряд, конец забега пишет рекорд', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.99');
+    // до главы 1 карточка под замком и не запускает забег
+    await expect(page.locator('.menu-card[data-menu="endless"]')).toHaveClass(/locked/);
+    await page.locator('.menu-card[data-menu="endless"]').click({ force: true }); // aria-disabled — жмём как пользователь
+    await expect(page.locator('#main-menu-screen')).toBeVisible();
+    await unlockBeastHour(page);
     await page.locator('.menu-card[data-menu="endless"]').click();
     await expect(page.locator('#endlessDisplay')).toContainText('ВОЛНА 1', { timeout: 20_000 });
     await waitRacing(page);

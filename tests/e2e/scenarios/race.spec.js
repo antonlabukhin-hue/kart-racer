@@ -51,6 +51,9 @@ test('кампания: победа на 1-й трассе — «Заново»
     // три задания главы; «Не больше 1 аварии» на автопилоте выполняется
     await expect(page.locator('#finish-screen .finish-tasks > div:not(.reward)')).toHaveCount(3);
     await expect(page.locator('#finish-screen .finish-tasks')).toContainText('Не больше 1 аварии');
+    // награда за главу 1: краска и «Звериный час»
+    await expect(page.locator('#finish-screen .chapter-gift')).toContainText('Такси 90-х');
+    await expect(page.locator('#finish-screen .chapter-gift')).toContainText('Звериный час');
 
     await page.locator('#finish-restart-btn').click();
     await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
@@ -60,6 +63,8 @@ test('кампания: победа на 1-й трассе — «Заново»
 
     await page.keyboard.press('Escape');
     await page.locator('#pause-menu').click();
+    await expect(page.locator('#main-menu-play-sub')).toContainText('Глава 2');
+    await expect(page.locator('.menu-card[data-menu="endless"]')).not.toHaveClass(/locked/);
     await page.locator('.menu-card[data-menu="campaign"]').click();
     await expect(page.locator('.camp-track[data-idx="1"]')).not.toHaveClass(/locked/);
     await expect(page.locator('.camp-track[data-idx="2"]')).toHaveClass(/locked/);
