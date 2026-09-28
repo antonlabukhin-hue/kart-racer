@@ -823,7 +823,9 @@ function createArcadeBossMesh(def) {
     root.userData.projectile = PROJ[def.attack] || PROJ.default;
 
     // --- аркадный контур + читаемость силуэта ---
-    try {
+    // на «Низком» качестве и телефонах контура нет: он удваивает число мешей босса
+    const lightBoss = !!(window.__isMobile || window.__lastQuality === 'low');
+    if (!lightBoss) try {
         const outlineMat = getOutlineMat();
         const outlines = [];
         root.traverse(function(o) {

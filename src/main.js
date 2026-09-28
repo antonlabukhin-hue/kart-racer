@@ -37,6 +37,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
         import * as Profile from './profile.js';
+        import { stepRamps, stepAir, timeToLand, landingSpeed } from './race-physics.js';
+        import { densityAt } from './rhythm.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
@@ -411,6 +413,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
          * Если когда-нибудь понадобится чистый геттер — читайте loadAllProfiles()
          * напрямую, не вызывая эту функцию.
          */
+        // главы, у которых есть своя картинка превью (public/images/camp_NN.jpg)
+        const CAMPAIGN_THUMBS = ['01'];
         function getCampaignProgress() {
             if (!currentPlayer) return { unlocked: 1, completed: [] };
             ensureProfileFields(currentPlayer);
@@ -486,8 +490,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const stars = (prog.stars && prog.stars[t.id]) || 0;
                 const n = idx + 1;
                 const num = (n < 10 ? '0' : '') + n;
-                const imgJpg = 'images/camp_' + num + '.jpg';
-                const imgPng = 'images/camp_' + num + '.png';
+                // своя картинка есть не у всех глав — остальным картинка их карты (без запросов «наугад» и 404)
+                const imgSrc = CAMPAIGN_THUMBS.indexOf(num) >= 0 ? 'images/camp_' + num + '.jpg' : 'images/map_' + (MAP_ORDER.indexOf(t.style) >= 0 ? t.style : 'arsenev') + '.jpg';
                 // пройдена до появления звёзд — звёзд нет, пока не перепройдёшь
                 let badge = done ? (stars ? starsText(stars) : '✅ Пройдено') : (open ? '▶ Играть' : '🔒 Закрыто');
 
@@ -501,15 +505,10 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const img = document.createElement('img');
                 img.className = 'ct-thumb';
                 img.alt = t.name;
-                img.src = imgJpg;
+                img.src = imgSrc;
                 img.onerror = function() {
-                    if (img.dataset.triedPng) {
-                        img.style.display = 'none';
-                        thumbWrap.classList.add('no-img');
-                        return;
-                    }
-                    img.dataset.triedPng = '1';
-                    img.src = imgPng;
+                    img.style.display = 'none';
+                    thumbWrap.classList.add('no-img');
                 };
                 const numEl = document.createElement('span');
                 numEl.className = 'ct-num';
@@ -7186,7 +7185,15 @@ function startGaragePreview(carId) {
                     scene.add(src);
                     const warn = srcKind === 'snow' ? ['ОСТОРОЖНО', 'СОСУЛЬКИ'] : srcKind === 'promzona' ? ['ОСТОРОЖНО', 'ГРУЗ НАД ДОРОГОЙ'] : srcKind === 'svalka' ? ['ОСТОРОЖНО', 'ПАДАЕТ ХЛАМ'] : ['ОСТОРОЖНО', 'АРКА РУШИТСЯ'];
                     scene.add(createRoadSign(warn, TRACK_WIDTH / 2 + 1.6, z + 55));
+                    // с обеих сторон, как у разломов: знак справа легко пропустить, глядя на левую полосу
+                    scene.add(createRoadSign(warn, -TRACK_WIDTH / 2 - 1.6, z + 55));
                     debrisZones.push({ z: z, src: src, hangers: src.userData.hangers || [], drops: dropsN, fired: false });
+                    // бонус с риском: жвачка прямо под грузом — хочешь её, проезжай под аркой
+                    const riskGum = createCollectible(z, 'gum');
+                    riskGum.x = debrisLaneXs[Math.floor(Math.random() * debrisLaneXs.length)];
+                    riskGum.mesh.position.x = riskGum.x;
+                    riskGum.risk = 'arch';
+                    collectibles.push(riskGum);
                 });
                 // сцена карты
                 const evKind = (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
@@ -7229,6 +7236,12 @@ function startGaragePreview(carId) {
                         scene.add(createTunnel(TRACK_WIDTH, z0, len, style).group);
                         scene.add(createRoadSign(['ТОННЕЛЬ', 'ВКЛЮЧИ ФАРЫ'], TRACK_WIDTH / 2 + 1.8, z0 + 50));
                         roadSegments.push({ type: 'tunnel', z0: z0, z1: z0 - len });
+                        // бонус с риском: жвачка у стены в темноте — заметишь, если смотришь по сторонам
+                        const darkGum = createCollectible(z0 - len * 0.6, 'gum');
+                        darkGum.x = (Math.random() < 0.5 ? -1 : 1) * 2.2;
+                        darkGum.mesh.position.x = darkGum.x;
+                        darkGum.risk = 'tunnel';
+                        collectibles.push(darkGum);
                     }
                 });
             } catch (eSet) { console.warn('setpieces', eSet); }
@@ -8053,12 +8066,14 @@ function startGaragePreview(carId) {
                 config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
             animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
+            // ритм заезда: разгон → слалом → босс → финал; на ремонте и развилке реже (src/rhythm.js)
+            animalSpawner.densityFn = function(z) { return densityAt((START_Z - z) / (START_Z - FINISH_Z), window.__trackLayout); };
             // Только в тестовой сборке: состояние заезда для автопилота в тестах. На сайт не попадает.
             if (import.meta.env.MODE === 'test') {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8521,72 +8536,39 @@ function startGaragePreview(carId) {
                     }
                 }
 
-                // Рампы + полёт
+                // Трамплины, прыжок, полёт — src/race-physics.js (с тестами)
                 if (!carAirborne) {
-                    let onRamp = false;
-                    try {
-                        for (let ri = 0; ri < ramps.length; ri++) {
-                            const rp = ramps[ri];
-                            if (!rp) continue;
-                            if (Math.abs(xPos - rp.x) >= rp.width * 0.55) continue;
-                            const insideNow = zPos <= rp.zEnter && zPos >= rp.zExit;
-                            // На высокой скорости (особенно после нитро) один кадр может целиком
-                            // пронести машину через узкую зону старта прыжка (последние 10% трамплина),
-                            // и точечная проверка insideNow с p>0.9 её просто не увидит — прыжок молча
-                            // не происходит. Поэтому дополнительно проверяем отрезок движения за кадр:
-                            // если машина была перед трамплином, а стала за ним (или уже в зоне
-                            // p>0.9 прошла его насквирь), считаем, что съезд с трамплина случился.
-                            // Считаем по краю съезда: кадр мог начаться на трамплине при p≈0.85–0.9
-                            // (за кадр ~10% длины) и закончиться уже за ним — раньше это был «съезд без прыжка»
-                            const crossedRamp = !insideNow && zPosBeforeMove >= rp.zExit && zPos <= rp.zExit;
-                            if (insideNow || crossedRamp) {
-                                const prog = (rp.zEnter - zPos) / Math.max(0.1, rp.len);
-                                const p = Math.max(0, Math.min(1, prog));
-                                onRamp = true;
-                                // трамплин перед разломом всегда перебрасывает: иначе авария прямо перед ним
-                                // (скорость ×0.35) означала вторую аварию — провал
-                                if (rp.gapRamp && speed < MAX_SPEED * 0.6) speed = MAX_SPEED * 0.6;
-                                if ((crossedRamp || p > 0.9) && speed > 0.12) {
-                                    carAirborne = true;
-                                    carAirVel = (1.0 + speed * 2.4) * rp.height;
-                                    carYOffset = rp.height;
-                                    // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
-                                    if (rp.bossRamp) carAirVel *= 1.7;
-                                    if (nitroTimer > 0) {
-                                        carAirVel *= 1.6;
-                                        try { showTimePenaltyPopup(0, '🚀 Нитро-прыжок!'); } catch (e) {}
-                                    }
-                                } else {
-                                    carYOffset = rp.height * p;
-                                }
-                                break;
-                            }
-                        }
-                    } catch (eRp) {}
-                    if (!onRamp) {
-                        if (carBumpTimer > 0) {
-                            carBumpTimer -= deltaTime;
-                            if (carBumpTimer <= 0) { carBumpTimer = 0; carYOffset = 0; }
-                        } else {
-                            carYOffset = 0;
-                        }
+                    const rs = stepRamps({ x: xPos, z: zPos, zPrev: zPosBeforeMove, speed: speed, nitro: nitroTimer > 0, maxSpeed: MAX_SPEED }, ramps);
+                    if (rs.mode === 'launch') {
+                        speed = rs.speed;
+                        carAirborne = true;
+                        carAirVel = rs.airVel;
+                        carYOffset = rs.y;
+                        // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
+                        if (rs.nitroJump) { try { showTimePenaltyPopup(0, '🚀 Нитро-прыжок!'); } catch (e) {} }
+                    } else if (rs.mode === 'ride') {
+                        speed = rs.speed;
+                        carYOffset = rs.y;
+                    } else if (carBumpTimer > 0) {
+                        carBumpTimer -= deltaTime;
+                        if (carBumpTimer <= 0) { carBumpTimer = 0; carYOffset = 0; }
+                    } else {
+                        carYOffset = 0;
                     }
                 } else {
-                    carAirVel -= 9.5 * deltaTime;
-                    carYOffset += carAirVel * deltaTime;
-                    if (carYOffset <= 0) {
-                        carYOffset = 0;
+                    const air = stepAir(carYOffset, carAirVel, deltaTime);
+                    carYOffset = air.y;
+                    carAirVel = air.vel;
+                    if (air.landed) {
                         carAirborne = false;
-                        const landBoost = speed > 0.08;
-                        carAirVel = 0;
                         try {
                             if (particleSystem && particleSystem.sparks) particleSystem.sparks({ x: xPos, y: 0.05, z: zPos + 0.6 }, 14, 1);
                             if (_settings.shake !== false) shakeTime = Math.max(shakeTime, 0.14);
                             fovPunch = Math.max(fovPunch, 6);
                         } catch (e) {}
-                        if (landBoost) {
-                            const cap = (typeof MAX_SPEED !== 'undefined' ? MAX_SPEED : 0.45) * 1.08;
-                            speed = Math.min(speed * 1.14, cap);
+                        const land = landingSpeed(speed, MAX_SPEED);
+                        speed = land.speed;
+                        if (land.boosted) {
                             try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Прыжок!'); } catch (e) {}
                             try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('whoosh', 0.65); } catch (e) {}
                         }
@@ -9279,7 +9261,7 @@ function startGaragePreview(carId) {
                         }
                         else if (carAirborne && pvNow > 8 && zPos - boss.z > 1.5) {
                             // уже в воздухе (взлетел ещё на замахе) — успеть под машину до приземления
-                            const tLand = (carAirVel + Math.sqrt(Math.max(0, carAirVel * carAirVel + 19 * carYOffset))) / 9.5;
+                            const tLand = timeToLand(carYOffset, carAirVel);
                             const tm = Math.max(0.12, tLand * 0.6);
                             boss.chargeSpeed = Math.max(-20, Math.min(45, (zPos - boss.z - 1.5) / tm - pvNow));
                         }
@@ -9506,13 +9488,16 @@ function startGaragePreview(carId) {
                                     size: (pr0.size || 0.26) * sm,
                                     speed: (pr0.speed || 7.2) * spm
                                 });
-                                const col = isMelee ? 0xffcc44 : pr.color;
-                                const em = isMelee ? 0xffaa22 : (pr.emissive || col);
+                                // снежные главы: босс стреляет льдом — попал, и руль на пару секунд скользкий
+                                const icy = isSnowTrack;
+                                const col = icy ? 0x9fe8ff : (isMelee ? 0xffcc44 : pr.color);
+                                const em = icy ? 0xc8f4ff : (isMelee ? 0xffaa22 : (pr.emissive || col));
                                 const bulletMat = new THREE.MeshBasicMaterial({
                                     color: em || col, fog: true
                                 });
                                 let geo;
-                                if (pr.shape === 'box') geo = new THREE.BoxGeometry(pr.size, pr.size * 0.7, pr.size * 1.4);
+                                if (icy) geo = new THREE.OctahedronGeometry(pr.size * 1.1);
+                                else if (pr.shape === 'box') geo = new THREE.BoxGeometry(pr.size, pr.size * 0.7, pr.size * 1.4);
                                 else if (pr.shape === 'rocket') geo = new THREE.CylinderGeometry(pr.size * 0.35, pr.size * 0.5, pr.size * 1.8, 8);
                                 else if (pr.shape === 'barrel') geo = new THREE.CylinderGeometry(pr.size * 0.6, pr.size * 0.6, pr.size * 1.2, 8);
                                 else geo = new THREE.SphereGeometry(pr.size, 10, 10);
@@ -9558,6 +9543,7 @@ function startGaragePreview(carId) {
                                         timePenalty: pr.timePenalty || 2,
                                         pull: !!pr.pull,
                                         heavy: !!pr.heavy,
+                                        freeze: icy,
                                         volley: volleyId
                                     });
                                 }
@@ -10038,6 +10024,12 @@ function startGaragePreview(carId) {
                         }
                         if (bu.pull && boss) {
                             xPos += (boss.x - xPos) * 0.35;
+                        }
+                        if (bu.freeze) {
+                            // та же механика, что масло: руль слабеет, машину сносит
+                            oilSlideTimer = Math.max(oilSlideTimer, 2.2);
+                            try { showTimePenaltyPopup(0, '❄ Лёд на колёсах!'); } catch (e) {}
+                            try { if (particleSystem && particleSystem.emit) particleSystem.emit({ x: xPos, y: 0.3, z: zPos }, { x: 0, y: 0.8, z: 0.5 }, 12, 0.22); } catch (e) {}
                         }
                         if (bu.heavy && typeof strikes !== 'undefined') {
                             logHit('boss');

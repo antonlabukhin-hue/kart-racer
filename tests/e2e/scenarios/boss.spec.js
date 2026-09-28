@@ -100,3 +100,28 @@ test('отбитый на нитро снаряд ранит босса скво
     expect(await page.evaluate(() => window.__raceDebug.hammer)).toBe(false);
     expect(problems).toEqual([]);
 });
+
+test('снежная трасса: босс стреляет льдом — попадание делает руль скользким', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?start=0.43');
+    await page.locator('.menu-card[data-menu="race"]').click();
+    const shop = page.locator('#shop-action');
+    if (await shop.isVisible()) await shop.click();
+    await page.locator('.difficulty-btn[data-diff="easy"]').click();
+    await page.getByRole('button', { name: /Пропустить/ }).click();
+    await page.evaluate(() => { window.__trackTheme = 'snow'; });
+    await page.locator('#map-select-go').click();
+    await waitRacing(page);
+    expect(await page.evaluate(() => window.__trackThemeActive)).toBe('snow');
+    await page.evaluate(() => window.__raceDebug.spawnBossNow());
+    await expect.poll(() => page.evaluate(() => !!(window.__raceDebug.boss && window.__raceDebug.boss.mesh)), { timeout: 5000 }).toBe(true);
+    await page.evaluate(() => window.__raceDebug.forceBossAttack('shot'));
+    // стоим на линии огня: держим машину под боссом, пока не попадёт
+    const slid = await page.evaluate(() => new Promise(res => {
+        const d = window.__raceDebug; const t0 = performance.now();
+        const f = () => { if (d.boss) d.setX(d.boss.x); if (d.slide > 1 || performance.now() - t0 > 15000) res(d.slide); else requestAnimationFrame(f); };
+        f();
+    }));
+    expect(slid).toBeGreaterThan(1);
+    expect(problems).toEqual([]);
+});

@@ -232,6 +232,7 @@ export default {
         '🎯 Выдохся! Тарань, пока открыт': '🎯 Out of breath! Ram him while he is open',
         '💥 Лоб в лоб с боссом': '💥 Head-on with the boss',
         '🧱 Баррикада!': '🧱 Barricade!',
+        '❄ Лёд на колёсах!': '❄ Ice on the tires!',
         '🔨 Кувалда пробила броню!': '🔨 The sledgehammer broke the armor!',
         '🔨 Кувалда! Следующий таран пробьёт броню': '🔨 Sledgehammer! Your next ram breaks the armor',
         '↩ Отбил! Снаряд — в босса': '↩ Deflected! Right back at the boss',

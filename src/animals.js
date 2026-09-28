@@ -181,7 +181,8 @@ class AnimalSpawner {
     update(deltaTime, playerZ) {
         if (!this.enabled || playerZ < this.finishZ) return;
 
-        this.spawnTimer += deltaTime;
+        // densityFn (из main.js) — ритм заезда: где-то зверей чаще, где-то реже
+        this.spawnTimer += deltaTime * (this.densityFn ? this.densityFn(playerZ) : 1);
         const totalActive = this.animals.length;
 
         // спокойный старт: пока машина разгоняется (первые 45 ед.), зверей не выпускаем
