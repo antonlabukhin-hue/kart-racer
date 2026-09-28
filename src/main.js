@@ -7662,6 +7662,20 @@ function startGaragePreview(carId) {
                     try { updateBossHpBar(boss, camera); updateBossHeadQuote(boss); } catch (e) {}
                 }
             }
+            // броня слетает кусками: переносим деталь в сцену (мировые координаты сохраняются) и роняем
+            const bossArmorDebris = [];
+            function shedBossArmor(pieces) {
+                (pieces || []).forEach(function(piece, i) {
+                    if (!piece || !piece.parent) return;
+                    try {
+                        scene.attach(piece);
+                        const side = piece.position.x >= (boss ? boss.x : 0) ? 1 : -1;
+                        bossArmorDebris.push({ o: piece, t: 0, vx: side * (2 + Math.random() * 1.5), vy: 4 + Math.random() * 2, vz: 2.5 + i, spin: (Math.random() - 0.5) * 12 });
+                    } catch (e) {}
+                });
+                try { if (window.soundEngine) window.soundEngine.playCrashSound(0.3); } catch (e) {}
+                try { if (particleSystem.sparks && boss) particleSystem.sparks({ x: boss.x, y: 2.2, z: boss.z }, 18, 1); } catch (e) {}
+            }
             function removeBossExtras(b) {
                 try { if (b && b.stunFx) { scene.remove(b.stunFx.group); b.stunFx = null; } } catch (e) {}
                 try { if (b && b.warn) { scene.remove(b.warn); b.warn = null; } } catch (e) {}
@@ -9795,11 +9809,13 @@ function startGaragePreview(carId) {
                     if (fph === 2 && !(boss.fightPhase >= 2) && boss.hp > 0) {
                         boss.fightPhase = 2;
                         try { showBossCard(bossPhaseHtml({ name: boss.name }, 2), 'phase2', 2200); } catch (e) {}
+                        try { const ar = boss.mesh && boss.mesh.userData.armor; if (ar) shedBossArmor(ar.shoulders); } catch (e) {}
                         try { if (window.soundEngine) window.soundEngine.playSfx('boss', 0.8); } catch (e) {}
                     }
                     if (!boss.enraged && fph >= 3 && boss.hp > 0) {
                         boss.enraged = true;
                         boss.fightPhase = 3;
+                        try { const ar = boss.mesh && boss.mesh.userData.armor; if (ar) shedBossArmor([].concat(ar.shoulders, [ar.chest])); } catch (e) {}
                         boss.speed *= 1.12;
                         try {
                             showBossCard(bossPhaseHtml({ name: boss.name }, 3), 'phase2', 2200);
@@ -9893,11 +9909,11 @@ function startGaragePreview(carId) {
                             const legR = ud.rightLeg;
                             if (legL) {
                                 legL.rotation.x = swing * 0.6 * (runMul > 0 ? 1 : 0);
-                                legL.position.y = Math.max(0, -swing) * 0.07;
+                                legL.position.y = (legL.userData.baseY || 0) + Math.max(0, -swing) * 0.07;
                             }
                             if (legR) {
                                 legR.rotation.x = -swing * 0.6 * (runMul > 0 ? 1 : 0);
-                                legR.position.y = Math.max(0, swing) * 0.07;
+                                legR.position.y = (legR.userData.baseY || 0) + Math.max(0, swing) * 0.07;
                             }
                         } catch (eLeg) {}
                         // руки: в противофазе к ногам + замах оружия на правой
@@ -10082,6 +10098,20 @@ function startGaragePreview(carId) {
                         removeBossExtras(boss);
                         boss.active = false; try { if (soundEngine.setBossActive) soundEngine.setBossActive(false); } catch (e) {}
                     }
+                }
+
+                // слетевшая броня босса
+                for (let ai = bossArmorDebris.length - 1; ai >= 0; ai--) {
+                    const d = bossArmorDebris[ai];
+                    d.t += deltaTime;
+                    d.vy -= 14 * deltaTime;
+                    d.o.position.x += d.vx * deltaTime;
+                    d.o.position.y = Math.max(0.1, d.o.position.y + d.vy * deltaTime);
+                    d.o.position.z += d.vz * deltaTime;
+                    d.o.rotation.x += d.spin * deltaTime;
+                    d.o.rotation.z += d.spin * 0.7 * deltaTime;
+                    if (d.o.position.y <= 0.1 && d.vy < 0) { d.vy = -d.vy * 0.3; d.vx *= 0.6; d.vz *= 0.6; }
+                    if (d.t > 2.5 || d.o.position.z > zPos + 20) { try { scene.remove(d.o); } catch (e) {} bossArmorDebris.splice(ai, 1); }
                 }
 
                 // Кувалда на дороге
