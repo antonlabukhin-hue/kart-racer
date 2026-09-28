@@ -36,21 +36,24 @@ test('фазы босса: баррикада в двух полосах; тар
     await expect.poll(() => page.evaluate(() => !!(window.__raceDebug.boss && window.__raceDebug.boss.mesh)), { timeout: 5000 }).toBe(true);
     await page.keyboard.down('w');
     await page.evaluate(() => window.__raceDebug.forceBossAttack('barricade'));
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.bossBarricades.length), { timeout: 15_000 }).toBeGreaterThan(0);
-    expect(await page.evaluate(() => window.__raceDebug.bossBarricades[0].xs.length)).toBe(2);
+    // одним запросом: на медленной машине баррикада успевает уехать за спину между двумя запросами
+    await expect.poll(() => page.evaluate(() => { const b = window.__raceDebug.bossBarricades[0]; return b ? b.xs.length : 0; }), { timeout: 15_000 }).toBe(2);
 
     // таран: держим его полосу — трамплин подбрасывает над боссом; прыжок по времени приблизительный,
     // поэтому до трёх попыток, нужен хотя бы один удар сверху (−3 за раз)
     let stomped = false;
+    // без зверей: удар о зверя на подлёте роняет скорость втрое и сбивает прыжок
+    await page.evaluate(() => setInterval(() => { (window.__raceDebug.animals || []).forEach(an => { an.hit = true; if (an.mesh) an.mesh.visible = false; }); }, 100));
+    // паузы короткие: иначе за три попытки машина доезжает до конца арены и босс сбегает
     for (let attempt = 0; attempt < 3 && !stomped; attempt++) {
-        await page.waitForTimeout(2500);
+        await page.waitForTimeout(600);
         await page.evaluate(() => { const d = window.__raceDebug, b = d.boss; b.hp = 7; b.maxHp = 8; b.z = d.z - 20; b.charging = false; b.returning = false; b.attackState = 'idle'; });
         await page.evaluate(() => window.__raceDebug.forceBossAttack('charge'));
         await expect.poll(() => page.evaluate(() => window.__raceDebug.boss.nextAttack === 'charge' && window.__raceDebug.boss.attackState === 'windup'), { timeout: 15_000 }).toBe(true);
         await page.evaluate(() => { const d = window.__raceDebug; d.setX(d.boss.chargeX); });
         const hp = await page.evaluate(() => new Promise(res => {
             const b = window.__raceDebug.boss; const t0 = performance.now();
-            const f = () => { if (b.hp <= 4 || b.returning || performance.now() - t0 > 8000) res(b.hp); else requestAnimationFrame(f); };
+            const f = () => { if (b.hp <= 4 || b.returning || performance.now() - t0 > 5000) res(b.hp); else requestAnimationFrame(f); };
             f();
         }));
         stomped = hp <= 4;

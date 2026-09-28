@@ -63,7 +63,7 @@ export function buildBossCharacter(root, def, kit) {
         return m;
     }
     function rbox(p, mat, w, h, d, r, x, y, z) {
-        return mesh(p, new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2, h / 2, d / 2)), mat, x, y, z);
+        return mesh(p, new RoundedBoxGeometry(w, h, d, 1, Math.min(r, w / 2, h / 2, d / 2)), mat, x, y, z);
     }
     function cone(p, mat, r, h, x, y, z, rx, ry, rz) {
         const m = mesh(p, new THREE.ConeGeometry(r, h, Math.max(6, seg - 4)), mat, x, y, z);

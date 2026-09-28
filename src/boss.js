@@ -650,12 +650,13 @@ function createArcadeBossMesh(def) {
     // детали аксессуаров и оружия — со скруглёнными рёбрами, в одном стиле с плавной моделью
     function px(p, mat, x, y, z, sx, sy, sz) {
         const r = Math.min(sx, sy, sz) * 0.3;
-        const geo = r > 0.006 ? new RoundedBoxGeometry(sx, sy, sz, 2, r) : new THREE.BoxGeometry(sx, sy, sz);
+        const geo = r > 0.006 ? new RoundedBoxGeometry(sx, sy, sz, 1, r) : new THREE.BoxGeometry(sx, sy, sz);
         return add(p, geo, mat, x, y, z);
     }
 
     // --- тело, руки, ноги, голова и броня — новая модель (src/boss-model.js) ---
-    const seg = (window.__isMobile || window.__lastQuality === 'low') ? 10 : (window.__lastQuality === 'high' ? 18 : 14);
+    // сегменты сфер: на «высоком» гладко, на среднем и слабом — вдвое меньше треугольников
+    const seg = (window.__isMobile || window.__lastQuality === 'low') ? 8 : (window.__lastQuality === 'high' ? 14 : 10);
     const jacketDS = matJack.clone();
     jacketDS.side = THREE.DoubleSide;
     const telShirt = (id === 'BOAR_BRIGADE' || id === 'BEAR_VETERAN');
@@ -834,7 +835,8 @@ function createArcadeBossMesh(def) {
             const bb = g.boundingBox;
             if (!bb) return;
             const size = bb.max.clone().sub(bb.min);
-            if (size.x * size.y * size.z < 0.004) return;
+            // контур — только у крупных частей: мелочь без него почти не видна, а треугольников вдвое больше
+            if (size.x * size.y * size.z < 0.015) return;
             const om = o.clone();
             om.material = outlineMat;
             om.scale.multiplyScalar(1.08);

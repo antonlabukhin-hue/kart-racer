@@ -196,7 +196,7 @@ export default {
         'Капот': 'Hood',
         'Салон': 'Cockpit',
         'Сбоку': 'Side',
-        'Тряска камеры и линии скорости': 'Camera shake and speed lines',
+        'Тряска камеры при ударах': 'Camera shake on hits',
         'Вибрация телефона при аварии': 'Vibrate on crash',
         '👻 Призрак лучшего заезда': '👻 Best-run ghost',
         '🛣 Повороты и холмы дороги': '🛣 Road bends and hills',
