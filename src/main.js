@@ -1768,6 +1768,8 @@ function createProfile(name) { return Profile.createProfile(name); }
             }
             const gs = document.getElementById('garage-screen');
             if (!gs) return;
+            // главное меню прячем — иначе оно просвечивало сквозь панель гаража
+            try { hideMainMenu(); } catch (e) {}
             gs.classList.add('active');
             gs.style.display = 'flex';
             refreshGarageHeader();
