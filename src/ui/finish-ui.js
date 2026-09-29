@@ -87,3 +87,27 @@ export function bindFinishKeys(screen) {
     };
     document.addEventListener('keydown', onKey, true);
 }
+
+function escT(t) { return String(t).replace(/[&<>"]/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+/**
+ * Очки риска и задания на финише: «🔥 Риск 1 240 · лучший ×5 · +62 XP» и строки заданий —
+ * выполненные с наградой, продвинувшиеся — «3/7 (+2)». r — награды заезда (r.risk, r.riskXp, r.missions).
+ */
+export function retentionHtml(r) {
+    if (!r) return '';
+    let h = '';
+    if (r.risk && r.risk.points > 0) {
+        h += '<div class="fin-risk">🔥 Риск <b>' + r.risk.points.toLocaleString('ru-RU') + '</b> · лучший ×' + r.risk.best
+            + (r.riskXp ? ' · <em>+' + r.riskXp + ' XP</em>' : '') + '</div>';
+    }
+    const m = r.missions;
+    if (m && (m.completed.length || m.progressed.length)) {
+        h += '<div class="fin-missions">' + m.completed.map(function(c) {
+            return '<div class="done">✅ ' + escT(c.text) + ' — <b>+' + c.reward + ' 🪙</b></div>';
+        }).join('') + m.progressed.filter(function(x) { return x.after < x.target; }).map(function(x) {
+            return '<div>📋 ' + escT(x.text) + ': ' + x.after + '/' + x.target + ' <em>(+' + (x.after - x.before) + ')</em></div>';
+        }).join('') + '</div>';
+    }
+    return h;
+}
