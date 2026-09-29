@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { AnimalSpawner } from '../../src/animals.js';
+import { AnimalSpawner, speedScale, REF_SPEED } from '../../src/animals.js';
 
 // Модуль видит index.html только через window: createAnimalMesh и showAnimalShout
 let shout;
@@ -83,5 +83,36 @@ describe('AnimalSpawner', () => {
         for (let i = 0; i < 200 && sp.totalSpawned === 0; i++) sp.update(0.05, -100);
         expect(sp.totalSpawned).toBe(1);
         expect(-100 - sp.animals[0].z).toBeGreaterThanOrEqual(15 + 4);
+    });
+});
+
+describe('звери видят скорость машины', () => {
+    it('множитель 1..2.2 от «эталонной» скорости', () => {
+        expect(speedScale(0)).toBe(1);
+        expect(speedScale(REF_SPEED)).toBe(1);
+        expect(speedScale(REF_SPEED * 1.8)).toBeCloseTo(1.8, 5);
+        expect(speedScale(REF_SPEED * 5)).toBe(2.2);
+    });
+    // одна и та же трасса 1000 ед.: сток и «Волга на нитро» (вдвое быстрее) — зверей на пути примерно поровну
+    const run = (unitsPerSec) => {
+        const sp = new AnimalSpawner(new THREE.Scene(), 10, 0, -1000, 15, 50, 0.5, 1, 0);
+        const dt = 1 / 60;
+        let z = 0, trigAt = [];
+        while (z > -1000) {
+            z -= unitsPerSec * dt;
+            sp.update(dt, z);
+            sp.animals.forEach(a => { if (a.triggered && !a._seen) { a._seen = true; trigAt.push(z - a.z); } });
+        }
+        return { spawned: sp.totalSpawned, trig: trigAt.reduce((s, v) => s + Math.abs(v), 0) / Math.max(1, trigAt.length) };
+    };
+    it('вдвое быстрее — встреч на трассе столько же, перебежка стартует вдвое дальше', () => {
+        const slow = run(REF_SPEED), fast = run(REF_SPEED * 2);
+        expect(fast.spawned).toBeGreaterThan(slow.spawned * 0.75);
+        expect(fast.trig).toBeGreaterThan(slow.trig * 1.6);
+    });
+    it('скачок setZ (телепорт) скорость не накручивает', () => {
+        const sp = new AnimalSpawner(new THREE.Scene(), 10, 0, -1000, 15, 3, 0.5, 1, 0);
+        sp.update(1 / 60, -100); sp.update(1 / 60, -600); sp.update(1 / 60, -600.4);
+        expect(sp._k).toBe(1);
     });
 });

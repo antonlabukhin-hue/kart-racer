@@ -6,6 +6,18 @@ import { ANIMAL_TYPES } from './data.js';
 
 const ANIMAL_KEYS = Object.keys(ANIMAL_TYPES);
 
+/**
+ * Звери «видят» скорость машины. Перебежка стартует на фиксированном расстоянии и длится фиксированное время,
+ * поэтому прокачанная Волга на нитро (≈ вдвое быстрее) проскакивала раньше, чем зверь выбегал на дорогу,
+ * а появлялись звери по времени — на трассе их становилось вдвое меньше. Теперь порог перебежки и частота
+ * растут со скоростью: время на реакцию и число встреч на трассе — как у стоковой Чебурашки.
+ * REF_SPEED — её крейсерская скорость, ед./с. Возвращает множитель 1..2.2.
+ */
+export const REF_SPEED = 25;
+export function speedScale(v) {
+    return Math.max(1, Math.min(2.2, (v || 0) / REF_SPEED));
+}
+
 function meshFactory(typeId) {
   const fn = (typeof window !== 'undefined' && window.createAnimalMesh) || (typeof createAnimalMesh === 'function' ? createAnimalMesh : null);
   if (!fn) throw new Error('createAnimalMesh не найден — задайте window.createAnimalMesh');
@@ -181,8 +193,15 @@ class AnimalSpawner {
     update(deltaTime, playerZ) {
         if (!this.enabled || playerZ < this.finishZ) return;
 
-        // densityFn (из main.js) — ритм заезда: где-то зверей чаще, где-то реже
-        this.spawnTimer += deltaTime * (this.densityFn ? this.densityFn(playerZ) : 1);
+        // скорость машины по её перемещению (скачки setZ и телепорты не считаются), сглаженная ~0.25 с
+        if (this._lastZ != null && deltaTime > 0) {
+            const d = this._lastZ - playerZ;
+            if (d >= 0 && d < 3) this._v = (this._v == null ? d / deltaTime : this._v + (d / deltaTime - this._v) * Math.min(1, deltaTime * 4));
+        }
+        this._lastZ = playerZ;
+        const k = this._k = speedScale(this._v);
+        // densityFn (из main.js) — ритм заезда: где-то зверей чаще, где-то реже; × скорость — встреч на трассе столько же
+        this.spawnTimer += deltaTime * (this.densityFn ? this.densityFn(playerZ) : 1) * k;
         const totalActive = this.animals.length;
 
         // спокойный старт: пока машина разгоняется (первые 45 ед.), зверей не выпускаем
@@ -193,14 +212,14 @@ class AnimalSpawner {
 
             // План из Web Worker (если готов) — меньше Math.random в кадре
             // Чуть дальше порога срабатывания — без «за горизонтом»
-            let spawnZ = playerZ - (this.triggerLookahead + 6 + Math.random() * 8);
+            let spawnZ = playerZ - (this.triggerLookahead * k + 6 + Math.random() * 8);
             const plan = window.__spawnPlan;
             if (plan && plan.length && this.totalSpawned < plan.length) {
                 const item = plan[this.totalSpawned];
                 if (item && typeof item.z === 'number') {
                     // z из плана, но не ближе порога перебежки + запас. Было playerZ - 10: если точка плана
                     // уже позади, зверь появлялся в 10 ед. и сразу бежал — ~0.4 с на реакцию, не увернуться
-                    spawnZ = Math.min(item.z, playerZ - (this.triggerLookahead + 4));
+                    spawnZ = Math.min(item.z, playerZ - (this.triggerLookahead * k + 4));
                     this._planFromLeft = item.fromLeft;
                 }
             }
@@ -239,7 +258,7 @@ class AnimalSpawner {
                 const base = this.triggerLookahead || 15;
                 animal._trigDist = base * (0.9 + Math.random() * 0.2);
             }
-            if (distanceAhead > 1.2 && distanceAhead <= animal._trigDist) {
+            if (distanceAhead > 1.2 && distanceAhead <= animal._trigDist * (this._k || 1)) {
                 animal.triggered = true;
                 animal.mesh.visible = true;
                 try {
