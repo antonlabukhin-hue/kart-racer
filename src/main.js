@@ -1684,6 +1684,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                             shopRaf = requestAnimationFrame(tick);
                             rot += 0.012;
                             built.group.rotation.y = rot;
+                            fitPreview(renderer, camera, wrap);
                             renderer.render(scene, camera);
                         };
                         tick();
@@ -2164,6 +2165,14 @@ function renderGaragePartsPanel() {
         }
 
         
+        /** Превью машины после поворота экрана и смены раскладки: холст и пропорции камеры — под фактический размер окна (иначе машина сплющивалась) */
+        function fitPreview(renderer, camera, wrap) {
+            const w = wrap.clientWidth, h = wrap.clientHeight;
+            if (w < 16 || h < 16 || (renderer.__fw === w && renderer.__fh === h)) return;
+            renderer.__fw = w; renderer.__fh = h;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h; camera.updateProjectionMatrix();
+        }
         function _ensurePreviewSize(wrap, minH) {
             if (!wrap) return { w: 320, h: minH || 220 };
             wrap.style.width = '100%';
@@ -2332,6 +2341,7 @@ function startGaragePreview(carId) {
                             garageRaf = requestAnimationFrame(tick);
                             if (!dragging) rotY += 0.006;
                             built.group.rotation.y = rotY;
+                            fitPreview(renderer, camera, wrap);
                             renderer.render(scene, camera);
                         };
                         tick();
@@ -4213,7 +4223,7 @@ function startGaragePreview(carId) {
                 hud.className = 'hud-v2';
                 hud.innerHTML = `
                     <div class="hud-time"><span class="hud-lbl">⏱ ВРЕМЯ:</span> <span id="timeDisplay" class="hud-big">${formatTime(TIME_LIMIT)}</span></div>
-                    <div class="hud-crash"><span class="hud-lbl">💥 АВАРИИ:</span> <span id="heartsDisplay" class="hud-hearts">${'<i>❤</i>'.repeat(MAX_STRIKES)}</span><span id="strikesDisplay" class="hud-sr">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
+                    <div class="hud-crash"><span class="hud-lbl">💥 АВАРИИ:</span> <span id="heartsDisplay" class="hud-hearts">${'<i>♥︎</i>'.repeat(MAX_STRIKES)}</span><span id="strikesDisplay" class="hud-sr">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
                     ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">🐾 ВОЛНА ' + window.__endless.wave + ' · ' + window.__endless.score + '</div>' : ''}
                     <div id="ghostDeltaDisplay" style="display:none;font-weight:800;">👻 РЕКОРД: <span></span></div>
                     <div id="cleanDisplay" title="10 с без ударов — броня, дальше +2 🪙"><span class="cl-label">✨ ЧИСТО</span><span class="cl-shield">🛡</span><div class="cl-bar"><i></i></div></div>
@@ -4251,6 +4261,15 @@ function startGaragePreview(carId) {
             // шкала циферблата — с запасом на нитро; считается при первом кадре (MAX_SPEED объявлен ниже)
             let SPEEDO_MAX = 0;
             let _heartsShown = -1;
+            // авария заметна сразу: красная вспышка по краям экрана и «💔 Авария 2/5» сверху (на телефоне сердечки мелкие)
+            function crashFlash(n) {
+                document.querySelectorAll('.crash-flash, .crash-tag').forEach(function(e) { e.remove(); });
+                const f = document.createElement('div'); f.className = 'crash-flash'; document.body.appendChild(f);
+                const t = document.createElement('div'); t.className = 'crash-tag' + (n >= MAX_STRIKES - 1 ? ' last' : '');
+                t.textContent = '💔 Авария ' + n + '/' + MAX_STRIKES + (n >= MAX_STRIKES - 1 && n < MAX_STRIKES ? ' — ещё одна, и конец!' : '');
+                document.body.appendChild(t);
+                setTimeout(function() { f.remove(); t.remove(); }, 1300);
+            }
 
             let _hudAcc = 0;
             function ensureHudRefs() {
@@ -4313,7 +4332,7 @@ function startGaragePreview(carId) {
                     const hs = refs.heartsEl.children;
                     for (let hi = 0; hi < hs.length; hi++) {
                         const lost = hi >= MAX_STRIKES - strikes;
-                        if (lost && !hs[hi].classList.contains('lost') && _heartsShown >= 0) hs[hi].classList.add('break');
+                        if (lost && !hs[hi].classList.contains('lost') && _heartsShown >= 0) { hs[hi].classList.add('break'); crashFlash(strikes); }
                         hs[hi].classList.toggle('lost', lost);
                     }
                     refs.heartsEl.classList.toggle('last', strikes >= MAX_STRIKES - 1);

@@ -4941,3 +4941,66 @@ body:not(.race-mode) #risk-hud { display: none; }
 /* карточка босса: свой слой и лёгкая тень — первая отрисовка большой размытой тени с градиентом и портретом давала рывок ~40 мс */
 body #boss-intro { will-change: transform, opacity, translate; contain: layout paint; box-shadow: 0 0 0 2px rgba(255,60,20,0.25), 0 6px 14px rgba(0,0,0,0.45); }
 body #boss-intro .bi-portrait { box-shadow: none; }
+/* правая колонка управления: сверху пауза, под ней газ, внизу тормоз (раньше тормоз был выше газа) */
+#mobile-controls .mc-right { flex-direction: column !important; }
+#mobile-controls .mc-right .pause-inline { order: -1; }
+#mobile-controls .mc-right .gas { order: 0; }
+#mobile-controls .mc-right .brake { order: 1; }
+/* сердечки аварий: текстовый ♥ (эмодзи на iPhone не красится — потерянное выглядело целым); потерянное — серое и прозрачное */
+#game-hud .hud-hearts i { font-family: "Segoe UI Symbol", "Arial Unicode MS", system-ui, sans-serif; }
+#game-hud .hud-hearts i.lost { color: #55505c !important; opacity: .35 !important; filter: grayscale(1); text-shadow: none !important; }
+/* авария: вспышка по краям экрана и плашка сверху */
+.crash-flash { position: fixed; inset: 0; z-index: 90; pointer-events: none; box-shadow: inset 0 0 90px 30px rgba(255,20,30,0.75); animation: crashFlash 1.1s ease-out forwards; }
+@keyframes crashFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+.crash-tag { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 58px); transform: translateX(-50%); z-index: 170; pointer-events: none;
+    padding: 6px 16px; border-radius: 999px; background: rgba(120,0,10,0.88); border: 2px solid #ff4a55; color: #fff;
+    font: 900 18px/1.2 system-ui, "Segoe UI", Arial, sans-serif; white-space: nowrap; animation: crashTag 1.3s ease-out forwards; }
+.crash-tag.last { background: rgba(170,0,10,0.95); border-color: #fff; }
+@keyframes crashTag { 0% { opacity: 0; transform: translateX(-50%) scale(1.6); } 12% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
+@media (max-height: 460px) and (pointer: coarse), (max-height: 420px) {
+    .crash-tag { top: 44px; font-size: 15px; padding: 4px 12px; }
+    #game-hud .hud-hearts i { font-size: 1.25em; }
+}
+@media (prefers-reduced-motion: reduce) { .crash-flash { animation-duration: .4s; } }
+
+/* ===== Гараж и «Машины» на телефоне: машину видно всегда ===== */
+/* вертикально: превью прилипает к верху, настройки листаются под ним */
+@media (orientation: portrait) and (max-width: 700px) {
+    body #garage-screen .content, body #shop-screen .content {
+        display: flex !important; flex-direction: column !important; overflow-y: auto !important; overflow-x: hidden !important;
+        max-height: calc(100dvh - 12px) !important; padding-top: 0 !important; overscroll-behavior: contain;
+    }
+    body #garage-screen .content > *, body #shop-screen .content > * { flex: 0 0 auto; }
+    body #garage-canvas-wrap, body #shop-canvas-wrap {
+        position: sticky !important; top: 0 !important; z-index: 6 !important;
+        height: min(34dvh, 280px) !important; min-height: 180px !important; margin: 0 -10px 6px !important; width: calc(100% + 20px) !important;
+        border-radius: 0 0 16px 16px !important; box-shadow: 0 8px 16px rgba(0,0,0,0.55) !important;
+    }
+    body #garage-screen h1 { margin-top: 8px; }
+    body #garage-screen h1, body #shop-screen h1 { order: -2; }
+    body #garage-player-name, body #shop-currency { order: -1; }
+    body #garage-canvas-wrap + .sub { display: none; } /* «HQ-превью · крути…» — место под машину */
+}
+/* горизонтально (низкий экран): машина слева на всю высоту, настройки справа листаются отдельно */
+@media (orientation: landscape) and (max-height: 560px) {
+    body #garage-screen .content, body #shop-screen .content {
+        display: grid !important; grid-template-columns: minmax(0, 44%) minmax(0, 1fr) !important; grid-auto-rows: min-content !important;
+        column-gap: 14px !important; row-gap: 6px !important; align-content: start !important;
+        width: min(980px, 98vw) !important; max-width: 98vw !important; max-height: calc(100dvh - 12px) !important;
+        overflow-y: auto !important; overflow-x: hidden !important; overscroll-behavior: contain;
+    }
+    body #garage-screen .content > *, body #shop-screen .content > * { grid-column: 2; min-width: 0; margin-left: 0; margin-right: 0; }
+    body #garage-canvas-wrap, body #shop-canvas-wrap {
+        grid-column: 1 !important; grid-row: 1 / span 40 !important; position: sticky !important; top: 0 !important; align-self: start !important;
+        height: calc(100dvh - 40px) !important; min-height: 0 !important; width: 100% !important; margin: 0 !important; border-radius: 14px !important;
+    }
+    body #garage-canvas-wrap + .sub { display: none; }
+    body #garage-screen h1, body #shop-screen h1 { font-size: 18px !important; margin: 2px 0 !important; }
+    body #shop-desc .cs-bar { grid-template-columns: 78px 1fr 20px 26px; }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+    body #garage-screen .content, body #shop-screen .content { grid-template-rows: none !important; }
+}
+/* прилипшее превью — выше кнопок (у .garage-btn и .shop-car-btn свой z-index 5–6) */
+body #garage-canvas-wrap, body #shop-canvas-wrap { z-index: 30 !important; }
+@media (max-width: 480px) { body #shop-cars { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } body .shop-car-btn { padding: 8px 4px !important; } }
