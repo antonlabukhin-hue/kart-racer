@@ -25,8 +25,8 @@ export default {
         'Альбомная ориентация · Landscape': 'Landscape orientation',
 
         // главное меню
-        '📖 Компания': '📖 Campaign',
-        'Компания': 'Campaign',
+        '📖 Кампания': '📖 Campaign',
+        'Кампания': 'Campaign',
         '🏁 Свободный заезд': '🏁 Free race',
         'Свободный заезд': 'Free race',
         '🐾 Звериный час': '🐾 Beast Hour',

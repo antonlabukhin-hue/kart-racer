@@ -408,13 +408,13 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
 
 
         // =======================
-        // КОМПАНИЯ: 12 трасс до исследовательского центра
+        // КАМПАНИЯ: 12 трасс до исследовательского центра
         // style = визуальная тема (arsenev/promzona/svalka) + уникальное имя/лор
         // =======================
         // CAMPAIGN_TRACKS — из ./data.js
 
         
-        // Реплики злодея на финише главы компании (по индексу трассы 0..16)
+        // Реплики злодея на финише главы кампании (по индексу трассы 0..16)
 
 
 
@@ -468,7 +468,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const scr = document.getElementById('campaign-screen');
                 if (!scr) {
                     console.error('campaign-screen не найден в DOM');
-                    alert('Экран компании не найден. Обнови index.html на сервере.');
+                    alert('Экран кампании не найден. Обнови index.html на сервере.');
                     return;
                 }
                 renderCampaignTrackList();
@@ -476,10 +476,10 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 if (typeof playScreenAnim === 'function') playScreenAnim(scr);
                 else { scr.style.display = 'flex'; scr.classList.add('active'); }
                 try { if (typeof window.playMenuMusic === 'function') window.playMenuMusic(); } catch (e) {}
-                console.log('📖 Компания открыта', getCampaignProgress());
+                console.log('📖 Кампания открыта', getCampaignProgress());
             } catch (e) {
                 console.error('openCampaignScreen', e);
-                alert('Ошибка компании: ' + e.message);
+                alert('Ошибка кампании: ' + e.message);
             }
         }
         window.openCampaignScreen = openCampaignScreen;
@@ -709,7 +709,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         window.cleanupRaceKeepProfile = cleanupRaceKeepProfile;
 
 
-        /** Старт/рестарт главы компании напрямую в гонку (без меню карт) */
+        /** Старт/рестарт главы кампании напрямую в гонку (без меню карт) */
         function relaunchCampaignTrack(idx, opts) {
             opts = opts || {};
             console.log('📖 relaunchCampaignTrack', idx, opts);
@@ -849,7 +849,7 @@ function startCampaignTrack(idx, opts) {
             const prev = (idx > 0) ? CAMPAIGN_TRACKS[idx - 1] : null;
             const fromName = opts.fromName != null ? opts.fromName : (prev ? prev.name : '');
             playTrackTransition({
-                label: idx === 0 ? 'СТАРТ КОМПАНИИ' : 'СЛЕДУЮЩАЯ ТРАССА',
+                label: idx === 0 ? 'СТАРТ КАМПАНИИ' : 'СЛЕДУЮЩАЯ ТРАССА',
                 fromName: fromName,
                 toName: (idx + 1) + '. ' + t.name,
                 duration: opts.fast ? 900 : 1550,
@@ -1500,7 +1500,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const ds = document.getElementById('difficulty-screen');
             if (ds) {
                 ds.style.display = 'flex';
-                // Компания: скрыть кнопки сложности, оставить только качество + «Поехали»
+                // Кампания: скрыть кнопки сложности, оставить только качество + «Поехали»
                 try {
                     const isCamp = pendingMode === 'campaign' || !!window.__campaignTrackId;
                     const diffBtns = ds.querySelectorAll('.difficulty-btn');
@@ -1514,7 +1514,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                     if (isCamp) {
                         if (note) {
                             note.style.display = 'block';
-                            note.textContent = '📖 Компания: сложность главы — ' + (window.__forceDifficulty || 'easy') + '. Выбери только качество графики.';
+                            note.textContent = '📖 Кампания: сложность главы — ' + (window.__forceDifficulty || 'easy') + '. Выбери только качество графики.';
                         }
                         if (campGo) {
                             campGo.style.display = 'block';
@@ -4229,7 +4229,7 @@ function startGaragePreview(carId) {
                 window.soundEngine = soundEngine;
             }
             
-            // Гарантированно запускаем музыку на КАЖДОМ заезде (в т.ч. 2-я трасса компании)
+            // Гарантированно запускаем музыку на КАЖДОМ заезде (в т.ч. 2-я трасса кампании)
             soundEngine.musicStarted = true;
             soundEngine.enabled = true;
             const ensureMusic = function() {
@@ -4805,7 +4805,7 @@ function startGaragePreview(carId) {
                 const goMenu = function(ev) {
                     if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
                     cleanupFinishUI();
-                    // лор злодея уже на финишной плашке компании
+                    // лор злодея уже на финишной плашке кампании
                     window.__pendingCampaignLore = null;
                     try {
                         if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
@@ -7006,7 +7006,7 @@ function startGaragePreview(carId) {
                 return { mesh: group, x: x, z: z, type: type, active: true };
             }
 
-            // Тип скользкого пятна зависит от карты / главы компании
+            // Тип скользкого пятна зависит от карты / главы кампании
             let slideType = 'oil';
             if (window.__campaignTrackId) {
                 const cid = window.__campaignTrackId;
@@ -7193,7 +7193,7 @@ function startGaragePreview(carId) {
                 });
             }
             // ============================================================
-            // МИНИ-БОСС (компания: свой на главу; иначе — по карте)
+            // МИНИ-БОСС (кампания: свой на главу; иначе — по карте)
             // ============================================================
             
             // Боссы: CAMPAIGN_BOSSES / createArcadeBossMesh — src/boss.js
@@ -8556,7 +8556,7 @@ function startGaragePreview(carId) {
                     if (typeof animalSpawner.shufflePool === 'function') animalSpawner.shufflePool();
                 }
             } catch (e) {}
-            // Модификаторы главы компании
+            // Модификаторы главы кампании
             try {
                 const cm = window.__campaignMods;
                 if (cm) {
@@ -11287,7 +11287,7 @@ function startGaragePreview(carId) {
             const q = pendingQuality || 'medium';
             const d = pendingDifficulty || window.__forceDifficulty || 'easy';
             const car = pendingCar || (currentPlayer && currentPlayer.preferredCar) || 'cheburashka';
-            console.log('📖 Компания → гонка', pendingMap, pendingWeather, d, q);
+            console.log('📖 Кампания → гонка', pendingMap, pendingWeather, d, q);
             if (typeof initGame === 'function') {
                 initGame(q, d, car, pendingMap, pendingWeather);
             }
