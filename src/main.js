@@ -25,6 +25,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
+        import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
@@ -1387,104 +1388,22 @@ function createProfile(name) { return Profile.createProfile(name); }
             } catch (e) { console.warn('menu bg', e); }
         }
 
-        function openRewardsScreen() {
-            if (!currentPlayer) return;
-            ensureProfileFields(currentPlayer);
-            hideMainMenu();
-            const sc = document.getElementById('rewards-screen');
-            sc.classList.add('active'); sc.style.display = 'flex';
-            const se = currentPlayer.season;
-            const claimableCount = SEASON_REWARDS.filter(r => se.level >= r.level && !currentPlayer.claimedRewards[r.level]).length;
-            document.getElementById('rewards-progress').textContent =
-                'Уровень ' + se.level + '/30 · XP ' + se.xp + '/' + seasonXpToNext(se.level) +
-                ' · 🪙' + se.chips + ' · 🍬' + se.gum +
-                (claimableCount ? (' · можно забрать: ' + claimableCount) : '');
-            const list = document.getElementById('rewards-list');
-            // Отдельный div-обёртка вместо прямых appendChild — один reflow
-            // (DocumentFragment был создан, но не использовался; удалён).
-            const wrap = document.createElement('div');
-            if (claimableCount > 0) {
-                const allBtn = document.createElement('button');
-                allBtn.className = 'garage-btn';
-                allBtn.textContent = '🎁 Забрать всё доступное (' + claimableCount + ')';
-                allBtn.style.marginBottom = '10px';
-                allBtn.addEventListener('click', () => {
-                    const got = claimAvailableSeasonRewards();
-                    if (got.levels.length && window.Notify) {
-                        Notify.success('🎁 Награды получены', '🍬+' + got.gum + ' · 🪙+' + got.chips + ' · ур. ' + got.levels.join(', '));
-                    } else if (got.levels.length) {
-                        alert('Получено: 🍬' + got.gum + ' · 🪙' + got.chips);
-                    }
-                    openRewardsScreen();
-                });
-                wrap.appendChild(allBtn);
-            }
-            SEASON_REWARDS.forEach(r => {
-                const claimed = !!currentPlayer.claimedRewards[r.level];
-                const unlocked = se.level >= r.level;
-                const row = document.createElement('div');
-                row.className = 'reward-row' + (!unlocked ? ' locked' : claimed ? ' claimed' : ' claimable');
-                const left = document.createElement('div');
-                left.innerHTML = '<b>Ур.' + r.level + '</b> — ' + r.text +
-                    '<div style="color:#888;font-size:11px;">🍬' + r.gum + ' · 🪙' + r.chips + '</div>';
-                row.appendChild(left);
-                if (unlocked && !claimed) {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.textContent = 'Забрать';
-                    btn.addEventListener('click', () => {
-                        if (currentPlayer.claimedRewards[r.level]) return;
-                        currentPlayer.claimedRewards[r.level] = Date.now();
-                        currentPlayer.season.gum += r.gum;
-                        currentPlayer.season.chips += r.chips;
-                        saveCurrentPlayer();
-                        openRewardsScreen();
-                    });
-                    row.appendChild(btn);
-                } else {
-                    const sp = document.createElement('span');
-                    sp.style.cssText = 'margin-left:auto;font-size:12px;color:' + (claimed ? '#6d6' : '#666');
-                    sp.textContent = claimed ? '✓' : ('ур.' + r.level);
-                    row.appendChild(sp);
-                }
-                wrap.appendChild(row);
-            });
-            list.innerHTML = '';
-            list.appendChild(wrap);
-        }
-
-        function openEventsScreen() {
-            if (!currentPlayer) return;
-            hideMainMenu();
-            const sc = document.getElementById('events-screen');
-            sc.classList.add('active'); sc.style.display = 'flex';
-            const c = getTodayContract();
-            const done = currentPlayer.daily && currentPlayer.daily.done;
-            document.getElementById('events-body').innerHTML = `
-                <div class="event-card">
-                    <h3>📅 Смена дня${done ? ' ✓' : ''}</h3>
-                    <p><b>${escapeHtml(c.title)}</b><br>${escapeHtml(c.desc)}</p>
-                    <p>Награда: <b>+${c.xp} XP</b> сезона · 🍬${c.gum} · 🪙${c.chips}</p>
-                    <p style="color:#888;">Один контракт в сутки. Сброс в полночь.</p>
-                </div>
-                <div class="event-card">
-                    <h3>🌙 Сезон 1 «Кассета ЗвероСуда»</h3>
-                    <p>Качай уровень заездами, забирай награды в разделе «Награды». Без донатов — только км и нервы.</p>
-                </div>
-                <div class="event-card">
-                    <h3>🚗 Автопарк</h3>
-                    <p>«Чебурашка» — служебный таз, бесплатно. «Нива» — 12 фишек. «Волга» — 20 фишек. Скорость у всех одинаковая, пока не откроют цех прокачки.</p>
-                </div>`;
-            const startBtn = document.getElementById('events-start-contract');
-            if (startBtn) {
-                startBtn.style.display = done ? 'none' : 'block';
-                startBtn.onclick = () => {
-                    pendingMode = 'contract';
-                    sc.classList.remove('active'); sc.style.display = 'none';
-                    beginRaceFlow();
-                };
-            }
-        }
+        // экраны сезона — src/ui/season-screens.js
+        const seasonScreenDeps = {
+            player: function() { return currentPlayer; },
+            ensureFields: function(p) { ensureProfileFields(p); },
+            hideMenu: function() { hideMainMenu(); },
+            save: function() { saveCurrentPlayer(); },
+            notify: Notify,
+            rewards: SEASON_REWARDS,
+            xpToNext: seasonXpToNext,
+            claimAll: function() { return claimAvailableSeasonRewards(); },
+            contract: function() { return getTodayContract(); },
+            escape: escapeHtml,
+            startContract: function() { pendingMode = 'contract'; beginRaceFlow(); }
+        };
+        function openRewardsScreen() { openRewardsScreenUI(seasonScreenDeps); }
+        function openEventsScreen() { openEventsScreenUI(seasonScreenDeps); }
 
         function beginRaceFlow() {
             // после «Новая гонка» / смена: магазин если надо → качество
