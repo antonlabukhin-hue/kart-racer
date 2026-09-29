@@ -42,7 +42,14 @@
 | images/map_promzona.jpg | карта «Промзона» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/map_svalka.jpg | карта «Свалка» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/car_select.jpg | выбор машины | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
-| images/car_cheburashka.png | машина «Чебурашка» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/car_cheburashka.png | машина «Ушастик» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| icons/icon-192.png | иконка приложения | рисуется скриптом `tools/make-icons.mjs` из рендера машины | собственная | ✅ |
+| icons/icon-512.png | иконка приложения | `tools/make-icons.mjs` | собственная | ✅ |
+| icons/maskable-512.png | иконка Android (обрезается системой) | `tools/make-icons.mjs` | собственная | ✅ |
+| icons/apple-touch-icon.png | иконка iPhone | `tools/make-icons.mjs` | собственная | ✅ |
+| icons/favicon-64.png | значок вкладки | `tools/make-icons.mjs` | собственная | ✅ |
+| manifest.webmanifest | манифест приложения (установка на телефон) | код проекта | собственная | ✅ |
+| sw.js | service worker: запуск без сети | код проекта | собственная | ✅ |
 | images/car_kirpich.png | машина «Нива» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/car_turbo.png | машина «Волга» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/lore2.jpg | лор | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
