@@ -10645,7 +10645,7 @@ function startGaragePreview(carId) {
                         try { renderer.render(scene, camera); } catch (e) {}
                         return;
                     }
-                    const dt = Math.min(0.05, ((currentTime - (lastTime || currentTime)) / 1000) || 0.016);
+                    const dt = Math.max(0, Math.min(0.05, ((currentTime - (lastTime || currentTime)) / 1000) || 0.016)); // время кадра от rAF бывает чуть раньше метки старта — назад отсчёт не идёт
                     lastTime = currentTime;
                     countdownT -= dt;
                     // стартовая «перебежка» (initAnimals) идёт во время 3-2-1: раньше звери стояли на дороге

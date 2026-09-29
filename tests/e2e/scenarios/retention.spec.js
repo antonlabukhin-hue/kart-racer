@@ -10,11 +10,17 @@ test('«Повторить»: короткий отсчёт, R на финише
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await expect(page.locator('#finish-screen')).toContainText('до финиша оставалось', { ignoreCase: true });
     await expect(page.locator('#finish-screen')).toContainText('почти доехал');
-    const t0 = Date.now();
+    // какие цифры показал отсчёт после «Повторить»: должен начаться сразу с «1» (по игровому времени, не по часам —
+    // на медленном CI кадры длиннее)
+    await page.evaluate(() => {
+        window.__cd = [];
+        new MutationObserver(() => { const el = document.getElementById('race-countdown'); if (el && window.__cd[window.__cd.length - 1] !== el.textContent) { window.__cd.push(el.textContent); } })
+            .observe(document.body, { childList: true, subtree: true, characterData: true });
+    });
     await page.keyboard.press('r');
-    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout: 10_000, intervals: [100] }).toBe('racing');
-    const took = (Date.now() - t0) / 1000;
-    expect(took).toBeLessThan(2.5);
+    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout: 30_000 }).toBe('racing');
+    const seen = await page.evaluate(() => window.__cd.filter(t => /^[0-9]$/.test(t)));
+    expect(seen).toEqual(['1']);
     expect(problems).toEqual([]);
 });
 
@@ -27,9 +33,10 @@ test('множитель за риск в заезде и задания на ф
     await startFreeRace(page, 'easy');
     await waitRacing(page);
     // задание «на волоске» — чтобы точно был прогресс
-    await page.evaluate(() => { window.__raceDebug.nearMissNow(); });
-    await page.waitForTimeout(1300); // у «на волоске» перезарядка 1.2 с
-    await page.evaluate(() => { window.__raceDebug.nearMissNow(); });
+    // два «на волоске»; у него перезарядка 1.2 с игрового времени — повторяем, пока не засчитается второй
+    await page.evaluate(() => window.__raceDebug.nearMissNow());
+    await expect.poll(async () => page.evaluate(() => { const d = window.__raceDebug; if (d.risk.events < 2) d.nearMissNow(); return d.risk.events; }),
+        { timeout: 30_000, intervals: [300] }).toBe(2);
     await expect(page.locator('#risk-hud .rk-mult')).toHaveText('×3');
     const pts = await page.evaluate(() => window.__raceDebug.risk.points);
     expect(pts).toBe(50 + 100);
