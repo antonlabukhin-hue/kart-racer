@@ -131,7 +131,13 @@ export const DAILY_CONTRACTS = [
     { id: 'night', title: 'Ночная смена', desc: 'Финиш в погоде «Ночь»', check: m => m.state==='win' && m.weather==='night', xp: 110, gum: 30, chips: 2 },
     { id: 'rain', title: 'Мокрый асфальт', desc: 'Финиш в дождь', check: m => m.state==='win' && m.weather==='rain', xp: 100, gum: 25, chips: 1 },
     { id: 'perfect', title: 'Чистый лист', desc: 'Финиш без аварий', check: m => m.state==='win' && m.strikes===0, xp: 130, gum: 40, chips: 2 },
-    { id: 'hard', title: 'ЗвероСуд', desc: 'Победа на сложном', check: m => m.state==='win' && m.difficulty==='hard', xp: 150, gum: 35, chips: 2 }
+    { id: 'hard', title: 'ЗвероСуд', desc: 'Победа на сложном', check: m => m.state==='win' && m.difficulty==='hard', xp: 150, gum: 35, chips: 2 },
+    // контракты на механики — не только «финишируй»
+    { id: 'landings2', title: 'Каскадёр', desc: 'Финиш и 2 чистые посадки с трамплина', check: m => m.state==='win' && (m.cleanLandings||0)>=2, xp: 120, gum: 30, chips: 2 },
+    { id: 'boss', title: 'Охотник', desc: 'Сбей босса в одном заезде', check: m => !!m.bossDefeated, xp: 130, gum: 30, chips: 2 },
+    { id: 'clean2', title: 'Без царапины', desc: '2 чистых отрезка по 10 с за заезд', check: m => (m.cleanSegments||0)>=2, xp: 110, gum: 25, chips: 2 },
+    { id: 'boards1', title: 'Долой рекламу', desc: 'Снеси рекламный щит и финишируй', check: m => m.state==='win' && (m.billboards||0)>=1, xp: 100, gum: 25, chips: 1 },
+    { id: 'nearmiss5', title: 'На волоске', desc: '«На волоске!» ×5 и финиш', check: m => m.state==='win' && (m.nearMiss||0)>=5, xp: 120, gum: 30, chips: 2 }
 ];
 
 export const ANIMAL_SHOUTS_LIST = [

@@ -4975,6 +4975,9 @@ function startGaragePreview(carId) {
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
                             bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS,
+                            // для контрактов дня на механики
+                            cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
+                            nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
                             cleanSegments: cleanRun.segments
                         }) || raceRewards;
                         try { updatePlayerBar(); } catch (e) {}

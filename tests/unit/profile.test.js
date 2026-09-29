@@ -233,3 +233,22 @@ describe('фишки за чистые отрезки', () => {
         expect(applyRaceResult(c, 'crash', { bonusChips: 999 }, {}).chips).toBe(base + 20);
     });
 });
+
+describe('контракты дня на механики', () => {
+    it('проверка видит посадки, босса, отрезки, щиты и «На волоске!»', async () => {
+        const { DAILY_CONTRACTS } = await import('../../src/content.js');
+        const byId = id => DAILY_CONTRACTS.find(c => c.id === id);
+        const run = (k, st, m) => {
+            const p = createProfile('A', 1, () => 0.5); ensureProfileFields(p, 99);
+            p.daily = { contractId: k.id, done: false };
+            return applyRaceResult(p, st, m, { contract: k, contractMode: true }).contractDone;
+        };
+        expect(run(byId('landings2'), 'win', { cleanLandings: 2 })).toBe(true);
+        expect(run(byId('landings2'), 'win', { cleanLandings: 1 })).toBe(false);
+        expect(run(byId('boss'), 'crash', { bossDefeated: true })).toBe(true);
+        expect(run(byId('clean2'), 'timeout', { cleanSegments: 2 })).toBe(true);
+        expect(run(byId('boards1'), 'win', { billboards: 1 })).toBe(true);
+        expect(run(byId('boards1'), 'crash', { billboards: 3 })).toBe(false);
+        expect(run(byId('nearmiss5'), 'win', { nearMiss: 5 })).toBe(true);
+    });
+});

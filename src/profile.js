@@ -244,7 +244,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
     let contractDone = false;
     const k = c.contract;
     if (c.contractMode && k && profile.daily && !profile.daily.done && typeof k.check === 'function' &&
-        k.check({ state: state, strikes: m.strikes, gumPicked: m.gumPicked, nitroPicked: m.nitroPicked, weather: m.weather, difficulty: m.difficulty })) {
+        k.check(Object.assign({}, m, { state: state }))) {
         profile.daily.done = true;
         xp += k.xp; gum += k.gum; chips += k.chips;
         profile.season.contractsDone = (profile.season.contractsDone || 0) + 1;
