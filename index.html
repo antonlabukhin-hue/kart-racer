@@ -120,6 +120,7 @@
                 <button type="button" class="mm-profile" id="mm-profile" aria-haspopup="true" aria-expanded="false">
                     <span class="mm-ava" aria-hidden="true">👤</span><b id="mm-name">—</b><small id="mm-level"></small>
                 </button>
+                <button type="button" class="mm-streak" id="mm-streak" hidden title="Серия дней и сундук дня"><i aria-hidden="true">🔥</i><b id="mm-streak-n">1</b><em class="mm-badge" id="mm-badge-chest" hidden></em></button>
                 <div class="mm-wallet">
                     <span title="Фишки"><i aria-hidden="true">🪙</i><b id="mm-chips">0</b></span>
                     <span title="Жвачки"><i aria-hidden="true">🍬</i><b id="mm-gum">0</b></span>
@@ -158,6 +159,8 @@
                     <div class="menu-lock">🔒 Пройди главу 1</div>
                 </button>
             </div>
+            <!-- три задания — всегда на виду (src/missions.js) -->
+            <div class="mm-missions" id="mm-missions"></div>
             <!-- нижняя панель: разделы со счётчиками «есть что забрать / на что потратить» -->
             <nav class="mm-dock" aria-label="Разделы">
                 <button type="button" class="mm-tab" data-menu="garage"><i aria-hidden="true">🔧</i><span>Гараж</span><em class="mm-badge" id="mm-badge-garage" hidden></em></button>
