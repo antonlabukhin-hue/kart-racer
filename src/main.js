@@ -25,7 +25,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
-        import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { carStatsHtml } from './ui/car-stats.js';
+        import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
         import { mergeStaticMeshes, mergeCarParts } from './merge-static.js';
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
@@ -1401,6 +1401,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         };
         function openRewardsScreen() { openRewardsScreenUI(seasonScreenDeps); refreshMenuUI(); }
         function openEventsScreen() { openEventsScreenUI(seasonScreenDeps); refreshMenuUI(); }
+        function canUpgradeNow() { const car = (currentPlayer && currentPlayer.preferredCar) || 'cheburashka'; return !!currentPlayer && affordableUpgrades(getUpgradeLevels(car), currentPlayer.season.chips, UPGRADES, nextCost, MAX_UPGRADE_LEVEL) > 0; }
         function refreshMenuUI() {
             if (!currentPlayer) return;
             const car = currentPlayer.preferredCar || 'cheburashka';
@@ -4395,7 +4396,7 @@ function startGaragePreview(carId) {
                 }
 
         function showEndScreen(state, timeTaken, rewards) {
-                rewards = rewards || window.__lastRaceRewards || { xp: 0, gum: 0, chips: 0 };
+                rewards = rewards || window.__lastRaceRewards || { xp: 0, gum: 0, chips: 0 }; let finStats = null;
                 const screen = document.createElement('div');
                 screen.id = 'finish-screen';
                 screen.style.cssText = `
@@ -4438,14 +4439,8 @@ function startGaragePreview(carId) {
                         }
                     }
                     message += '\n\n🍬 Вы победили! Вот ваши жвачки\nи две фишки из игрового автомата.';
-                    message += `\n\n📊 Макс. скорость: ${stats.maxSpeedReached} км/ч`;
-                    message += `\n🔥 Макс. комбо: ${comboMax.toFixed(0)}с`;
-                    message += `\n⛽ Нитро: ${stats.nitroPicked} · 🍬 Жвачки: ${stats.gumPicked}`;
-                    message += `\n🐾 Ударов по зверям: ${stats.animalsHit} · 🛢 Масло: ${stats.oilHits}`;
-                    message += `\n\n🎁 Награда: 🪙+${(rewards && rewards.chips) || 0} · 🍬+${(rewards && rewards.gum) || 0} · XP+${(rewards && rewards.xp) || 0}`;
-                    if (currentPlayer && currentPlayer.season) {
-                        message += `\nИтого: 🪙${currentPlayer.season.chips} · 🍬${currentPlayer.season.gum}`;
-                    }
+                    finStats = [['📊', 'Макс. скорость', stats.maxSpeedReached + ' км/ч'], ['🔥', 'Макс. комбо', comboMax.toFixed(0) + ' с'], ['⛽', 'Нитро', stats.nitroPicked],
+                        ['🍬', 'Жвачки', stats.gumPicked], ['🐾', 'Удары по зверям', stats.animalsHit], ['🛢', 'Масло', stats.oilHits]]; // плитками под наградами
                     let titleExtra = '';
                     if (strikes === 0 && stats.nitroPicked === 0) titleExtra = 'Без нитро и без тормозов';
                     else if (strikes === 0) titleExtra = 'Курьер года Арсеньева';
@@ -4555,16 +4550,10 @@ function startGaragePreview(carId) {
                         ? '<div class="finish-record ' + window.__lastRecord.kind + '">' + escapeHtml(window.__lastRecord.text) + '</div>' : '';
                     const statsLine = state === 'win'
                         ? (recHtml + '⏱ ' + formatTime(timeTaken) + ' · 💥 ' + strikes + '/' + MAX_STRIKES
-                            + '<br>🎁 🪙+' + ((rewards && rewards.chips) || 0)
-                            + ' · 🍬+' + ((rewards && rewards.gum) || 0)
-                            + ' · XP+' + ((rewards && rewards.xp) || 0))
+                            + rewardChipsHtml(rewards, currentPlayer && currentPlayer.season))
                         : String(message || '').replace(/\n/g, '<br>');
 
-                    const nextBtn = state === 'win'
-                        ? (hasNext
-                            ? '<button type="button" id="finish-next-btn" style="width:100%;min-height:44px;margin-top:6px;border-radius:12px;border:2px solid #ff6666;background:rgba(90,25,35,0.9);color:#ffc8c8;font-weight:bold;font-size:15px;cursor:pointer;">⏭ Дальше: следующая глава</button>'
-                            : '<button type="button" id="finish-next-btn" style="width:100%;min-height:44px;margin-top:6px;border-radius:12px;border:2px solid #ff6666;background:rgba(90,25,35,0.9);color:#ffc8c8;font-weight:bold;font-size:15px;cursor:pointer;">📖 К списку глав</button>')
-                        : '';
+                    const nextBtn = finishButtonsHtml({ camp: true, state: state, hasNext: hasNext, canUpgrade: canUpgradeNow() }); // одна главная кнопка по исходу (src/ui/finish-ui.js)
 
                     screen.className = 'finish-layout-camp';
                     screen.style.cssText = 'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.92);padding:16px;box-sizing:border-box;overflow-y:auto;';
@@ -4581,9 +4570,6 @@ function startGaragePreview(carId) {
                         + '<div style="font-size:12px;color:#ccc;text-align:center;line-height:1.4;margin-bottom:8px;">' + statsLine + '</div>'
                         + '<div style="text-align:left;font-size:13px;line-height:1.45;color:#e8d0c8;background:rgba(70,15,25,0.45);border-left:3px solid #ff4444;padding:10px 12px;border-radius:0 10px 10px 0;margin-bottom:12px;max-height:100px;overflow-y:auto;">' + quoteHtml + '</div>'
                         + nextBtn
-                        + '<button type="button" id="finish-restart-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,220,0,0.65);background:rgba(40,35,15,0.95);color:#ffe566;font-weight:bold;font-size:14px;cursor:pointer;">🔄 Повторить</button>'
-                        + '<button type="button" id="finish-menu-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,255,255,0.28);background:rgba(30,30,40,0.95);color:#eee;font-weight:bold;font-size:14px;cursor:pointer;">🏠 В меню</button>'
-                        + '<button type="button" id="finish-garage-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,200,80,0.4);background:rgba(30,30,40,0.95);color:#ffdd88;font-weight:bold;font-size:14px;cursor:pointer;">🔧 Гараж</button>'
                         + '</div>'
                     );
                 } else {
@@ -4607,19 +4593,16 @@ function startGaragePreview(carId) {
                         '<div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ' + color + ';text-align:center;max-width:400px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">'
                         + (imgHtml || '')
                         + '<h1 style="font-size:28px;color:' + color + ';margin-bottom:10px;">' + escapeHtml(title) + '</h1>'
-                        + rankHtml
+                        + rankHtml + rewardChipsHtml(rewards, currentPlayer && currentPlayer.season) + statTilesHtml(finStats)
                         + '<div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">' + escapeHtml(message) + '</div>'
                         + '</div>'
                         + '<div class="finish-actions" id="finish-actions" style="width:min(400px,100%);margin:12px auto 0;display:flex;flex-direction:column;gap:8px;">'
-                        + '<button type="button" id="finish-restart-btn">🔄 Повторить</button>'
-                        + '<button type="button" id="finish-menu-btn">🏠 В меню</button>'
-                        + '<button type="button" id="finish-garage-btn">🔧 Гараж</button>'
-                        + (isEndlessMode() ? '<button type="button" id="finish-challenge-btn">📨 Вызвать друга</button>' : '')
+                        + finishButtonsHtml({ state: state, endless: isEndlessMode(), canUpgrade: canUpgradeNow() })
                         + '</div>'
                     );
                 }
 
-                document.body.appendChild(screen);
+                document.body.appendChild(screen); animateRewardChips(screen);
 
                 // На время экрана финиша — отключить тачи гонки
                 try {
