@@ -8050,7 +8050,7 @@ function startGaragePreview(carId) {
                 try {
                     const line = def.shout || def.name || 'С дороги!';
                     // реплика — в карточке (пузырь над головой наезжал на неё)
-                    showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp), '', 3000);
+                    showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp, 'images/boss_' + String(bossIdx + 1).padStart(2, '0') + '.jpg'), '', 3000);
                 } catch (e) {}
                 try {
                     if (window.soundEngine) {

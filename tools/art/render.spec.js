@@ -181,6 +181,26 @@ async function studio(page, file, w, h, builderSrc, cam) {
     fs.writeFileSync(path.join(OUT, file), Buffer.from(url.split(',')[1], 'base64'));
 }
 
+// ---------------------------------------------------------------- открытки боссов (карточка перед боем, стор)
+test('портреты боссов', async ({ page }) => {
+    test.skip(!only ? false : !only.some(o => o === 'bosses' || o.startsWith('boss_')));
+    await boot(page);
+    const tracks = await page.evaluate(() => window.__artKit.tracks.map(t => ({ style: t.style, weather: t.weather, theme: t.theme || '' })));
+    for (let i = 0; i < 17; i++) {
+        const num = String(i + 1).padStart(2, '0');
+        if (!want('boss_' + num, 'bosses')) continue;
+        const t = tracks[i] || tracks[0];
+        const hgt = await page.evaluate((idx) => window.__artKit.bossHeight(idx), i);
+        const hy = hgt * 0.72;
+        await render(page, 'boss_' + num + '.jpg', 320, 320, {
+            map: t.style, time: t.weather === 'night' ? 'night' : (i % 2 ? 'sunset' : 'night'), snow: t.theme === 'snow', seed: 300 + i,
+            clouds: false, decoCount: 20, portraitLight: true,
+            boss: { idx: i, x: 0, z: 0, rotY: Math.PI },
+            camera: { pos: [hgt * 0.35, hy, -hgt * 0.95], look: [0, hy - 0.05, 0], fov: 42 }
+        });
+    }
+});
+
 test('студия: машины', async ({ page }) => {
     test.skip(!want('cars'));
     await boot(page);

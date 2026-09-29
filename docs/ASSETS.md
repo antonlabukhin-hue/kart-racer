@@ -49,6 +49,23 @@
 | images/villain_finish.jpg | финиш главы, злодей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/win.jpg | победа | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/lose.jpg | поражение | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_01.jpg | портрет босса главы 1 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_02.jpg | портрет босса главы 2 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_03.jpg | портрет босса главы 3 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_04.jpg | портрет босса главы 4 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_05.jpg | портрет босса главы 5 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_06.jpg | портрет босса главы 6 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_07.jpg | портрет босса главы 7 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_08.jpg | портрет босса главы 8 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_09.jpg | портрет босса главы 9 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_10.jpg | портрет босса главы 10 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_11.jpg | портрет босса главы 11 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_12.jpg | портрет босса главы 12 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_13.jpg | портрет босса главы 13 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_14.jpg | портрет босса главы 14 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_15.jpg | портрет босса главы 15 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_16.jpg | портрет босса главы 16 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
+| images/boss_17.jpg | портрет босса главы 17 | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/trophy_first_win.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/trophy_first_perfect.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/trophy_night_rider.png | трофей | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |

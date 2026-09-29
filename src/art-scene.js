@@ -337,6 +337,12 @@ export function createDiorama(spec) {
         boss.scale.multiplyScalar(s.boss.scale || 1.5);
         scene.add(boss);
         scene.add(blobShadow(boss, 0.9));
+        if (s.portraitLight && s.camera) { // портрет: мягкий ключевой свет со стороны камеры
+            const key = new THREE.DirectionalLight(0xfff0e0, 2.2);
+            key.position.set(s.camera.pos[0] + 1.5, s.camera.pos[1] + 1.5, s.camera.pos[2]);
+            key.target = boss;
+            scene.add(key);
+        }
         if (t.lights) { // подсветка снизу — силуэт босса читается ночью
             const bl = new THREE.PointLight(0xff7a4a, 30, 14, 1.5);
             bl.position.set(boss.position.x, 1.2, boss.position.z - 3);

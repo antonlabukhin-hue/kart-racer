@@ -35,10 +35,12 @@ export function splitBossName(name) {
     return m ? { title: m[1], nick: m[2] } : { title: '', nick: String(name || 'Босс') };
 }
 
-export function bossIntroHtml(def, chapterNo, hp) {
+/** portrait — адрес портрета босса (images/boss_NN.jpg), необязательно */
+export function bossIntroHtml(def, chapterNo, hp, portrait) {
     const n = splitBossName(def && def.name);
     const hint = ATTACK_HINTS[def && def.attack] || 'Увернись от атаки — после промаха тарань';
     return '<div class="bi-stripe" style="background:' + hex(def && def.trim, 0xffcc00) + '"></div>'
+        + (portrait ? '<img class="bi-portrait" src="' + esc(portrait) + '" alt="" style="border-color:' + hex(def && def.trim, 0xffcc00) + '" onerror="this.remove()">' : '')
         + '<div class="bi-top">БОСС' + (chapterNo ? ' · глава ' + chapterNo : '') + '</div>'
         + '<div class="bi-title">' + esc(n.title) + '</div>'
         + '<div class="bi-nick" style="color:' + hex(def && def.eye, 0xffdd44) + '">«' + esc(n.nick) + '»</div>'
