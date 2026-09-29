@@ -1274,10 +1274,9 @@ function createProfile(name) { return Profile.createProfile(name); }
             const box = document.getElementById('profile-list');
             if (!box) return;
             const list = loadAllProfiles().sort((a, b) => (b.stats.wins || 0) - (a.stats.wins || 0));
-            if (!list.length) {
-                box.innerHTML = '<div class="pmeta" style="text-align:center;">Пока пусто — введи имя выше</div>';
-                return;
-            }
+            document.getElementById('profile-list-title').hidden = !list.length; // первый запуск — без пустого списка
+            const lb = document.getElementById('profile-login-btn'); if (lb && !lb.disabled) lb.textContent = list.length ? 'ВОЙТИ / СОЗДАТЬ' : 'НАЧАТЬ ИГРУ →';
+            if (!list.length) { box.innerHTML = ''; return; }
             box.innerHTML = list.map(p => `
                 <div class="profile-item" data-id="${p.id}">
                     <div>
@@ -1754,7 +1753,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const need = seasonXpToNext(se.level);
             document.getElementById('garage-stats').innerHTML =
                 '<div><b>Сезон 1</b> ур.' + se.level + '/30 · XP ' + se.xp + '/' + need + '</div>' +
-                '<div>Побед: <b>' + (st.wins||0) + '</b> · заездов: ' + (st.totalRaces||0) + ' · машина: <b>' + ((CAR_PRESETS[currentPlayer.preferredCar] || CAR_PRESETS.cheburashka).name) + '</b></div>';
+                (st.totalRaces ? '<div>Побед: <b>' + (st.wins||0) + '</b> · заездов: ' + st.totalRaces : '<div>Первый заезд впереди — фишки на прокачку дают за финиши') + ' · машина: <b>' + ((CAR_PRESETS[currentPlayer.preferredCar] || CAR_PRESETS.cheburashka).name) + '</b></div>';
             refreshMenuUI();
             const fill = document.getElementById('garage-season-fill');
             if (fill) fill.style.width = Math.min(100, (se.xp / need) * 100) + '%';
@@ -11515,7 +11514,7 @@ function showLoreScreen(quality, difficulty) {
                     if (typeof window.__unlockAudio === 'function') window.__unlockAudio();
                 });
                 loginBtn.disabled = false;
-                loginBtn.textContent = 'ВОЙТИ / СОЗДАТЬ';
+                loginBtn.textContent = loadAllProfiles().length ? 'ВОЙТИ / СОЗДАТЬ' : 'НАЧАТЬ ИГРУ →';
             }
             const nameInput = document.getElementById('profile-name-input');
             if (nameInput) {
