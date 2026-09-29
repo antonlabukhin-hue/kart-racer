@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, ghostKey, GHOST_STEP, createGhostDelta, formatGhostDelta } from '../../src/ghost.js';
+import { createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, ghostKey, GHOST_STEP, createGhostDelta, formatGhostDelta, recordCompare } from '../../src/ghost.js';
 
 describe('призрак лучшего заезда', () => {
     it('пишет точку раз в шаг и воспроизводит с интерполяцией', () => {
@@ -59,5 +59,14 @@ describe('живое отставание от призрака', () => {
         expect(formatGhostDelta(-0.84)).toBe('−0.8 с');
         expect(formatGhostDelta(1.25)).toBe('+1.3 с');
         expect(formatGhostDelta(0)).toBe('−0.0 с');
+    });
+});
+
+describe('сравнение с рекордом на финише', () => {
+    it('первый финиш, новый рекорд, отставание', () => {
+        expect(recordCompare(null, 60)).toMatchObject({ kind: 'first' });
+        expect(recordCompare(62.4, 61.2)).toMatchObject({ kind: 'best', delta: -1.2, text: '🎉 Новый рекорд трассы: −1.2 с' });
+        expect(recordCompare(60, 60.84)).toMatchObject({ kind: 'behind', delta: 0.8, text: 'До рекорда трассы: +0.8 с' });
+        expect(recordCompare(60, 60).kind).toBe('behind');
     });
 });

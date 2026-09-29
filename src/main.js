@@ -50,7 +50,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
-        import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta } from './ghost.js';
+        import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
         import { createMapEvent, createPipeDrop } from './mapevents.js';
@@ -4524,6 +4524,7 @@ function startGaragePreview(carId) {
                     title = strikes === 0 ? '🏆 ИДЕАЛЬНЫЙ ЗАЕЗД!' : '🏁 ФИНИШ!';
                     color = '#ffdd00';
                     message = `Время: ${formatTime(timeTaken)} · Аварий: ${strikes} / ${MAX_STRIKES}`;
+                    if (window.__lastRecord) message += '\n' + window.__lastRecord.text;
                     if (window.__ghostSaved) message += '\n👻 Призрак обновлён — в следующий раз гонишься за собой';
                     if (isBest) message += '\n🎉 НОВЫЙ РЕКОРД!';
                     if (bestTimes[difficulty] !== null) {
@@ -4650,8 +4651,10 @@ function startGaragePreview(carId) {
                         ? (hasNext || isLast ? ('📡 ГЛАВА ' + (campIdx + 1) + ' ПРОЙДЕНА') : title)
                         : title;
                     if (state === 'win' && isLast) title = '📡 АНТИДОТ ДОСТАВЛЕН!';
+                    const recHtml = (state === 'win' && window.__lastRecord)
+                        ? '<div class="finish-record ' + window.__lastRecord.kind + '">' + escapeHtml(window.__lastRecord.text) + '</div>' : '';
                     const statsLine = state === 'win'
-                        ? ('⏱ ' + formatTime(timeTaken) + ' · 💥 ' + strikes + '/' + MAX_STRIKES
+                        ? (recHtml + '⏱ ' + formatTime(timeTaken) + ' · 💥 ' + strikes + '/' + MAX_STRIKES
                             + '<br>🎁 🪙+' + ((rewards && rewards.chips) || 0)
                             + ' · 🍬+' + ((rewards && rewards.gum) || 0)
                             + ' · XP+' + ((rewards && rewards.xp) || 0))
@@ -4930,10 +4933,13 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) { console.warn('rewards', e); }
                 window.__lastRaceRewards = raceRewards;
+                window.__lastRecord = null;
                 if (state === 'win' && !isEndlessMode()) {
                     try {
                         let prevGhost = null;
                         try { prevGhost = JSON.parse(localStorage.getItem(ghostStoreKey) || 'null'); } catch (e) {}
+                        // сравнение с рекордом трассы — крупно на финише
+                        window.__lastRecord = recordCompare(isValidGhost(prevGhost) ? prevGhost.time : null, timeTaken);
                         if (isBetterGhost(prevGhost, timeTaken) && ghostRec.length >= 2) {
                             localStorage.setItem(ghostStoreKey, JSON.stringify(ghostRec.finish(timeTaken, carId)));
                             window.__ghostSaved = true;
