@@ -244,7 +244,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
     let contractDone = false;
     const k = c.contract;
     if (c.contractMode && k && profile.daily && !profile.daily.done && typeof k.check === 'function' &&
-        k.check({ state: state, strikes: m.strikes, gumPicked: m.gumPicked, nitroPicked: m.nitroPicked, weather: m.weather, difficulty: m.difficulty })) {
+        k.check(Object.assign({}, m, { state: state }))) {
         profile.daily.done = true;
         xp += k.xp; gum += k.gum; chips += k.chips;
         profile.season.contractsDone = (profile.season.contractsDone || 0) + 1;
@@ -329,21 +329,42 @@ export function beastHourOpen(profile) {
 }
 
 /**
- * Выдать награду за главу (один раз): краска в коллекцию и сразу на машину.
- * Возвращает { paint } или null, если награды нет или уже выдана.
+ * Коллекция кампании: награда за главы 1, 3, 6, 9, 12, 15 и 17 — краска или деталь в гараж бесплатно.
+ * Глава 1 ещё и открывает «Звериный час», её краска сразу ставится на машину.
+ */
+export const CHAPTER_REWARDS = {
+    c01: { paint: CHAPTER1_PAINT, equip: true, beastHour: true },
+    c03: { paint: 'purple' },
+    c06: { part: 'rims' },
+    c09: { paint: 'chrome' },
+    c12: { part: 'xenon' },
+    c15: { part: 'spoiler' },
+    c17: { paint: 'black' }
+};
+
+/**
+ * Выдать награду за главу (один раз). Возвращает { paint } / { part } (+ equip, beastHour)
+ * или null — у главы нет награды или она уже в коллекции.
  */
 export function grantChapterReward(profile, trackId, carId) {
-    if (trackId !== CHAPTER1_ID || !profile || !profile.carLoadout) return null;
+    const rw = CHAPTER_REWARDS[trackId];
+    if (!rw || !profile || !profile.carLoadout) return null;
     const lo = profile.carLoadout;
-    if (!Array.isArray(lo.ownedPaints)) lo.ownedPaints = [];
-    if (lo.ownedPaints.indexOf(CHAPTER1_PAINT) >= 0) return null;
-    lo.ownedPaints.push(CHAPTER1_PAINT);
-    if (carId) {
-        if (!lo.paintByCar || typeof lo.paintByCar !== 'object') lo.paintByCar = {};
-        lo.paintByCar[carId] = CHAPTER1_PAINT;
-        lo.paint = CHAPTER1_PAINT;
+    if (rw.paint) {
+        if (!Array.isArray(lo.ownedPaints)) lo.ownedPaints = [];
+        if (lo.ownedPaints.indexOf(rw.paint) >= 0) return null;
+        lo.ownedPaints.push(rw.paint);
+        if (rw.equip && carId) {
+            if (!lo.paintByCar || typeof lo.paintByCar !== 'object') lo.paintByCar = {};
+            lo.paintByCar[carId] = rw.paint;
+            lo.paint = rw.paint;
+        }
+        return { paint: rw.paint, equip: !!rw.equip, beastHour: !!rw.beastHour };
     }
-    return { paint: CHAPTER1_PAINT };
+    if (!Array.isArray(lo.ownedParts)) lo.ownedParts = [];
+    if (lo.ownedParts.indexOf(rw.part) >= 0) return null;
+    lo.ownedParts.push(rw.part);
+    return { part: rw.part };
 }
 
 // ---------------- гараж ----------------

@@ -53,11 +53,17 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
+        import { challengeUrl, parseChallenge, stripChallenge, challengeResult, dailyBest } from './challenge.js';
         import { createMapEvent, createPipeDrop } from './mapevents.js';
         import { pickSetpieces, placeFracs, createSetpieceEvent, createLandmark, EVENT_SIGNS } from './landmarks.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
         // postprocessing отключён — импорты addons ломали загрузку всего модуля (заставка не кликалась)
         window.THREE = THREE;
+        // «Вызов другу»: ссылка ?ch=СИД&s=счёт&n=имя — запомнить и убрать из адреса (перезагрузка не повторит баннер)
+        window.__challenge = parseChallenge(location.search);
+        if (window.__challenge) {
+            try { history.replaceState(null, '', location.pathname + stripChallenge(location.search) + location.hash); } catch (e) {}
+        }
 
         // Меняется вместе с длиной трасс / лимитом (DIFFICULTY_CONFIG) — сбрасывает несравнимые рекорды времени
         const BALANCE_VERSION = 2;
@@ -402,13 +408,13 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
 
 
         // =======================
-        // КОМПАНИЯ: 12 трасс до исследовательского центра
+        // КАМПАНИЯ: 12 трасс до исследовательского центра
         // style = визуальная тема (arsenev/promzona/svalka) + уникальное имя/лор
         // =======================
         // CAMPAIGN_TRACKS — из ./data.js
 
         
-        // Реплики злодея на финише главы компании (по индексу трассы 0..16)
+        // Реплики злодея на финише главы кампании (по индексу трассы 0..16)
 
 
 
@@ -462,7 +468,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const scr = document.getElementById('campaign-screen');
                 if (!scr) {
                     console.error('campaign-screen не найден в DOM');
-                    alert('Экран компании не найден. Обнови index.html на сервере.');
+                    alert('Экран кампании не найден. Обнови index.html на сервере.');
                     return;
                 }
                 renderCampaignTrackList();
@@ -470,15 +476,29 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 if (typeof playScreenAnim === 'function') playScreenAnim(scr);
                 else { scr.style.display = 'flex'; scr.classList.add('active'); }
                 try { if (typeof window.playMenuMusic === 'function') window.playMenuMusic(); } catch (e) {}
-                console.log('📖 Компания открыта', getCampaignProgress());
+                console.log('📖 Кампания открыта', getCampaignProgress());
             } catch (e) {
                 console.error('openCampaignScreen', e);
-                alert('Ошибка компании: ' + e.message);
+                alert('Ошибка кампании: ' + e.message);
             }
         }
         window.openCampaignScreen = openCampaignScreen;
 
-                function renderCampaignTrackList() {
+                /** Строки награды главы: краска (кружок цвета) или деталь; got — уже получена (финиш) */
+        function chapterRewardHtml(rw, got) {
+            let html = '';
+            if (rw.paint) {
+                const paint = CAR_PAINTS.find(function(x) { return x.id === rw.paint; });
+                html += '<div class="cg-row"><span class="cg-swatch" style="background:#' + ((paint && paint.color) || 0).toString(16).padStart(6, '0') + '"></span>'
+                    + '<span>🎁 Краска «' + escapeHtml(paint ? paint.name : rw.paint) + '»' + (got ? (rw.equip ? ' — уже на машине' : ' — в гараже') : '') + '</span></div>';
+            } else if (rw.part) {
+                const part = CAR_PARTS.find(function(x) { return x.id === rw.part; });
+                html += '<div class="cg-row"><span>🎁 Деталь «' + escapeHtml(part ? part.name : rw.part) + '»' + (got ? ' — в гараже' : '') + '</span></div>';
+            }
+            if (rw.beastHour) html += '<div class="cg-row">🐾 Открыт «Звериный час»</div>';
+            return html;
+        }
+        function renderCampaignTrackList() {
             const box = document.getElementById('campaign-track-list');
             if (!box) return;
             const prog = getCampaignProgress();
@@ -540,6 +560,14 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const tdone = chapterTaskProgress(prog.tasks, t.id, idx);
                 const tcount = tdone.filter(Boolean).length;
                 body.querySelector('.ct-meta').textContent = wIcon(t.weather) + ' · ' + diffLabel(t.diff) + (open ? ' · задания ' + tcount + '/3' : '');
+                const rwd = Profile.CHAPTER_REWARDS[t.id];
+                if (rwd && !done) {
+                    const rt = document.createElement('div');
+                    rt.className = 'ct-reward';
+                    const pn = rwd.paint ? (CAR_PAINTS.find(function(x) { return x.id === rwd.paint; }) || {}).name : (CAR_PARTS.find(function(x) { return x.id === rwd.part; }) || {}).name;
+                    rt.textContent = '🎁 ' + (rwd.paint ? 'краска' : 'деталь') + ' «' + (pn || '') + '»';
+                    body.appendChild(rt);
+                }
                 if (open) body.querySelector('.ct-meta').title = tasksForChapter(idx, t.diff).map(function(tk, i) { return (tdone[i] ? '✓ ' : '○ ') + tk.text; }).join('\n');
 
                 const badgeEl = document.createElement('div');
@@ -681,7 +709,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         window.cleanupRaceKeepProfile = cleanupRaceKeepProfile;
 
 
-        /** Старт/рестарт главы компании напрямую в гонку (без меню карт) */
+        /** Старт/рестарт главы кампании напрямую в гонку (без меню карт) */
         function relaunchCampaignTrack(idx, opts) {
             opts = opts || {};
             console.log('📖 relaunchCampaignTrack', idx, opts);
@@ -821,7 +849,7 @@ function startCampaignTrack(idx, opts) {
             const prev = (idx > 0) ? CAMPAIGN_TRACKS[idx - 1] : null;
             const fromName = opts.fromName != null ? opts.fromName : (prev ? prev.name : '');
             playTrackTransition({
-                label: idx === 0 ? 'СТАРТ КОМПАНИИ' : 'СЛЕДУЮЩАЯ ТРАССА',
+                label: idx === 0 ? 'СТАРТ КАМПАНИИ' : 'СЛЕДУЮЩАЯ ТРАССА',
                 fromName: fromName,
                 toName: (idx + 1) + '. ' + t.name,
                 duration: opts.fast ? 900 : 1550,
@@ -905,7 +933,7 @@ function startCampaignTrack(idx, opts) {
             try {
                 const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
                 const gift = Profile.grantChapterReward(currentPlayer, trackId, car);
-                window.__lastChapterReward = gift ? { trackId: trackId, paint: gift.paint } : null;
+                window.__lastChapterReward = gift ? Object.assign({ trackId: trackId }, gift) : null;
             } catch (eR) { window.__lastChapterReward = null; }
             if (won.unlockedNew) {
                 try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 1.1); } catch (e) {}
@@ -1217,7 +1245,11 @@ function createProfile(name) { return Profile.createProfile(name); }
             try { if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI(); } catch (e) {}
             const bar = document.getElementById('player-bar');
             if (!bar || !currentPlayer) return;
-            try { const eb = document.getElementById('menu-endless-best'); if (eb) eb.textContent = currentPlayer.endlessBest ? '🏆 ' + currentPlayer.endlessBest : ''; } catch (e) {}
+            try {
+                const eb = document.getElementById('menu-endless-best');
+                const today = currentPlayer.beastDaily && currentPlayer.beastDaily.seed === dailySeed() ? currentPlayer.beastDaily.best : 0;
+                if (eb) eb.textContent = currentPlayer.endlessBest ? '🏆 ' + currentPlayer.endlessBest + (today ? ' · сегодня ' + today : '') : '';
+            } catch (e) {}
             // «Звериный час» — под замком до главы 1
             try {
                 const ec = document.querySelector('.menu-card[data-menu="endless"]');
@@ -1307,6 +1339,24 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const se = currentPlayer.season;
                 sub.textContent = currentPlayer.name + ' · S1 ур.' + se.level + ' · 🪙' + se.chips + ' · 🍬' + se.gum;
             }
+            // баннер вызова от друга
+            try {
+                const cb = document.getElementById('challenge-banner');
+                const ch = window.__challenge;
+                if (cb) {
+                    cb.hidden = !ch;
+                    if (ch) {
+                        document.getElementById('challenge-title').textContent = '⚔ Вызов от ' + ch.name;
+                        document.getElementById('challenge-sub').textContent = 'Звериный час · ' + ch.score + ' очков' + (ch.wave ? ' · волна ' + ch.wave : '') + ' · сид ' + seedCode(ch.seed);
+                        document.getElementById('challenge-accept').onclick = function() {
+                            const c = window.__challenge;
+                            window.__challenge = null;
+                            startEndlessRun(c.seed);
+                            if (window.__endless) window.__endless.challenge = c;
+                        };
+                    }
+                }
+            } catch (e) {}
             try {
                 const ps = document.getElementById('main-menu-play-sub');
                 if (ps && currentPlayer) {
@@ -1450,7 +1500,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const ds = document.getElementById('difficulty-screen');
             if (ds) {
                 ds.style.display = 'flex';
-                // Компания: скрыть кнопки сложности, оставить только качество + «Поехали»
+                // Кампания: скрыть кнопки сложности, оставить только качество + «Поехали»
                 try {
                     const isCamp = pendingMode === 'campaign' || !!window.__campaignTrackId;
                     const diffBtns = ds.querySelectorAll('.difficulty-btn');
@@ -1464,7 +1514,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                     if (isCamp) {
                         if (note) {
                             note.style.display = 'block';
-                            note.textContent = '📖 Компания: сложность главы — ' + (window.__forceDifficulty || 'easy') + '. Выбери только качество графики.';
+                            note.textContent = '📖 Кампания: сложность главы — ' + (window.__forceDifficulty || 'easy') + '. Выбери только качество графики.';
                         }
                         if (campGo) {
                             campGo.style.display = 'block';
@@ -4179,7 +4229,7 @@ function startGaragePreview(carId) {
                 window.soundEngine = soundEngine;
             }
             
-            // Гарантированно запускаем музыку на КАЖДОМ заезде (в т.ч. 2-я трасса компании)
+            // Гарантированно запускаем музыку на КАЖДОМ заезде (в т.ч. 2-я трасса кампании)
             soundEngine.musicStarted = true;
             soundEngine.enabled = true;
             const ensureMusic = function() {
@@ -4565,7 +4615,13 @@ function startGaragePreview(carId) {
                     message = (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '\n'
                         + 'Волна: ' + run.wave + ' · Счёт: ' + run.score
                         + '\n' + (state === 'timeout' ? 'Время волны вышло' : 'Аварий: ' + strikes + ' / ' + MAX_STRIKES)
-                        + '\n' + (run.isNewBest ? '🎉 НОВЫЙ РЕКОРД!' : '🏆 Рекорд: ' + (currentPlayer.endlessBest || 0));
+                        + '\n' + (run.isNewBest ? '🎉 НОВЫЙ РЕКОРД!' : '🏆 Рекорд: ' + (currentPlayer.endlessBest || 0))
+                        + (run.daily ? '\n📅 Лучший за сегодня: ' + (run.dailyBest || run.score) + (run.dailyNew && !run.isNewBest ? ' — новый!' : '') : '');
+                    if (run.challenge) {
+                        const cr = challengeResult(run.score, run.challenge.score);
+                        message += '\n\n⚔ Вызов ' + run.challenge.name + ' (' + run.challenge.score + '): '
+                            + (cr === 'win' ? 'побит! 🎉' : cr === 'tie' ? 'ничья' : 'не хватило ' + (run.challenge.score - run.score));
+                    }
                 } else if (state === 'timeout') {
                     title = '🌉 МОСТ УЛЕТЕЛ';
                     color = '#ff6644';
@@ -4640,11 +4696,7 @@ function startGaragePreview(carId) {
                         }
                         const cr = window.__lastChapterReward;
                         if (cr && cr.trackId === window.__campaignTrackId) {
-                            const paint = CAR_PAINTS.find(function(x) { return x.id === cr.paint; });
-                            starsHtml += '<div class="chapter-gift">'
-                                + '<div class="cg-row"><span class="cg-swatch" style="background:#' + ((paint && paint.color) || 0).toString(16).padStart(6, '0') + '"></span>'
-                                + '<span>🎁 Краска «' + escapeHtml(paint ? paint.name : cr.paint) + '» — уже на машине</span></div>'
-                                + '<div class="cg-row">🐾 Открыт «Звериный час»</div></div>';
+                            starsHtml += '<div class="chapter-gift">' + chapterRewardHtml(cr, true) + '</div>';
                         }
                     }
                     const head = (state === 'win')
@@ -4714,6 +4766,7 @@ function startGaragePreview(carId) {
                         + '<button type="button" id="finish-restart-btn">🔄 Заново</button>'
                         + '<button type="button" id="finish-menu-btn">🏠 Главное меню</button>'
                         + '<button type="button" id="finish-garage-btn">🔧 Гараж</button>'
+                        + (isEndlessMode() ? '<button type="button" id="finish-challenge-btn">📨 Вызвать друга</button>' : '')
                         + '</div>'
                     );
                 }
@@ -4752,7 +4805,7 @@ function startGaragePreview(carId) {
                 const goMenu = function(ev) {
                     if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
                     cleanupFinishUI();
-                    // лор злодея уже на финишной плашке компании
+                    // лор злодея уже на финишной плашке кампании
                     window.__pendingCampaignLore = null;
                     try {
                         if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false);
@@ -4813,6 +4866,20 @@ function startGaragePreview(carId) {
                 bindFinishBtn('finish-restart-btn', goRestart);
                 bindFinishBtn('finish-menu-btn', goMenu);
                 bindFinishBtn('finish-garage-btn', goGarage);
+                // «Вызвать друга»: ссылка с сидом и счётом — через «Поделиться» телефона или в буфер обмена
+                bindFinishBtn('finish-challenge-btn', function() {
+                    const run = window.__endless;
+                    if (!run || !currentPlayer) return;
+                    const url = challengeUrl(location.origin + location.pathname, { seed: run.seed, score: run.score, wave: run.wave, name: currentPlayer.name });
+                    window.__lastChallengeUrl = url;
+                    const text = 'Побей мой «Звериный час»: ' + run.score + ' очков, волна ' + run.wave;
+                    const copied = function() { if (window.Notify) Notify.success('📨 Ссылка-вызов скопирована', 'Отправь другу — у него будет тот же сид'); };
+                    try {
+                        if (navigator.share) { navigator.share({ title: 'Дорожный прорыв — вызов', text: text, url: url }).catch(function() {}); return; }
+                    } catch (e) {}
+                    try { navigator.clipboard.writeText(url).then(copied, function() { window.prompt('Ссылка-вызов:', url); }); }
+                    catch (e) { window.prompt('Ссылка-вызов:', url); }
+                });
 
                                                 const goNext = function(ev) {
                     if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
@@ -4926,6 +4993,9 @@ function startGaragePreview(carId) {
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
                             bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS,
+                            // для контрактов дня на механики
+                            cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
+                            nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
                             cleanSegments: cleanRun.segments
                         }) || raceRewards;
                         try { updatePlayerBar(); } catch (e) {}
@@ -4968,6 +5038,13 @@ function startGaragePreview(carId) {
                     run.isNewBest = rb.isNew;
                     run.bestBefore = currentPlayer.endlessBest || 0;
                     currentPlayer.endlessBest = rb.best;
+                    // лучший «Звериный час дня» на этом устройстве
+                    if (run.daily) {
+                        const db = dailyBest(currentPlayer.beastDaily, run.seed, run.score);
+                        currentPlayer.beastDaily = db.rec;
+                        run.dailyBest = db.rec.best;
+                        run.dailyNew = db.isNew;
+                    }
                     try { saveCurrentPlayer(); } catch (e) {}
                 }
                 try {
@@ -6929,7 +7006,7 @@ function startGaragePreview(carId) {
                 return { mesh: group, x: x, z: z, type: type, active: true };
             }
 
-            // Тип скользкого пятна зависит от карты / главы компании
+            // Тип скользкого пятна зависит от карты / главы кампании
             let slideType = 'oil';
             if (window.__campaignTrackId) {
                 const cid = window.__campaignTrackId;
@@ -7116,7 +7193,7 @@ function startGaragePreview(carId) {
                 });
             }
             // ============================================================
-            // МИНИ-БОСС (компания: свой на главу; иначе — по карте)
+            // МИНИ-БОСС (кампания: свой на главу; иначе — по карте)
             // ============================================================
             
             // Боссы: CAMPAIGN_BOSSES / createArcadeBossMesh — src/boss.js
@@ -7973,7 +8050,7 @@ function startGaragePreview(carId) {
                 try {
                     const line = def.shout || def.name || 'С дороги!';
                     // реплика — в карточке (пузырь над головой наезжал на неё)
-                    showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp), '', 3000);
+                    showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp, 'images/boss_' + String(bossIdx + 1).padStart(2, '0') + '.jpg'), '', 3000);
                 } catch (e) {}
                 try {
                     if (window.soundEngine) {
@@ -8479,7 +8556,7 @@ function startGaragePreview(carId) {
                     if (typeof animalSpawner.shufflePool === 'function') animalSpawner.shufflePool();
                 }
             } catch (e) {}
-            // Модификаторы главы компании
+            // Модификаторы главы кампании
             try {
                 const cm = window.__campaignMods;
                 if (cm) {
@@ -11210,7 +11287,7 @@ function startGaragePreview(carId) {
             const q = pendingQuality || 'medium';
             const d = pendingDifficulty || window.__forceDifficulty || 'easy';
             const car = pendingCar || (currentPlayer && currentPlayer.preferredCar) || 'cheburashka';
-            console.log('📖 Компания → гонка', pendingMap, pendingWeather, d, q);
+            console.log('📖 Кампания → гонка', pendingMap, pendingWeather, d, q);
             if (typeof initGame === 'function') {
                 initGame(q, d, car, pendingMap, pendingWeather);
             }
