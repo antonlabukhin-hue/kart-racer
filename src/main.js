@@ -898,7 +898,7 @@ function startCampaignTrack(idx, opts) {
                         openCampaignScreen();
                     }
                 };
-                nextBtn.textContent = (trackIdx != null && trackIdx + 1 < CAMPAIGN_TRACKS.length) ? 'Следующая трасса →' : 'К списку →';
+                nextBtn.textContent = (trackIdx != null && trackIdx + 1 < CAMPAIGN_TRACKS.length) ? 'Дальше: следующая глава →' : 'К списку глав →';
             }
             if (menuBtn) {
                 menuBtn.onclick = function() {
@@ -1534,7 +1534,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const act = document.getElementById('shop-action');
                 if (act) {
                     if (owned) {
-                        act.textContent = 'ВЫБРАТЬ НА РЕЙС';
+                        act.textContent = 'ВЫБРАТЬ ЭТУ МАШИНУ';
                         act.onclick = function() {
                             currentPlayer.preferredCar = shopSelectedCar;
                             currentPlayer.hasSeenShop = true;
@@ -4564,7 +4564,7 @@ function startGaragePreview(carId) {
 
                     const nextBtn = state === 'win'
                         ? (hasNext
-                            ? '<button type="button" id="finish-next-btn" style="width:100%;min-height:44px;margin-top:6px;border-radius:12px;border:2px solid #ff6666;background:rgba(90,25,35,0.9);color:#ffc8c8;font-weight:bold;font-size:15px;cursor:pointer;">⏭ Следующая трасса</button>'
+                            ? '<button type="button" id="finish-next-btn" style="width:100%;min-height:44px;margin-top:6px;border-radius:12px;border:2px solid #ff6666;background:rgba(90,25,35,0.9);color:#ffc8c8;font-weight:bold;font-size:15px;cursor:pointer;">⏭ Дальше: следующая глава</button>'
                             : '<button type="button" id="finish-next-btn" style="width:100%;min-height:44px;margin-top:6px;border-radius:12px;border:2px solid #ff6666;background:rgba(90,25,35,0.9);color:#ffc8c8;font-weight:bold;font-size:15px;cursor:pointer;">📖 К списку глав</button>')
                         : '';
 
@@ -4583,8 +4583,8 @@ function startGaragePreview(carId) {
                         + '<div style="font-size:12px;color:#ccc;text-align:center;line-height:1.4;margin-bottom:8px;">' + statsLine + '</div>'
                         + '<div style="text-align:left;font-size:13px;line-height:1.45;color:#e8d0c8;background:rgba(70,15,25,0.45);border-left:3px solid #ff4444;padding:10px 12px;border-radius:0 10px 10px 0;margin-bottom:12px;max-height:100px;overflow-y:auto;">' + quoteHtml + '</div>'
                         + nextBtn
-                        + '<button type="button" id="finish-restart-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,220,0,0.65);background:rgba(40,35,15,0.95);color:#ffe566;font-weight:bold;font-size:14px;cursor:pointer;">🔄 Заново</button>'
-                        + '<button type="button" id="finish-menu-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,255,255,0.28);background:rgba(30,30,40,0.95);color:#eee;font-weight:bold;font-size:14px;cursor:pointer;">🏠 Главное меню</button>'
+                        + '<button type="button" id="finish-restart-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,220,0,0.65);background:rgba(40,35,15,0.95);color:#ffe566;font-weight:bold;font-size:14px;cursor:pointer;">🔄 Повторить</button>'
+                        + '<button type="button" id="finish-menu-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,255,255,0.28);background:rgba(30,30,40,0.95);color:#eee;font-weight:bold;font-size:14px;cursor:pointer;">🏠 В меню</button>'
                         + '<button type="button" id="finish-garage-btn" style="width:100%;min-height:42px;margin-top:8px;border-radius:12px;border:2px solid rgba(255,200,80,0.4);background:rgba(30,30,40,0.95);color:#ffdd88;font-weight:bold;font-size:14px;cursor:pointer;">🔧 Гараж</button>'
                         + '</div>'
                     );
@@ -4613,8 +4613,8 @@ function startGaragePreview(carId) {
                         + '<div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">' + escapeHtml(message) + '</div>'
                         + '</div>'
                         + '<div class="finish-actions" id="finish-actions" style="width:min(400px,100%);margin:12px auto 0;display:flex;flex-direction:column;gap:8px;">'
-                        + '<button type="button" id="finish-restart-btn">🔄 Заново</button>'
-                        + '<button type="button" id="finish-menu-btn">🏠 Главное меню</button>'
+                        + '<button type="button" id="finish-restart-btn">🔄 Повторить</button>'
+                        + '<button type="button" id="finish-menu-btn">🏠 В меню</button>'
                         + '<button type="button" id="finish-garage-btn">🔧 Гараж</button>'
                         + (isEndlessMode() ? '<button type="button" id="finish-challenge-btn">📨 Вызвать друга</button>' : '')
                         + '</div>'
@@ -11665,7 +11665,7 @@ function showLoreScreen(quality, difficulty) {
             const m = document.createElement('button');
             m.type = 'button';
             m.className = 'primary';
-            m.textContent = '🏠 Меню';
+            m.textContent = '🏠 В меню';
             m.onclick = function() {
                 document.querySelectorAll('#difficulty-screen,#lore-screen,#map-select-screen,#car-select-screen,#rewards-screen,#events-screen,#shop-screen,#garage-screen,#campaign-screen').forEach(function(el) {
                     el.style.display = 'none';
