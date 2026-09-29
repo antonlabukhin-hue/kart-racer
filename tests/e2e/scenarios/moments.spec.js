@@ -7,24 +7,6 @@ const noAnimals = (page) => page.evaluate(() => setInterval(() => {
     (d.cars || []).forEach(c => { if (c.mesh) { c.x = 99; c.mesh.position.x = 99; } });
 }, 50));
 
-test('погоня стаи: на финальном отрезке стая бежит следом; сбросил газ — догнала и укусила (+время, не авария)', async ({ page }) => {
-    const problems = watchProblems(page);
-    await login(page, 'Тестер', './?start=0.8');
-    await startFreeRace(page, 'easy');
-    await waitRacing(page);
-    await noAnimals(page);
-    await page.keyboard.down('w');
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.pack && window.__raceDebug.pack.active), { timeout: 20_000 }).toBe(true);
-    await expect(page.locator('#pack-meter')).toBeVisible();
-    expect(await page.evaluate(() => window.__raceDebug.pack.meshes)).toBe(4);
-    await page.keyboard.up('w');
-    // укус — не авария: каждая авария (если машина по пути во что-то врезалась) записана в hitLog, укусы — нет
-    const before = await page.evaluate(() => window.__raceDebug.strikes - window.__raceDebug.hitLog.length);
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.pack.bites), { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
-    expect(await page.evaluate(() => window.__raceDebug.strikes - window.__raceDebug.hitLog.length)).toBe(before);
-    expect(problems).toEqual([]);
-});
-
 test('рекламный щит в полосе: снёс — не авария, +щит в статистике', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.02');

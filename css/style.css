@@ -4469,18 +4469,6 @@
         @keyframes rankStamp { from { opacity: 0; transform: rotate(-6deg) scale(2.2); } to { opacity: 1; transform: rotate(-6deg) scale(1); } }
 
         /* «Погоня стаи»: шкала «насколько близко» */
-        #pack-meter {
-            position: fixed; top: 44px; left: 50%; transform: translateX(-50%); z-index: 140; pointer-events: none;
-            display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 12px;
-            background: rgba(20,10,4,0.82); border: 2px solid rgba(255,170,60,0.6); color: #ffc98a; font-weight: 800; font-size: 13px;
-        }
-        #pack-meter .pm-bar { width: min(220px, 40vw); height: 10px; border-radius: 5px; background: rgba(255,255,255,0.12); overflow: hidden; }
-        #pack-meter .pm-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffb347, #ff3d1f); transition: width .15s; }
-        #pack-meter.close { border-color: #ff3d1f; animation: packPulse .4s infinite alternate; }
-        @keyframes packPulse { to { box-shadow: 0 0 22px rgba(255,60,30,0.7); } }
-        #boss-intro.pack { border-color: #ffb347; }
-        #boss-intro.pack .bi-top { color: #ffb347; }
-        @media (max-width: 600px) { #pack-meter { top: 64px; } }
 
         /* ===== HUD v2: крупный таймер, сердца, спидометр-циферблат ===== */
         #game-hud.hud-v2 { background: linear-gradient(160deg, rgba(14,12,20,0.82), rgba(6,6,10,0.7)) !important; border: 1px solid rgba(255,221,0,0.22) !important; border-radius: 14px !important; }
