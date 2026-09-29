@@ -32,7 +32,7 @@ test('гараж: после покупки улучшения фишки в ш�
     await page.reload();
     await page.locator('#splash-screen').click();
     await page.locator('#profile-list').getByText('Тестер').click();
-    await page.locator('.menu-card[data-menu="garage"]').click();
+    await page.locator('[data-menu="garage"]').click();
     await expect(page.locator('#garage-player-name')).toContainText('🪙50');
     await page.getByRole('button', { name: /Прокачка/ }).click();
     await page.locator('#garage-panel-upgrades button[data-up]').first().click();

@@ -5,14 +5,15 @@ import { watchProblems, login } from '../helpers.js';
 test('английский: меню, заезд и пауза переведены', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Tester', './?lang=en&start=0.3');
-    await expect(page.locator('.menu-card[data-menu="race"]')).toContainText('Free race');
+    await expect(page.locator('.menu-card[data-menu="race"]')).toContainText('Race');
     await expect(page.locator('.menu-card[data-menu="endless"]')).toContainText('Beast Hour');
     await page.locator('.menu-card[data-menu="race"]').click();
     const shop = page.locator('#shop-action');
     if (await shop.isVisible()) await shop.click();
     await expect(page.locator('.difficulty-btn[data-diff="easy"]')).toContainText('EASY');
     await page.locator('.difficulty-btn[data-diff="easy"]').click();
-    await page.getByRole('button', { name: /Skip/ }).click();
+    await expect(page.locator('#lore-panel-0')).toContainText('5 crashes and the race is over.');
+    await page.locator('#lore-panel-0 .lore-btn.primary').click();
     await page.locator('#map-select-go').click();
     await expect(page.locator('#game-hud')).toContainText('TIME', { timeout: 20_000 });
     await expect(page.locator('#game-hud')).toContainText('CRASHES');

@@ -21,9 +21,12 @@ test('вход по Enter, профиль сохраняется после пе
     expect(problems).toEqual([]);
 });
 
-test('быстрый рейс сразу открывает заезд', { tag: '@smoke' }, async ({ page }) => {
+test('«Сразу в путь» из «Заезда» открывает заезд без выбора трассы', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
+    await page.locator('.menu-card[data-menu="race"]').click();
+    const shop = page.locator('#shop-action');
+    if (await shop.isVisible()) await shop.click();
     await page.locator('#main-menu-quick-race').click();
     await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#difficulty-screen')).toBeHidden();
@@ -112,19 +115,27 @@ test('экраны меню открываются без ошибок', { tag: 
     await login(page);
     for (const [card, screen, back] of [
         ['garage', '#garage-screen', '#garage-close-btn'],
-        ['rewards', '#rewards-screen', null],
-        ['events', '#events-screen', null],
+        ['season', '#rewards-screen', null],
+        ['trophies', '#garage-panel-trophies', '#garage-close-btn'],
     ]) {
-        await page.locator(`.menu-card[data-menu="${card}"]`).click();
+        await page.locator(`[data-menu="${card}"]`).click();
         await expect(page.locator(screen)).toBeVisible();
         if (back) await page.locator(back).click();
         else await page.locator(screen).getByRole('button', { name: /Назад|меню/i }).first().click();
         await expect(page.locator('#main-menu-screen')).toBeVisible();
     }
+    // машины покупаются из гаража — и назад в гараж
+    await page.locator('[data-menu="garage"]').click();
     await page.locator('#main-menu-shop').click();
     await expect(page.locator('#shop-screen')).toBeVisible();
     await page.locator('#shop-close').click();
-    await expect(page.locator('#main-menu-screen')).toBeVisible();
+    await expect(page.locator('#garage-screen')).toBeVisible();
+    await page.locator('#garage-close-btn').click();
+    // профиль: карточка по имени, там же смена профиля
+    await page.locator('#mm-profile').click();
+    await expect(page.locator('#mm-profile-pop')).toContainText('Сменить профиль');
+    await page.locator('#main-menu-logout').click();
+    await expect(page.locator('#profile-screen')).toBeVisible();
     expect(problems).toEqual([]);
 });
 
@@ -187,7 +198,7 @@ test('с выбора карты можно вернуться к сложнос
         const shop = page.locator('#shop-action');
         if (await shop.isVisible()) await shop.click();
         await page.locator('.difficulty-btn[data-diff="easy"]').click();
-        const skip = page.getByRole('button', { name: /Пропустить/ });
+        const skip = page.locator('#lore-screen .lore-panel.active button', { hasText: /Пропустить|ПОЕХАЛИ/ }).first();
         const map = page.locator('#map-select-screen');
         // лор показывается не всегда; .or().first() брал скрытый экран карт — ждём, что видно хоть одно
         await expect.poll(async () => (await skip.isVisible()) || (await map.isVisible()), { timeout: 10_000 }).toBe(true);
@@ -211,7 +222,7 @@ test('с выбора карты можно вернуться к сложнос
 test('трофеи в гараже с картинками', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
-    await page.locator('.menu-card[data-menu="garage"]').click();
+    await page.locator('[data-menu="garage"]').click();
     await page.locator('.garage-tab[data-gtab="trophies"]').click();
     const imgs = page.locator('#trophy-grid img.trophy-img');
     await expect(imgs).toHaveCount(10);
