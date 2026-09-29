@@ -1514,7 +1514,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             sc.classList.add('active'); sc.style.display = 'flex';
             shopSelectedCar = currentPlayer.preferredCar || 'cheburashka';
             document.getElementById('shop-currency').textContent =
-                '🪙 Фишки: ' + currentPlayer.season.chips + ' · 🍬 Турбо: ' + currentPlayer.season.gum;
+                '🪙 Фишки: ' + currentPlayer.season.chips + ' · 🍬 Жвачки: ' + currentPlayer.season.gum;
             const box = document.getElementById('shop-cars');
             function refreshShopSelection() {
                 if (!currentPlayer || !shopSelectedCar) return;
@@ -1563,7 +1563,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                             pendingCar = shopSelectedCar;
                             saveCurrentPlayer();
                             document.getElementById('shop-currency').textContent =
-                                '🪙 Фишки: ' + currentPlayer.season.chips + ' · 🍬 Турбо: ' + currentPlayer.season.gum;
+                                '🪙 Фишки: ' + currentPlayer.season.chips + ' · 🍬 Жвачки: ' + currentPlayer.season.gum;
                             box.querySelectorAll('.shop-car-btn').forEach(function(btn) {
                                 const id = btn.getAttribute('data-car');
                                 const p = CAR_PRESETS[id];
@@ -2656,7 +2656,7 @@ function startGaragePreview(carId) {
 
 
         // Баланс v2 (BALANCE_VERSION в начале файла): лимит 90 с на всех сложностях.
-        // Чистый заезд на «Чебурашке» (~24 ед/с в среднем с нитро): лёгкий ~58 с, средний ~62 с, сложный ~65 с.
+        // Чистый заезд на «Ушастике» (~24 ед/с в среднем с нитро): лёгкий ~58 с, средний ~62 с, сложный ~65 с.
         // Авария стоит ~5 / 6 / 8 с (штраф × timePenaltyMul + потеря скорости) — по времени можно ошибиться
         // примерно 5 / 4 / 3 раза. Сложность растёт плотностью зверей и машин, а не длиной трассы.
 
@@ -4323,7 +4323,7 @@ function startGaragePreview(carId) {
                     if (!cheb) {
                         cheb = document.createElement('div');
                         cheb.id = 'cheburashkaWarn';
-                        cheb.textContent = '😰 Чебурашка: ещё один удар — и Золотой Кирпич!';
+                        cheb.textContent = '😰 Ушастик: ещё один удар — и Золотой Кирпич!';
                         cheb.style.cssText = 'position:fixed;bottom:58px;left:50%;transform:translateX(-50%);background:rgba(80,0,0,0.8);color:#ffaaaa;padding:4px 10px;border-radius:8px;border:1px solid #ff4444;z-index:90;font-size:10px;max-width:70vw;text-align:center;pointer-events:none;';
                         document.body.appendChild(cheb);
                     }
@@ -8105,9 +8105,9 @@ function startGaragePreview(carId) {
             }
 
             const RADIO_LINES = {
-                start: ['Чебурашка, поехали. Жвачка не будет ждать.', 'Эфир чист… почти. Не слушай Ранеток.'],
+                start: ['Ушастик, поехали. Жвачка не будет ждать.', 'Эфир чист… почти. Не слушай «Яблонек».'],
                 nitro: ['Нитро в жилах! Держи руль!', 'Турбо-режим, как в хорошем клипе 90-х.'],
-                gum: ['Жвачка Турбо! Вкус победы.', 'Ещё одна фишка в коллекцию, братишка.'],
+                gum: ['Жвачка «Разгон»! Вкус победы.', 'Ещё одна фишка в коллекцию, братишка.'],
                 hit: ['Ай! Кузов помнит.', 'Осторожней, курьер. Аванс уже съели.', 'Это было близко к «Золотому Кирпичу».'],
                 boss: ['Медведь на частоте! Он снова про Арсеньевских!', 'Босс на хвосте. Не геройствуй — вези груз.'],
                 combo: ['Чистый эфир! Так держать.', 'Комбо растёт. Мост уже ближе.'],
@@ -9519,7 +9519,7 @@ function startGaragePreview(carId) {
                             el.style.borderColor = '#33ff66';
                             postShout(el, 1500);
                         } else {
-                            // Жвачка Турбо: +5 сек ИЛИ снятие 1 аварии
+                            // Жвачка «Разгон»: +5 сек ИЛИ снятие 1 аварии
                             try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.0); } catch (e) {}
                             try {
                                 const fl = document.createElement('div');
@@ -9543,7 +9543,7 @@ function startGaragePreview(carId) {
                                 showTimePenaltyPopup(0, '🍬 +5 сек');
                                 const el = document.createElement('div');
                                 el.className = 'animal-shout';
-                                el.textContent = '🍬 Жвачка Турбо! +5 сек';
+                                el.textContent = '🍬 Жвачка «Разгон»! +5 сек';
                                 el.style.color = '#ff88cc';
                                 el.style.borderColor = '#ff88cc';
                                 postShout(el, 1600);
@@ -10860,7 +10860,7 @@ function startGaragePreview(carId) {
                 try { localStorage.setItem(MAP_LORE_KEY, JSON.stringify(seen)); } catch (e) {}
                 const texts = {
                     arsenev: '📍 Трасса Арсеньева: когда-то здесь ездили на дачу. Теперь — только курьеры и хамы с правами.',
-                    promzona: '📍 Промзона: трубы ещё дымят, хотя завод закрыли в 2029. Говорят, в цехах слышны Ранетки…',
+                    promzona: '📍 Промзона: трубы ещё дымят, хотя завод закрыли в 2029. Говорят, в цехах слышны «Яблоньки»…',
                     svalka: '📍 Свалка «Надежда»: всё, что город стыдится, лежит здесь. И да — жвачка Турбо тоже иногда попадается.'
                 };
                 if (texts[mapId]) setTimeout(() => showStory(texts[mapId]), 1200);
@@ -11345,7 +11345,7 @@ function showLoreScreen(quality, difficulty) {
 
         if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI();
         
-        // Чит-коды: РАНЕТКИ / RANETKI / АРСЕНАЛ / ARSENAL — все карты + достижения + трофеи
+        // Чит-коды: ЯБЛОНЬКИ / YABLONKI / АРСЕНАЛ / ARSENAL — все карты + достижения + трофеи
         function unlockEverythingCheat(source) {
             try {
                 if (!currentPlayer) {
@@ -11419,11 +11419,11 @@ function showLoreScreen(quality, difficulty) {
             cheatBuffer += k;
             if (cheatBuffer.length > 32) cheatBuffer = cheatBuffer.slice(-32);
             const buf = cheatBuffer;
-            if (buf.includes('ранетки') || buf.includes('ranetki') ||
+            if (buf.includes('яблоньки') || buf.includes('yablonki') ||
                 buf.includes('арсенал') || buf.includes('arsenal') ||
                 buf.includes('всекарты') || buf.includes('vsekarty')) {
                 cheatBuffer = '';
-                unlockEverythingCheat('РАНЕТКИ');
+                unlockEverythingCheat('ЯБЛОНЬКИ');
             }
         });
 

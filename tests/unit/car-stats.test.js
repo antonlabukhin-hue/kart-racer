@@ -15,7 +15,7 @@ describe('сравнение машин', () => {
         expect(new Set(names).size).toBe(1);
         expect(names[0]).toBe('Скорость,Разгон,Управление,Прочность,Нитро');
     });
-    it('Волга быстрее Чебурашки, Нива прочнее', () => {
+    it('Волга быстрее Ушастика, Нива прочнее', () => {
         const ch = statBars(CAR_PRESETS.cheburashka, {});
         const d1 = statDeltas(statBars(CAR_PRESETS.turbo, {}), ch);
         const d2 = statDeltas(statBars(CAR_PRESETS.kirpich, {}), ch);
@@ -25,12 +25,12 @@ describe('сравнение машин', () => {
     });
     it('разметка: способность, шкалы, разница и экранирование', () => {
         const bars = statBars(CAR_PRESETS.turbo, {});
-        const html = carStatsHtml(bars, { ability: { name: 'Ракета', desc: 'a<b' }, compare: statBars(CAR_PRESETS.cheburashka, {}), compareName: 'Чебурашка', note: 'Стоимость: 20' });
+        const html = carStatsHtml(bars, { ability: { name: 'Ракета', desc: 'a<b' }, compare: statBars(CAR_PRESETS.cheburashka, {}), compareName: 'Ушастик', note: 'Стоимость: 20' });
         expect(html).toContain('★ Ракета');
         expect(html).toContain('a&lt;b');
         expect((html.match(/class="cs-bar"/g) || []).length).toBe(5);
         expect(html).toContain('class="up">+');
-        expect(html).toContain('сравнение с «Чебурашка»');
+        expect(html).toContain('сравнение с «Ушастик»');
         expect(html).toContain('Стоимость: 20');
     });
 });
