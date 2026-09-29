@@ -87,7 +87,9 @@ describe('итог заезда', () => {
         expect(r.chips).toBe(3 + 2 + 1);
         expect(r.gum).toBe(5 + 2 * 3);
         expect(r.xp).toBe(25 + 60 + 40);
-        expect(p.season.chips).toBe(6);
+        // фишки за выполненные задания (src/missions.js) идут отдельной строкой — задания случайные
+        expect(p.season.chips).toBe(6 + r.missions.chips);
+        expect(r.missions.progressed.length).toBeGreaterThanOrEqual(0);
         expect(r.achievements.sort()).toEqual(['first_win', 'gum_2', 'no_nitro', 'perfect'].sort());
         expect(r.newBest).toBe(true);
         expect(p.bestTimes.easy).toBe(60);

@@ -4,6 +4,9 @@
  * main.js вызывает эти функции и сам показывает сообщения. Хранилище передаётся
  * параметром (в тестах — объект в памяти), поэтому всё покрыто tests/unit/profile.test.js.
  */
+import { applyMissionProgress, ensureMissions } from './missions.js';
+import { riskToXp } from './risk-combo.js';
+
 export const PROFILES_KEY = 'road_racing_profiles_v1';
 export const SESSION_KEY = 'road_racing_session_player';
 export const MAX_SEASON_LEVEL = 30;
@@ -86,6 +89,7 @@ export function ensureProfileFields(p, balanceVersion) {
         p.carLoadout.ownedPaints = Array.from(new Set(was.filter(function(id) { return id && id !== 'stock'; })));
     }
     if (!p.trophies) p.trophies = {};
+    ensureMissions(p);
     return p;
 }
 
@@ -251,6 +255,11 @@ export function applyRaceResult(profile, state, meta, ctx) {
         contractDone = true;
     }
 
+    // очки риска (src/risk-combo.js) → опыт; задания (src/missions.js) — фишки начисляет сама applyMissionProgress
+    const riskXp = riskToXp(m.riskPoints);
+    xp += riskXp;
+    const missions = applyMissionProgress(profile, Object.assign({}, m, { state: state }), c.rnd);
+
     profile.season.chips = (profile.season.chips || 0) + chips;
     profile.season.gum = (profile.season.gum || 0) + gum;
     const lv = addSeasonXp(profile.season, xp);
@@ -268,7 +277,8 @@ export function applyRaceResult(profile, state, meta, ctx) {
         levelBefore: levelBefore, levelAfter: profile.season.level,
         achievements: achievements, trophies: trophies,
         contractDone: contractDone, contractTitle: contractDone ? k.title : '',
-        newBest: newBest, unlockedMaps: unlockedMaps
+        newBest: newBest, unlockedMaps: unlockedMaps,
+        riskXp: riskXp, missions: missions
     };
 }
 

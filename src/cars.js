@@ -611,7 +611,7 @@ export function buildShowroomCar(carId) {
             if (w.z > 0) B(dark, Math.sign(w.x) * (bodyW * 0.5 - 0.1), bodyY - bodyH * 0.5 - 0.07, w.z + wheelR + 0.04, 0.18, 0.15, 0.02);
         });
         if (!isJeep && !isSport) {
-            // Чебурашка — «копейка»: сдвоенные круглые фары и хромированные бамперы с клыками
+            // Ушастик — «копейка»: сдвоенные круглые фары и хромированные бамперы с клыками
             const hlY2 = 0.44, hlZ2 = frontZ - 0.05;
             [-1, 1].forEach(function(sx) {
                 const cup = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.055, 0.06, 0.05, 14), chrome2);
@@ -628,7 +628,7 @@ export function buildShowroomCar(carId) {
             });
         }
         // надписи на дверях
-        const decal = { cheburashka: 'ЧЕБУРАШКА', kirpich: '4×4', turbo: null }[carId];
+        const decal = { cheburashka: 'УШАСТИК', kirpich: '4×4', turbo: null }[carId];
         if (decal) {
             const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
             const cx = cv.getContext('2d');
