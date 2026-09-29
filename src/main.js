@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js';
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js';
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -6726,6 +6726,7 @@ function startGaragePreview(carId) {
                     spot.target = tgt;
                 }
 
+                try { mergeCarParts(car, { all: true }); } catch (e) {} // 10–19 деталей → 5–6 (колёса не крутятся, перекраски нет)
                 const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2;
                 car.position.set(x, 0.1, z);
                 scene.add(car);
@@ -7752,8 +7753,18 @@ function startGaragePreview(carId) {
                     g.position.set(0, 0, zPos + 30); // за камерой — не видно, но шейдеры скомпилируются
                     scene.add(g);
                     renderer.compile(scene, camera);
+                    // и один кадр вспомогательной камерой на босса с полосой HP: геометрия (~100 деталей) и текстура
+                    // уходят в видеокарту сейчас, при загрузке, а не в разгар заезда (был рывок ~50 мс при появлении)
+                    try {
+                        const hb = createBossHpBar(3); hb.position.set(0, 4, zPos + 30); scene.add(hb);
+                        const tc = new THREE.PerspectiveCamera(50, 1, 0.1, 30); tc.position.set(0, 3, zPos + 38); tc.lookAt(0, 2, zPos + 30); tc.updateMatrixWorld();
+                        renderer.render(scene, tc); scene.remove(hb);
+                    } catch (eW) {}
                     scene.remove(g);
                     _prebuiltBoss = { def: pk.def, group: g };
+                    // портрет для карточки — заранее: загрузка и декодирование в момент появления давали рывок ~50 мс
+                    const pi = new Image(); pi.src = 'images/boss_' + String(pk.idx + 1).padStart(2, '0') + '.jpg'; if (pi.decode) pi.decode().catch(function() {});
+                    _prebuiltBoss.portrait = pi;
                 } catch (e) { console.warn('prebuild boss', e); _prebuiltBoss = null; }
             }
             function _spawnBossImpl() {
@@ -7905,7 +7916,9 @@ function startGaragePreview(carId) {
                 el.innerHTML = html;
                 document.body.appendChild(el);
                 // справа от головы босса и следом за ним (с учётом изгиба дороги); босса нет в кадре — сверху по центру
+                // размер меряем один раз, двигаем через transform — без пересчёта вёрстки каждый кадр (было: запись left/top и чтение offsetWidth)
                 const head = new THREE.Vector3();
+                let cw = 0, ch = 0;
                 (function follow() {
                     const m = el.isConnected && boss && boss.mesh;
                     if (!m) return;
@@ -7913,9 +7926,9 @@ function startGaragePreview(carId) {
                     m.getWorldPosition(head); head.y += m.userData._headY * 0.88;
                     const W = window.innerWidth, H = window.innerHeight, r = curvedWorld.projectBent(head, camera, W, H);
                     if (r.visible) {
-                        el.classList.add('follow');
-                        el.style.left = Math.max(8, Math.min(r.x + Math.max(22, W * 0.035), W - el.offsetWidth - 8)) + 'px';
-                        el.style.top = Math.max(52, Math.min(r.y - el.offsetHeight * 0.3, H - el.offsetHeight - 8)) + 'px';
+                        if (!cw) { el.classList.add('follow'); el.style.left = '0px'; el.style.top = '0px'; cw = el.offsetWidth; ch = el.offsetHeight; }
+                        const x = Math.max(8, Math.min(r.x + Math.max(22, W * 0.035), W - cw - 8)), y = Math.max(52, Math.min(r.y - ch * 0.3, H - ch - 8));
+                        el.style.translate = Math.round(x) + 'px ' + Math.round(y) + 'px';
                     }
                     requestAnimationFrame(follow);
                 })();
@@ -8388,7 +8401,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get chunks() { return chunkCull; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8553,6 +8566,7 @@ function startGaragePreview(carId) {
                 
                 // Комбо
                 comboTime += deltaTime; riskTick(risk, deltaTime); renderRiskHud(risk);
+                if (chunkCull) { chunkCull.update(zPos, Math.min(camera.far, scene.fog ? scene.fog.far + 25 : camera.far), 30); if (++_cullN % 30 === 0) chunkCull.sweep(); }
                 if (comboTime > comboMax) comboMax = comboTime;
                 if (radioCooldown > 0) radioCooldown -= deltaTime;
                 
@@ -10784,12 +10798,17 @@ function startGaragePreview(carId) {
                             const fps = ro.frames / ro.fpsAcc;
                             ro.frames = 0;
                             ro.fpsAcc = 0;
-                            // ниже цели → снижаем DPR; стабильно высоко → чуть поднимаем
-                            if (fps < ro.targetFps * 0.75 && ro.dpr > ro.dprMin) {
-                                ro.dpr = Math.max(ro.dprMin, ro.dpr * 0.9);
+                            // ниже цели → снижаем DPR; стабильно высоко 5 с подряд → чуть поднимаем. Каждое изменение —
+                            // setSize (новый буфер кадра, сам по себе рывок), поэтому не чаще раза в 4 с и без «качелей»
+                            ro.good = fps > ro.targetFps * 0.95 ? (ro.good || 0) + 1 : 0;
+                            ro.cool = Math.max(0, (ro.cool || 0) - 1);
+                            if (ro.cool > 0) { /* пауза после изменения */ }
+                            else if (fps < ro.targetFps * 0.75 && ro.dpr > ro.dprMin) {
+                                ro.dpr = Math.max(ro.dprMin, ro.dpr * 0.9); ro.cool = 4; ro.good = 0;
                                 renderer.setPixelRatio(ro.dpr);
                                 renderer.setSize(window.innerWidth, window.innerHeight, false);
-                            } else if (fps > ro.targetFps * 0.95 && ro.dpr < ro.dprMax) {
+                            } else if (ro.good >= 5 && ro.dpr < ro.dprMax) {
+                                ro.cool = 4; ro.good = 0;
                                 ro.dpr = Math.min(ro.dprMax, ro.dpr * 1.05);
                                 renderer.setPixelRatio(ro.dpr);
                                 renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -10946,6 +10965,7 @@ function startGaragePreview(carId) {
                     });
                 } catch (e) { console.warn('freezeStatic', e); }
             })();
+            let chunkCull = null, _cullN = 0; try { chunkCull = buildChunks(scene); } catch (e) { console.warn('chunks', e); } // участки трассы: дальнее не обходится (src/chunk-cull.js)
 
             console.log('🏁 Игра запущена!');
             window.__inRace = true;
