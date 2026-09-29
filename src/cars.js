@@ -211,14 +211,7 @@ export function buildShowroomCar(carId) {
                 grillG.add(bar);
             }
         } else if (isSport) {
-            // уже решётки — фары снаружи по X
-            const frame = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.32, 0.16, 0.04), blackMat);
-            frame.position.set(0, grillY, grillZ); grillG.add(frame);
-            for (let i = 0; i < 4; i++) {
-                const bar = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.28, 0.02, 0.03), chromeMat.clone());
-                bar.position.set(0, grillY - 0.05 + i * 0.035, grillZ - 0.02);
-                grillG.add(bar);
-            }
+            // у «Волги» своя хромовая решётка «чайка» (блок ВОЛГА ниже); вторая в той же плоскости мерцала
         } else {
             const frame = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.48, 0.16, 0.04), blackMat);
             frame.position.set(0, grillY, grillZ); grillG.add(frame);
@@ -275,8 +268,8 @@ export function buildShowroomCar(carId) {
         const tlMat = tailMat.clone();
         tlMat.emissiveIntensity = 1.5;
         const stopY = isJeep ? (bodyY + 0.08) : 0.50;
-        const stopZ = bodyL * 0.5 - 0.01;
-        const stopX = bodyW * 0.32;
+        const stopZ = isJeep ? bodyL * 0.52 + 0.08 : bodyL * 0.5 - 0.01; // у Нивы — на задней двери, а не внутри неё
+        const stopX = isJeep ? bodyW * 0.37 : bodyW * 0.32; // и мимо запаски
         [-1, 1].forEach(side => {
             const tl = new THREE_REF.Mesh(
                 new THREE_REF.BoxGeometry(isJeep ? 0.22 : 0.24, isJeep ? 0.12 : 0.14, 0.06),
@@ -387,7 +380,7 @@ export function buildShowroomCar(carId) {
                 new THREE_REF.BoxGeometry(bodyW * 0.32, 0.022, 0.03),
                 blackMat
             );
-            bar.position.set(0, 0.36 + i * 0.04, -bodyL * 0.5 - 0.02);
+            bar.position.set(0, 0.36 + i * 0.04, -bodyL * 0.5 - 0.03); // перед хромом (раньше грани совпадали — рябь)
             group.add(bar);
         }
         // Базовый хромовый бампер (без тюнинг-губы и клыков)
@@ -395,14 +388,14 @@ export function buildShowroomCar(carId) {
             new THREE_REF.BoxGeometry(bodyW * 0.98, 0.1, 0.12),
             chromeMat.clone()
         );
-        bumpChrome.position.set(0, 0.24, -bodyL * 0.5 - 0.02);
+        bumpChrome.position.set(0, 0.25, -bodyL * 0.5 - 0.045); // накладкой перед чёрным бампером (раньше пряталась внутри)
         group.add(bumpChrome);
         // Задний базовый бампер
         const rearBump = new THREE_REF.Mesh(
             new THREE_REF.BoxGeometry(bodyW * 0.98, 0.09, 0.1),
             chromeMat.clone()
         );
-        rearBump.position.set(0, 0.24, bodyL * 0.5 + 0.02);
+        rearBump.position.set(0, 0.25, bodyL * 0.5 + 0.045);
         group.add(rearBump);
         // Боковая хромовая полоса «Волга»
         [-1, 1].forEach(function(side) {
@@ -425,7 +418,7 @@ export function buildShowroomCar(carId) {
             stop.userData.isLight = true;
             group.add(stop);
             const amber = new THREE_REF.Mesh(
-                new THREE_REF.BoxGeometry(0.1, 0.11, 0.06),
+                new THREE_REF.BoxGeometry(0.1, 0.1, 0.05), // чуть меньше стопа: общий стык не мерцает
                 new THREE_REF.MeshStandardMaterial({
                     color: 0xffaa00, emissive: 0xff8800, emissiveIntensity: 0.9, roughness: 0.4
                 })
@@ -493,11 +486,17 @@ export function buildShowroomCar(carId) {
         const leg = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.04, 0.1, 0.04), chromeMat);
         leg.position.set(x, roofTopY - 0.02, cabin.position.z + z * 0.5); roofRack.add(leg);
     });
+    // поклажа пониже и с ремнями (гладкая коробка на полкрыши выглядела грубо)
     const crate = new THREE_REF.Mesh(
-        new THREE_REF.BoxGeometry(bodyW * 0.65, 0.32, 0.55),
+        new RoundedBoxGeometry(bodyW * 0.6, 0.2, 0.6, 2, 0.03),
         new THREE_REF.MeshStandardMaterial({ color: 0x8a5a28, roughness: 0.8 })
     );
-    crate.position.set(0, roofTopY + 0.22, cabin.position.z); roofRack.add(crate);
+    crate.position.set(0, roofTopY + 0.165, cabin.position.z); roofRack.add(crate);
+    const strapMat = new THREE_REF.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 });
+    [-0.16, 0.16].forEach(function(dz) {
+        const strap = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.6 + 0.014, 0.214, 0.045), strapMat);
+        strap.position.set(0, roofTopY + 0.165, cabin.position.z + dz); roofRack.add(strap);
+    });
     roofRack.visible = false; group.add(roofRack); parts.roof_rack = roofRack;
     // Нива — джип, багажник на крышу не ставим (меш не показываем никогда)
     if (isJeep) { roofRack.visible = false; delete parts.roof_rack; }
@@ -566,9 +565,9 @@ export function buildShowroomCar(carId) {
         })();
         const plateMat = new THREE_REF.MeshBasicMaterial({ map: plateTex });
         const pf = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.46, 0.1), plateMat);
-        pf.rotation.y = Math.PI; pf.position.set(0, 0.2, frontZ - 0.14); group.add(pf); // перед бампером, не в его плоскости
+        pf.rotation.y = Math.PI; pf.position.set(0, 0.27, frontZ - (isSport ? 0.115 : 0.1)); group.add(pf); // на бампере, выше «губы» и трубы кенгурятника
         const pr = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.46, 0.1), plateMat);
-        pr.position.set(0, isJeep ? 0.36 : 0.35, rearZ + 0.13); group.add(pr);
+        pr.position.set(0, isJeep ? 0.22 : 0.35, rearZ + (isJeep ? 0.09 : 0.13)); group.add(pr); // у Нивы — под запаской
         // зеркала на стойках у лобового: кронштейн от стенки кабины до корпуса зеркала (без зазоров)
         [-1, 1].forEach(function(sx) {
             const zM = cabinZ - cabinLen * 0.42;
@@ -708,9 +707,9 @@ export function buildShowroomCar(carId) {
         });
         // Броня: 1 — кенгурятник, 2 — боковые листы с заклёпками, 3 — решётки на стёклах и дуги на крыше
         const a1 = U('armor', 1);
-        [-0.35, 0.35].forEach(function(x) { C(a1, steel, 0.04, 0.04, 0.5, x * bodyW, 0.42, frontZ - 0.2); });
+        [-0.35, 0.35].forEach(function(x) { C(a1, steel, 0.04, 0.04, 0.6, x * bodyW, 0.37, frontZ - 0.2); });
         C(a1, steel, 0.04, 0.04, bodyW * 0.8, 0, 0.66, frontZ - 0.2, 0, Math.PI / 2);
-        C(a1, steel, 0.04, 0.04, bodyW * 0.8, 0, 0.36, frontZ - 0.22, 0, Math.PI / 2);
+        C(a1, steel, 0.04, 0.04, bodyW * 0.8, 0, 0.1, frontZ - 0.22, 0, Math.PI / 2); // под номером, не поперёк него
         const a2 = U('armor', 2);
         [-1, 1].forEach(function(sx) {
             B(a2, steel, sx * (bodyW * 0.5 + 0.03), bodyY - 0.02, 0, 0.03, bodyH * 0.6, bodyL * 0.5);
@@ -722,13 +721,15 @@ export function buildShowroomCar(carId) {
         // Нитро: 1 — два баллона сзади, 2 — синий шланг и надпись N2O по бокам, 3 — светящиеся выхлопы
         const n1 = U('nitro', 1);
         [-0.18, 0.18].forEach(function(x) {
-            C(n1, blue, 0.08, 0.08, 0.45, x, topY + (isJeep ? 0.12 : 0.1), rearZ - 0.3, 0, Math.PI / 2);
-            B(n1, chrome, x, topY + (isJeep ? 0.12 : 0.1), rearZ - 0.3, 0.46, 0.02, 0.17);
+            // два баллона рядом с зазором (раньше входили друг в друга) и хромовые хомуты вокруг
+            C(n1, blue, 0.08, 0.08, 0.3, x, topY + (isJeep ? 0.12 : 0.1), rearZ - 0.3, 0, Math.PI / 2);
+            [-0.08, 0.08].forEach(function(dx) { B(n1, chrome, x + dx, topY + (isJeep ? 0.12 : 0.1), rearZ - 0.3, 0.03, 0.175, 0.175); });
         });
         const n2 = U('nitro', 2);
         [-1, 1].forEach(function(sx) {
-            B(n2, blue, sx * (bodyW * 0.5 + 0.012), bodyY + 0.05, bodyL * 0.1, 0.01, 0.1, bodyL * 0.3);
-            B(n2, M(0xffffff), sx * (bodyW * 0.5 + 0.016), bodyY + 0.05, bodyL * 0.1, 0.01, 0.04, bodyL * 0.12);
+            const ny = isSport ? bodyY - 0.06 : bodyY + 0.05; // у «Волги» выше идёт шашечный молдинг
+            B(n2, blue, sx * (bodyW * 0.5 + 0.016), ny, bodyL * 0.1, 0.01, 0.09, bodyL * 0.29); // ни одна грань не совпадает с бронёй и молдингом
+            B(n2, M(0xffffff), sx * (bodyW * 0.5 + 0.022), ny, bodyL * 0.1, 0.004, 0.04, bodyL * 0.12);
         });
         const n3 = U('nitro', 3);
         [-0.3, 0.3].forEach(function(x) {
