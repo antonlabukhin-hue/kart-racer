@@ -25,6 +25,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
+        import { shareLink } from './ui/share-link.js';
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -2491,7 +2492,7 @@ function startGaragePreview(carId) {
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
             // всё временное, что рисует заезд: HUD, финиш, карточки босса и волн, подсказки, всплывашки
-            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#pack-meter,#hud-speedo,.big-plaque,#endless-wave-card,#coach-tip,.unlock-plaque';
+            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#pack-meter,#hud-speedo,.big-plaque,.share-link,#endless-wave-card,#coach-tip,.unlock-plaque';
             try { clearTimeout(window.__coachTimer); } catch (e) {}
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque,.boss-shout').forEach(function(el) {
@@ -4723,12 +4724,8 @@ function startGaragePreview(carId) {
                     const url = challengeUrl(location.origin + location.pathname, { seed: run.seed, score: run.score, wave: run.wave, name: currentPlayer.name });
                     window.__lastChallengeUrl = url;
                     const text = 'Побей мой «Звериный час»: ' + run.score + ' очков, волна ' + run.wave;
-                    const copied = function() { if (window.Notify) Notify.success('📨 Ссылка-вызов скопирована', 'Отправь другу — у него будет тот же сид'); };
-                    try {
-                        if (navigator.share) { navigator.share({ title: 'Дорожный прорыв — вызов', text: text, url: url }).catch(function() {}); return; }
-                    } catch (e) {}
-                    try { navigator.clipboard.writeText(url).then(copied, function() { window.prompt('Ссылка-вызов:', url); }); }
-                    catch (e) { window.prompt('Ссылка-вызов:', url); }
+                    shareLink(url, { title: 'Дорожный прорыв — вызов', text: text, label: '📨 Ссылка-вызов',
+                        onCopied: function() { Notify.success('📨 Ссылка-вызов скопирована', 'Отправь другу — у него будет тот же сид'); } });
                 });
 
                                                 const goNext = function(ev) {
