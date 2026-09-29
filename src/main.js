@@ -25,7 +25,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
-        import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js';
+        import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { carStatsHtml } from './ui/car-stats.js';
         import { mergeStaticMeshes, mergeCarParts } from './merge-static.js';
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
@@ -1526,10 +1526,9 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const price = preset.priceChips || 0;
                 const desc = document.getElementById('shop-desc');
                 if (desc) {
-                    const ab = preset.ability ? ('Способность «' + preset.ability.name + '»: ' + preset.ability.desc + '. ') : '';
-                    desc.textContent = ab + (owned
-                        ? (preset.name + ' — в гараже. Можно выбрать на рейс.')
-                        : ('Стоимость: ' + price + ' фишек. Фишки падают за финиши и награды сезона.'));
+                    const cur = currentPlayer.preferredCar || 'cheburashka', cmp = cur !== shopSelectedCar && CAR_PRESETS[cur]; // одинаковые шкалы + разница с текущей (src/ui/car-stats.js)
+                    desc.innerHTML = carStatsHtml(statBars(preset, getUpgradeLevels(shopSelectedCar)), { ability: preset.ability, compare: cmp ? statBars(CAR_PRESETS[cur], getUpgradeLevels(cur)) : null,
+                        compareName: cmp ? CAR_PRESETS[cur].name : '', note: owned ? (preset.name + ' — в гараже.') : ('Стоимость: ' + price + ' фишек. Фишки дают за финиши и награды сезона.') });
                 }
                 const act = document.getElementById('shop-action');
                 if (act) {

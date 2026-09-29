@@ -200,11 +200,11 @@
     <!-- МАГАЗИН МАШИН -->
     <div id="shop-screen">
         <div class="content">
-            <h1 style="color:#ffdd00;">🚗 МАГАЗИН КУРЬЕРА</h1>
+            <h1 style="color:#ffdd00;">🚗 МАШИНЫ</h1>
             <div class="sub" id="shop-currency" style="color:#ffaa44;">🪙 Фишки: 0 · 🍬 Турбо: 0</div>
             <div id="shop-canvas-wrap"></div>
             <div class="shop-cars" id="shop-cars"></div>
-            <p id="shop-desc" style="font-size:12px;color:#aaa;margin:8px 0;"></p>
+            <div id="shop-desc" class="car-stats" style="font-size:12px;color:#aaa;margin:8px 0;"></div>
             <button class="garage-btn" id="shop-action">ВЫБРАТЬ ЭТУ МАШИНУ</button>
             <button class="garage-btn secondary" id="shop-close">← Назад</button>
         </div>
@@ -389,19 +389,19 @@
                     <img class="car-img" src="images/car_cheburashka.png" alt="Чебурашка"
                          onerror="this.onerror=null;this.src='images/car_cheburashka.png';this.style.background='#331108';">
                     <div class="car-name">Чебурашка</div>
-                    <div class="car-desc">Баланс<br>Скорость ★★★<br>Прочность ★★★</div>
+                    <div class="car-desc">Вёрткая<br>руль острее</div>
                 </div>
                 <div class="car-card" data-car="kirpich">
                     <img class="car-img" src="images/car_kirpich.png" alt="Нива"
                          onerror="this.onerror=null;this.src='images/car_kirpich.png';this.style.background='#1a2230';">
                     <div class="car-name">Нива</div>
-                    <div class="car-desc">Танк<br>Скорость ★★<br>Прочность ★★★★</div>
+                    <div class="car-desc">Танк<br>прочнее всех</div>
                 </div>
                 <div class="car-card" data-car="turbo">
                     <img class="car-img" src="images/car_turbo.png" alt="Волга"
                          onerror="this.onerror=null;this.src='images/car_turbo.png';this.style.background='#332a00';">
                     <div class="car-name">Волга</div>
-                    <div class="car-desc">Ракета<br>Скорость ★★★★<br>Масло скользкое</div>
+                    <div class="car-desc">Ракета<br>быстрее всех</div>
                 </div>
             </div>
             <button id="car-select-go">ПОЕХАЛИ →</button>

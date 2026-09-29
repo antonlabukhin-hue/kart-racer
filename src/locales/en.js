@@ -75,6 +75,7 @@ export default {
         'Уровень —': 'Level —',
         '📋 СМЕНА И СОБЫТИЯ': '📋 SHIFT & EVENTS',
         'НАЧАТЬ СМЕНУ →': 'START SHIFT →',
+        '🚗 МАШИНЫ': '🚗 CARS',
         '🚗 МАГАЗИН КУРЬЕРА': '🚗 COURIER SHOP',
 
         // гараж
@@ -292,6 +293,17 @@ export default {
         '❌ ПОРАЖЕНИЕ': '❌ DEFEAT',
         '🔄 Повторить': '🔄 Retry',
         'ВЫБРАТЬ ЭТУ МАШИНУ': 'PICK THIS CAR',
+        // сравнение машин (магазин, гараж)
+        'Скорость': 'Speed',
+        'Разгон': 'Acceleration',
+        'Управление': 'Handling',
+        'Прочность': 'Durability',
+        'Вёрткая': 'Nimble',
+        'руль острее': 'sharper steering',
+        'прочнее всех': 'toughest',
+        'быстрее всех': 'fastest',
+        'лучше,': 'better,',
+        'хуже': 'worse',
         '⏭ Дальше: следующая глава': '⏭ Next chapter',
         'Дальше: следующая глава →': 'Next chapter →',
         'К списку глав →': 'To chapter list →',
@@ -337,6 +349,9 @@ export default {
     },
     // [регулярка, замена] — для строк с числами
     patterns: [
+        [/^сравнение с «(.+)»:$/, 'compared with «$1»:'],
+        [/^(.+) — в гараже.$/, '$1 — in your garage.'],
+        [/^Стоимость: (d+) фишек. Фишки дают за финиши и награды сезона.$/, 'Price: $1 chips. Chips come from finishes and season rewards.'],
         [/^(d+) из (d+)$/, '$1 of $2'],
         [/^ур. (d+)$/, 'lv. $1'],
         [/^Сезон 1, ур. (d+) · побед (d+) из (d+) · машина: (.+)$/, 'Season 1, lv. $1 · $2 wins of $3 · car: $4'],
