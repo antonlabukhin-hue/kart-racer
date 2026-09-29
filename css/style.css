@@ -5069,3 +5069,5 @@ body #campaign-track-list .camp-track { flex-shrink: 0 !important; height: max-c
 @media (orientation: landscape) and (min-height: 561px) and (max-height: 820px) {
     body #main-menu-screen .menu-hero { max-height: 16vh !important; }
 }
+#mm-install { margin: 0 0 8px; width: 100%; }
+#mm-install[hidden] { display: none !important; }
