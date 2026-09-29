@@ -2585,7 +2585,7 @@ function startGaragePreview(carId) {
                 '<li><b>🕳 Разлом</b> — только по трамплину. <b>👊 Босс</b> в броне: увернись, потом тарань.</li>' +
                 '</ul>' +
                 controls +
-                '<button type="button" class="br-go" id="race-briefing-go">Погнали →</button>' +
+                '<button type="button" class="br-go" id="race-briefing-go">Поехали →</button>' +
                 '</div>';
             document.body.appendChild(el);
             const go = function(ev) {
@@ -11160,29 +11160,18 @@ function showLoreScreen(quality, difficulty) {
             loreScreen.classList.add('active');
             loreScreen.style.display = 'flex';
             
-            const p1 = document.getElementById('lore-panel-1');
-            const p2 = document.getElementById('lore-panel-2');
-            if (p1) { p1.classList.add('active'); p1.style.display = 'block'; }
-            if (p2) { p2.classList.remove('active'); p2.style.display = 'none'; }
-            
+            showLorePanel(0);
             console.log('📖 Лор-экран показан');
         }
 
-        window.nextLorePanel = function nextLorePanel() {
-            const p1 = document.getElementById('lore-panel-1');
-            const p2 = document.getElementById('lore-panel-2');
-            if (p1) { p1.classList.remove('active'); p1.style.display = 'none'; }
-            if (p2) { p2.classList.add('active'); p2.style.display = 'block'; }
-            currentLorePanel = 2;
+        // 0 — коротко (3 фразы и «Поехали»), 1–2 — вся история по кнопке «📖 Вся история»; −1 — скрыть все
+        function showLorePanel(n) {
+            [0, 1, 2].forEach(function(i) { const p = document.getElementById('lore-panel-' + i); if (p) { p.classList.toggle('active', i === n); p.style.display = i === n ? 'block' : 'none'; } });
+            currentLorePanel = n;
         }
-
-        window.prevLorePanel = function prevLorePanel() {
-            const p1 = document.getElementById('lore-panel-1');
-            const p2 = document.getElementById('lore-panel-2');
-            if (p2) { p2.classList.remove('active'); p2.style.display = 'none'; }
-            if (p1) { p1.classList.add('active'); p1.style.display = 'block'; }
-            currentLorePanel = 1;
-        }
+        window.showFullLore = function showFullLore() { showLorePanel(1); };
+        window.nextLorePanel = function nextLorePanel() { showLorePanel(2); };
+        window.prevLorePanel = function prevLorePanel() { showLorePanel(1); };
 
         window.skipLore = function skipLore() {
             window.finishLoreAndStart();
@@ -11194,11 +11183,7 @@ function showLoreScreen(quality, difficulty) {
                 loreScreen.classList.remove('active');
                 loreScreen.style.display = 'none';
             }
-            const p1 = document.getElementById('lore-panel-1');
-            const p2 = document.getElementById('lore-panel-2');
-            if (p1) { p1.classList.remove('active'); p1.style.display = 'none'; }
-            if (p2) { p2.classList.remove('active'); p2.style.display = 'none'; }
-            
+            showLorePanel(-1);
             // Машина только из гаража / preferredCar (без экрана покупки в старте рейса)
             pendingCar = (currentPlayer && currentPlayer.preferredCar) || pendingCar || 'cheburashka';
             if (currentPlayer && currentPlayer.unlockedCars && !currentPlayer.unlockedCars.includes(pendingCar)) {
@@ -11660,9 +11645,8 @@ function showLoreScreen(quality, difficulty) {
                 b.onclick = opts.back;
                 bar.appendChild(b);
             }
-            const m = document.createElement('button');
+            const m = document.createElement('button'); // «В меню» — второстепенная: золотая на экране одна, у действия
             m.type = 'button';
-            m.className = 'primary';
             m.textContent = '🏠 В меню';
             m.onclick = function() {
                 document.querySelectorAll('#difficulty-screen,#lore-screen,#map-select-screen,#car-select-screen,#rewards-screen,#events-screen,#shop-screen,#garage-screen,#campaign-screen').forEach(function(el) {

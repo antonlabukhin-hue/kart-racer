@@ -183,6 +183,7 @@ export default {
         // «Даю установку:»
         'Даю установку:': 'Your briefing:',
         'Погнали →': "Let's ride →",
+        'Поехали →': "Let's go →",
         '▶ ИГРАТЬ': '▶ PLAY',
         '📨 Ссылка-вызов': '📨 Challenge link',
         'Скопировать': 'Copy',
@@ -296,6 +297,12 @@ export default {
         '❌ ПОРАЖЕНИЕ': '❌ DEFEAT',
         '🔄 Повторить': '🔄 Retry',
         'ВЫБРАТЬ ЭТУ МАШИНУ': 'PICK THIS CAR',
+        // короткий лор перед первым заездом
+        '🏎️ 2037 · ДОРОГА ИЗ АРСЕНЬЕВА': '🏎️ 2037 · THE ROAD FROM ARSENYEV',
+        'Звери получили права: сбивать нельзя, а городу нужен антидот.': 'Animals got rights: no hitting them, and the city needs the antidote.',
+        'Ты — курьер. До «Звериного часа» 90 секунд: объезжай зверей, прыгай с трамплинов, береги машину.': 'You are the courier. 90 seconds until Beast Hour: dodge animals, jump the ramps, keep the car in one piece.',
+        '5 аварий — и заезд окончен.': '5 crashes and the race is over.',
+        '📖 Вся история': '📖 Full story',
         // сравнение машин (магазин, гараж)
         'Скорость': 'Speed',
         'Разгон': 'Acceleration',

@@ -178,7 +178,7 @@
             </div>
             <div class="sub" id="rewards-progress" style="color:#aaa;">Уровень —</div>
             <div id="rewards-list" style="max-height:50vh;overflow-y:auto;"></div>
-            <button class="garage-btn" id="rewards-close">← В меню</button>
+            <button class="garage-btn secondary" id="rewards-close">← В меню</button>
         </div>
     </div>
 
@@ -250,7 +250,7 @@
             <div class="garage-panel" id="garage-panel-achs">
                 <div class="ach-grid" id="garage-achs"></div>
             </div>
-            <button class="garage-btn" id="garage-close-btn">← В меню</button>
+            <button class="garage-btn secondary" id="garage-close-btn">← В меню</button>
         </div>
     </div>
 
@@ -324,7 +324,7 @@
                 <button type="button" id="campaign-quality-go" class="go-btn" style="display:none;">ПОЕХАЛИ →</button>
                 <div class="diff-nav">
                     <button type="button" class="nav-mini" id="diff-back">← Назад</button>
-                    <button type="button" class="nav-mini primary" id="diff-menu">🏠 В меню</button>
+                    <button type="button" class="nav-mini" id="diff-menu">🏠 В меню</button>
                 </div>
             </div>
         </div>
@@ -372,7 +372,7 @@
             <button id="map-select-go">ПОЕХАЛИ →</button>
             <div class="nav-bar map-nav">
                 <button type="button" id="map-select-back">← Сложность</button>
-                <button type="button" class="primary" id="map-select-menu">🏠 В меню</button>
+                <button type="button" id="map-select-menu">🏠 В меню</button>
             </div>
         </div>
     </div>
@@ -410,6 +410,21 @@
 
     <!-- ЭКРАН ЛОРА -->
     <div id="lore-screen">
+        <!-- Панель 0: коротко — 3 фразы и «Поехали»; вся история (панели 1–2) — по кнопке -->
+        <div class="lore-panel" id="lore-panel-0">
+            <img class="lore-img" src="images/splash.jpg" alt="Лор" onerror="this.style.display='none'">
+            <div class="lore-text">
+                <h2>🏎️ 2037 · ДОРОГА ИЗ АРСЕНЬЕВА</h2>
+                <p>Звери получили права: сбивать нельзя, а городу нужен антидот.</p>
+                <p>Ты — курьер. До «Звериного часа» 90 секунд: объезжай зверей, прыгай с трамплинов, береги машину.</p>
+                <p>5 аварий — и заезд окончен.</p>
+            </div>
+            <div class="lore-nav">
+                <button class="lore-btn" onclick="showFullLore()">📖 Вся история</button>
+                <button class="lore-btn primary" onclick="finishLoreAndStart()">ПОЕХАЛИ →</button>
+            </div>
+        </div>
+
         <!-- Панель 1 -->
         <div class="lore-panel" id="lore-panel-1">
             <img class="lore-img" src="images/splash.jpg" alt="Лор 1" onerror="this.style.display='none'">
