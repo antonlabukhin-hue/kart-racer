@@ -161,6 +161,8 @@ export default {
         'Даю установку:': 'Your briefing:',
         'Погнали →': "Let's ride →",
         '▶ ИГРАТЬ': '▶ PLAY',
+        '✨ ЧИСТАЯ ПОСАДКА': '✨ CLEAN LANDING',
+        'Рывок нитро!': 'Nitro burst!',
         '🏁 Первый рекорд трассы записан': '🏁 First track record set',
         'ТРУБЫ НАД ДОРОГОЙ': 'PIPES OVERHEAD',
         '🛢 Труба!': '🛢 Pipe!',

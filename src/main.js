@@ -45,7 +45,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
         import * as Profile from './profile.js';
-        import { stepRamps, stepAir, timeToLand, landingSpeed } from './race-physics.js';
+        import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
@@ -6604,6 +6604,7 @@ function startGaragePreview(carId) {
             let carYOffset = 0;
             let carBumpTimer = 0;
             let carAirborne = false;
+            let airTime = 0, strikesAtLaunch = 0; // для «чистой посадки»
             let carAirVel = 0;
             let xVelocity = 0;
             let _prevSpeed = 0;
@@ -8944,6 +8945,7 @@ function startGaragePreview(carId) {
                     if (rs.mode === 'launch') {
                         speed = rs.speed;
                         carAirborne = true;
+                        airTime = 0; strikesAtLaunch = strikes;
                         carAirVel = rs.airVel;
                         carYOffset = rs.y;
                         // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
@@ -8959,6 +8961,7 @@ function startGaragePreview(carId) {
                     }
                 } else {
                     const air = stepAir(carYOffset, carAirVel, deltaTime);
+                    airTime += deltaTime;
                     carYOffset = air.y;
                     carAirVel = air.vel;
                     if (air.landed) {
@@ -8970,7 +8973,18 @@ function startGaragePreview(carId) {
                         } catch (e) {}
                         const land = landingSpeed(speed, MAX_SPEED);
                         speed = land.speed;
-                        if (land.boosted) {
+                        // посадка ощущается: пыль из-под колёс, глухой удар; чистая — плашка и рывок нитро
+                        try { if (particleSystem && particleSystem.smoke) for (let pi = 0; pi < 6; pi++) particleSystem.smoke({ x: xPos + (pi % 2 ? 0.5 : -0.5), y: 0.15, z: zPos + 0.3 }, 0); } catch (e) {}
+                        try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('bump', 1.4); } catch (e) {}
+                        const grade = landingGrade(airTime, strikes > strikesAtLaunch);
+                        if (grade.clean) {
+                            stats.cleanLandings = (stats.cleanLandings || 0) + 1;
+                            nitroTimer = Math.max(nitroTimer, grade.nitro);
+                            if (_settings.shake !== false) shakeTime = Math.max(shakeTime, 0.22);
+                            fovPunch = Math.max(fovPunch, 12);
+                            try { showBigPlaque('✨ ЧИСТАЯ ПОСАДКА', 'Рывок нитро!', 'landing'); } catch (e) {}
+                            try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('whoosh', 0.9); } catch (e) {}
+                        } else if (land.boosted) {
                             try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Прыжок!'); } catch (e) {}
                             try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('whoosh', 0.65); } catch (e) {}
                         }

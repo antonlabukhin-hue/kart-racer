@@ -25,5 +25,7 @@ test('разлом: по полосе трамплина машина взлет
     expect(r.flew).toBe(true);
     expect(r.maxY).toBeGreaterThan(0.85);
     expect(r.strikes).toBe(0);
+    // перелёт разлома без удара — «чистая посадка» с плашкой и рывком нитро
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.cleanLandings || 0), { timeout: 5_000 }).toBeGreaterThanOrEqual(1);
     expect(problems).toEqual([]);
 });
