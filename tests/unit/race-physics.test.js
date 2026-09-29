@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rampContact, stepRamps, stepAir, timeToLand, landingSpeed, launchVelocity, GRAVITY } from '../../src/race-physics.js';
+import { rampContact, stepRamps, stepAir, timeToLand, landingSpeed, launchVelocity, GRAVITY, landingGrade } from '../../src/race-physics.js';
 
 // трамплин как в игре: центр z, длина 4, высота 0.85, полоса x = 0
 const ramp = (over) => Object.assign({ x: 0, z: 0, zEnter: 2, zExit: -2, len: 4, width: 2.2, height: 0.85 }, over || {});
@@ -66,5 +66,15 @@ describe('полёт и приземление', () => {
         expect(landingSpeed(0.05, 0.42)).toEqual({ speed: 0.05, boosted: false });
         expect(timeToLand(0, 0)).toBe(0);
         expect(GRAVITY).toBe(9.5);
+    });
+});
+
+describe('чистая посадка', () => {
+    it('долгий полёт без удара — чистая и даёт рывок нитро; короткий подскок или удар в воздухе — нет', () => {
+        expect(landingGrade(0.8, false)).toMatchObject({ clean: true });
+        expect(landingGrade(0.8, false).nitro).toBeGreaterThan(0.5);
+        expect(landingGrade(3, false).nitro).toBeLessThanOrEqual(1.2);
+        expect(landingGrade(0.2, false)).toEqual({ clean: false, nitro: 0 });
+        expect(landingGrade(0.8, true)).toEqual({ clean: false, nitro: 0 });
     });
 });

@@ -10,6 +10,7 @@ test('призрак: после победы на следующем заезд
     await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.ghost), { timeout: 10_000 }).toBeNull();
     await page.keyboard.down('w');
     await expect(page.locator('#finish-screen')).toContainText('Призрак обновлён', { timeout: 120_000 });
+    await expect(page.locator('#finish-screen')).toContainText('Первый рекорд трассы');
     await page.keyboard.up('w');
     const saved = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('road_racing_ghost_v1_')).length);
     expect(saved).toBe(1);

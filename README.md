@@ -56,7 +56,7 @@
 
 ## Быстрый старт
 
-**Требования:** Node.js 22.12+ или 24 (проверить: `node -v`; на Node 20 тесты не запустятся), браузер с WebGL.
+**Требования:** Node.js 22.12+ или 24 (проверить: `node -v`; на Node 20 тесты не запустятся; версия записана в `package.json` → `engines` и в `.nvmrc` для `nvm use`), браузер с WebGL.
 
 ```bash
 git clone https://github.com/antonlabukhin-hue/kart-racer.git

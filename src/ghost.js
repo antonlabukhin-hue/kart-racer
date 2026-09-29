@@ -86,3 +86,14 @@ export function formatGhostDelta(d) {
     const v = Math.round(d * 10) / 10;
     return (v <= 0 ? '−' : '+') + Math.abs(v).toFixed(1) + ' с';
 }
+
+/**
+ * Сравнение с рекордом трассы на финише (рекорд — время сохранённого призрака этой трассы и сложности).
+ * prevTime — прежний рекорд или null (первый финиш). Возвращает { kind: 'first'|'best'|'behind', text, delta }.
+ */
+export function recordCompare(prevTime, time) {
+    if (!(prevTime > 0)) return { kind: 'first', delta: null, text: '🏁 Первый рекорд трассы записан' };
+    const d = Math.round((time - prevTime) * 10) / 10;
+    if (d < 0) return { kind: 'best', delta: d, text: '🎉 Новый рекорд трассы: −' + Math.abs(d).toFixed(1) + ' с' };
+    return { kind: 'behind', delta: d, text: 'До рекорда трассы: +' + d.toFixed(1) + ' с' };
+}

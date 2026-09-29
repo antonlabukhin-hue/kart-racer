@@ -163,3 +163,24 @@ export function forestTrees(mapId, zAtProgress, trackWidth, density, rnd) {
     });
     return out;
 }
+
+/**
+ * Пыльный вихрь: короткий (8% трассы) и не в каждом заезде — плотность 0..1 по доле трассы
+ * с плавным входом и выходом (раньше треть трассы была ровным бежевым туманом).
+ * gust — { from, to } или null.
+ */
+export function dustDensity(gust, progress) {
+    if (!gust) return 0;
+    const edge = 0.02;
+    if (progress <= gust.from || progress >= gust.to) return 0;
+    const a = Math.min(1, (progress - gust.from) / edge), b = Math.min(1, (gust.to - progress) / edge);
+    const k = Math.min(a, b);
+    return k * k * (3 - 2 * k);
+}
+/** Вихрь на этот заезд: в 60% заездов, где-то между 26% и 41% трассы — до арены босса */
+export function rollDustGust(rnd) {
+    const r = rnd || Math.random;
+    if (r() >= 0.6) return null;
+    const from = 0.26 + r() * 0.07; // заканчивается до арены босса (0.42)
+    return { from: from, to: from + 0.08 };
+}

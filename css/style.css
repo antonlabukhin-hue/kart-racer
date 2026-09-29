@@ -4653,3 +4653,12 @@ body #map-select-screen .map-card .map-desc { display: block !important; padding
 body #map-select-screen .map-card .lock-badge { padding: 0 10px 9px !important; margin: 0 !important; font-size: 10px !important; line-height: 1.3; }
 /* кампания: одна колонка — названия глав целиком */
 body #campaign-track-list { grid-template-columns: 1fr !important; }
+
+/* сравнение с рекордом трассы на финише кампании */
+.finish-record { font-size: 15px; font-weight: 900; margin: 2px 0 6px; color: #ffd23c; }
+.finish-record.best { color: #5dff8a; text-shadow: 0 0 12px rgba(93,255,138,0.5); animation: uiPop .5s .6s both; }
+.finish-record.behind { color: #ffb070; }
+
+/* плашка «Чистая посадка» — золото, чуть ниже брони */
+.big-plaque.landing { top: 36%; border-color: #ffd23c; box-shadow: 0 0 30px rgba(255,210,60,0.45); }
+.big-plaque.landing b { color: #ffe27a; font-size: 26px; text-shadow: 0 0 14px rgba(255,210,60,.7); }

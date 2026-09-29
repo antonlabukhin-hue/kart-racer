@@ -40,17 +40,17 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
         import * as curvedWorld from './curved-world.js';
-        import { biomeAt, biomeIndexAt, biomePlan, BIOME_INFO, groundColorAt, createRock, createLog, forestTrees, createForestInstanced } from './biomes.js';
+        import { biomeAt, biomeIndexAt, biomePlan, BIOME_INFO, groundColorAt, createRock, createLog, forestTrees, createForestInstanced, dustDensity, rollDustGust } from './biomes.js';
         import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
         curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
         import * as Profile from './profile.js';
-        import { stepRamps, stepAir, timeToLand, landingSpeed } from './race-physics.js';
+        import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
         import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
-        import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta } from './ghost.js';
+        import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
         import { createMapEvent, createPipeDrop } from './mapevents.js';
@@ -4524,6 +4524,7 @@ function startGaragePreview(carId) {
                     title = strikes === 0 ? '🏆 ИДЕАЛЬНЫЙ ЗАЕЗД!' : '🏁 ФИНИШ!';
                     color = '#ffdd00';
                     message = `Время: ${formatTime(timeTaken)} · Аварий: ${strikes} / ${MAX_STRIKES}`;
+                    if (window.__lastRecord) message += '\n' + window.__lastRecord.text;
                     if (window.__ghostSaved) message += '\n👻 Призрак обновлён — в следующий раз гонишься за собой';
                     if (isBest) message += '\n🎉 НОВЫЙ РЕКОРД!';
                     if (bestTimes[difficulty] !== null) {
@@ -4650,8 +4651,10 @@ function startGaragePreview(carId) {
                         ? (hasNext || isLast ? ('📡 ГЛАВА ' + (campIdx + 1) + ' ПРОЙДЕНА') : title)
                         : title;
                     if (state === 'win' && isLast) title = '📡 АНТИДОТ ДОСТАВЛЕН!';
+                    const recHtml = (state === 'win' && window.__lastRecord)
+                        ? '<div class="finish-record ' + window.__lastRecord.kind + '">' + escapeHtml(window.__lastRecord.text) + '</div>' : '';
                     const statsLine = state === 'win'
-                        ? ('⏱ ' + formatTime(timeTaken) + ' · 💥 ' + strikes + '/' + MAX_STRIKES
+                        ? (recHtml + '⏱ ' + formatTime(timeTaken) + ' · 💥 ' + strikes + '/' + MAX_STRIKES
                             + '<br>🎁 🪙+' + ((rewards && rewards.chips) || 0)
                             + ' · 🍬+' + ((rewards && rewards.gum) || 0)
                             + ' · XP+' + ((rewards && rewards.xp) || 0))
@@ -4930,10 +4933,13 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) { console.warn('rewards', e); }
                 window.__lastRaceRewards = raceRewards;
+                window.__lastRecord = null;
                 if (state === 'win' && !isEndlessMode()) {
                     try {
                         let prevGhost = null;
                         try { prevGhost = JSON.parse(localStorage.getItem(ghostStoreKey) || 'null'); } catch (e) {}
+                        // сравнение с рекордом трассы — крупно на финише
+                        window.__lastRecord = recordCompare(isValidGhost(prevGhost) ? prevGhost.time : null, timeTaken);
                         if (isBetterGhost(prevGhost, timeTaken) && ghostRec.length >= 2) {
                             localStorage.setItem(ghostStoreKey, JSON.stringify(ghostRec.finish(timeTaken, carId)));
                             window.__ghostSaved = true;
@@ -5955,6 +5961,9 @@ function startGaragePreview(carId) {
             }
             applyMapAndWeather();
             const baseSkyHex = scene.background.getHex();
+            // пыльный вихрь (src/biomes.js): короткий и не в каждом заезде
+            const dustGust = rollDustGust();
+            const _dustCol = new THREE.Color(), _dustTarget = new THREE.Color(0xa8906a);
             const baseFogHex = scene.fog.color.getHex();
             const baseFogNear = scene.fog.near;
             const baseFogFar = scene.fog.far;
@@ -6598,6 +6607,7 @@ function startGaragePreview(carId) {
             let carYOffset = 0;
             let carBumpTimer = 0;
             let carAirborne = false;
+            let airTime = 0, strikesAtLaunch = 0; // для «чистой посадки»
             let carAirVel = 0;
             let xVelocity = 0;
             let _prevSpeed = 0;
@@ -8457,7 +8467,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get dust() { return dustGust; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8681,21 +8691,28 @@ function startGaragePreview(carId) {
                     showStory('🌉 Впереди силуэт Золотого Моста. У тебя один шанс.');
                 }
                 
-                // Погода: пыльная буря в средней трети
-                if (weatherMode === 'day' && progress > 0.3 && progress < 0.55) {
-                    if (weatherZone !== 'dust') {
+                // Погода: короткий пыльный вихрь — плавно наползает и уходит, по экрану летит пыль
+                if (weatherMode === 'day' && dustGust) {
+                    const dk = dustDensity(dustGust, progress);
+                    if (dk > 0) {
                         weatherZone = 'dust';
-                        scene.fog.near = Math.min(baseFogNear, 22);
-                        scene.fog.far = Math.min(baseFogFar, 110);
-                        scene.background.setHex(0x9a8060);
-                        scene.fog.color.setHex(0x9a8060);
+                        scene.fog.near = baseFogNear + (Math.min(baseFogNear, 18) - baseFogNear) * dk;
+                        scene.fog.far = baseFogFar + (Math.min(baseFogFar, 95) - baseFogFar) * dk;
+                        _dustCol.setHex(baseSkyHex).lerp(_dustTarget, dk);
+                        scene.background.copy(_dustCol);
+                        _dustCol.setHex(baseFogHex).lerp(_dustTarget, dk);
+                        scene.fog.color.copy(_dustCol);
+                        // пыль поперёк дороги: ветер сбоку
+                        if (particleSystem && particleSystem.emit && Math.random() < dk * 0.9) {
+                            particleSystem.emit({ x: xPos - 6 + Math.random() * 3, y: 0.3 + Math.random() * 1.6, z: zPos - 4 - Math.random() * 10 }, { x: 5 + Math.random() * 3, y: 0.2, z: 1.5 }, 3, 0.35);
+                        }
+                    } else if (weatherZone === 'dust') {
+                        weatherZone = 'clear';
+                        scene.fog.near = baseFogNear;
+                        scene.fog.far = baseFogFar;
+                        scene.background.setHex(baseSkyHex);
+                        scene.fog.color.setHex(baseFogHex);
                     }
-                } else if (weatherZone === 'dust' && weatherMode === 'day') {
-                    weatherZone = 'clear';
-                    scene.fog.near = baseFogNear;
-                    scene.fog.far = baseFogFar;
-                    scene.background.setHex(baseSkyHex);
-                    scene.fog.color.setHex(baseFogHex);
                 }
                 
                 // Финишный спринт — сужение (барьеры ближе к центру)
@@ -8938,6 +8955,7 @@ function startGaragePreview(carId) {
                     if (rs.mode === 'launch') {
                         speed = rs.speed;
                         carAirborne = true;
+                        airTime = 0; strikesAtLaunch = strikes;
                         carAirVel = rs.airVel;
                         carYOffset = rs.y;
                         // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
@@ -8953,6 +8971,7 @@ function startGaragePreview(carId) {
                     }
                 } else {
                     const air = stepAir(carYOffset, carAirVel, deltaTime);
+                    airTime += deltaTime;
                     carYOffset = air.y;
                     carAirVel = air.vel;
                     if (air.landed) {
@@ -8964,7 +8983,18 @@ function startGaragePreview(carId) {
                         } catch (e) {}
                         const land = landingSpeed(speed, MAX_SPEED);
                         speed = land.speed;
-                        if (land.boosted) {
+                        // посадка ощущается: пыль из-под колёс, глухой удар; чистая — плашка и рывок нитро
+                        try { if (particleSystem && particleSystem.smoke) for (let pi = 0; pi < 6; pi++) particleSystem.smoke({ x: xPos + (pi % 2 ? 0.5 : -0.5), y: 0.15, z: zPos + 0.3 }, 0); } catch (e) {}
+                        try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('bump', 1.4); } catch (e) {}
+                        const grade = landingGrade(airTime, strikes > strikesAtLaunch);
+                        if (grade.clean) {
+                            stats.cleanLandings = (stats.cleanLandings || 0) + 1;
+                            nitroTimer = Math.max(nitroTimer, grade.nitro);
+                            if (_settings.shake !== false) shakeTime = Math.max(shakeTime, 0.22);
+                            fovPunch = Math.max(fovPunch, 12);
+                            try { showBigPlaque('✨ ЧИСТАЯ ПОСАДКА', 'Рывок нитро!', 'landing'); } catch (e) {}
+                            try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('whoosh', 0.9); } catch (e) {}
+                        } else if (land.boosted) {
                             try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Прыжок!'); } catch (e) {}
                             try { if (window.soundEngine && soundEngine.playSfx) soundEngine.playSfx('whoosh', 0.65); } catch (e) {}
                         }

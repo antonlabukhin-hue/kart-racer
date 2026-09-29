@@ -71,3 +71,13 @@ export function landingSpeed(speed, maxSpeed) {
     if (speed <= 0.08) return { speed: speed, boosted: false };
     return { speed: Math.min(speed * LAND_BOOST, maxSpeed * LAND_CAP), boosted: true };
 }
+
+/**
+ * Оценка посадки после прыжка: чистая — долгий полёт (≥ 0.45 с) без удара в воздухе.
+ * Награда за чистую — короткий рывок нитро (сек). Возвращает { clean, nitro }.
+ */
+export const CLEAN_LANDING_AIR = 0.45;
+export function landingGrade(airTime, hitInAir) {
+    const clean = !hitInAir && airTime >= CLEAN_LANDING_AIR;
+    return { clean: clean, nitro: clean ? Math.min(1.2, 0.5 + airTime * 0.6) : 0 };
+}
