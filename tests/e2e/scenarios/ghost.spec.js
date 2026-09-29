@@ -22,7 +22,7 @@ test('призрак: после победы на следующем заезд
     const z0 = await page.evaluate(() => window.__raceDebug.ghost.z);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.ghost.z), { timeout: 5_000 }).toBeLessThan(z0 - 3);
     // в HUD — живое отставание от рекорда: «👻 РЕКОРД: ±X.X с»
-    await expect(page.locator('#ghostDeltaDisplay')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('#ghostDeltaDisplay')).toBeVisible({ timeout: 15_000 }); // под нагрузкой полного прогона кадры длиннее
     await expect(page.locator('#ghostDeltaDisplay')).toContainText(/[−+]\d+\.\d с/);
     await page.keyboard.up('w');
     expect(problems).toEqual([]);

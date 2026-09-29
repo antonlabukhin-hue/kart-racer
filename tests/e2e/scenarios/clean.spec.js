@@ -8,7 +8,8 @@ test('чистый отрезок: 10 с без ударов — щит на м�
     await startFreeRace(page, 'easy');
     await waitRacing(page);
     // без зверей и машин: любой удар обнуляет отрезок
-    await page.evaluate(() => setInterval(() => { (window.__raceDebug.animals || []).forEach(an => { an.hit = true; if (an.mesh) an.mesh.visible = false; }); }, 50));
+    // машина едет прямо без руля: убираем с пути зверей, трафик и разломы — иначе случайный грузовик сбивал отрезок
+    await page.evaluate(() => setInterval(() => { const d = window.__raceDebug; (d.animals || []).forEach(an => { an.hit = true; if (an.mesh) an.mesh.visible = false; }); (d.cars || []).forEach(c => { if (c.mesh) { c.x = 99; c.mesh.position.x = 99; } }); if (d.gaps) d.gaps.length = 0; }, 50));
     // плашка живёт 2 с и её вытесняет любая следующая («ЧИСТАЯ ПОСАДКА» после трамплина) — запоминаем все показанные
     await page.evaluate(() => {
         window.__plaques = [];

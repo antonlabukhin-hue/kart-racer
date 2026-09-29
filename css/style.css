@@ -5071,3 +5071,31 @@ body #campaign-track-list .camp-track { flex-shrink: 0 !important; height: max-c
 }
 #mm-install { margin: 0 0 8px; width: 100%; }
 #mm-install[hidden] { display: none !important; }
+
+/* ===== Сенсорные экраны в заезде: размер от экрана (--ui-k из src/ui/touch-scale.js), а не от CSS-пикселей =====
+   Правила по признаку «сенсорный» (html.touch-ui), а не по высоте: на iPhone в режиме «на экран Домой» iOS
+   раскладывал страницу шире экрана, «телефонные» правила по высоте не срабатывали, всё выходило мелким. */
+html.touch-ui body.race-mode #volume-controls { display: none !important; }
+html.touch-ui body.race-mode:has(#pause-overlay.show) #volume-controls { display: flex !important; z-index: 2147483000 !important; }
+html.touch-ui.touch-land body.race-mode #mobile-controls .mc-left,
+html.touch-ui.touch-land body.race-mode #mobile-controls .mc-right,
+html.touch-ui.touch-land body.race-mode #mobile-controls .mc-cam { zoom: var(--ui-k, 1); }
+html.touch-ui.touch-land body.race-mode .control-btn.steer { width: 76px !important; height: 70px !important; font-size: 28px !important; }
+html.touch-ui.touch-land body.race-mode .control-btn.gas { width: 82px !important; height: 82px !important; font-size: 30px !important; }
+html.touch-ui.touch-land body.race-mode .control-btn.brake { width: 64px !important; height: 60px !important; font-size: 22px !important; }
+html.touch-ui.touch-land body.race-mode .control-btn.pause-inline { width: 52px !important; height: 52px !important; }
+html.touch-ui.touch-land body.race-mode #game-hud,
+html.touch-ui.touch-land body.race-mode #boss-hud,
+html.touch-ui.touch-land body.race-mode #risk-hud,
+html.touch-ui.touch-land body.race-mode #hud-menu-btn,
+html.touch-ui.touch-land body.race-mode #hud-speedo { zoom: var(--ui-k, 1); }
+/* спидометр — слева под временем (справа его закрывали камера и меню), как на телефоне */
+html.touch-ui.touch-land body.race-mode #hud-speedo { left: calc(env(safe-area-inset-left, 0px) + 14px) !important; right: auto !important;
+    top: 104px !important; bottom: auto !important; width: 92px !important; }
+html.touch-ui.touch-land body.race-mode #hud-speedo .sp-read span { font-size: 18px; }
+html.touch-ui.touch-land body.race-mode #hud-speedo .sp-read small { font-size: 8px; }
+html.touch-ui.touch-land body.race-mode #risk-hud { left: 50% !important; top: auto !important; bottom: 6px !important; transform: translateX(-50%) !important; padding: 3px 10px 5px !important; }
+html.touch-ui.touch-land body.race-mode #risk-hud .rk-mult { font-size: 19px !important; }
+html.touch-ui.touch-land body.race-mode #risk-hud .rk-pts { font-size: 11px !important; }
+html.touch-ui.touch-land body.race-mode .crash-tag { top: calc(env(safe-area-inset-top, 0px) + 96px * var(--ui-k, 1)) !important; zoom: var(--ui-k, 1); }
+.st-diag { margin-top: 10px; font-size: 10px; color: #777; text-align: center; user-select: text; }
