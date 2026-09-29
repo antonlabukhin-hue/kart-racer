@@ -7903,6 +7903,21 @@ function startGaragePreview(carId) {
                 if (cls) el.className = cls;
                 el.innerHTML = html;
                 document.body.appendChild(el);
+                // справа от головы босса и следом за ним (с учётом изгиба дороги); босса нет в кадре — сверху по центру
+                const head = new THREE.Vector3();
+                (function follow() {
+                    const m = el.isConnected && boss && boss.mesh;
+                    if (!m) return;
+                    if (m.userData._headY == null) { const bb = new THREE.Box3().setFromObject(m); m.userData._headY = bb.max.y - m.getWorldPosition(head).y; }
+                    m.getWorldPosition(head); head.y += m.userData._headY * 0.88;
+                    const W = window.innerWidth, H = window.innerHeight, r = curvedWorld.projectBent(head, camera, W, H);
+                    if (r.visible) {
+                        el.classList.add('follow');
+                        el.style.left = Math.max(8, Math.min(r.x + Math.max(22, W * 0.035), W - el.offsetWidth - 8)) + 'px';
+                        el.style.top = Math.max(52, Math.min(r.y - el.offsetHeight * 0.3, H - el.offsetHeight - 8)) + 'px';
+                    }
+                    requestAnimationFrame(follow);
+                })();
                 setTimeout(function() { el.classList.add('out'); }, (ms || 2800) - 350);
                 setTimeout(function() { try { el.remove(); } catch (e) {} }, ms || 2800);
             }
@@ -10518,20 +10533,22 @@ function startGaragePreview(carId) {
                     targetX = xPos + 5.5; targetY = 2.2; targetZ = zPos + 2.5;
                     lookY = 0.6; lookZoff = -6;
                 } else {
-                    // chase: машина в нижней трети, стабильная дистанция
-                    const dist = 6.8 - spdK * 0.6;
-                    const height = 2.7 - spdK * 0.15;
+                    // chase: машина в нижней трети, стабильная дистанция. Телефон: экран низкий — камера ближе и ниже,
+                    // смотрит дальше вперёд: машина крупнее и у нижнего края, дорога впереди видна
+                    const mob = isMobile;
+                    const dist = (mob ? 5.0 : 6.8) - spdK * (mob ? 0.3 : 0.6);
+                    const height = (mob ? 2.2 : 2.7) - spdK * 0.15;
                     targetX = xPos * 0.15;
                     targetY = height;
                     targetZ = zPos + dist;
-                    lookY = 0.7;
-                    lookZoff = -5.8;
+                    lookY = mob ? 1.15 : 0.7;
+                    lookZoff = mob ? -11 : -5.8;
                 }
                 // Раньше камера догоняла цель на долю пути ЗА КАДР, а машина едет на путь ЗА ВРЕМЯ:
                 // при неровных кадрах отставание камеры прыгало, и машину на экране дёргало вперёд-назад.
                 // Теперь вдоль дороги камера держит дистанцию точно (с тем же отставанием, что было при
                 // ровных 60 к/с: speed · 0.84/0.16), а поперёк и по высоте сглаживается по времени.
-                const follow = (camMode === 0 ? 0.16 : 0.22);
+                const follow = (camMode === 0 ? (isMobile ? 0.3 : 0.16) : 0.22); // на телефоне отставание на скорости вдвое меньше — машина не «уезжает»
                 const kFollow = 1 - Math.pow(1 - follow, deltaTime * 60);
                 const kLook = 1 - Math.pow(1 - 0.22, deltaTime * 60);
                 camera.position.x += (targetX - camera.position.x) * kFollow;

@@ -68,3 +68,20 @@ export function curveAt(dist, seed, strength) {
     if (ramp === 0 || k === 0) return { x: 0, y: 0 };
     return { x: MAX_TURN * turn * k * ramp, y: MAX_HILL * hill * k * ramp };
 }
+
+/**
+ * Точка мира → экран с учётом изгиба (как в шейдере): чтобы HTML-плашка стояла рядом с объектом
+ * вдали, где дорога уже повернула. Возвращает { x, y } в пикселях и visible (перед камерой и в кадре).
+ */
+const _pv = new THREE.Vector3();
+export function projectBent(p, camera, w, h, curve) {
+    const c = curve || CURVE.value;
+    _pv.copy(p).applyMatrix4(camera.matrixWorldInverse);
+    const inFront = _pv.z < 0;
+    const d = Math.max(0, -_pv.z - BEND_START);
+    _pv.x += c.x * d * d;
+    _pv.y += c.y * d * d;
+    _pv.applyMatrix4(camera.projectionMatrix);
+    const x = (_pv.x * 0.5 + 0.5) * w, y = (-_pv.y * 0.5 + 0.5) * h;
+    return { x: x, y: y, visible: inFront && x >= 0 && x <= w && y >= 0 && y <= h };
+}

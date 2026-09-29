@@ -4815,3 +4815,57 @@ body #finish-screen .fin-btn:focus-visible { outline: 3px solid #fff; outline-of
     #finish-screen.finish-layout-camp > div > * { grid-column: 1; }
     #finish-screen.finish-layout-camp > div > .fin-actions { grid-column: 2; grid-row: 1 / span 40; position: sticky; top: 0; bottom: auto; margin: 0; padding: 0; background: none; }
 }
+/* карточка босса справа от его головы (src/main.js showBossCard → curvedWorld.projectBent) */
+#boss-intro.follow { transform: none; animation: biInF .35s cubic-bezier(.2,1.4,.4,1); text-align: left; }
+#boss-intro.follow.phase2 { animation: biInF .35s cubic-bezier(.2,1.4,.4,1), biShakeF .3s .35s 2; }
+#boss-intro.follow.out { transform: translateY(-10px); }
+@keyframes biInF { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes biShakeF { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+/* «Броня» и «Чистая посадка» — выше и на 10% меньше: не закрывают дорогу впереди */
+body .big-plaque { top: 19%; padding: 11px 23px; }
+body .big-plaque b { font-size: 27px; }
+body .big-plaque small { font-size: 12px; }
+body .big-plaque.landing { top: 25%; }
+body .big-plaque.landing b { font-size: 23px; }
+
+/* ===== Телефон набок: экран низкий (в Safari с панелями ~250–330 px) — всё выскакивающее компактно и у верхнего края ===== */
+@media (max-height: 460px) and (pointer: coarse), (max-height: 420px) {
+    body #boss-hud { top: 4px; width: min(300px, 40vw); padding: 3px 9px 5px; border-width: 1.5px; border-radius: 9px; }
+    body #boss-hud .bh-name { font-size: 12px; }
+    body #boss-hud .bh-phase { font-size: 9px; }
+    body #boss-hud .bh-hp { margin-top: 3px; gap: 3px; }
+    body #boss-hud .bh-hp i { height: 5px; }
+    body #coach-tip { top: 42px; bottom: auto; max-width: min(380px, 44vw); padding: 4px 10px; font-size: 11px; line-height: 1.3; border-width: 1.5px; border-radius: 9px; }
+    body .big-plaque { top: 24%; padding: 5px 14px 6px; border-width: 1.5px; border-radius: 11px; max-width: 46vw; }
+    body .big-plaque b { font-size: 17px; letter-spacing: 1px; }
+    body .big-plaque small { font-size: 10px; margin-top: 2px; }
+    body .big-plaque.landing { top: 30%; }
+    body .big-plaque.landing b { font-size: 15px; }
+    body #boss-intro { min-width: 0; max-width: 40vw; padding: 5px 10px 6px; border-width: 1.5px; }
+    body #boss-intro .bi-portrait { width: 40px; height: 40px; margin: 3px 8px 2px -3px; border-width: 1.5px; }
+    body #boss-intro .bi-top { font-size: 8px; letter-spacing: 1.5px; }
+    body #boss-intro .bi-title { font-size: 10px; }
+    body #boss-intro .bi-nick { font-size: 17px; }
+    body #boss-intro .bi-hp, body #boss-intro .bi-hint, body #boss-intro .bi-quote { font-size: 9.5px; margin-top: 1px; }
+    /* громкость — на паузе, а не поверх дороги у машины */
+    body.race-mode #volume-controls { display: none !important; }
+    body.race-mode:has(#pause-overlay.show) #volume-controls { display: flex !important; z-index: 10001; }
+}
+@media (max-height: 460px) and (pointer: coarse), (max-height: 420px) {
+    /* плашка занимает слот подсказки над горизонтом (дорога впереди свободна), подсказка на это время прячется */
+    body .big-plaque, body .big-plaque.landing { top: 58px; }
+    body:has(.big-plaque) #coach-tip { opacity: 0 !important; }
+    body #boss-intro { max-width: 36vw; }
+    body #boss-intro .bi-quote { display: none; }
+    body.race-mode:has(#pause-overlay.show) #volume-controls { z-index: 2147483000 !important; opacity: 1 !important; filter: none !important; }
+}
+@media (max-height: 460px) and (pointer: coarse), (max-height: 420px) {
+    body:has(#boss-intro) #coach-tip { opacity: 0 !important; }
+}
+@media (max-height: 460px) and (pointer: coarse), (max-height: 420px) {
+    /* спидометр — слева между панелью времени и кнопками руля: справа его закрывали пауза и тормоз */
+    body.race-mode #hud-speedo { left: calc(env(safe-area-inset-left, 0px) + 14px) !important; right: auto !important;
+        top: 104px !important; bottom: auto !important; width: min(92px, 29vh) !important; }
+    body.race-mode #hud-speedo .sp-read span { font-size: 18px; }
+    body.race-mode #hud-speedo .sp-read small { font-size: 8px; }
+}
