@@ -66,3 +66,24 @@ export function animateRewardChips(root, raf) {
         if (k < 1) step(tick);
     })();
 }
+
+/** «Почти!» при поражении: сколько % трассы оставалось (мотивирует на «ещё раз») */
+export function nearlyText(leftPct) {
+    if (leftPct == null || leftPct > 60) return '';
+    if (leftPct <= 15) return '\nДо финиша оставалось ' + leftPct + '% — почти доехал!';
+    return '\nДо финиша оставалось ' + leftPct + '%';
+}
+
+/** Клавиши на финише: Enter — главная кнопка, R — «Повторить» (одно нажатие — и снова на трассе) */
+export function bindFinishKeys(screen) {
+    const onKey = function(e) {
+        if (!screen.isConnected) { document.removeEventListener('keydown', onKey, true); return; }
+        const k = (e.key || '').toLowerCase();
+        const btn = k === 'enter' ? screen.querySelector('.fin-btn.primary') : (k === 'r' || k === 'к') ? screen.querySelector('#finish-restart-btn') : null;
+        if (!btn || e.repeat) return;
+        e.preventDefault(); e.stopPropagation();
+        document.removeEventListener('keydown', onKey, true);
+        btn.click();
+    };
+    document.addEventListener('keydown', onKey, true);
+}

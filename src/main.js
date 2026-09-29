@@ -25,7 +25,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
-        import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
+        import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
         import { mergeStaticMeshes, mergeCarParts } from './merge-static.js';
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
@@ -1505,7 +1505,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             }
         }
 
-        let shopBackToGarage = false; // магазин открыт из гаража — туда и вернуться
+        let shopBackToGarage = false, quickRestart = false; // магазин открыт из гаража — туда и вернуться; «Повторить» — короткий отсчёт
         function openShopScreen(fromFirstRace) {
             if (!currentPlayer) return;
             ensureProfileFields(currentPlayer);
@@ -4473,9 +4473,7 @@ function startGaragePreview(carId) {
                     const isCampLose = (typeof pendingMode !== 'undefined' && pendingMode === 'campaign') || !!window.__campaignTrackId;
                     title = isCampLose ? '❌ ТЫ ПРОИГРАЛ' : '❌ ПОРАЖЕНИЕ';
                     color = '#ff3333';
-                    message = isCampLose
-                        ? ('Столкновений: ' + strikes + ' / ' + MAX_STRIKES)
-                        : ('Столкновений: ' + strikes + ' / ' + MAX_STRIKES + '\n\nСлишком много аварий. Попробуй ещё раз.');
+                    message = ('Столкновений: ' + strikes + ' / ' + MAX_STRIKES) + (isCampLose ? '' : '\n\nСлишком много аварий. Попробуй ещё раз.') + nearlyText(rewards.left);
                 }
 
                 // Картинка в зависимости от результата
@@ -4659,7 +4657,7 @@ function startGaragePreview(carId) {
                 };
                 const goRestart = function(ev) {
                     if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
-                    cleanupFinishUI();
+                    cleanupFinishUI(); quickRestart = true;
                     const camp = (typeof pendingMode !== 'undefined' && pendingMode === 'campaign') || !!window.__campaignTrackId;
                     const idx = (window.__campaignIdx != null) ? window.__campaignIdx : campIdx;
                     if (camp && idx != null && idx >= 0) {
@@ -4694,7 +4692,7 @@ function startGaragePreview(carId) {
                         handler(e);
                     }, { passive: false });
                 }
-                bindFinishBtn('finish-restart-btn', goRestart);
+                bindFinishBtn('finish-restart-btn', goRestart); bindFinishKeys(screen); // Enter — главная кнопка, R — «Повторить»
                 bindFinishBtn('finish-menu-btn', goMenu);
                 bindFinishBtn('finish-garage-btn', goGarage);
                 // «Вызвать друга»: ссылка с сидом и счётом — через «Поделиться» телефона или в буфер обмена
@@ -4829,7 +4827,7 @@ function startGaragePreview(carId) {
                         console.log('🪙 Награды заезда:', raceRewards);
                     }
                 } catch (e) { console.warn('rewards', e); }
-                window.__lastRaceRewards = raceRewards;
+                window.__lastRaceRewards = raceRewards; raceRewards.left = Math.max(0, Math.round((zPos - FINISH_Z) / (START_Z - FINISH_Z) * 100)); // сколько % трассы не доехал
                 window.__lastRecord = null;
                 if (state === 'win' && !isEndlessMode()) {
                     try {
@@ -8024,7 +8022,7 @@ function startGaragePreview(carId) {
             let shakeTime = 0;
             let gameState = 'countdown';
             let briefingChecked = false;
-            let countdownT = 3.2;
+            let countdownT = quickRestart ? 1.0 : 3.2; quickRestart = false; // «Повторить»: сразу «1 → GO!», а не 3-2-1
             let countdownLast = -1;
             let _lastLaneIdx = 0;
             let _nitroSfxT = 0;
