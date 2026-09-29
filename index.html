@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>🏎️ Дорожный прорыв</title>
+    <!-- как приложение: иконка на рабочем столе, запуск на весь экран (public/manifest.webmanifest, public/sw.js) -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#1a1210" />
+    <link rel="icon" type="image/png" href="./icons/favicon-64.png" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Прорыв" />
     <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
@@ -129,6 +138,7 @@
                 <div class="mm-profile-pop" id="mm-profile-pop" hidden>
                     <b id="mm-pop-name"></b>
                     <small id="mm-pop-stats"></small>
+                    <button type="button" class="profile-btn" id="mm-install" hidden>📲 Установить на телефон</button>
                     <button type="button" class="profile-btn secondary" id="main-menu-logout">Сменить профиль</button>
                 </div>
             </div>

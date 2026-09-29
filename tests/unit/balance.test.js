@@ -5,10 +5,16 @@ const hard = { trackLength: 1550, timeLimit: 90, triggerLookahead: 13, animalCro
 const medium = { trackLength: 1500, timeLimit: 90, triggerLookahead: 15.2, animalCrossMul: 0.7, timePenaltyMul: 0.78, animalSpawnRate: 2.15, laneChangeMul: 0.52 };
 
 describe('нарастание сложности кампании', () => {
-    it('последняя глава — полная сложная', () => {
-        const c = campaignHardConfig(hard, medium, 16, 17);
-        expect(c.triggerLookahead).toBeCloseTo(13);
-        expect(c.animalCrossMul).toBeCloseTo(1.4);
+    it('последняя глава — 70% пути от средней к сложной, а не полная сложная', () => {
+        const h = Object.assign({ maxAnimals: 24, maxCars: 13, maxObstacles: 26 }, hard);
+        const m = Object.assign({ maxAnimals: 14, maxCars: 7, maxObstacles: 15 }, medium);
+        const c = campaignHardConfig(h, m, 16, 17);
+        expect(c.triggerLookahead).toBeCloseTo(15.2 - 2.2 * 0.7);
+        expect(c.animalCrossMul).toBeCloseTo(0.7 + 0.7 * 0.7);
+        expect(c.animalSpawnRate).toBeCloseTo(2.15 - 1.0 * 0.7);
+        expect(c.maxAnimals).toBe(21);
+        expect(c.maxCars).toBe(11);
+        expect(c.maxObstacles).toBe(23);
     });
 
     it('ранняя «сложная» глава мягче: зверь срывается раньше и бежит медленнее', () => {

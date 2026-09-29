@@ -37,7 +37,7 @@ describe('босс сбежал', () => {
 describe('портрет в карточке босса', () => {
     it('есть — картинка в рамке цвета босса; нет — карточка без картинки', () => {
         const def = { name: 'Кабан «Бригада»', trim: 0xffcc00, attack: 'sweep' };
-        expect(bossIntroHtml(def, 1, 3, 'images/boss_01.jpg')).toContain('<img class="bi-portrait" src="images/boss_01.jpg"');
+        expect(bossIntroHtml(def, 1, 3, 'images/boss_01.jpg')).toContain('<img class="bi-portrait" decoding="async" src="images/boss_01.jpg"');
         expect(bossIntroHtml(def, 1, 3)).not.toContain('bi-portrait');
     });
 });
