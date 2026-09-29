@@ -5004,3 +5004,68 @@ body #boss-intro .bi-portrait { box-shadow: none; }
 /* прилипшее превью — выше кнопок (у .garage-btn и .shop-car-btn свой z-index 5–6) */
 body #garage-canvas-wrap, body #shop-canvas-wrap { z-index: 30 !important; }
 @media (max-width: 480px) { body #shop-cars { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } body .shop-car-btn { padding: 8px 4px !important; } }
+
+/* ===== Главное меню на телефонах ===== */
+/* уведомления на экранах меню — снизу по центру (сверху справа закрывали кошелёк и шестерёнку) */
+body:not(.race-mode) #notify-root { top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    right: 50% !important; left: auto !important; transform: translateX(50%); align-items: center !important; }
+/* вертикально: всё листается, нижняя панель не обрезается; картинка ниже на коротких экранах */
+@media (orientation: portrait) and (max-width: 700px) {
+    body #main-menu-screen .content { display: flex !important; flex-direction: column !important; overflow-y: auto !important; overflow-x: hidden !important;
+        max-height: calc(100dvh - 12px) !important; gap: 8px !important; overscroll-behavior: contain; }
+    body #main-menu-screen .content > * { flex: 0 0 auto; }
+    body #main-menu-screen .menu-hero { max-height: 20dvh !important; }
+    body #main-menu-screen .menu-grid.mm-modes { grid-auto-rows: auto !important; }
+    body #main-menu-screen .mm-modes .menu-card img { height: 11dvh !important; max-height: 110px; }
+}
+@media (orientation: portrait) and (max-height: 700px) {
+    body #main-menu-screen .menu-hero { max-height: 13dvh !important; }
+    body #main-menu-screen h1 { font-size: 18px !important; margin: 0 !important; }
+    body #main-menu-screen .play-hero-btn { padding-top: 10px !important; padding-bottom: 10px !important; }
+    body #main-menu-screen .play-hero-btn b { font-size: 24px !important; }
+}
+/* горизонтально (низкий экран): слева «Поехали» и режимы, справа задания и разделы; картинка и заголовок — не нужны */
+@media (orientation: landscape) and (max-height: 560px) {
+    body #main-menu-screen .content {
+        display: grid !important; width: min(980px, 98vw) !important; max-width: 98vw !important; max-height: calc(100dvh - 10px) !important;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) !important; grid-template-rows: auto auto auto 1fr !important;
+        grid-template-areas: "top top" "chal chal" "play miss" "modes dock" !important;
+        column-gap: 12px !important; row-gap: 8px !important; align-content: start !important; overflow-y: auto !important; overflow-x: hidden !important;
+    }
+    body #main-menu-screen .menu-hero, body #main-menu-screen .content > h1 { display: none !important; }
+    body #main-menu-screen .mm-top { grid-area: top; margin: 0 !important; }
+    body #main-menu-screen #challenge-banner { grid-area: chal; margin: 0 !important; }
+    body #main-menu-screen .play-hero-btn { grid-area: play; margin: 0 !important; padding: 10px !important; }
+    body #main-menu-screen .play-hero-btn b { font-size: 24px !important; }
+    body #main-menu-screen .menu-grid.mm-modes { grid-area: modes; margin: 0 !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; grid-auto-rows: auto !important; align-self: start; }
+    body #main-menu-screen .mm-modes .menu-card img { height: min(17dvh, 90px) !important; min-height: 0 !important; }
+    body #main-menu-screen .mm-missions { grid-area: miss; margin: 0 !important; }
+    body #main-menu-screen .mm-dock { grid-area: dock; margin: 0 !important; align-self: start; }
+}
+/* ===== Остальные экраны меню на телефонах ===== */
+/* карточки глав растут по содержимому (на узком экране название и награда обрезались) */
+body #campaign-track-list { grid-auto-rows: auto !important; align-content: start !important; }
+body #campaign-track-list .camp-track { flex-shrink: 0 !important; height: max-content !important; min-height: 78px !important; }
+/* вертикально: окна меню листаются целиком */
+@media (orientation: portrait) and (max-width: 700px) {
+    body :is(#rewards-screen, #events-screen, #campaign-screen) .content { overflow-y: auto !important; max-height: calc(100dvh - 12px) !important; }
+}
+/* низкий горизонтальный экран: декоративные картинки прячем, окна листаются, сложность целиком помещается */
+@media (orientation: landscape) and (max-height: 560px) {
+    body :is(#rewards-screen, #events-screen, #campaign-screen, #shop-screen) .menu-hero { display: none !important; }
+    body :is(#rewards-screen, #events-screen, #campaign-screen) .content {
+        display: flex !important; flex-direction: column !important; overflow-y: auto !important; max-height: calc(100dvh - 10px) !important; }
+    body :is(#rewards-screen, #events-screen, #campaign-screen) .content > * { flex: 0 0 auto; }
+    body #rewards-list { max-height: none !important; overflow: visible !important; }
+    body :is(#rewards-screen, #events-screen) h1 { font-size: 18px !important; margin: 0 !important; }
+    body #difficulty-screen .content { max-height: calc(100dvh - 10px) !important; min-height: 0 !important; }
+    body #difficulty-screen .diff-hero { display: none !important; }
+    body #difficulty-screen .content { grid-template-columns: 1fr !important; grid-template-areas: "main" !important; width: min(620px, 96vw) !important; }
+    body #difficulty-screen .diff-main { max-height: calc(100dvh - 12px) !important; overflow-y: auto !important; justify-content: start !important; }
+    body #difficulty-screen .diff-main h1 { font-size: 18px !important; }
+    body #difficulty-screen .difficulty-btn { padding-top: 6px !important; padding-bottom: 6px !important; min-height: 0 !important; }
+}
+/* горизонтальный планшет: картинка меню ниже — нижняя панель помещается без прокрутки */
+@media (orientation: landscape) and (min-height: 561px) and (max-height: 820px) {
+    body #main-menu-screen .menu-hero { max-height: 16vh !important; }
+}
