@@ -1,0 +1,86 @@
+/**
+ * Экран настроек — карточка поверх меню. Значения хранит src/settings.js.
+ * Зависимости от игры передаются явно (deps), без глобальных window.*:
+ *   onQuality(v), onLang(v), briefingKey, sound() → звуковой движок.
+ */
+import { loadSettings, saveSettings } from '../settings.js';
+
+export function openSettingsScreen(deps) {
+    const d = deps || {};
+    if (document.getElementById('settings-screen')) return;
+    let st = loadSettings();
+    const el = document.createElement('div');
+    el.id = 'settings-screen';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    const slider = function(key, label) {
+        const v = Math.round(st[key] * 100);
+        return '<label class="st-row"><span>' + label + '</span><input type="range" min="0" max="100" step="5" data-key="' + key + '" value="' + v + '"><b data-val="' + key + '">' + v + '%</b></label>';
+    };
+    const choice = function(key, opts) {
+        return '<div class="st-choice" data-key="' + key + '">' + opts.map(function(o) {
+            return '<button type="button" data-v="' + o[0] + '"' + (String(st[key]) === String(o[0]) ? ' class="on"' : '') + '>' + o[1] + '</button>';
+        }).join('') + '</div>';
+    };
+    const toggle = function(key, label) {
+        return '<label class="st-toggle"><input type="checkbox" data-key="' + key + '"' + (st[key] ? ' checked' : '') + '><span>' + label + '</span></label>';
+    };
+    el.innerHTML =
+        '<div class="st-card">' +
+        '<div class="st-title">⚙ Настройки</div>' +
+        '<div class="st-group">Звук</div>' +
+        slider('music', '🎵 Музыка') + slider('engine', '🏎 Двигатель') + slider('sfx', '💥 Эффекты') +
+        '<div class="st-group">Графика</div>' +
+        choice('quality', [['low', '🚀 Низкое'], ['medium', '⚡ Среднее'], ['high', '🔥 Высокое']]) +
+        '<div class="st-group">Камера в заезде</div>' +
+        choice('camera', [[0, 'Сзади'], [1, 'Капот'], [2, 'Салон'], [3, 'Сбоку']]) +
+        '<div class="st-group">Язык</div>' +
+        choice('lang', [['auto', 'Авто'], ['ru', 'Русский'], ['en', 'English']]) +
+        '<div class="st-group">Удобство</div>' +
+        toggle('shake', 'Тряска камеры при ударах') +
+        toggle('vibrate', 'Вибрация телефона при аварии') +
+        toggle('ghost', '👻 Призрак лучшего заезда') +
+        toggle('curve', '🛣 Повороты и холмы дороги') +
+        '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
+        '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
+        '</div>';
+    document.body.appendChild(el);
+    const save = function(patch) {
+        st = saveSettings(Object.assign(st, patch));
+        try { const se = d.sound && d.sound(); if (se && se.applySettings) se.applySettings(st); } catch (e) {}
+    };
+    el.querySelectorAll('input[type=range]').forEach(function(inp) {
+        inp.addEventListener('input', function() {
+            const k = inp.dataset.key;
+            el.querySelector('[data-val="' + k + '"]').textContent = inp.value + '%';
+            save({ [k]: parseInt(inp.value, 10) / 100 });
+        });
+    });
+    // проба громкости эффектов — сразу слышно, что изменилось
+    el.querySelector('input[data-key="sfx"]').addEventListener('change', function() {
+        try { const se = d.sound && d.sound(); if (se) se.playSfx('pickup', 1.0); } catch (e) {}
+    });
+    el.querySelectorAll('.st-choice').forEach(function(box) {
+        box.addEventListener('click', function(ev) {
+            const b = ev.target.closest('button');
+            if (!b) return;
+            box.querySelectorAll('button').forEach(function(x) { x.classList.toggle('on', x === b); });
+            const k = box.dataset.key;
+            const v = k === 'camera' ? parseInt(b.dataset.v, 10) : b.dataset.v;
+            save({ [k]: v });
+            if (k === 'quality' && d.onQuality) d.onQuality(v);
+            if (k === 'lang' && d.onLang) d.onLang(v);
+        });
+    });
+    el.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+        cb.addEventListener('change', function() { save({ [cb.dataset.key]: cb.checked }); });
+    });
+    el.querySelector('#settings-briefing').addEventListener('click', function(ev) {
+        try { if (d.briefingKey) localStorage.removeItem(d.briefingKey); } catch (e) {}
+        ev.currentTarget.textContent = '✓ Покажем в следующем заезде';
+    });
+    const close = function() { el.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = function(ev) { if (ev.key === 'Escape') close(); };
+    el.querySelector('#settings-close').addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+}
