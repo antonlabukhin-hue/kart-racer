@@ -40,7 +40,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
         import * as curvedWorld from './curved-world.js';
-        import { biomeAt, biomeIndexAt, biomePlan, BIOME_INFO, groundColorAt, createRock, createLog, forestTrees, createForestInstanced } from './biomes.js';
+        import { biomeAt, biomeIndexAt, biomePlan, BIOME_INFO, groundColorAt, createRock, createLog, forestTrees, createForestInstanced, dustDensity, rollDustGust } from './biomes.js';
         import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
         curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
@@ -5961,6 +5961,9 @@ function startGaragePreview(carId) {
             }
             applyMapAndWeather();
             const baseSkyHex = scene.background.getHex();
+            // пыльный вихрь (src/biomes.js): короткий и не в каждом заезде
+            const dustGust = rollDustGust();
+            const _dustCol = new THREE.Color(), _dustTarget = new THREE.Color(0xa8906a);
             const baseFogHex = scene.fog.color.getHex();
             const baseFogNear = scene.fog.near;
             const baseFogFar = scene.fog.far;
@@ -8464,7 +8467,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, get pack() { return packChase ? { active: packChase.active, gap: packChase.gap, bites: packChase.bites, meshes: packMeshes.length } : null; }, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get dust() { return dustGust; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8688,21 +8691,28 @@ function startGaragePreview(carId) {
                     showStory('🌉 Впереди силуэт Золотого Моста. У тебя один шанс.');
                 }
                 
-                // Погода: пыльная буря в средней трети
-                if (weatherMode === 'day' && progress > 0.3 && progress < 0.55) {
-                    if (weatherZone !== 'dust') {
+                // Погода: короткий пыльный вихрь — плавно наползает и уходит, по экрану летит пыль
+                if (weatherMode === 'day' && dustGust) {
+                    const dk = dustDensity(dustGust, progress);
+                    if (dk > 0) {
                         weatherZone = 'dust';
-                        scene.fog.near = Math.min(baseFogNear, 22);
-                        scene.fog.far = Math.min(baseFogFar, 110);
-                        scene.background.setHex(0x9a8060);
-                        scene.fog.color.setHex(0x9a8060);
+                        scene.fog.near = baseFogNear + (Math.min(baseFogNear, 18) - baseFogNear) * dk;
+                        scene.fog.far = baseFogFar + (Math.min(baseFogFar, 95) - baseFogFar) * dk;
+                        _dustCol.setHex(baseSkyHex).lerp(_dustTarget, dk);
+                        scene.background.copy(_dustCol);
+                        _dustCol.setHex(baseFogHex).lerp(_dustTarget, dk);
+                        scene.fog.color.copy(_dustCol);
+                        // пыль поперёк дороги: ветер сбоку
+                        if (particleSystem && particleSystem.emit && Math.random() < dk * 0.9) {
+                            particleSystem.emit({ x: xPos - 6 + Math.random() * 3, y: 0.3 + Math.random() * 1.6, z: zPos - 4 - Math.random() * 10 }, { x: 5 + Math.random() * 3, y: 0.2, z: 1.5 }, 3, 0.35);
+                        }
+                    } else if (weatherZone === 'dust') {
+                        weatherZone = 'clear';
+                        scene.fog.near = baseFogNear;
+                        scene.fog.far = baseFogFar;
+                        scene.background.setHex(baseSkyHex);
+                        scene.fog.color.setHex(baseFogHex);
                     }
-                } else if (weatherZone === 'dust' && weatherMode === 'day') {
-                    weatherZone = 'clear';
-                    scene.fog.near = baseFogNear;
-                    scene.fog.far = baseFogFar;
-                    scene.background.setHex(baseSkyHex);
-                    scene.fog.color.setHex(baseFogHex);
                 }
                 
                 // Финишный спринт — сужение (барьеры ближе к центру)

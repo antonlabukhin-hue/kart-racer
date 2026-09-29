@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { BIOME_PLAN, BIOME_INFO, biomeAt, biomeIndexAt, groundColorAt, forestTrees } from '../../src/biomes.js';
+import { BIOME_PLAN, BIOME_INFO, biomeAt, biomeIndexAt, groundColorAt, forestTrees, dustDensity, rollDustGust } from '../../src/biomes.js';
 
 describe('смена окружения по ходу трассы', () => {
     it('на каждой карте три разные зоны, у всех есть цвет и название', () => {
@@ -40,5 +40,21 @@ describe('лес стеной', () => {
             expect(p).toBeLessThanOrEqual(0.7);
         });
         expect(new Set(trees.map(t => t.kind))).toEqual(new Set(['pine', 'birch']));
+    });
+});
+
+describe('пыльный вихрь', () => {
+    it('короткий, с плавным входом и выходом, не в каждом заезде', () => {
+        const g = { from: 0.3, to: 0.38 };
+        expect(dustDensity(g, 0.29)).toBe(0);
+        expect(dustDensity(g, 0.31)).toBeGreaterThan(0);
+        expect(dustDensity(g, 0.31)).toBeLessThan(1);
+        expect(dustDensity(g, 0.34)).toBe(1);
+        expect(dustDensity(g, 0.39)).toBe(0);
+        expect(dustDensity(null, 0.34)).toBe(0);
+        let n = 0;
+        for (let i = 0; i < 400; i++) { const gg = rollDustGust(); if (gg) { n++; expect(gg.to - gg.from).toBeCloseTo(0.08, 6); expect(gg.to).toBeLessThan(0.42); } }
+        expect(n).toBeGreaterThan(150);
+        expect(n).toBeLessThan(330);
     });
 });
