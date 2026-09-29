@@ -4689,3 +4689,77 @@ body #campaign-track-list { grid-template-columns: 1fr !important; }
 .share-link .sl-row { display: flex; gap: 8px; margin-top: 10px; }
 .share-link .sl-row button { flex: 1; min-height: 40px; border-radius: 12px; font-weight: 800; cursor: pointer; border: 1.5px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: #eee; }
 .share-link .sl-copy { background: linear-gradient(180deg, #ffe45c, #ffb400) !important; color: #1a1200 !important; border: 0 !important; }
+
+/* ================= Меню v2: одна главная кнопка, режимы, нижняя панель со счётчиками ================= */
+#main-menu-screen .content { position: relative; }
+body:has(#main-menu-screen.active) #player-bar { display: none !important; } /* всё это теперь в верхней строке меню */
+.mm-top { position: relative; display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+.mm-profile { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; padding: 5px 12px 5px 5px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; color: #fff; cursor: pointer; font: inherit; }
+.mm-profile:hover { border-color: rgba(255,221,0,0.6); }
+.mm-ava { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 50%; background: #2c2440; font-size: 16px; }
+.mm-profile b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mm-profile small { flex: 0 0 auto; font-size: 11px; font-weight: 700; color: #1a1200; background: #ffdd00; border-radius: 999px; padding: 2px 7px; }
+.mm-wallet { display: flex; gap: 6px; flex: 0 0 auto; }
+.mm-wallet span { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.12); }
+.mm-wallet i { font-style: normal; font-size: 14px; }
+.mm-wallet b { font-size: 14px; color: #ffe27a; font-variant-numeric: tabular-nums; }
+.mm-icon { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06);
+    color: #fff; font-size: 19px; line-height: 1; cursor: pointer; display: grid; place-items: center; transition: transform .2s ease, border-color .2s ease; }
+.mm-icon:hover { border-color: #ffdd00; transform: rotate(35deg); }
+.mm-profile-pop { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: min(300px, 100%); padding: 12px; text-align: left;
+    background: #17131f; border: 1px solid rgba(255,221,0,0.45); border-radius: 14px; box-shadow: 0 12px 30px rgba(0,0,0,0.55); animation: uiPop .18s ease-out both; }
+.mm-profile-pop[hidden] { display: none; }
+.mm-profile-pop b { display: block; font-size: 16px; color: #ffdd00; }
+.mm-profile-pop small { display: block; margin: 4px 0 10px; font-size: 12px; color: #bbb; line-height: 1.4; }
+.mm-profile-pop .profile-btn { margin: 0; width: 100%; }
+#main-menu-screen .menu-grid.mm-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+#main-menu-screen .mm-modes .menu-card span { padding: 7px 4px 8px; font-size: 13px; line-height: 1.2; }
+.mm-note { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: #b9b3c6; }
+.mm-dock { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; padding: 6px;
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; }
+.mm-tab { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 7px; cursor: pointer;
+    background: transparent; border: 1px solid transparent; border-radius: 12px; color: #eee; font: inherit; font-weight: 700; font-size: 13px;
+    transition: background .18s ease, border-color .18s ease, transform .12s ease; }
+.mm-tab i { font-style: normal; font-size: 22px; line-height: 1; }
+.mm-tab:hover { background: rgba(255,221,0,0.1); border-color: rgba(255,221,0,0.45); color: #ffdd00; }
+.mm-tab:active { transform: scale(0.96); }
+.mm-tab:focus-visible, .mm-profile:focus-visible, .mm-icon:focus-visible, .season-tab:focus-visible, .garage-tab:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+/* счётчик: красный кружок с числом (как «есть что забрать» в мобильных играх) */
+.mm-badge { position: absolute; top: 3px; right: calc(50% - 30px); min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box;
+    border-radius: 999px; background: #ff3b3b; color: #fff; border: 2px solid #17131f; font-style: normal; font-size: 11px; font-weight: 800;
+    line-height: 16px; text-align: center; animation: badgePulse 2.2s ease-in-out infinite; }
+.mm-badge[hidden] { display: none; }
+@keyframes badgePulse { 0%, 70%, 100% { transform: scale(1); } 80% { transform: scale(1.18); } 90% { transform: scale(0.96); } }
+/* «Сезон»: переключатель «Награды / События» */
+.season-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin: 6px 0 12px; background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
+.season-tab { position: relative; padding: 10px 6px; border: 0; border-radius: 9px; background: transparent; color: #cfc8dc; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; }
+.season-tab.active { background: #ffdd00; color: #1a1200; }
+.season-tab:not(.active):hover { background: rgba(255,255,255,0.08); color: #fff; }
+.season-tab .mm-badge { top: -6px; right: 8px; }
+/* гараж: «Прокачка» — главная вкладка, светится, когда есть на что потратить */
+.garage-tabs .garage-tab { position: relative; padding: 9px 14px; font-size: 14px; }
+body .garage-tabs .garage-tab-up { border-color: rgba(255,160,40,0.85) !important; color: #ffcf7a !important; background: rgba(255,140,0,0.16) !important; }
+body .garage-tabs .garage-tab-up:hover { border-color: #ffb020 !important; color: #ffe2a8 !important; }
+body .garage-tabs .garage-tab-up.active { border-color: #ffb020 !important; color: #1a1000 !important; background: linear-gradient(180deg, #ffd23c, #ff9f1a) !important; }
+.garage-tabs .garage-tab-up.has-new:not(.active) { animation: upGlow 1.6s ease-in-out infinite; }
+@keyframes upGlow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255,170,30,0)); } 50% { filter: drop-shadow(0 0 7px rgba(255,170,30,0.95)) brightness(1.15); } }
+.garage-tabs .garage-tab .mm-badge { top: -8px; right: -6px; }
+.garage-cars { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin: 10px 0 4px; }
+.garage-cars #garage-car-pick { margin: 0 !important; }
+#garage-screen .garage-cars .garage-btn { width: auto !important; min-width: 0 !important; margin: 0 !important; padding: 8px 14px !important; font-size: 13px !important; border-radius: 999px !important; }
+/* «Сразу в путь» — на экране сложности свободного заезда */
+#main-menu-quick-race { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 8px; width: 100%; margin: 2px 0 4px; padding: 8px 12px; cursor: pointer;
+    border: 1px solid rgba(80,220,140,0.75); background: rgba(50,180,100,0.16); color: #baffc8; border-radius: 12px; font: inherit; font-weight: 800; font-size: 15px; }
+#main-menu-quick-race small { font-size: 11px; font-weight: 600; color: #8fd9a8; }
+#difficulty-screen .diff-main { overflow-y: auto !important; justify-content: safe center !important; }
+@media screen and (orientation: landscape) { #difficulty-screen .content { max-height: min(580px, 92vh) !important; } }
+#main-menu-quick-race:hover { background: rgba(50,180,100,0.28); }
+@media (prefers-reduced-motion: reduce) { .mm-badge, .garage-tabs .garage-tab-up.has-new:not(.active) { animation: none; } }
+@media (max-width: 430px) {
+    .mm-wallet span { padding: 5px 8px; }
+    .mm-profile b { font-size: 13px; }
+    #main-menu-screen .mm-modes .menu-card span { font-size: 12px; }
+    .garage-tabs .garage-tab { padding: 8px 10px; font-size: 13px; }
+}

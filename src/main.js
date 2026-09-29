@@ -25,7 +25,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
-        import { shareLink } from './ui/share-link.js';
+        import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js';
         import { mergeStaticMeshes, mergeCarParts } from './merge-static.js';
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
@@ -1338,11 +1338,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             if (mm) { mm.classList.add('active'); mm.style.display = 'flex'; }
             // живой 3D-фон: машина игрока мчит по закатной трассе (на «низком» качестве — неподвижный кадр)
             ensureMenuBg();
-            const sub = document.getElementById('main-menu-sub');
-            if (sub && currentPlayer) {
-                const se = currentPlayer.season;
-                sub.textContent = currentPlayer.name + ' · S1 ур.' + se.level + ' · 🪙' + se.chips + ' · 🍬' + se.gum;
-            }
+            refreshMenuUI(); // верхняя строка и счётчики «Гараж / Сезон» (src/ui/main-menu.js)
             // баннер вызова от друга
             try {
                 const cb = document.getElementById('challenge-banner');
@@ -1395,17 +1391,23 @@ function createProfile(name) { return Profile.createProfile(name); }
             player: function() { return currentPlayer; },
             ensureFields: function(p) { ensureProfileFields(p); },
             hideMenu: function() { hideMainMenu(); },
-            save: function() { saveCurrentPlayer(); },
+            save: function() { saveCurrentPlayer(); refreshMenuUI(); }, // забрал награду — счётчики погасли
             notify: Notify,
             rewards: SEASON_REWARDS,
             xpToNext: seasonXpToNext,
-            claimAll: function() { return claimAvailableSeasonRewards(); },
+            claimAll: function() { const r = claimAvailableSeasonRewards(); refreshMenuUI(); return r; },
             contract: function() { return getTodayContract(); },
             escape: escapeHtml,
             startContract: function() { pendingMode = 'contract'; beginRaceFlow(); }
         };
-        function openRewardsScreen() { openRewardsScreenUI(seasonScreenDeps); }
-        function openEventsScreen() { openEventsScreenUI(seasonScreenDeps); }
+        function openRewardsScreen() { openRewardsScreenUI(seasonScreenDeps); refreshMenuUI(); }
+        function openEventsScreen() { openEventsScreenUI(seasonScreenDeps); refreshMenuUI(); }
+        function refreshMenuUI() {
+            if (!currentPlayer) return;
+            const car = currentPlayer.preferredCar || 'cheburashka';
+            refreshMainMenu({ player: currentPlayer, rewards: SEASON_REWARDS, campaignDone: (getCampaignProgress().completed || []).length, campaignTotal: CAMPAIGN_TRACKS.length,
+                upgradeLevels: getUpgradeLevels(car), upgrades: UPGRADES, costOf: nextCost, maxLevel: MAX_UPGRADE_LEVEL, carName: (CAR_PRESETS[car] || {}).name || car });
+        }
 
         function beginRaceFlow() {
             // после «Новая гонка» / смена: магазин если надо → качество
@@ -1431,6 +1433,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                         b.style.display = isCamp ? 'none' : '';
                     });
                     if (diffWrap) diffWrap.style.display = isCamp ? 'none' : '';
+                    document.getElementById('main-menu-quick-race').style.display = isCamp ? 'none' : '';
                     const note = document.getElementById('campaign-diff-note');
                     const campGo = document.getElementById('campaign-quality-go');
                     if (isCamp) {
@@ -1502,6 +1505,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             }
         }
 
+        let shopBackToGarage = false; // магазин открыт из гаража — туда и вернуться
         function openShopScreen(fromFirstRace) {
             if (!currentPlayer) return;
             ensureProfileFields(currentPlayer);
@@ -1617,7 +1621,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                 stopShopPreview();
                 sc.classList.remove('active'); sc.style.display = 'none';
                 if (fromFirstRace) beginRaceFlow();
-                else showMainMenu();
+                else if (shopBackToGarage) { shopBackToGarage = false; openGarage(); } else showMainMenu();
             };
         }
 
@@ -1751,7 +1755,8 @@ function createProfile(name) { return Profile.createProfile(name); }
             const need = seasonXpToNext(se.level);
             document.getElementById('garage-stats').innerHTML =
                 '<div><b>Сезон 1</b> ур.' + se.level + '/30 · XP ' + se.xp + '/' + need + '</div>' +
-                '<div>Побед: <b>' + (st.wins||0) + '</b> · заездов: ' + (st.totalRaces||0) + ' · авто: <b>' + (currentPlayer.preferredCar||'cheburashka') + '</b></div>';
+                '<div>Побед: <b>' + (st.wins||0) + '</b> · заездов: ' + (st.totalRaces||0) + ' · машина: <b>' + ((CAR_PRESETS[currentPlayer.preferredCar] || CAR_PRESETS.cheburashka).name) + '</b></div>';
+            refreshMenuUI();
             const fill = document.getElementById('garage-season-fill');
             if (fill) fill.style.width = Math.min(100, (se.xp / need) * 100) + '%';
 
@@ -1803,6 +1808,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const partsPanel = document.getElementById('garage-panel-parts');
             if (partsTab) partsTab.classList.add('active');
             if (partsPanel) { partsPanel.classList.add('active'); partsPanel.style.display = 'block'; }
+            if (!document.getElementById('garage-up-badge').hidden) setTimeout(function() { document.querySelector('.garage-tab[data-gtab="upgrades"]').click(); }, 0); // есть на что потратить — сразу к прокачке
 
             try { renderGaragePartsPanel(); } catch (e) { console.warn('renderGaragePartsPanel', e); }
             try { renderGarageTrophies(); } catch (e) { console.warn('renderGarageTrophies', e); }
@@ -1820,8 +1826,8 @@ function createProfile(name) { return Profile.createProfile(name); }
                 carPick = document.createElement('div');
                 carPick.id = 'garage-car-pick';
                 carPick.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0;';
-                const statsEl = document.getElementById('garage-stats');
-                if (statsEl && statsEl.parentNode) statsEl.parentNode.insertBefore(carPick, statsEl.nextSibling);
+                const carsRow = document.getElementById('garage-cars'); // свои машины и «Все машины» — одной строкой
+                if (carsRow) carsRow.insertBefore(carPick, carsRow.firstChild);
             }
             const owned = currentPlayer.unlockedCars || ['cheburashka'];
             carPick.innerHTML = owned.map(id => {
@@ -1854,14 +1860,6 @@ function createProfile(name) { return Profile.createProfile(name); }
                     const gs = document.getElementById('garage-screen');
                     if (gs) { gs.classList.remove('active'); gs.style.display = 'none'; }
                     if (typeof showMainMenu === 'function') showMainMenu();
-                };
-            }
-            const _lb = document.getElementById('garage-logout-btn');
-            if (_lb) {
-                _lb.onclick = function(e) {
-                    if (e) e.preventDefault();
-                    try { stopGaragePreview(); } catch (err) {}
-                    if (typeof logoutPlayer === 'function') logoutPlayer();
                 };
             }
         }
@@ -2192,7 +2190,7 @@ function renderGaragePartsPanel() {
         /** Вкладка «Прокачка»: полосы характеристик выбранной машины и покупка уровней */
         function renderGarageUpgrades() {
             const box = document.getElementById('garage-panel-upgrades');
-            if (!box || !currentPlayer) return;
+            if (!box || !currentPlayer) return; refreshMenuUI();
             ensureProfileFields(currentPlayer);
             const carId = currentPlayer.preferredCar || 'cheburashka';
             const preset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
@@ -11449,7 +11447,6 @@ function showLoreScreen(quality, difficulty) {
         
         (function bindGarageButtons() {
             const closeBtn = document.getElementById('garage-close-btn');
-            const logoutBtn = document.getElementById('garage-logout-btn');
             const barGarage = document.getElementById('player-bar-garage');
             function closeGarage() {
                 try { if (typeof stopGaragePreview === 'function') stopGaragePreview(); } catch (e) {}
@@ -11459,13 +11456,6 @@ function showLoreScreen(quality, difficulty) {
             }
             if (closeBtn) {
                 closeBtn.onclick = function(e) { if (e) e.preventDefault(); closeGarage(); };
-            }
-            if (logoutBtn) {
-                logoutBtn.onclick = function(e) {
-                    if (e) e.preventDefault();
-                    try { if (typeof stopGaragePreview === 'function') stopGaragePreview(); } catch (err) {}
-                    if (typeof logoutPlayer === 'function') logoutPlayer();
-                };
             }
             if (barGarage) {
                 barGarage.onclick = function(e) {
@@ -11536,7 +11526,7 @@ function showLoreScreen(quality, difficulty) {
             }
 
             // Карточки главного меню
-            document.querySelectorAll('.menu-card[data-menu]').forEach(function(card) {
+            document.querySelectorAll('.menu-card[data-menu], .mm-tab[data-menu]').forEach(function(card) {
                 card.addEventListener('click', function() {
                     const m = card.dataset.menu;
                     if (m === 'campaign') {
@@ -11563,10 +11553,10 @@ function showLoreScreen(quality, difficulty) {
                         beginRaceFlow();
                     } else if (m === 'garage' && typeof openGarage === 'function') {
                         openGarage();
-                    } else if (m === 'rewards' && typeof openRewardsScreen === 'function') {
-                        openRewardsScreen();
-                    } else if (m === 'events' && typeof openEventsScreen === 'function') {
-                        openEventsScreen();
+                    } else if (m === 'season') {
+                        openRewardsScreen(); // «Награды» и «События» — вкладки одного раздела
+                    } else if (m === 'trophies') {
+                        openGarage(); const tt = document.querySelector('.garage-tab[data-gtab="trophies"]'); if (tt) tt.click();
                     }
                 });
             });
@@ -11581,7 +11571,8 @@ function showLoreScreen(quality, difficulty) {
             });
             const shopBtn = document.getElementById('main-menu-shop');
             if (shopBtn) shopBtn.addEventListener('click', function() {
-                if (typeof openShopScreen === 'function') openShopScreen(false);
+                try { stopGaragePreview(); } catch (e) {} const gs = document.getElementById('garage-screen'); gs.classList.remove('active'); gs.style.display = 'none';
+                shopBackToGarage = true; openShopScreen(false);
             });
             // «Быстрый рейс» — сразу в заезд с текущими/дефолтными настройками,
             // без магазина, экрана сложности и лора (в отличие от обычной «Новая гонка»).
@@ -11596,6 +11587,7 @@ function showLoreScreen(quality, difficulty) {
                 }
                 pendingMode = 'race';
                 if (typeof hideMainMenu === 'function') hideMainMenu();
+                document.getElementById('difficulty-screen').style.display = 'none';
                 if (currentPlayer && !(currentPlayer.unlockedCars || []).includes(currentPlayer.preferredCar)) {
                     currentPlayer.preferredCar = 'cheburashka';
                 }
@@ -11618,6 +11610,7 @@ function showLoreScreen(quality, difficulty) {
             });
             const settingsBtn = document.getElementById('main-menu-settings');
             if (settingsBtn) settingsBtn.addEventListener('click', function() { openSettingsScreen(); });
+            wireMainMenu({ openRewards: openRewardsScreen, openEvents: openEventsScreen });
             const eventsClose = document.getElementById('events-close');
             if (eventsClose) eventsClose.addEventListener('click', function() {
                 if (typeof showMainMenu === 'function') showMainMenu();

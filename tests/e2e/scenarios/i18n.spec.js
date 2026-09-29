@@ -5,7 +5,7 @@ import { watchProblems, login } from '../helpers.js';
 test('английский: меню, заезд и пауза переведены', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Tester', './?lang=en&start=0.3');
-    await expect(page.locator('.menu-card[data-menu="race"]')).toContainText('Free race');
+    await expect(page.locator('.menu-card[data-menu="race"]')).toContainText('Race');
     await expect(page.locator('.menu-card[data-menu="endless"]')).toContainText('Beast Hour');
     await page.locator('.menu-card[data-menu="race"]').click();
     const shop = page.locator('#shop-action');

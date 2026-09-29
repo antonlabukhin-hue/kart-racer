@@ -115,50 +115,55 @@
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="main-menu-screen">
         <div class="content">
+            <!-- верхняя строка: профиль · кошелёк · настройки (как в мобильных гонках) -->
+            <div class="mm-top">
+                <button type="button" class="mm-profile" id="mm-profile" aria-haspopup="true" aria-expanded="false">
+                    <span class="mm-ava" aria-hidden="true">👤</span><b id="mm-name">—</b><small id="mm-level"></small>
+                </button>
+                <div class="mm-wallet">
+                    <span title="Фишки"><i aria-hidden="true">🪙</i><b id="mm-chips">0</b></span>
+                    <span title="Жвачки"><i aria-hidden="true">🍬</i><b id="mm-gum">0</b></span>
+                </div>
+                <button type="button" class="mm-icon" id="main-menu-settings" aria-label="Настройки" title="Настройки">⚙</button>
+                <div class="mm-profile-pop" id="mm-profile-pop" hidden>
+                    <b id="mm-pop-name"></b>
+                    <small id="mm-pop-stats"></small>
+                    <button type="button" class="profile-btn secondary" id="main-menu-logout">Сменить профиль</button>
+                </div>
+            </div>
             <img class="menu-hero" src="images/menu_main.jpg" alt="Меню" loading="eager" decoding="async"
                  onerror="this.onerror=null;this.src='images/splash.jpg';">
             <h1 style="color:#ffdd00;font-size:22px;">ДОРОЖНЫЙ ПРОРЫВ</h1>
-            <div class="sub" id="main-menu-sub" style="color:#888;font-size:13px;margin:2px 0 4px;">—</div>
             <div id="challenge-banner" hidden>
                 <div class="cb-text"><b id="challenge-title">⚔ Вызов</b><small id="challenge-sub"></small></div>
                 <button type="button" id="challenge-accept">Принять</button>
             </div>
             <button type="button" class="play-hero-btn" id="main-menu-play">
-                <b>▶ ИГРАТЬ</b>
+                <b>▶ ПОЕХАЛИ</b>
                 <small id="main-menu-play-sub">Глава 1</small>
             </button>
-            <div class="menu-grid">
+            <div class="menu-grid mm-modes">
                 <button type="button" class="menu-card" data-menu="campaign">
                     <img src="images/menu_campaign.jpg" alt="Кампания" onerror="this.style.background='#3a2010';this.src='';">
-                    <span>📖 Кампания</span>
+                    <span>📖 Кампания<small class="mm-note" id="mm-note-campaign"></small></span>
                 </button>
                 <button type="button" class="menu-card" data-menu="race">
                     <img src="images/menu_race.jpg" alt="Свободный заезд" onerror="this.style.background='#332';this.src='';">
-                    <span>🏁 Свободный заезд</span>
+                    <span>🏁 Заезд<small class="mm-note">любая трасса</small></span>
                 </button>
                 <button type="button" class="menu-card menu-endless" data-menu="endless" title="Бесконечный режим: волна за волной, пока не разобьёшься">
                     <img src="images/menu_multiplayer.jpg" alt="Звериный час" onerror="this.style.background='#1a1a2e';this.src='';">
-                    <span>🐾 Звериный час</span>
+                    <span>🐾 Звериный час<small class="mm-note">волна за волной</small></span>
                     <div class="endless-best" id="menu-endless-best"></div>
                     <div class="menu-lock">🔒 Пройди главу 1</div>
                 </button>
-                <button type="button" class="menu-card" data-menu="garage">
-                    <img src="images/menu_garage.jpg" alt="Гараж" onerror="this.style.background='#223';this.src='';">
-                    <span>🔧 Гараж</span>
-                </button>
-                <button type="button" class="menu-card" data-menu="rewards">
-                    <img src="images/menu_rewards.jpg" alt="Награды" onerror="this.style.background='#242';this.src='';">
-                    <span>🎁 Награды сезона</span>
-                </button>
-                <button type="button" class="menu-card" data-menu="events">
-                    <img src="images/menu_events.jpg" alt="События" onerror="this.style.background='#422';this.src='';">
-                    <span>📋 События и смена</span>
-                </button>
             </div>
-            <button class="profile-btn quick-race-btn" id="main-menu-quick-race" type="button">⚡ Быстрый рейс</button>
-            <button class="profile-btn secondary" id="main-menu-shop" style="margin-top:12px;">🚗 Магазин машин</button>
-            <button class="profile-btn secondary" id="main-menu-settings" type="button">⚙ Настройки</button>
-            <button class="profile-btn secondary" id="main-menu-logout">Сменить курьера</button>
+            <!-- нижняя панель: разделы со счётчиками «есть что забрать / на что потратить» -->
+            <nav class="mm-dock" aria-label="Разделы">
+                <button type="button" class="mm-tab" data-menu="garage"><i aria-hidden="true">🔧</i><span>Гараж</span><em class="mm-badge" id="mm-badge-garage" hidden></em></button>
+                <button type="button" class="mm-tab" data-menu="season"><i aria-hidden="true">🎁</i><span>Сезон</span><em class="mm-badge" id="mm-badge-season" hidden></em></button>
+                <button type="button" class="mm-tab" data-menu="trophies"><i aria-hidden="true">🏆</i><span>Трофеи</span></button>
+            </nav>
         </div>
     </div>
 
@@ -166,7 +171,11 @@
     <div id="rewards-screen">
         <div class="content">
             <img class="menu-hero" loading="lazy" decoding="async" src="images/menu_rewards.jpg" alt="Награды" onerror="this.style.display='none'">
-            <h1 style="color:#ffdd00;">🎁 СЕЗОН 1 — НАГРАДЫ</h1>
+            <h1 style="color:#ffdd00;">🎁 СЕЗОН 1</h1>
+            <div class="season-tabs" role="tablist">
+                <button type="button" class="season-tab active" data-stab="rewards" role="tab" aria-selected="true">🎁 Награды<em class="mm-badge sb-rewards" hidden></em></button>
+                <button type="button" class="season-tab" data-stab="events" role="tab" aria-selected="false">📋 События<em class="mm-badge sb-events" hidden></em></button>
+            </div>
             <div class="sub" id="rewards-progress" style="color:#aaa;">Уровень —</div>
             <div id="rewards-list" style="max-height:50vh;overflow-y:auto;"></div>
             <button class="garage-btn" id="rewards-close">← В меню</button>
@@ -177,7 +186,11 @@
     <div id="events-screen">
         <div class="content">
             <img class="menu-hero" loading="lazy" decoding="async" src="images/menu_events.jpg" alt="События" onerror="this.style.display='none'">
-            <h1 style="color:#ffdd00;">📋 СМЕНА И СОБЫТИЯ</h1>
+            <h1 style="color:#ffdd00;">🎁 СЕЗОН 1</h1>
+            <div class="season-tabs" role="tablist">
+                <button type="button" class="season-tab" data-stab="rewards" role="tab" aria-selected="false">🎁 Награды<em class="mm-badge sb-rewards" hidden></em></button>
+                <button type="button" class="season-tab active" data-stab="events" role="tab" aria-selected="true">📋 События<em class="mm-badge sb-events" hidden></em></button>
+            </div>
             <div id="events-body"></div>
             <button class="garage-btn" id="events-start-contract" style="display:none;">НАЧАТЬ СМЕНУ →</button>
             <button class="garage-btn secondary" id="events-close">← В меню</button>
@@ -218,9 +231,10 @@
             <div class="sub" style="font-size:11px;">HQ-превью · крути мышью/пальцем · наведи на деталь — примерка</div>
             <div class="garage-stats" id="garage-stats"></div>
             <div class="season-bar-bg"><div class="season-bar-fill" id="garage-season-fill"></div></div>
+            <div class="garage-cars" id="garage-cars"><button type="button" class="garage-btn secondary garage-shop-btn" id="main-menu-shop">🚗 Все машины</button></div>
             <div class="garage-tabs">
+                <button type="button" class="garage-tab garage-tab-up" data-gtab="upgrades">⚙ Прокачка<em class="mm-badge" id="garage-up-badge" hidden></em></button>
                 <button type="button" class="garage-tab active" data-gtab="parts">🛠️ Кастом</button>
-                <button type="button" class="garage-tab" data-gtab="upgrades">⚙ Прокачка</button>
                 <button type="button" class="garage-tab" data-gtab="trophies">🏆 Трофеи 90-х</button>
                 <button type="button" class="garage-tab" data-gtab="achs">🏅 Ачивки</button>
             </div>
@@ -237,7 +251,6 @@
                 <div class="ach-grid" id="garage-achs"></div>
             </div>
             <button class="garage-btn" id="garage-close-btn">← В МЕНЮ</button>
-            <button class="garage-btn secondary" id="garage-logout-btn">Сменить курьера</button>
         </div>
     </div>
 
@@ -302,6 +315,7 @@
                     <button type="button" class="q-btn medium active" data-quality="medium">⚡ Среднее</button>
                     <button type="button" class="q-btn high" data-quality="high">🔥 Высокое</button>
                 </div>
+                <button type="button" class="quick-race-btn" id="main-menu-quick-race">⚡ Сразу в путь<small>та же трасса, сложность и машина</small></button>
                 <div class="diff-btns">
                     <button type="button" class="difficulty-btn easy" data-diff="easy">🟢 ЛЁГКИЙ<span class="desc">Мало зверей</span></button>
                     <button type="button" class="difficulty-btn medium" data-diff="medium">🟡 СРЕДНИЙ<span class="desc">ЗвероСуд</span></button>
