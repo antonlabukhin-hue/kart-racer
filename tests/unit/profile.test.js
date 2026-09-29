@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     createProfile, ensureProfileFields, loadProfiles, saveProfiles, saveProfile, PROFILES_KEY, SESSION_KEY,
     seasonXpToNext, addSeasonXp, grantAchievement, claimSeasonRewards, applyRaceResult,
-    mergeCampaignBackup, markChapterWon, nextChapterIdx, beastHourOpen, grantChapterReward, buyPaint, toggleCarPart, MAX_SEASON_LEVEL
+    mergeCampaignBackup, markChapterWon, nextChapterIdx, beastHourOpen, grantChapterReward, CHAPTER_REWARDS, buyPaint, toggleCarPart, MAX_SEASON_LEVEL
 } from '../../src/profile.js';
 import { TROPHIES, SEASON_REWARDS, CAR_PARTS, CAR_PAINTS, DAILY_CONTRACTS } from '../../src/content.js';
 import { mergeStars } from '../../src/campaign-stars.js';
@@ -216,7 +216,7 @@ describe('награда за главу 1', () => {
         const p = createProfile('A', 1, () => 0.5);
         ensureProfileFields(p, 99);
         expect(grantChapterReward(p, 'c02', 'cheburashka')).toBeNull();
-        expect(grantChapterReward(p, 'c01', 'cheburashka')).toEqual({ paint: 'yellow' });
+        expect(grantChapterReward(p, 'c01', 'cheburashka')).toEqual({ paint: 'yellow', equip: true, beastHour: true });
         expect(p.carLoadout.ownedPaints).toContain('yellow');
         expect(p.carLoadout.paintByCar.cheburashka).toBe('yellow');
         expect(grantChapterReward(p, 'c01', 'cheburashka')).toBeNull();
@@ -250,5 +250,21 @@ describe('контракты дня на механики', () => {
         expect(run(byId('boards1'), 'win', { billboards: 1 })).toBe(true);
         expect(run(byId('boards1'), 'crash', { billboards: 3 })).toBe(false);
         expect(run(byId('nearmiss5'), 'win', { nearMiss: 5 })).toBe(true);
+    });
+});
+
+describe('коллекция кампании', () => {
+    it('награды раз в несколько глав: краски и детали, каждая — один раз', () => {
+        const p = createProfile('A', 1, () => 0.5);
+        ensureProfileFields(p, 99);
+        expect(Object.keys(CHAPTER_REWARDS).length).toBeGreaterThanOrEqual(6);
+        expect(grantChapterReward(p, 'c03', 'cheburashka')).toEqual({ paint: 'purple', equip: false, beastHour: false });
+        expect(p.carLoadout.ownedPaints).toContain('purple');
+        // краска не за главу 1 в коллекцию, но на машину сама не ставится
+        expect(p.carLoadout.paintByCar.cheburashka).not.toBe('purple');
+        expect(grantChapterReward(p, 'c06', 'cheburashka')).toEqual({ part: 'rims' });
+        expect(p.carLoadout.ownedParts).toContain('rims');
+        expect(grantChapterReward(p, 'c06', 'cheburashka')).toBeNull();
+        expect(grantChapterReward(p, 'c02', 'cheburashka')).toBeNull();
     });
 });

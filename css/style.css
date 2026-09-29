@@ -4673,3 +4673,6 @@ body #campaign-track-list { grid-template-columns: 1fr !important; }
 #challenge-accept { flex: none; padding: 10px 16px; border: 0; border-radius: 12px; font-weight: 900; cursor: pointer;
     background: linear-gradient(180deg, #ff9a5c, #ff5a28); color: #1a0800; box-shadow: 0 3px 0 #a8341a; }
 #finish-challenge-btn { background: rgba(255,120,60,0.14) !important; border: 1.5px solid rgba(255,120,60,0.7) !important; color: #ffd0b0 !important; border-radius: 14px !important; font-weight: 800 !important; min-height: 42px; cursor: pointer; }
+
+/* награда главы в списке кампании */
+.camp-track .ct-reward { margin-top: 3px; font-size: 11px; font-weight: 800; color: #ffd23c; }

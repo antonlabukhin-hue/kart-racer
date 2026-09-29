@@ -484,7 +484,21 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         }
         window.openCampaignScreen = openCampaignScreen;
 
-                function renderCampaignTrackList() {
+                /** Строки награды главы: краска (кружок цвета) или деталь; got — уже получена (финиш) */
+        function chapterRewardHtml(rw, got) {
+            let html = '';
+            if (rw.paint) {
+                const paint = CAR_PAINTS.find(function(x) { return x.id === rw.paint; });
+                html += '<div class="cg-row"><span class="cg-swatch" style="background:#' + ((paint && paint.color) || 0).toString(16).padStart(6, '0') + '"></span>'
+                    + '<span>🎁 Краска «' + escapeHtml(paint ? paint.name : rw.paint) + '»' + (got ? (rw.equip ? ' — уже на машине' : ' — в гараже') : '') + '</span></div>';
+            } else if (rw.part) {
+                const part = CAR_PARTS.find(function(x) { return x.id === rw.part; });
+                html += '<div class="cg-row"><span>🎁 Деталь «' + escapeHtml(part ? part.name : rw.part) + '»' + (got ? ' — в гараже' : '') + '</span></div>';
+            }
+            if (rw.beastHour) html += '<div class="cg-row">🐾 Открыт «Звериный час»</div>';
+            return html;
+        }
+        function renderCampaignTrackList() {
             const box = document.getElementById('campaign-track-list');
             if (!box) return;
             const prog = getCampaignProgress();
@@ -546,6 +560,14 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
                 const tdone = chapterTaskProgress(prog.tasks, t.id, idx);
                 const tcount = tdone.filter(Boolean).length;
                 body.querySelector('.ct-meta').textContent = wIcon(t.weather) + ' · ' + diffLabel(t.diff) + (open ? ' · задания ' + tcount + '/3' : '');
+                const rwd = Profile.CHAPTER_REWARDS[t.id];
+                if (rwd && !done) {
+                    const rt = document.createElement('div');
+                    rt.className = 'ct-reward';
+                    const pn = rwd.paint ? (CAR_PAINTS.find(function(x) { return x.id === rwd.paint; }) || {}).name : (CAR_PARTS.find(function(x) { return x.id === rwd.part; }) || {}).name;
+                    rt.textContent = '🎁 ' + (rwd.paint ? 'краска' : 'деталь') + ' «' + (pn || '') + '»';
+                    body.appendChild(rt);
+                }
                 if (open) body.querySelector('.ct-meta').title = tasksForChapter(idx, t.diff).map(function(tk, i) { return (tdone[i] ? '✓ ' : '○ ') + tk.text; }).join('\n');
 
                 const badgeEl = document.createElement('div');
@@ -911,7 +933,7 @@ function startCampaignTrack(idx, opts) {
             try {
                 const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
                 const gift = Profile.grantChapterReward(currentPlayer, trackId, car);
-                window.__lastChapterReward = gift ? { trackId: trackId, paint: gift.paint } : null;
+                window.__lastChapterReward = gift ? Object.assign({ trackId: trackId }, gift) : null;
             } catch (eR) { window.__lastChapterReward = null; }
             if (won.unlockedNew) {
                 try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 1.1); } catch (e) {}
@@ -4674,11 +4696,7 @@ function startGaragePreview(carId) {
                         }
                         const cr = window.__lastChapterReward;
                         if (cr && cr.trackId === window.__campaignTrackId) {
-                            const paint = CAR_PAINTS.find(function(x) { return x.id === cr.paint; });
-                            starsHtml += '<div class="chapter-gift">'
-                                + '<div class="cg-row"><span class="cg-swatch" style="background:#' + ((paint && paint.color) || 0).toString(16).padStart(6, '0') + '"></span>'
-                                + '<span>🎁 Краска «' + escapeHtml(paint ? paint.name : cr.paint) + '» — уже на машине</span></div>'
-                                + '<div class="cg-row">🐾 Открыт «Звериный час»</div></div>';
+                            starsHtml += '<div class="chapter-gift">' + chapterRewardHtml(cr, true) + '</div>';
                         }
                     }
                     const head = (state === 'win')
