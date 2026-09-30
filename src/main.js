@@ -7258,7 +7258,7 @@ function startGaragePreview(carId) {
             // бесконечная трасса: «Е», препятствия, нитро и жвачки круга k — из плана (src/infinite.js), мимо постановочных участков
             function infPlanLap(k) {
                 const LX = [-2, 0, 2], d0 = k * _trackSpan;
-                planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity }).items.forEach(function(it) {
+                planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity, vhsMul: ABILITY === 'lucky' ? 2 : 1 }).items.forEach(function(it) {
                     const z = START_Z - it.d;
                     if (infBusy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; })) return;
                     let c = null;

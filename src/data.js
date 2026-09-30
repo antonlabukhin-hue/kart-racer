@@ -188,7 +188,9 @@ export const CAR_PRESETS = {
         ability: { id: 'rocket', name: 'Форсаж', desc: 'нитро действует на 50% дольше' } },
     // уникальная: только за видеокассеты (📼 — редкая валюта бесконечной трассы и сундуков)
     zubilo:      { name: 'Зубило',     color: 0x9a1428, maxSpeed: 0.456, accel: 0.0264, durability: 0.9, oilGrip: 0.95, priceChips: 0, priceVhs: 5,
-        ability: { id: 'magnet', name: 'Магнит', desc: '«Е» рядом сами летят в машину — без усиления' } }
+        ability: { id: 'magnet', name: 'Магнит', desc: '«Е» рядом сами летят в машину — без усиления' } },
+    mechta:      { name: 'Мечта',      color: 0xd8161e, maxSpeed: 0.474, accel: 0.027, durability: 0.9, oilGrip: 0.95, priceChips: 0, priceVhs: 10,
+        ability: { id: 'lucky', name: 'Везунчик', desc: 'видеокассеты на трассе попадаются вдвое чаще' } }
 };
 
 export const ANIMAL_TYPES = {
