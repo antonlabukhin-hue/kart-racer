@@ -87,7 +87,7 @@ export const TROPHIES = [
     { id: 't_pokemon', name: 'Жёлтая молния', emoji: '⚡', desc: 'Финиш без нитро', need: 'no_nitro' },
     { id: 't_ranetki', name: 'Микрофон рок-группы', emoji: '🎤', desc: 'Уровень сезона 5', need: 'season5' },
     { id: 't_taxi', name: 'Шашечки такси', emoji: '🚕', desc: '10 заездов', need: 'races10' },
-    { id: 't_mk', name: 'Фишка из автомата', emoji: '🕹️', desc: '5 побед', need: 'wins5' }
+    { id: 't_mk', name: 'Жетон из автомата', emoji: '🕹️', desc: '5 побед', need: 'wins5' }
 ];
 
 export const SEASON_REWARDS = [
