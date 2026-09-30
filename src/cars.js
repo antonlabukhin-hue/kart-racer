@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { CAR_PRESETS } from './data.js';
 import { normalizeLevels } from './upgrades.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { MOVIE_CARS, buildMovieCar } from './cars-movie.js';
 
 /** Показать на машине купленные улучшения (уровень N включает всё до N). levels — { engine: 0..3, ... } */
 export function applyUpgradeVisuals(upgrades, levels) {
@@ -24,6 +25,7 @@ export function applyUpgradeVisuals(upgrades, levels) {
 export function buildShowroomCar(carId) {
     const THREE_REF = window.THREE || THREE;
     const preset = (typeof CAR_PRESETS !== 'undefined' && CAR_PRESETS[carId]) ? CAR_PRESETS[carId] : { color: 0xff2200, name: 'Авто' };
+    if (MOVIE_CARS.indexOf(carId) >= 0) return buildMovieCar(carId, preset); // машины «из кино» — свой сборщик
     const group = new THREE.Group();
     const col = preset.color || 0xff2200;
 

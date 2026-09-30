@@ -4930,7 +4930,7 @@ function startGaragePreview(carId) {
             // бесконечная трасса: после пятой аварии — продолжить за «Е» или кассету (не больше двух раз)
             function offerContinue() {
                 if (continues >= MAX_CONTINUES || !currentPlayer) return false;
-                const se = currentPlayer.season, cost = continueCost(continues);
+                const se = currentPlayer.season, cost = (ABILITY === 'thief' && continues === 0) ? 0 : continueCost(continues); // «Угонщик» — первый бесплатно
                 if ((se.chips || 0) < cost && !(se.vhs > 0)) return false;
                 gameState = 'chance';
                 showSecondChance({ costE: cost, haveE: se.chips || 0, haveVhs: se.vhs || 0, seconds: 6, dist: infWorld ? infWorld.dist : 0,
@@ -7974,7 +7974,7 @@ function startGaragePreview(carId) {
 
             // характеристики с учётом прокачки (src/upgrades.js)
             const carStats = computeCarStats(carPreset, getUpgradeLevels(carId || 'cheburashka'));
-            const MAX_SPEED = carStats.maxSpeed;
+            const MAX_SPEED = carStats.maxSpeed * ((carPreset.ability && carPreset.ability.id === 'bull') ? 1.08 : 1); // «Бычок» — +8%
             const ACCELERATION = carStats.accel;
             const BRAKE_FORCE = 0.025;
             const FRICTION_FORCE = 0.008;
@@ -9114,6 +9114,10 @@ function startGaragePreview(carId) {
                     if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl && (carAirborne || carYOffset > 0.55)) {
                         car.hitCooldown = 1.2;
                         try { showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
+                    } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl && ABILITY === 'avenger') {
+                        // «Ночной мститель» — таран: попутку отбрасывает вперёд, аварии нет
+                        car.hitCooldown = 1.2; car.z = zPos - 60 - Math.random() * 40; car.mesh.position.z = car.z; speed *= 0.9; shakeTime = 0.15;
+                        try { showTimePenaltyPopup(0, '🦇 Таран!'); } catch (e) {}
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl) {
                         car.hitCooldown = 1.2;
                         const pen = car.kind === 'bus' || car.kind === 'truck' ? 5 : 4;
@@ -9405,7 +9409,7 @@ function startGaragePreview(carId) {
                     }
 
                     // магнит: «Е» впереди летят к машине
-                    if (c.type === 'echip' && !c.airOnly && (magnetPull(powers, c, xPos, zPos, deltaTime) || (ABILITY === 'magnet' && magnetPull(ALWAYS_MAGNET, c, xPos, zPos, deltaTime, 0.5)))) c.mesh.position.set(c.x, c.mesh.position.y, c.z);
+                    if (c.type === 'echip' && !c.airOnly && (magnetPull(powers, c, xPos, zPos, deltaTime) || ((ABILITY === 'magnet' || (ABILITY === 'neon' && nitroTimer > 0)) && magnetPull(ALWAYS_MAGNET, c, xPos, zPos, deltaTime, 0.5)))) c.mesh.position.set(c.x, c.mesh.position.y, c.z);
                     const dx = xPos - c.x;
                     const dz = zPos - c.z;
                     if (c.airOnly && carYOffset < (c.minY || 0.6)) return; // висит в воздухе — берётся только в прыжке
@@ -10451,7 +10455,10 @@ function startGaragePreview(carId) {
                         const dist = Math.sqrt(dx * dx + dz * dz);
                         if (!obs._nm && dz < -0.6 && dz > -3 && Math.abs(dx) < obs.radius + 1.1) { obs._nm = true; nearMiss(); }
                         if (dist < obs.radius + 0.45) {
-                            if (carAirborne || carYOffset > 0.4) {
+                            if (ABILITY === 'cyborg' && !(carAirborne || carYOffset > 0.4)) {
+                                obs.hit = true; speed *= 0.9; // «Киборг» — зверь не авария
+                                try { showTimePenaltyPopup(0, '🤖 Киборг не заметил'); } catch (e) {}
+                            } else if (carAirborne || carYOffset > 0.4) {
                                 obs.hit = true;
                                 stats.animalsJumped++; riskEvent(risk, 'jump');
                                 try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
