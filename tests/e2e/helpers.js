@@ -44,9 +44,15 @@ export async function login(page, name = 'Тестер', url = './', { briefing 
     await expect(page.locator('#main-menu-screen')).toBeVisible();
 }
 
+// Прежний свободный заезд скрыт из меню (его место заняла «Бесконечная трасса») — для проверок открываем его напрямую
+export async function openFreeRace(page) {
+    await expect(page.locator('#main-menu-screen')).toBeVisible();
+    await page.evaluate(() => document.querySelector('.menu-card[data-menu="race"]').click());
+}
+
 // Свободный заезд: меню → (магазин при первом заезде) → сложность → лор → старт
 export async function startFreeRace(page, difficulty = 'easy') {
-    await page.locator('.menu-card[data-menu="race"]').click();
+    await openFreeRace(page);
     const shop = page.locator('#shop-action');
     if (await shop.isVisible()) await shop.click();
     await page.locator(`.difficulty-btn[data-diff="${difficulty}"]`).click();

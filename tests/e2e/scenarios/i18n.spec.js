@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { watchProblems, login } from '../helpers.js';
+import { openFreeRace, watchProblems, login } from '../helpers.js';
 
 // ?lang=en — английский интерфейс: меню, HUD и пауза
 test('английский: меню, заезд и пауза переведены', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Tester', './?lang=en&start=0.3');
-    await expect(page.locator('.menu-card[data-menu="race"]')).toContainText('Race');
+    await expect(page.locator('.menu-card[data-menu="infinite"]')).toContainText('Endless Road');
     await expect(page.locator('.menu-card[data-menu="endless"]')).toContainText('Beast Hour');
-    await page.locator('.menu-card[data-menu="race"]').click();
+    await openFreeRace(page);
     const shop = page.locator('#shop-action');
     if (await shop.isVisible()) await shop.click();
     await expect(page.locator('.difficulty-btn[data-diff="easy"]')).toContainText('EASY');

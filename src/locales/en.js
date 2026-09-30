@@ -45,6 +45,10 @@ export default {
         '🚗 Магазин машин': '🚗 Car shop',
         // главное меню v2: режимы, нижняя панель, профиль, сезон
         '🏁 Заезд': '🏁 Race',
+        '🛣 Бесконечная трасса': '🛣 Endless Road',
+        'Бесконечная трасса': 'Endless Road',
+        'сколько проедешь': 'how far can you go',
+        'Бесконечная трасса: пейзажи сменяют друг друга, собирай «Е» и держись как можно дольше': 'Endless road: landscapes keep changing — collect «E» and last as long as you can',
         'Заезд': 'Race',
         'любая трасса': 'any track',
         'волна за волной': 'wave after wave',

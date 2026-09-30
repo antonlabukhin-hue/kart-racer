@@ -158,7 +158,13 @@
                     <img src="images/menu_campaign.jpg" alt="Кампания" onerror="this.style.background='#3a2010';this.src='';">
                     <span>📖 Кампания<small class="mm-note" id="mm-note-campaign"></small></span>
                 </button>
-                <button type="button" class="menu-card" data-menu="race">
+                <button type="button" class="menu-card menu-infinite" data-menu="infinite" title="Бесконечная трасса: пейзажи сменяют друг друга, собирай «Е» и держись как можно дольше">
+                    <img src="images/menu_race.jpg" alt="Бесконечная трасса" onerror="this.style.background='#332';this.src='';">
+                    <span>🛣 Бесконечная трасса<small class="mm-note">сколько проедешь</small></span>
+                    <div class="endless-best" id="menu-inf-best"></div>
+                </button>
+                <!-- прежний свободный заезд: скрыт из меню, остаётся для проверок (tests/e2e/helpers.js) -->
+                <button type="button" class="menu-card" data-menu="race" hidden>
                     <img src="images/menu_race.jpg" alt="Свободный заезд" onerror="this.style.background='#332';this.src='';">
                     <span>🏁 Заезд<small class="mm-note">любая трасса</small></span>
                 </button>

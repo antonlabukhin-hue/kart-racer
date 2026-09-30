@@ -277,4 +277,14 @@ describe('фишки «Е» с трассы', () => {
         const r = applyRaceResult(p, 'crash', { time: 30, strikes: 5, difficulty: 'easy', eChips: 137, bonusChips: 50 }, { trophies: TROPHIES, now: 1 });
         expect(r.chips).toBe(1 + 20 + 137);
     });
+    it('бесконечная трасса: опыт за дальность и рекорд', () => {
+        const p = fresh();
+        const base = applyRaceResult(fresh(), 'crash', { time: 30, strikes: 5 }, { trophies: TROPHIES, now: 1 }).xp;
+        const r = applyRaceResult(p, 'crash', { time: 60, strikes: 5, distance: 2000, infScore: 2500 }, { trophies: TROPHIES, now: 1 });
+        expect(r.xp).toBe(base + 100);
+        expect(r.infBest).toMatchObject({ isNew: true, prev: 0, best: 2000 });
+        const r2 = applyRaceResult(p, 'crash', { time: 20, strikes: 5, distance: 800, infScore: 900 }, { trophies: TROPHIES, now: 2 });
+        expect(r2.infBest).toMatchObject({ isNew: false, best: 2000 });
+        expect(p.infinite).toMatchObject({ best: 2000, bestScore: 2500, runs: 2 });
+    });
 });

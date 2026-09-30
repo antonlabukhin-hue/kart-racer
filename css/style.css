@@ -5099,3 +5099,6 @@ html.touch-ui.touch-land body.race-mode #risk-hud .rk-mult { font-size: 19px !im
 html.touch-ui.touch-land body.race-mode #risk-hud .rk-pts { font-size: 11px !important; }
 html.touch-ui.touch-land body.race-mode .crash-tag { top: calc(env(safe-area-inset-top, 0px) + 96px * var(--ui-k, 1)) !important; zoom: var(--ui-k, 1); }
 .st-diag { margin-top: 10px; font-size: 10px; color: #777; text-align: center; user-select: text; }
+
+/* прежний «Заезд» скрыт из меню (его заменила «Бесконечная трасса») */
+#main-menu-screen .menu-card[hidden], .menu-card[hidden] { display: none !important; }
