@@ -12,7 +12,7 @@ export const RHYTHM = [
     { from: 0.96, mul: 0.8, name: 'финишная прямая' }
 ];
 export const SEGMENT_CALM = 0.6;
-const SEGMENT_SPAN = { roadworks: 60 / 1320, fork: 80 / 1320, tunnel: 90 / 1320 };
+const SEGMENT_SPAN = { roadworks: 60 / 1320, tunnel: 90 / 1320 };
 
 export function rhythmAt(progress) {
     let mul = RHYTHM[0].mul;

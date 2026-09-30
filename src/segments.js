@@ -1,7 +1,6 @@
 /**
  * Новые участки трассы (раскладка — src/tracks/layouts.json, поле segments):
  *   roadworks — ремонт: одна полоса закрыта блоками, сужение конусами, каток;
- *   fork      — развилка: бетонный разделитель, слева жвачки и масло, справа спокойно;
  *   tunnel    — тоннель: стены, свод, лампы, в нём темно и горят фары.
  * Игрок едет в сторону уменьшения z: z0 — въезд, z0 - len — выезд.
  */
@@ -66,36 +65,6 @@ export function createRoadworks(laneX, z0, len) {
     return { group: freezeStatic(g), barriers: barriers };
 }
 
-/** Развилка: бетонный разделитель вдоль x = medianX, на въезде — нос с отбойными бочками */
-export function createForkMedian(medianX, z0, len) {
-    const g = new THREE.Group();
-    const concrete = new THREE.MeshLambertMaterial({ color: 0xb8b4aa });
-    const yb = new THREE.MeshBasicMaterial({ color: 0xffd400 });
-    const bk = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
-    // отбойник «нью-джерси»: трапеция в сечении, кусками по 8 ед. (гнётся с «кривым миром»)
-    const shape = new THREE.Shape();
-    shape.moveTo(-0.3, 0); shape.lineTo(0.3, 0); shape.lineTo(0.12, 0.75); shape.lineTo(-0.12, 0.75); shape.closePath();
-    const pieces = [];
-    for (let z = z0; z > z0 - len; z -= 8) {
-        const d = Math.min(8, z - (z0 - len));
-        pieces.push(at(new THREE.ExtrudeGeometry(shape, { depth: d, bevelEnabled: false }), medianX, 0, z - d));
-    }
-    g.add(merged(pieces, concrete));
-    // нос: жёлто-чёрная полосатая стенка и три отбойные бочки
-    const ys = [], ks = [];
-    for (let i = 0; i < 4; i++) (i % 2 ? ks : ys).push(at(new THREE.BoxGeometry(0.62, 0.18, 0.06), medianX, 0.12 + i * 0.18, z0 + 0.05));
-    g.add(merged(ys, yb), merged(ks, bk));
-    const barrelMat = new THREE.MeshLambertMaterial({ color: 0xff7a00, emissive: 0x331800, emissiveIntensity: 0.5 });
-    const white = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const barrels = [], bandsB = [];
-    [0.8, 1.7, 2.6].forEach(function(dz) {
-        barrels.push(at(new THREE.CylinderGeometry(0.3, 0.3, 0.8, 14), medianX, 0.4, z0 + dz));
-        bandsB.push(at(new THREE.CylinderGeometry(0.305, 0.305, 0.12, 14), medianX, 0.55, z0 + dz));
-    });
-    g.add(merged(barrels, barrelMat), merged(bandsB, white));
-    return { group: freezeStatic(g) };
-}
-
 /** Тоннель: стены и свод кусками по 10 ед., лампы под сводом, порталы на въезде и выезде */
 export function createTunnel(trackWidth, z0, len, style) {
     const g = new THREE.Group();
@@ -124,17 +93,6 @@ export function createTunnel(trackWidth, z0, len, style) {
     });
     g.add(merged(walls, wallMat), merged(lamps, lampMat), merged(ceil, ceilMat), merged(portals, portalMat));
     return { group: freezeStatic(g) };
-}
-
-/**
- * Развилка: держать машину по свою сторону разделителя.
- * side — -1 слева, 1 справа; half — полуширина разделителя + полуширина машины.
- * Возвращает { x, scraped } — новая координата и «тёрся о бетон».
- */
-export function clampToForkSide(x, medianX, side, half) {
-    if (side < 0 && x > medianX - half) return { x: medianX - half, scraped: true };
-    if (side > 0 && x < medianX + half) return { x: medianX + half, scraped: true };
-    return { x: x, scraped: false };
 }
 
 /** Какая полоса закрыта на ремонт (крайняя), по номеру участка */

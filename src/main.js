@@ -19,7 +19,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { CAMPAIGN_TRACKS, CAMPAIGN_STAGE_MODS, CAR_PRESETS, ANIMAL_TYPES, MAP_ANIMALS } from './data.js';
         import { gapStyle, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, createBarricade, createWarnMark, createChargeChevrons } from './setpieces.js';
         import { resolveLayout, SEGMENT_LEN } from './track-layout.js';
-        import { createRoadworks, createForkMedian, createTunnel, clampToForkSide, roadworksLane, approach } from './segments.js';
+        import { createRoadworks, createTunnel, roadworksLane, approach } from './segments.js';
         import { MAP_ORDER, MAP_NAMES, CAMPAIGN_FINISH_LINES, VILLAIN_INTRO, ACHIEVEMENTS, CAR_SHOP_ORDER, CAR_PARTS, CAR_PAINTS, TROPHIES, SEASON_REWARDS, DAILY_CONTRACTS, ANIMAL_SHOUTS_LIST } from './content.js';
         import { DIFFICULTY_CONFIG } from './difficulty.js';
         import { campaignHardConfig } from './balance.js';
@@ -7231,23 +7231,6 @@ function startGaragePreview(carId) {
                         scene.add(rw.group);
                         scene.add(createRoadSign(['⚠ РЕМОНТ', 'ПОЛОСА ЗАКРЫТА'], (x < 0 ? -1 : 1) * (TRACK_WIDTH / 2 + 1.8), z0 + 55, { big: true }));
                         roadSegments.push({ type: 'roadworks', z0: z0, z1: z0 - len, x: x, barriers: rw.barriers, cd: 0 });
-                    } else if (sg.type === 'fork') {
-                        clearZone(z0 + 6, z0 - len - 4);
-                        const mx = -1;
-                        scene.add(createForkMedian(mx, z0, len).group);
-                        scene.add(createRoadSign(['⇐ ЖВАЧКИ + МАСЛО', 'СПОКОЙНО ⇒'], -TRACK_WIDTH / 2 - 1.8, z0 + 55, { big: true }));
-                        // левая ветка: награда и риск
-                        [0.2, 0.5, 0.8].forEach(function(k) {
-                            const c = createCollectible(z0 - len * k, 'gum');
-                            c.x = -2; c.mesh.position.x = -2;
-                            collectibles.push(c);
-                        });
-                        [0.35, 0.65].forEach(function(k) {
-                            const o = createObstacle(z0 - len * k, 'oil');
-                            o.x = -2; o.mesh.position.x = -2;
-                            obstacles.push(o);
-                        });
-                        roadSegments.push({ type: 'fork', z0: z0, z1: z0 - len, x: mx, side: 0, cd: 0 });
                     } else if (sg.type === 'tunnel') {
                         const style = isSnowTrack ? 'snow' : mapId;
                         scene.add(createTunnel(TRACK_WIDTH, z0, len, style).group);
@@ -8700,28 +8683,6 @@ function startGaragePreview(carId) {
                             xVelocity = 0;
                             handleObstacleHit({ cause: 'ремонт', type: 'roadworks', timePenalty: 3, penalty: 0.35 });
                         }
-                    } else if (sg.type === 'fork') {
-                        const crossed = segLastZ != null && segLastZ > sg.z0 && zPos <= sg.z0;
-                        if (crossed && Math.abs(xPos - sg.x) < 0.6 && carYOffset < 0.8) {
-                            // в нос разделителя
-                            xPos = xPos < sg.x ? sg.x - 0.7 : sg.x + 0.7;
-                            xVelocity = 0;
-                            handleObstacleHit({ cause: 'разделитель', type: 'fork', timePenalty: 3, penalty: 0.3 });
-                        }
-                        if (inside && !sg.side) sg.side = xPos < sg.x ? -1 : 1;
-                        if (inside) {
-                            const r = clampToForkSide(xPos, sg.x, sg.side, 0.68);
-                            if (r.scraped) {
-                                xPos = r.x;
-                                if (Math.abs(xVelocity) > 0.04 && sg.cd <= 0) {
-                                    sg.cd = 0.25;
-                                    speed *= 0.96;
-                                    try { if (particleSystem.sparks) particleSystem.sparks({ x: sg.x + sg.side * 0.3, y: 0.4, z: zPos }, 8, 1); } catch (e) {}
-                                    try { if (window.soundEngine) window.soundEngine.playSfx('hit', 0.35); } catch (e) {}
-                                }
-                                xVelocity = 0;
-                            }
-                        } else if (zPos < sg.z1) sg.side = 0;
                     }
                 }
                 segLastZ = zPos;
