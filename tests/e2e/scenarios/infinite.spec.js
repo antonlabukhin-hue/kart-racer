@@ -8,6 +8,9 @@ test('бесконечная трасса: пейзажи, «Е», уборка 
     await login(page);
     await expect(page.locator('.menu-card[data-menu="race"]')).toBeHidden();
     await page.locator('.menu-card[data-menu="infinite"]').click();
+    // первый раз — витрина машин (как выбор персонажа в Subway Surfers): «Ушастик» бесплатный — поехали на нём
+    await expect(page.locator('#shop-action')).toContainText('ПОЕХАЛИ');
+    await page.locator('#shop-action').click();
     await waitRacing(page);
     await expect(page.locator('#infDisplay')).toContainText('м · Е');
     await expect(page.locator('#weatherDisplay')).toContainText('Арсеньев, день');
@@ -79,6 +82,9 @@ test('бесконечная трасса: усиление подбираетс
     await page.locator('#splash-screen').click();
     await page.locator('#profile-list').getByText('Тестер').click();
     await page.locator('.menu-card[data-menu="infinite"]').click();
+    // первый раз — витрина машин (как выбор персонажа в Subway Surfers): «Ушастик» бесплатный — поехали на нём
+    await expect(page.locator('#shop-action')).toContainText('ПОЕХАЛИ');
+    await page.locator('#shop-action').click();
     await waitRacing(page);
 
     const picked = await page.evaluate(async () => {
