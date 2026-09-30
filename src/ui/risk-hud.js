@@ -28,6 +28,13 @@ export function renderRiskHud(r) {
     if (r.points !== last.points) {
         el.querySelector('.rk-pts').textContent = r.points.toLocaleString('ru-RU');
         last.points = r.points;
+        // панель заезда бывает выше обычной (бесконечная трасса) — встаём под неё, а не поверх
+        const hud = document.getElementById('game-hud');
+        if (hud) {
+            el.style.top = '';
+            const a = hud.getBoundingClientRect(), b = el.getBoundingClientRect();
+            if (a.height && b.left < a.right && b.top < a.bottom && b.bottom > a.top) el.style.top = Math.round(a.bottom + 8) + 'px';
+        }
     }
     const bar = Math.round((r.timer / CHAIN_WINDOW) * 100);
     if (bar !== last.bar) { el.querySelector('.rk-bar u').style.width = bar + '%'; last.bar = bar; }
