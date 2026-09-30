@@ -8012,7 +8012,8 @@ function startGaragePreview(carId) {
             // «Чистый отрезок» (src/clean-run.js): 10 с без ударов — щит, потом фишки
             const cleanRun = createCleanRun(); if (ABILITY === 'armor') cleanRun.grantShield(); /* «Буханка»: старт с бронёй */ let _armorShown = false;
             const boosts = INF ? pendingBoosts : [], headstartTo = boosts.indexOf('headstart') >= 0 ? HEADSTART_M : 0; pendingBoosts = []; // «Разгон» и «Запаска» (src/ui/boosts.js)
-            if (boosts.indexOf('spare') >= 0) cleanRun.grantShield(); const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
+            if (boosts.indexOf('spare') >= 0) cleanRun.grantShield();
+            let rewindUsed = false; const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
             let shieldMesh = null;
             /** Крупная выскакивающая плашка по центру (броня и т. п.) — один слот */
             function grabPower(type) {
@@ -8223,6 +8224,7 @@ function startGaragePreview(carId) {
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;
                 if (headstartTo && infWorld && infWorld.dist < headstartTo) return; // «Разгон»: удары не считаются
+                if (ABILITY === 'rewind' && !rewindUsed) { rewindUsed = true; speed *= 0.8; try { showBigPlaque('⏪ ОТМОТКА ВРЕМЕНИ', 'Этой аварии не было — один раз за заезд', 'armor'); } catch (e) {} return; } // «Машина времени»
                 // щит «чистого отрезка» съедает удар (кроме падения в разлом — там спасает только трамплин)
                 if (obs.cause !== 'gap' && cleanRun.useShield()) {
                     setShieldVisible(false);
@@ -8909,7 +8911,7 @@ function startGaragePreview(carId) {
                         gp.mesh.userData.beacons.forEach(function(b) { b.visible = on; });
                     }
                     if (gameState !== 'racing' || gp.fallT > 0) continue;
-                    if (zPos <= gp.zNear - 0.3 && zPos >= gp.zFar + 0.3 && !carAirborne && carYOffset < 0.25) {
+                    if (zPos <= gp.zNear - 0.3 && zPos >= gp.zFar + 0.3 && !carAirborne && carYOffset < 0.25 && ABILITY !== 'fly') {
                         gp.fallT = 0.55;
                         handleObstacleHit({ penalty: 0.2, timePenalty: 3, cause: 'gap' });
                         try {
@@ -9111,7 +9113,7 @@ function startGaragePreview(carId) {
                     const dz = zPos - car.z;
                     if (dz > 6) car._nm = false;
                     else if (!car._nm && dz < -0.8 && dz > -3 && car.hitCooldown <= 0 && Math.abs(dx) < (car.hitW || 0.75) * 0.55 + 0.75) { car._nm = true; nearMiss(); }
-                    const hw = (car.hitW || 0.75) * 0.55;
+                    const hw = (car.hitW || 0.75) * (ABILITY === 'narrow' ? 0.4 : 0.55); // «Мопед» — узкий
                     const hl = (car.hitL || 1.4) * 0.45;
                     if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl && (carAirborne || carYOffset > 0.55)) {
                         car.hitCooldown = 1.2;
@@ -9152,8 +9154,10 @@ function startGaragePreview(carId) {
                     const hitR = (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') ? 0.55 : 0.42;
                     
                     if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && sweptZ(obs.z, hitR)) {
-                        if (carAirborne || carYOffset > 0.45) {
-                            // в прыжке ямы/кочки/масло не срабатывают
+                        if (carAirborne || carYOffset > 0.45 || ABILITY === 'fly') {
+                            // в прыжке (и на ковре-самолёте) ямы/кочки/масло/шипы не срабатывают
+                        } else if (ABILITY === 'trike' && (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar')) {
+                            if (!obs._trikeShown) { obs._trikeShown = true; try { showTimePenaltyPopup(0, '🛞 Трайк держит дорогу'); } catch (e) {} }
                         } else if (obs.type === 'spikes') {
                             // шипы: не авария, но скорость резко падает; шипы приминаются
                             stats.lastSpike = { before: speed, after: speed * 0.5 }; speed *= 0.5; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3;
@@ -9421,7 +9425,7 @@ function startGaragePreview(carId) {
                         c.active = false;
                         c.mesh.visible = false;
                         if (c.type === 'echip') {
-                            stats.eChips = (stats.eChips || 0) + eValue(powers) * (weekTh && infTheme === weekTh ? 2 : 1); // ×2 — усиление; и ещё ×2 — пейзаж недели
+                            stats.eChips = (stats.eChips || 0) + eValue(powers) * (weekTh && infTheme === weekTh ? 2 : 1) * (ABILITY === 'ghost' && infTheme && infTheme.night ? 2 : 1); // ×2 — усиление; и ещё ×2 — пейзаж недели
                             try { if (window.soundEngine) window.soundEngine.playSfx('ring', 1); } catch (e) {} // «колечко», как в 16-битных играх
                         } else if (c.type === 'power') {
                             grabPower(c.power);
@@ -9431,7 +9435,8 @@ function startGaragePreview(carId) {
                         } else if (c.type === 'crate') {
                             // ящик «?»: разлетается досками, внутри — случайный исход (src/hazards.js)
                             breakCrate(scene, c.x, c.z, Math.abs(speed) * 60).forEach(function(pt) { crateParts.push(pt); });
-                            const o = rollCrate();
+                            let o = rollCrate();
+                            for (let ri = 0; ri < 20 && ABILITY === 'trident' && !o.good; ri++) o = rollCrate(); // «Колесница» — только подарки
                             stats.crates = (stats.crates || 0) + 1;
                             if (POWERS[o.id]) grabPower(o.id);
                             else if (o.id === 'badge') { // значок 90-х в коллекцию (src/badges.js)
@@ -10463,7 +10468,7 @@ function startGaragePreview(carId) {
                         const dz = zPos - obs.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
                         if (!obs._nm && dz < -0.6 && dz > -3 && Math.abs(dx) < obs.radius + 1.1) { obs._nm = true; nearMiss(); }
-                        if (dist < obs.radius + 0.45) {
+                        if (dist < obs.radius + (ABILITY === 'narrow' ? 0.25 : 0.45)) {
                             if (ABILITY === 'cyborg' && !(carAirborne || carYOffset > 0.4)) {
                                 obs.hit = true; speed *= 0.9; // «Киборг» — зверь не авария
                                 try { showTimePenaltyPopup(0, '🤖 Киборг не заметил'); } catch (e) {}
