@@ -7258,7 +7258,8 @@ function startGaragePreview(carId) {
             // бесконечная трасса: «Е», препятствия, нитро и жвачки круга k — из плана (src/infinite.js), мимо постановочных участков
             function infPlanLap(k) {
                 const LX = [-2, 0, 2], d0 = k * _trackSpan;
-                planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity, vhsMul: ABILITY === 'lucky' ? 2 : 1 }).items.forEach(function(it) {
+                // vhsMul — от пресета, не ABILITY: план круга 0 строится раньше её объявления (иначе заезд не стартует)
+                planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity, vhsMul: (carPreset.ability && carPreset.ability.id === 'lucky') ? 2 : 1 }).items.forEach(function(it) {
                     const z = START_Z - it.d;
                     if (infBusy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; })) return;
                     let c = null;
@@ -11379,6 +11380,8 @@ function showLoreScreen(quality, difficulty) {
                     startMenuBg({ carId: car0, intro: true, still: reduce0, lowPower: !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) });
                 }
             } catch (e) { console.warn('intro', e); }
+            // 3D не запустилось (старый телефон, нет WebGL) — показать картинку-заставку
+            setTimeout(function() { if (!document.body.classList.contains('menu-live')) document.body.classList.add('splash-fallback'); }, 1500);
             function hideSplashShowProfile() {
                 const sp = document.getElementById('splash-screen');
                 if (sp) {
