@@ -141,3 +141,39 @@ test('бесконечная трасса: рекорд — салют, пото
     await expect(page.locator('#finish-screen')).toContainText('ЗАЕЗД ОКОНЧЕН');
     expect(problems).toEqual([]);
 });
+
+// ящик «?» — случайный исход, не авария; шипы (после 600 м) — не авария, но скорость падает
+test('бесконечная трасса: ящик «?» разбивается с исходом, шипы тормозят без аварии', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    const crate = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        const c = g.collectibles.filter(c => c.type === 'crate' && c.active && c.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
+        if (!c) return null;
+        g.setX(c.x); g.setZ(c.z + 0.3);
+        await new Promise(r => setTimeout(r, 300));
+        return { crates: g.stats.crates || 0, strikes: g.strikes };
+    });
+    expect(crate).toEqual({ crates: 1, strikes: 0 });
+    await expect(page.locator('.big-plaque')).toBeVisible();
+    // вперёд за 600 м — там уже шипы
+    await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 700); });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.obstacles.some(o => o.type === 'spikes' && o.active)), { timeout: 15_000 }).toBe(true);
+    await page.waitForTimeout(1500); // разогнаться
+    const hit = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        (g.animals || []).forEach(an => { an.hit = true; });
+        const o = g.obstacles.filter(o => o.type === 'spikes' && o.active && o.z < g.z - 3).sort((a, b) => b.z - a.z)[0];
+        g.setStrikes(0); g.setX(o.x); g.setZ(o.z + 0.2);
+        const before = g.speed;
+        await new Promise(r => setTimeout(r, 60));
+        return { spikes: g.stats.spikes || 0, strikes: g.strikes, slower: g.speed < before * 0.8 };
+    });
+    expect(hit).toEqual({ spikes: 1, strikes: 0, slower: true });
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});

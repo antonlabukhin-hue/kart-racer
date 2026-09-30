@@ -5371,3 +5371,10 @@ body:has(.reward-reveal) :is(#hud-speedo, #hud-menu-btn, #hud-pause-btn, #volume
 .big-plaque.smash { border-color: #ff9a1a; background: rgba(34,18,4,0.92); box-shadow: 0 0 30px rgba(255,150,30,0.55); }
 .big-plaque.smash b { color: #ffd23c; text-shadow: 0 0 14px rgba(255,150,30,.8); }
 .big-plaque.smash small { color: #ffe9c8; }
+
+/* ящик «?»: хороший исход — зелёно-золотая плашка, плохой (и шипы) — красная */
+.big-plaque.crate-good { border-color: #5aff8a; background: rgba(6,30,14,0.92); box-shadow: 0 0 30px rgba(90,255,138,0.45); }
+.big-plaque.crate-good b { color: #ffe066; text-shadow: 0 0 14px rgba(90,255,138,.7); }
+.big-plaque.crate-bad { border-color: #ff4a3c; background: rgba(36,6,6,0.92); box-shadow: 0 0 30px rgba(255,74,60,0.5); }
+.big-plaque.crate-bad b { color: #ff8a7a; text-shadow: 0 0 14px rgba(255,74,60,.7); }
+.big-plaque.crate-bad small { color: #ffd8d2; }

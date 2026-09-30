@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -6901,77 +6901,13 @@ function startGaragePreview(carId) {
             const BASE_FOV = (window.__portraitMode) ? 48 : (window.__isMobile ? 52 : 55);
 
             function createNitroArrows(z, lane) {
-                const group = new THREE.Group();
-                const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2;
-                const arrowMat = new THREE.MeshStandardMaterial({
-                    color: 0x22ff55,
-                    emissive: 0x11aa33,
-                    emissiveIntensity: 0.7,
-                    roughness: 0.4,
-                    metalness: 0.2
-                });
-                // Три шеврона на асфальте (как boost pad)
-                for (let i = 0; i < 3; i++) {
-                    const shape = new THREE.Shape();
-                    // rotation.x = -90°: local +Y → world -Z (направление игрока)
-                    // остриё в +Y → смотрит вперёд по трассе
-                    shape.moveTo(0, 0.40);           // остриё вперёд
-                    shape.lineTo(0.30, -0.05);
-                    shape.lineTo(0.12, -0.05);
-                    shape.lineTo(0.12, -0.32);
-                    shape.lineTo(-0.12, -0.32);
-                    shape.lineTo(-0.12, -0.05);
-                    shape.lineTo(-0.30, -0.05);
-                    shape.closePath();
-                    const geo = new THREE.ShapeGeometry(shape);
-                    const mesh = new THREE.Mesh(geo, arrowMat);
-                    mesh.rotation.x = -Math.PI / 2;
-                    // ряд стрелок: первая ближе к игроку, дальше по -Z
-                    mesh.position.set(0, 0.04, -i * 0.55);
-                    group.add(mesh);
-                }
-                // Свечение полосы
-                const glow = new THREE.Mesh(
-                    new THREE.PlaneGeometry(1.1, 2.0),
-                    new THREE.MeshBasicMaterial({ color: 0x33ff66, transparent: true, opacity: 0.15, side: THREE.DoubleSide })
-                );
-                glow.rotation.x = -Math.PI / 2;
-                glow.position.set(0, 0.025, -0.6);
-                group.add(glow);
-
+                const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2, group = nitroArrowsMesh(); // меш — src/pickups.js
                 group.position.set(x, 0, z);
                 scene.add(group);
                 return { mesh: group, x, z, type: 'nitro', active: true, bob: 0, radius: 0.7 };
             }
-
             function createHeartGum(z, lane) {
-                const group = new THREE.Group();
-                const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2;
-                // Сердечко из двух сфер + конус
-                const heartMat = new THREE.MeshStandardMaterial({
-                    color: 0xff3399,
-                    emissive: 0xaa1166,
-                    emissiveIntensity: 0.45,
-                    roughness: 0.35,
-                    metalness: 0.15
-                });
-                const s1 = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), heartMat);
-                s1.position.set(-0.1, 0.45, 0);
-                const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), heartMat);
-                s2.position.set(0.1, 0.45, 0);
-                const tip = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.28, 8), heartMat);
-                tip.position.set(0, 0.28, 0);
-                tip.rotation.x = Math.PI;
-                group.add(s1, s2, tip);
-                // Подставка-свечение
-                const glow = new THREE.Mesh(
-                    new THREE.CircleGeometry(0.35, 12),
-                    new THREE.MeshBasicMaterial({ color: 0xff66aa, transparent: true, opacity: 0.3 })
-                );
-                glow.rotation.x = -Math.PI / 2;
-                glow.position.y = 0.03;
-                group.add(glow);
-
+                const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2, group = heartGumMesh();
                 group.position.set(x, 0, z);
                 scene.add(group);
                 return { mesh: group, x, z, type: 'gum', active: true, bob: Math.random() * Math.PI * 2, radius: 0.55 };
@@ -7049,7 +6985,7 @@ function startGaragePreview(carId) {
             const gapCones = []; // сбиваемые конусы перед разломами
             // сносимые рекламные щиты 90-х (src/smash.js)
             const smashBoards = [];
-            let boardHintDone = false;
+            let boardHintDone = false; const crateParts = [];
             const smashParts = [];
             let pipeDrop = null; // промзона: падающая труба (src/mapevents.js)
             const setEvents = []; // трактор, ПАЗик, кран, магнит, бульдозер — по карте, случайно (src/landmarks.js)
@@ -7327,6 +7263,10 @@ function startGaragePreview(carId) {
                     if (it.kind === 'echip') { collectibles.push(createEChipItem(it.x != null ? it.x : LX[it.lane], it.y, z)); return; }
                     if (it.kind === 'vhs') { collectibles.push(createVhsItem(LX[it.lane], 0.75, z)); return; }
                     if (it.kind === 'power') { collectibles.push(createPowerItem(LX[it.lane], z, it.type)); return; }
+                    if (it.kind === 'crate' || it.kind === 'spikes') { // ящик «?» и шипы — src/hazards.js
+                        const m = it.kind === 'crate' ? createCrateMesh() : createSpikesMesh(); m.position.set(LX[it.lane], 0, z); scene.add(m);
+                        (it.kind === 'crate' ? collectibles : obstacles).push({ mesh: m, x: LX[it.lane], z: z, type: it.kind, active: true, bob: 0, radius: 0.75 }); return;
+                    }
                     if (it.kind === 'obstacle') { c = createObstacle(z, it.type === 'slide' ? themeAt(it.d).theme.slide : it.type); obstacles.push(c); }
                     else {
                         // случайное нитро — не ближе 45 ед. к арке с падающим грузом
@@ -8055,6 +7995,15 @@ function startGaragePreview(carId) {
             const cleanRun = createCleanRun(); if (ABILITY === 'armor') cleanRun.grantShield(); /* «Буханка»: старт с бронёй */ let _armorShown = false; const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
             let shieldMesh = null;
             /** Крупная выскакивающая плашка по центру (броня и т. п.) — один слот */
+            function grabPower(type) {
+                activatePower(powers, type);
+                if (ABILITY === 'cargo' && type === 'x2') powers.x2 *= 2; // «Пирожок» — ×2 вдвое дольше
+                stats.powers = (stats.powers || 0) + 1;
+                if (type === 'shield') { cleanRun.grantShield(); setShieldVisible(true); }
+                const pw = POWERS[type];
+                try { showBigPlaque(pw.icon + ' ' + pw.name.toUpperCase(), type === 'magnet' ? '«Е» сами летят к тебе — ' + powerTime('magnet', powers.lv.magnet) + ' с' : type === 'x2' ? 'Каждая «Е» за две — ' + powerTime('x2', powers.lv.x2) + ' с' : 'Следующий удар — не авария', 'armor'); } catch (e) {}
+                try { if (window.soundEngine) window.soundEngine.playSfx('pickup_nitro', 1); } catch (e) {}
+            }
             function showBigPlaque(title, sub, cls) {
                 document.querySelectorAll('.big-plaque').forEach(function(n) { try { n.remove(); } catch (e) {} });
                 const el = document.createElement('div');
@@ -8889,6 +8838,7 @@ function startGaragePreview(carId) {
                     }
                 }
                 if (smashParts.length) stepSmashParts(smashParts, deltaTime, scene);
+                if (crateParts.length) stepCrateParts(crateParts, deltaTime, scene);
                 // щит впереди — в первых заездах подсказка, что его можно снести (раз за заезд, 3 заезда)
                 if (gameState === 'racing' && !boardHintDone && smashBoards.some(function(b) { const d = zPos - b.z; return !b.smashed && d > 12 && d < 45; })) {
                     boardHintDone = true;
@@ -9188,9 +9138,14 @@ function startGaragePreview(carId) {
                     const dz = zPos - obs.z;
                     const hitR = (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') ? 0.55 : 0.42;
                     
-                    if (Math.abs(dx) < hitR && Math.abs(dz) < hitR) {
+                    if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && Math.abs(dz) < hitR) {
                         if (carAirborne || carYOffset > 0.45) {
                             // в прыжке ямы/кочки/масло не срабатывают
+                        } else if (obs.type === 'spikes') {
+                            // шипы: не авария, но скорость резко падает; шипы приминаются
+                            speed *= 0.5; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3;
+                            stats.spikes = (stats.spikes || 0) + 1;
+                            try { showBigPlaque('⚠ ШИПЫ!', 'Скорость упала — перепрыгни или объезжай', 'crate-bad'); if (window.soundEngine) window.soundEngine.playSfx('bump', 1.3); } catch (e) {}
                         } else if (ABILITY === 'offroad' && obs.type !== 'oil' && obs.type !== 'acid') {
                             // Нива-внедорожник: ямы, кочки, лёд и смола — не помеха (масло и кислота — да)
                             if (!obs._offroadShown) {
@@ -9447,6 +9402,7 @@ function startGaragePreview(carId) {
                     const dx = xPos - c.x;
                     const dz = zPos - c.z;
                     if (c.airOnly && carYOffset < (c.minY || 0.6)) return; // висит в воздухе — берётся только в прыжке
+                    if (c.type === 'crate' && carYOffset > 0.95) return; // ящик перепрыгнул
                     const hitR = c.type === 'nitro' ? 0.85 : (c.radius || 0.55);
                     if (Math.abs(dx) < hitR && Math.abs(dz) < hitR * (c.type === 'nitro' ? 1.4 : 1)) {
                         c.active = false;
@@ -9455,13 +9411,21 @@ function startGaragePreview(carId) {
                             stats.eChips = (stats.eChips || 0) + eValue(powers); // ×2 — каждая «Е» за две
                             try { if (window.soundEngine) window.soundEngine.playSfx('ring', 1); } catch (e) {} // «колечко», как в 16-битных играх
                         } else if (c.type === 'power') {
-                            activatePower(powers, c.power);
-                            if (ABILITY === 'cargo' && c.power === 'x2') powers.x2 *= 2; // «Пирожок» — ×2 вдвое дольше
-                            stats.powers = (stats.powers || 0) + 1;
-                            if (c.power === 'shield') { cleanRun.grantShield(); setShieldVisible(true); }
-                            const pw = POWERS[c.power];
-                            try { showBigPlaque(pw.icon + ' ' + pw.name.toUpperCase(), c.power === 'magnet' ? '«Е» сами летят к тебе — ' + powerTime('magnet', powers.lv.magnet) + ' с' : c.power === 'x2' ? 'Каждая «Е» за две — ' + powerTime('x2', powers.lv.x2) + ' с' : 'Следующий удар — не авария', 'armor'); } catch (e) {}
-                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup_nitro', 1); } catch (e) {}
+                            grabPower(c.power);
+                        } else if (c.type === 'crate') {
+                            // ящик «?»: разлетается досками, внутри — случайный исход (src/hazards.js)
+                            breakCrate(scene, c.x, c.z, Math.abs(speed) * 60).forEach(function(pt) { crateParts.push(pt); });
+                            const o = rollCrate();
+                            stats.crates = (stats.crates || 0) + 1;
+                            if (POWERS[o.id]) grabPower(o.id);
+                            else {
+                                if (o.id === 'nitro') nitroTimer = NITRO_TIME;
+                                else if (o.chips) stats.eChips = (stats.eChips || 0) + o.chips;
+                                else if (o.id === 'slow') speed *= 0.55;
+                                else if (o.id === 'oil') { oilSlideTimer = 1.4; speed *= 0.85; xVelocity += (Math.random() < 0.5 ? -1 : 1) * 0.9; }
+                                try { showBigPlaque(o.icon + ' ' + o.title, o.sub, o.good ? 'crate-good' : 'crate-bad'); } catch (e) {}
+                                try { if (window.soundEngine) window.soundEngine.playSfx(o.good ? 'pickup_nitro' : 'bump', 1); } catch (e) {}
+                            }
                         } else if (c.type === 'vhs') {
                             stats.vhs = (stats.vhs || 0) + 1;
                             try { showBigPlaque('📼 ВИДЕОКАССЕТА!', 'Редкая валюта — копи на особую машину', 'armor'); } catch (e) {}
