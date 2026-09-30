@@ -125,7 +125,7 @@ export const SEASON_REWARDS = [
 
 export const DAILY_CONTRACTS = [
     { id: 'fin_2crash', title: 'Аккуратный рейс', desc: 'Финиш с ≤2 авариями', check: m => m.state==='win' && m.strikes<=2, xp: 100, chips: 260 },
-    { id: 'gum2', title: 'Сладкий груз', desc: 'Финиш и собери ≥2 жвачки', check: m => m.state==='win' && (m.gumPicked||0)>=2, xp: 90, chips: 310 },
+    { id: 'gum2', title: 'Сладкий груз', desc: 'Финиш и собери ≥2 сердечка', check: m => m.state==='win' && (m.gumPicked||0)>=2, xp: 90, chips: 310 },
     { id: 'nitro1', title: 'Зелёная стрела', desc: 'Финиш, взяв нитро ≥1', check: m => m.state==='win' && (m.nitroPicked||0)>=1, xp: 80, chips: 210 },
     { id: 'no_nitro', title: 'На своих двоих', desc: 'Финиш без нитро', check: m => m.state==='win' && (m.nitroPicked||0)===0, xp: 100, chips: 260 },
     { id: 'night', title: 'Ночная смена', desc: 'Финиш в погоде «Ночь»', check: m => m.state==='win' && m.weather==='night', xp: 110, chips: 320 },
