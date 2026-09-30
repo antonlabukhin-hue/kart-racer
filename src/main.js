@@ -9433,7 +9433,7 @@ function startGaragePreview(carId) {
                             stats.gumPicked++;
                             radioSay(RADIO_LINES.gum[Math.floor(Math.random()*RADIO_LINES.gum.length)]);
                             if (strikes > 0) {
-                                strikes = Math.max(0, strikes - 1);
+                                strikes = Math.max(0, strikes - (ABILITY === 'dacha' ? 2 : 1)); // «Сарай» — дачник
                                 showTimePenaltyPopup(0, '❤️ −1 авария');
                                 const el = document.createElement('div');
                                 el.className = 'animal-shout';
