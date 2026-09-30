@@ -5378,3 +5378,31 @@ body:has(.reward-reveal) :is(#hud-speedo, #hud-menu-btn, #hud-pause-btn, #volume
 .big-plaque.crate-bad { border-color: #ff4a3c; background: rgba(36,6,6,0.92); box-shadow: 0 0 30px rgba(255,74,60,0.5); }
 .big-plaque.crate-bad b { color: #ff8a7a; text-shadow: 0 0 14px rgba(255,74,60,.7); }
 .big-plaque.crate-bad small { color: #ffd8d2; }
+
+/* первое знакомство: пауза и плашка «что это на дороге» (src/first-meet.js) */
+.meet-overlay { position: fixed; inset: 0; z-index: 9500; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;
+    background: radial-gradient(circle at 50% 45%, rgba(0,0,0,0.25), rgba(0,0,0,0.7)); animation: meetFade .2s ease-out both; }
+.meet-card { position: relative; width: min(380px, 100%); padding: 22px 20px 14px; border-radius: 20px; text-align: center; color: #fff;
+    background: linear-gradient(180deg, #2a1f38, #17111f); border: 2px solid #ffd23c; box-shadow: 0 0 40px rgba(255,210,60,0.35), 0 16px 40px rgba(0,0,0,0.6);
+    animation: rrPop .45s cubic-bezier(.2,1.6,.4,1) both; }
+.meet-new { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; background: #ffd23c; color: #1a1200;
+    font-size: 11px; font-weight: 900; letter-spacing: 0.08em; white-space: nowrap; }
+.meet-ico { display: grid; place-items: center; width: 64px; height: 64px; margin: 4px auto 8px; border-radius: 50%; font-style: normal; font-size: 34px; font-weight: 900;
+    color: #ffd23c; background: rgba(255,210,60,0.12); border: 2px solid rgba(255,210,60,0.6); }
+.meet-title { display: block; font-size: 24px; font-weight: 900; color: #ffe066; }
+.meet-text { margin: 8px 0 16px; font-size: 15px; font-weight: 600; line-height: 1.4; color: #e8e2f2; }
+.meet-go { display: block; width: 100%; min-height: 52px; border: 0; border-radius: 14px; cursor: pointer; font: 900 19px system-ui, sans-serif;
+    background: linear-gradient(180deg, #ffe066, #ffb000); color: #1a1000; box-shadow: 0 5px 0 #a86a00; }
+.meet-go:active { transform: translateY(3px); box-shadow: 0 2px 0 #a86a00; }
+.meet-off { margin-top: 10px; border: 0; background: none; color: #9a92a8; font-size: 12px; text-decoration: underline; cursor: pointer; }
+@keyframes meetFade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-height: 500px) {
+    .meet-card { width: min(460px, 100%); padding: 16px 16px 8px; display: grid; grid-template-columns: 56px 1fr; column-gap: 12px; text-align: left; align-items: center; }
+    .meet-ico { grid-row: 1 / 3; width: 52px; height: 52px; font-size: 26px; margin: 0; }
+    .meet-title { font-size: 19px; }
+    .meet-text { margin: 2px 0 8px; font-size: 13px; }
+    .meet-go, .meet-off { grid-column: 1 / -1; }
+    .meet-go { min-height: 44px; font-size: 17px; }
+    .meet-off { margin-top: 4px; }
+}
+body:has(.meet-overlay) #pause-overlay { display: none !important; }
