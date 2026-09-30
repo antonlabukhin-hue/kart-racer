@@ -62,7 +62,7 @@
             "event": 0.7,
             "segments": [
                 {
-                    "type": "fork",
+                    "type": "roadworks",
                     "at": 0.43
                 },
                 {
@@ -100,7 +100,7 @@
                     "at": 0.42
                 },
                 {
-                    "type": "fork",
+                    "type": "tunnel",
                     "at": 0.6
                 }
             ]

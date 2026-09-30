@@ -63,13 +63,18 @@ export function showWordInfo(s) {
             : 'Буквы лежат на бесконечной трассе — по одной, всегда та, что нужна. Собери слово за день: <b>+' + r.chips + ' Е</b>' + (r.vhs ? ' и 📼' : '') + '. Каждый день подряд — награда больше.') + '</p>');
 }
 
-/** Карточки в меню: слово дня и место в таблице */
+/** Карточки в меню: слово дня и место в таблице недели (с fetchOnline — в мировой, ответ сервера держим минуту) */
+let worldCache = null;
 export function renderMenuExtras(o) {
     const w = document.getElementById('mm-word-text');
     if (w) w.textContent = o.word.done ? '✔ ' + o.word.word : wordProgress(o.word.word, o.word.got);
     const b = document.getElementById('mm-board-text');
-    if (b) {
-        const rows = topRuns(o.list, 'week', o.now, o.me), my = rankOf(rows, o.me);
-        b.textContent = my ? '#' + my + ' на неделе' : 'соперники ждут';
-    }
+    if (!b) return;
+    const show = function(online) {
+        const rows = topRuns((online || []).concat(o.list), 'week', o.now, o.me), my = rankOf(rows, o.me);
+        b.textContent = my ? '#' + my + (online ? ' в мире за неделю' : ' на неделе') : 'соперники ждут';
+    };
+    show(worldCache && worldCache.list);
+    if (!o.fetchOnline || (worldCache && Date.now() - worldCache.at < 60000)) return;
+    o.fetchOnline('week').then(function(list) { if (list) { worldCache = { list: list, at: Date.now() }; show(list); } });
 }

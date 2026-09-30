@@ -11,7 +11,7 @@ export const BOSS_ZONE = [0.42, 0.75];
 export const MIN_SPACING = 0.05;
 
 // новые участки: длина в единицах трассы; доля — от самой короткой трассы (1320 ед. пути)
-export const SEGMENT_LEN = { roadworks: 60, fork: 80, tunnel: 90 };
+export const SEGMENT_LEN = { roadworks: 60, tunnel: 90 };
 export const SEGMENT_MARGIN = 0.03;
 const MIN_SPAN = 1320;
 export function segmentSpan(seg) {

@@ -40,12 +40,12 @@ describe('трассы из данных', () => {
             expect(l.segments.length, m).toBeGreaterThanOrEqual(2);
             l.segments.forEach(sg => types.add(sg.type));
         });
-        expect([...types].sort()).toEqual(['fork', 'roadworks', 'tunnel']);
+        expect([...types].sort()).toEqual(['roadworks', 'tunnel']); // развилку со стеной убрали — звери и попутки проходили сквозь неё
     });
 
     it('проверка ловит наслоение участков', () => {
         expect(validateLayout({ gaps: [0.23], debris: [0.6], event: 0.72, segments: [{ type: 'tunnel', at: 0.2 }] }).join()).toContain('наслаиваются');
-        expect(validateLayout({ gaps: [0.23], debris: [0.6], event: 0.72, segments: [{ type: 'fork', at: 0.4 }, { type: 'tunnel', at: 0.44 }] }).join()).toContain('fork и tunnel');
+        expect(validateLayout({ gaps: [0.23], debris: [0.6], event: 0.72, segments: [{ type: 'roadworks', at: 0.4 }, { type: 'tunnel', at: 0.42 }] }).join()).toContain('roadworks и tunnel');
         expect(validateLayout({ gaps: [0.23], debris: [0.6], event: 0.72, segments: [{ type: 'lava', at: 0.4 }] }).join()).toContain('неизвестный');
     });
 
