@@ -5217,15 +5217,20 @@ html.touch-ui.touch-land body.race-mode .crash-tag { top: calc(env(safe-area-ins
 @media (orientation: portrait) and (max-width: 700px) { :root { --menu-z: 1.2; } }
 
 /* заставка: вместо картинки — 3D «кино» с машиной игрока (src/menu-bg.js, intro); картинка — если 3D не запустилось */
-#splash-screen .splash-title { display: none; }
-body.menu-live #splash-screen { background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.7) 100%); justify-content: flex-end; padding-bottom: max(40px, env(safe-area-inset-bottom)); }
-body.menu-live #splash-screen img { display: none; }
-body.menu-live #splash-screen .splash-title {
+/* до 3D — тёмный экран с названием (без мелькания старой картинки); картинка — только если 3D не запустилось */
+#splash-screen img { display: none; }
+body.splash-fallback #splash-screen img { display: block; }
+#splash-screen { transition: background 0.8s ease; }
+#splash-screen { justify-content: flex-end !important; padding-bottom: max(40px, env(safe-area-inset-bottom)); }
+body.menu-live #splash-screen { background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.7) 100%); }
+body.splash-fallback #splash-screen { justify-content: center !important; }
+body.splash-fallback #splash-screen .splash-title { display: none; }
+#splash-screen .splash-title {
     display: block; text-align: center; font: 900 clamp(34px, 9vw, 72px)/1 system-ui, 'Segoe UI', sans-serif; letter-spacing: 3px;
     color: #ffd23c; text-shadow: 0 4px 0 #8a3a00, 0 8px 24px rgba(0,0,0,0.8); animation: splashIn 0.9s ease-out both;
 }
-body.menu-live #splash-screen .splash-title small { display: block; margin-top: 10px; font-size: clamp(14px, 3.6vw, 20px); font-weight: 700; letter-spacing: 1px; color: #ffe9c0; text-shadow: 0 2px 8px #000; }
-body.menu-live #splash-screen .hint { color: #fff; font-size: 18px; font-weight: 800; margin-top: 22px; text-shadow: 0 2px 8px #000; }
+#splash-screen .splash-title small { display: block; margin-top: 10px; font-size: clamp(14px, 3.6vw, 20px); font-weight: 700; letter-spacing: 1px; color: #ffe9c0; text-shadow: 0 2px 8px #000; }
+#splash-screen .hint { color: #fff; font-size: 18px; font-weight: 800; margin-top: 22px; text-shadow: 0 2px 8px #000; }
 @keyframes splashIn { from { opacity: 0; transform: translateY(24px) scale(0.92); } to { opacity: 1; transform: none; } }
 
 /* ===== «Машины»: витрина как выбор персонажа в Subway Surfers ===== */

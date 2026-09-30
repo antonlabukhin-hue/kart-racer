@@ -127,7 +127,7 @@ export function planStretch(d0, d1, rnd, opts) {
         if (at != null) out.push({ kind: 'power', d: at, lane: lane(), type: POWER_KINDS[Math.floor(r() * POWER_KINDS.length)] });
     }
     // видеокассета — редкость: ~1 на 1.7 км (иногда 2), за длинный заезд 1–3
-    const vhsN = Math.floor((d1 - d0) / VHS_EVERY + r());
+    const vhsN = Math.floor((d1 - d0) / VHS_EVERY * (o.vhsMul || 1) + r()); // vhsMul — «Мечта»-везунчик: вдвое чаще
     for (let i = 0; i < vhsN; i++) {
         const at = spot(d0 + 40 + r() * Math.max(0, d1 - d0 - 300));
         if (at != null) out.push({ kind: 'vhs', d: at, lane: lane() });

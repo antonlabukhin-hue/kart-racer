@@ -61,6 +61,10 @@ describe('план участка', () => {
         expect(n).toBeGreaterThanOrEqual(12);
         expect(n).toBeLessThanOrEqual(35);
         expect(VHS_EVERY).toBe(1700);
+        // «Мечта» (vhsMul 2) — вдвое чаще
+        let n2 = 0;
+        for (let k = 0; k < 20; k++) n2 += planStretch(k * 1720, (k + 1) * 1720, seq(100 + k), { vhsMul: 2 }).items.filter(i => i.kind === 'vhs').length;
+        expect(n2).toBeGreaterThan(n * 1.5);
         // кассета и усиление — не в цепочке «Е»: ближайшая «Е» дальше 18 ед.
         const p = planStretch(0, 20000, seq(21)).items;
         const es = p.filter(i => i.kind === 'echip').map(i => i.d);

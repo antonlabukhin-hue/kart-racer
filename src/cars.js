@@ -46,12 +46,27 @@ export function buildShowroomCar(carId) {
     const isJeep = carId === 'kirpich';
     const isSport = carId === 'turbo';
     const isHatch = carId === 'zubilo'; // «Зубило»: клиновидная «девятка» 90-х с тюнингом
+    const isUaz = carId === 'buhanka';  // «Буханка»: скруглённый фургон-вездеход, кабина во всю длину, без капота
+    const isRaf = carId === 'rafik';    // «Рафик»: микроавтобус «скорой» с наклонным носом
+    const isVan = isUaz || isRaf;       // кузов-фургон: верх — кузов с окнами полосой
+    if (isRaf) [bodyMat, bodyMat2].forEach(function(m) { m.metalness = 0.12; m.roughness = 0.45; }); // белая эмаль «скорой», не серый металлик
+    const isHump = carId === 'gorbaty'; // «Горбатый»: крошка-«горбатый» с мотором сзади, покатая крыша до кормы
+    const isLux = carId === 'shestisot'; // «Шестисотый»: длинный чёрный седан 90-х — хром, тонировка
+    if (isLux) [bodyMat, bodyMat2].forEach(function(m) { m.metalness = 0.65; m.roughness = 0.18; }); // лак «как зеркало»
+    const isWagon = carId === 'saray'; // «Сарай»: универсал «на дачу» — длинная крыша до кормы, багажник с поклажей
+    const isGaz = carId === 'gazel'; // «Газель»: короткий нос, наклонное лобовое, кузов под синим тентом
+    if (isGaz) [bodyMat, bodyMat2].forEach(function(m) { m.metalness = 0.12; m.roughness = 0.45; }); // белая кабина — эмаль, не серый металлик
+    const isCabrio = carId === 'mechta'; // «Мечта»: кабриолет 90-х — без крыши, светлый салон, хромовая дуга
+    const isPie = carId === 'pirozhok'; // «Пирожок»: легковой нос и кабина, сзади — высокая будка «ХЛЕБ»
+    const isRocket = carId === 'raketa'; // «Ракета»: низкий спорткар-клин 90-х, фары поднимаются из капота
+    const wedge = isHatch || isHump || isRocket;    // лобовое и корма — скосами (клинья), а не вертикальными стенками
+    if (isRocket) [bodyMat, bodyMat2].forEach(function(m) { m.metalness = 0.25; m.roughness = 0.3; }); // сочный жёлтый, не горчичный металлик
 
     // --- габариты ---
-    const bodyH = isJeep ? 0.52 : (isSport ? 0.32 : (isHatch ? 0.36 : 0.4));
-    const bodyY = isJeep ? 0.48 : 0.42;
-    const bodyL = isJeep ? 2.0 : (isSport ? 2.45 : (isHatch ? 2.2 : 2.25));
-    const bodyW = isJeep ? 1.28 : 1.22;
+    const bodyH = isJeep ? 0.52 : isLux ? 0.38 : isRocket ? 0.3 : isGaz ? 0.42 : (isSport ? 0.32 : (isHatch ? 0.36 : (isRaf ? 0.42 : isVan ? 0.46 : (isHump ? 0.34 : 0.4))));
+    const bodyY = isJeep ? 0.48 : isRocket ? 0.36 : isGaz ? 0.52 : (isRaf ? 0.48 : isVan ? 0.52 : (isHump ? 0.4 : 0.42));
+    const bodyL = isJeep ? 2.0 : isLux ? 2.6 : isRocket ? 2.4 : isGaz ? 2.55 : (isSport ? 2.45 : (isHatch ? 2.2 : (isRaf ? 2.25 : isVan ? 2.05 : (isHump ? 1.82 : 2.25))));
+    const bodyW = isJeep ? 1.28 : isLux ? 1.3 : isRocket ? 1.32 : isGaz ? 1.3 : (isRaf ? 1.24 : isVan ? 1.26 : (isHump ? 1.1 : 1.22));
 
     // 1) Кузов
     // кузов скруглён: «игрушечный» силуэт читается лучше острых коробок
@@ -59,7 +74,7 @@ export function buildShowroomCar(carId) {
     main.position.y = bodyY; main.userData.bodyPaint = true; group.add(main);
 
     // Расширители арок
-    const archZ = isJeep ? 0.58 : 0.72;
+    const archZ = isJeep ? 0.58 : isLux ? 0.84 : isGaz ? 0.82 : (isRaf ? 0.72 : isVan ? 0.66 : (isHump ? 0.56 : 0.72));
     [-1, 1].forEach(side => {
         const f = new THREE_REF.Mesh(new RoundedBoxGeometry(0.12, bodyH * 0.65, isJeep ? 0.42 : 0.55, 2, 0.04), bodyMat2.clone());
         f.position.set(side * (bodyW / 2 + 0.01), bodyY - 0.02, archZ);
@@ -68,7 +83,7 @@ export function buildShowroomCar(carId) {
     });
 
     // 2) Капот (короткий у Нивы, спереди = -Z)
-    const hoodLen = isJeep ? 0.48 : (isSport ? 1.03 : (isHatch ? 0.62 : 0.7)); // Волга капот ещё +10%
+    const hoodLen = isJeep ? 0.48 : isLux ? 0.86 : isRocket ? 0.72 : isGaz ? 0.46 : (isSport ? 1.03 : (isHatch ? 0.62 : (isVan ? 0.4 : (isHump ? 0.5 : 0.7)))); // Волга капот ещё +10%
     const hood = new THREE_REF.Mesh(
         new RoundedBoxGeometry(bodyW * 0.9, 0.09, hoodLen, 2, 0.035),
         bodyMat2.clone()
@@ -76,42 +91,47 @@ export function buildShowroomCar(carId) {
     hood.position.set(0, bodyY + bodyH * 0.5 - 0.02, -bodyL * 0.5 + hoodLen * 0.55);
     if (isSport) hood.rotation.x = 0.06;
     if (isHatch) { hood.rotation.x = 0.1; hood.position.y -= 0.02; } // клин: капот падает к носу
-    hood.userData.bodyPaint = true; group.add(hood);
+    if (isRocket) { hood.rotation.x = 0.08; hood.position.y -= 0.015; } // клин к носу
+    if (isHump) { hood.rotation.x = 0.16; hood.position.y -= 0.03; } // «горбатый»: круглый нос-багажник
+    hood.userData.bodyPaint = true; if (!isVan) group.add(hood); // у «Буханки» капота нет — мотор под кабиной
 
     // Багажник только у седана/спорта
-    if (!isJeep && !isHatch) {
+    if (!isJeep && !wedge && !isVan && !isPie && !isWagon && !isGaz) {
         const trunk = new THREE_REF.Mesh(
-            new RoundedBoxGeometry(bodyW * 0.9, 0.12, 0.45, 2, 0.04),
+            new RoundedBoxGeometry(bodyW * 0.9, 0.12, isLux ? 0.62 : 0.45, 2, 0.04),
             bodyMat2.clone()
         );
-        trunk.position.set(0, bodyY + bodyH * 0.4, bodyL * 0.32);
+        trunk.position.set(0, bodyY + bodyH * 0.4, bodyL * (isLux ? 0.34 : 0.32));
         trunk.userData.bodyPaint = true; group.add(trunk);
     }
 
     // 3) Кабина: высокая, зад вровень с кузовом
-    const cabinH = isJeep ? 0.56 : (isHatch ? 0.33 : 0.4);
-    const cabinLen = isJeep ? 1.21 : (isHatch ? 0.78 : 0.95); // Нива +15% к капоту; «Зубило» — короткая крыша между скосами
-    const cabinZ = isJeep ? (bodyL * 0.5 - cabinLen * 0.5 - 0.01) : (isSport ? 0.1 : (isHatch ? 0.2 : 0.05));
+    const cabinH = isJeep ? 0.56 : isRocket ? 0.28 : isGaz ? 0.5 : isCabrio ? 0.34 : (isHatch ? 0.33 : (isRaf ? 0.6 : isVan ? 0.56 : (isHump ? 0.34 : 0.4)));
+    const cabinLen = isJeep ? 1.21 : isLux ? 1.08 : isRocket ? 0.52 : isWagon ? 1.5 : isGaz ? 0.6 : (isHatch ? 0.78 : (isRaf ? 1.72 : isVan ? 1.98 : (isHump ? 0.5 : (isPie ? 0.7 : 0.95)))); // Нива +15% к капоту; «Зубило» — короткая крыша между скосами
+    const cabinZ = isJeep ? (bodyL * 0.5 - cabinLen * 0.5 - 0.01) : isLux ? 0.16 : isRocket ? 0.22 : isWagon ? 0.33 : isGaz ? -0.45 : (isSport ? 0.1 : (isHatch ? 0.2 : (isRaf ? 0.26 : isVan ? 0 : (isHump ? -0.02 : (isPie ? -0.1 : 0.05)))));
     // «девятка»: лобовое — плавный скос вперёд над капотом, пятая дверь — резкий скос назад
-    const hatchF = isHatch ? 0.52 : 0, hatchR = isHatch ? 0.3 : 0;
+    const hatchF = isHatch ? 0.52 : (isHump ? 0.3 : (isRocket ? 0.62 : 0)), hatchR = isHatch ? 0.3 : (isHump ? 0.6 : (isRocket ? 0.5 : 0));
     const cabinY = bodyY + bodyH * 0.5 + cabinH * 0.5;
 
     // Кабина: стекло как у остальных машин (прозрачное), каркас — тонкие стойки
     const cabinShell = new THREE_REF.Mesh(
-        new RoundedBoxGeometry(bodyW * 0.88, cabinH, cabinLen, 2, 0.06),
+        isVan ? new RoundedBoxGeometry(bodyW * 0.96, cabinH, cabinLen, 4, 0.16) : new RoundedBoxGeometry(bodyW * 0.88, cabinH, cabinLen, 2, 0.06),
         glassMat.clone()
     );
     cabinShell.position.set(0, cabinY, cabinZ);
     cabinShell.material.transparent = true;
     cabinShell.material.opacity = isJeep ? 0.38 : 0.55;
-    cabinShell.material.color.setHex(isJeep ? 0x88b0cc : 0x1a3048);
+    cabinShell.material.color.setHex(isJeep ? 0x88b0cc : isLux ? 0x0a0c10 : 0x1a3048);
+    if (isLux) cabinShell.material.opacity = 0.82; // тонировка «в ноль»
     cabinShell.material.depthWrite = false;
     cabinShell.material.metalness = 0.35;
     cabinShell.material.roughness = 0.12;
+    if (isVan) { cabinShell.material = bodyMat2.clone(); cabinShell.userData.bodyPaint = true; }
+    if (isCabrio) cabinShell.visible = false; // кабриолет — салон открыт // верх «Буханки» — кузов, окна — полосой ниже
     group.add(cabinShell);
     const cabin = cabinShell; // alias для antenna / roof_rack
-    // Стойки кабины (Нива и седаны) — чёрная рамка, не перекрывает стёкла
-    {
+    // Стойки кабины (Нива и седаны) — чёрная рамка, не перекрывает стёкла; у «Буханки» верх — кузов, стоек нет
+    if (!isVan && !isCabrio) {
         const postMat = new THREE_REF.MeshStandardMaterial({ color: 0x111111, roughness: 0.85, metalness: 0.2 });
         const postW = 0.045;
         const postH = cabinH * 0.92;
@@ -131,7 +151,7 @@ export function buildShowroomCar(carId) {
             bodyMat2.clone()
         );
         roof.position.set(0, cabinY + cabinH * 0.5 + 0.02, cabinZ);
-        roof.userData.bodyPaint = true; group.add(roof);
+        roof.userData.bodyPaint = true; if (!isCabrio) group.add(roof);
     }
 
     // 4) Стёкла — только в проёмах (тонкие, в плоскости стенок)
@@ -139,7 +159,8 @@ export function buildShowroomCar(carId) {
         const gMat = glassMat.clone();
         gMat.transparent = true;
         gMat.opacity = isJeep ? 0.36 : 0.48;
-        gMat.color.setHex(0xa8c8e0);
+        gMat.color.setHex(isLux ? 0x141820 : 0xa8c8e0);
+        if (isLux) gMat.opacity = 0.85;
         gMat.depthWrite = false;
         gMat.metalness = 0.4;
         gMat.roughness = 0.1;
@@ -151,6 +172,23 @@ export function buildShowroomCar(carId) {
         );
         wind.position.set(0, cabinY, cabinZ - cabinLen * 0.5 - 0.025);
         group.add(wind);
+        if (isRaf || isGaz) {
+            // «Рафик», «Газель»: лобовое — наклонный стеклянный клин от носа к кабине
+            wind.visible = false;
+            const runN = isGaz ? 0.34 : 0.4, riseN = cabinH * (isGaz ? 0.8 : 0.84), wN = bodyW * (isGaz ? 0.86 : 0.9);
+            const tn = new THREE_REF.Shape(); tn.moveTo(0, 0); tn.lineTo(runN, 0); tn.lineTo(0, riseN); tn.closePath();
+            const wg = new THREE_REF.ExtrudeGeometry(tn, { depth: wN, bevelEnabled: false });
+            wg.rotateY(Math.PI / 2); wg.translate(-wN / 2, 0, 0);
+            const nm = gMat.clone(); nm.opacity = 0.86; nm.color.setHex(0x2a3a4a);
+            const nose = new THREE_REF.Mesh(wg, nm);
+            nose.position.set(0, bodyY + bodyH * 0.5 - 0.005, cabinZ - cabinLen * 0.5); group.add(nose);
+            const angN = Math.atan2(riseN, runN), lenN = Math.hypot(riseN, runN);
+            [-1, 1].forEach(function(sx) {
+                const pst = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.05, 0.05, lenN), bodyMat2.clone());
+                pst.position.set(sx * wN * 0.5, bodyY + bodyH * 0.5 + riseN * 0.5, cabinZ - cabinLen * 0.5 - runN * 0.5);
+                pst.rotation.x = -angN; pst.userData.bodyPaint = true; group.add(pst);
+            });
+        }
 
         // Заднее (+Z)
         const rearG = new THREE_REF.Mesh(
@@ -159,7 +197,9 @@ export function buildShowroomCar(carId) {
         );
         rearG.position.set(0, cabinY, cabinZ + cabinLen * 0.5 + 0.025);
         group.add(rearG);
-        if (isHatch) {
+        if (isPie || isGaz || isCabrio) rearG.visible = false;
+        if (isCabrio) { wind.scale.y = 0.62; wind.position.y = cabinY - cabinH * 0.16; wind.rotation.x = -0.35; } // низкое наклонное лобовое // заднее стекло кабины «Пирожка» упирается в будку
+        if (wedge) {
             // наклонная пятая дверь: стеклянный клин от крыши к корме (вместо вертикального заднего стекла)
             rearG.visible = false;
             const run = hatchR, rise = cabinH + 0.02, w = bodyW * 0.86;
@@ -172,9 +212,11 @@ export function buildShowroomCar(carId) {
             hatch.position.set(0, bodyY + bodyH * 0.5 - 0.005, cabinZ + cabinLen * 0.5);
             hatch.userData.bodyPaint = true; group.add(hatch);
             const ang = Math.atan2(rise, run), len = Math.hypot(rise, run);
-            const hg = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(w * 0.84, 0.02, len * 0.8), gMat.clone());
+            // у «Горбатого» стекло — только верхняя часть длинного ската (ниже — крышка мотора)
+            const gk = isHump ? 0.42 : 0.8, gf = isHump ? 0.24 : 0.5;
+            const hg = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(w * 0.84, 0.02, len * gk), gMat.clone());
             // на наклонной грани, чуть снаружи (нормаль грани — вверх-назад)
-            hg.position.set(0, bodyY + bodyH * 0.5 + rise * 0.5 + Math.cos(ang) * 0.012, cabinZ + cabinLen * 0.5 + run * 0.5 + Math.sin(ang) * 0.012);
+            hg.position.set(0, bodyY + bodyH * 0.5 + rise * (1 - gf) + Math.cos(ang) * 0.012, cabinZ + cabinLen * 0.5 + run * gf + Math.sin(ang) * 0.012);
             hg.rotation.x = ang; group.add(hg);
             // лобовое: плавный стеклянный клин вперёд над капотом (вместо вертикального), стойки по скосу
             wind.visible = false;
@@ -218,7 +260,7 @@ export function buildShowroomCar(carId) {
     }
 
     // Тонкие стойки (A/C) — не толстые чёрные панели
-    {
+    if (!isVan && !isCabrio) {
         const hz = cabinLen * 0.42;
         [[-1, cabinZ - hz], [1, cabinZ - hz], [-1, cabinZ + hz], [1, cabinZ + hz]].forEach(([sx, z]) => {
             const p = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.04, cabinH * 0.85, 0.04), blackMat);
@@ -238,18 +280,30 @@ export function buildShowroomCar(carId) {
     // 5) Решётка
     {
         const grillZ = -bodyL * 0.5 - 0.01;
-        const grillY = isJeep ? bodyY + 0.02 : 0.42;
+        const grillY = (isJeep || isVan) ? bodyY + 0.02 : 0.42;
         const grillG = new THREE_REF.Group();
-        if (isJeep) {
-            const frame = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.38, 0.24, 0.04), blackMat);
+        if (isJeep || isVan) {
+            const frame = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * (isVan ? 0.32 : 0.38), 0.24, 0.04), blackMat);
             frame.position.set(0, grillY, grillZ); grillG.add(frame);
             for (let i = 0; i < 4; i++) {
-                const bar = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.34, 0.02, 0.025), chromeMat.clone());
+                const bar = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * (isVan ? 0.28 : 0.34), 0.02, 0.025), chromeMat.clone());
                 bar.position.set(0, grillY - 0.08 + i * 0.05, grillZ - 0.02);
                 grillG.add(bar);
             }
-        } else if (isHatch) {
-            // «Зубило»: узкая щель решётки между фарами
+        } else if (isLux) {
+            // «Шестисотый»: высокая хромовая решётка с вертикальными рёбрами
+            const fr = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.3, 0.2, 0.05), chromeMat.clone());
+            fr.position.set(0, 0.46, grillZ); grillG.add(fr);
+            for (let i = 0; i < 7; i++) {
+                const rb = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.018, 0.16, 0.03), blackMat);
+                rb.position.set(-bodyW * 0.12 + i * (bodyW * 0.24 / 6), 0.46, grillZ - 0.02); grillG.add(rb);
+            }
+        } else if (isHump) {
+            // «Горбатый»: решётки нет (мотор сзади) — хромовые «усы» под носом
+            const mus = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.56, 0.035, 0.04), chromeMat.clone());
+            mus.position.set(0, 0.38, grillZ); grillG.add(mus);
+        } else if (isHatch || isRocket) {
+            // «Зубило», «Ракета»: узкая щель решётки
             const slit = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.3, 0.05, 0.04), blackMat);
             slit.position.set(0, 0.44, grillZ); grillG.add(slit);
         } else if (isSport) {
@@ -270,11 +324,13 @@ export function buildShowroomCar(carId) {
 
     // 7) Фары — корпус и линза СОСНО (один x,y; линза чуть вперёд по -Z)
     {
-        const hlY = isJeep ? bodyY + 0.04 : (isSport ? 0.42 : 0.44);
-        const hlZ = -bodyL * 0.5 - (isJeep ? 0.02 : 0.04);
-        const hlX = isJeep ? bodyW * 0.33 : (isHatch ? bodyW * 0.33 : bodyW * 0.40);
+        const hlY = (isJeep || isVan) ? bodyY + 0.04 : (isSport ? 0.42 : (isHump ? 0.47 : 0.44));
+        const hlZ = -bodyL * 0.5 - ((isJeep || isVan || isHump) ? 0.02 : 0.04);
+        const hlX = isJeep ? bodyW * 0.33 : (isHatch ? bodyW * 0.33 : isLux ? bodyW * 0.35 : isWagon ? bodyW * 0.34 : isCabrio ? bodyW * 0.34 : (isVan ? bodyW * 0.36 : (isHump ? bodyW * 0.36 : bodyW * 0.40)));
         [-1, 1].forEach(side => {
-            if (isJeep) {
+            if (isRocket) {
+                // «Ракета»: фары поднимаются из капота — в блоке «Ракеты»
+            } else if (isJeep || isVan || isHump) {
                 // хромированный корпус (короткий цилиндр вдоль Z)
                 const cup = new THREE_REF.Mesh(
                     new THREE_REF.CylinderGeometry(0.085, 0.09, 0.07, 14),
@@ -292,8 +348,8 @@ export function buildShowroomCar(carId) {
                 lens.position.set(side * hlX, hlY, hlZ - 0.036);
                 lens.userData.isLight = true;
                 group.add(lens);
-            } else if (isHatch) {
-                // узкие прямоугольные фары «девятки»
+            } else if (isHatch || isLux || isWagon || isCabrio) {
+                // узкие прямоугольные фары («девятка», «шестисотый»)
                 const shell = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.34, 0.09, 0.08), blackMat);
                 shell.position.set(side * hlX, hlY, hlZ);
                 group.add(shell);
@@ -316,7 +372,7 @@ export function buildShowroomCar(carId) {
     }
 
     // Стоп-сигналы (не спорт — у Волги свои горизонтальные ниже)
-    if (!isSport && !isHatch) {
+    if (!isSport && !isHatch && !isHump && !isLux && !isRocket && !isWagon && !isCabrio) {
         const tlMat = tailMat.clone();
         tlMat.emissiveIntensity = 1.5;
         const stopY = isJeep ? (bodyY + 0.08) : 0.50;
@@ -340,7 +396,7 @@ export function buildShowroomCar(carId) {
     underglow.position.y = 0.06; underglow.userData.bodyPaint = true; group.add(underglow);
 
     // Колёса
-    const wheelR = isJeep ? 0.28 : 0.24;
+    const wheelR = (isJeep || isVan || isGaz) ? 0.28 : (isHump ? 0.22 : 0.24);
     const wheelY = wheelR;
     const wheelZ = bodyL * 0.32;
     const wheelX = bodyW * 0.52;
@@ -370,6 +426,230 @@ export function buildShowroomCar(carId) {
         [-0.36, 0.36].forEach(function(x) {
             const post = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.05, 0.12, 0.07), blackMat);
             post.position.set(x, deck + 0.06, bodyL * 0.36); group.add(post);
+        });
+    }
+
+    // === «БУХАНКА» (buhanka): окна полосой по бортам, двухстворчатое лобовое, лесенка и запаска сзади, ребристая крыша ===
+    if (isVan) {
+        const vg = glassMat.clone(); vg.transparent = true; vg.opacity = 0.62; vg.color.setHex(0x9ab8cc); vg.depthWrite = false;
+        const winY = bodyY + bodyH * 0.5 + cabinH * 0.62, winH = cabinH * 0.46, halfW = bodyW * 0.48 + 0.006;
+        [-1, 1].forEach(function(sx) {
+            // четыре окна по борту; первое — дверь водителя
+            (isRaf ? [-0.52, -0.1, 0.3, 0.68] : [-0.62, -0.18, 0.22, 0.6]).forEach(function(z) {
+                const w = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.012, winH, 0.34), vg);
+                w.position.set(sx * halfW, winY, cabinZ + z); group.add(w);
+            });
+        });
+        // лобовое из двух половин с чёрной стойкой посередине (у «Буханки»)
+        if (isUaz) {
+        const post = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.04, cabinH * 0.62, 0.05), blackMat);
+        post.position.set(0, cabinY + 0.04, cabinZ - cabinLen * 0.5 - 0.03); group.add(post);
+        }
+        // рёбра на крыше вдоль кузова («Буханка»)
+        if (isUaz) [-0.28, 0, 0.28].forEach(function(x) {
+            const rib = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.05, 0.03, cabinLen * 0.8), bodyMat2.clone());
+            rib.position.set(x * bodyW, cabinY + cabinH * 0.5 + 0.065, cabinZ); rib.userData.bodyPaint = true; group.add(rib);
+        });
+        // лесенка на задней двери («Буханка»)
+        if (isUaz) [-1, 1].forEach(function(sx) {
+            const rail = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.03, cabinH + 0.1, 0.03), blackMat);
+            rail.position.set(sx * 0.2 + 0.25, cabinY - 0.02, bodyL * 0.5 + 0.06); group.add(rail);
+        });
+        if (isUaz) for (let i = 0; i < 4; i++) {
+            const step = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.42, 0.025, 0.03), blackMat);
+            step.position.set(0.25, cabinY - cabinH * 0.4 + i * 0.14, bodyL * 0.5 + 0.06); group.add(step);
+        }
+    }
+
+    // === «МЕЧТА» (mechta): салон — светлые кресла и задний диван, руль, хромовая дуга, двухцветные фонари ===
+    if (isCabrio) {
+        // салон стоит на полу (тёмный ковёр поверх кузова): кресла, диван, приборная панель с рулём, дуга — концами в кузов
+        const cream = new THREE_REF.MeshStandardMaterial({ color: 0xefe2c4, roughness: 0.7 });
+        const dark = new THREE_REF.MeshStandardMaterial({ color: 0x2a2020, roughness: 0.8 });
+        const top = bodyY + bodyH * 0.5;
+        const floor = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.84, 0.012, cabinLen * 0.98), dark);
+        floor.position.set(0, top + 0.006, cabinZ); group.add(floor);
+        [-1, 1].forEach(function(sx) {
+            const seat = new THREE_REF.Mesh(new RoundedBoxGeometry(0.34, 0.1, 0.32, 2, 0.04), cream);
+            seat.position.set(sx * 0.22, top + 0.06, cabinZ - 0.1); group.add(seat);
+            const back = new THREE_REF.Mesh(new RoundedBoxGeometry(0.34, 0.3, 0.08, 2, 0.04), cream);
+            back.position.set(sx * 0.22, top + 0.24, cabinZ + 0.08); back.rotation.x = -0.18; group.add(back);
+            const tl = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.26, 0.1, 0.04), tailMat.clone());
+            tl.position.set(sx * bodyW * 0.3, 0.5, bodyL * 0.5 + 0.004); tl.userData.isLight = true; group.add(tl);
+            // борт салона — окантовка цвета кузова по верху дверей
+            const rim = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.05, 0.05, cabinLen * 0.98), bodyMat2.clone());
+            rim.position.set(sx * bodyW * 0.44, top + 0.025, cabinZ); rim.userData.bodyPaint = true; group.add(rim);
+        });
+        const bench = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.8, 0.1, 0.28, 2, 0.04), cream);
+        bench.position.set(0, top + 0.06, cabinZ + 0.36); group.add(bench);
+        const benchB = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.8, 0.26, 0.08, 2, 0.04), cream);
+        benchB.position.set(0, top + 0.2, cabinZ + 0.48); benchB.rotation.x = -0.15; group.add(benchB);
+        // приборная панель у лобового и руль на колонке
+        const dashZ = cabinZ - cabinLen * 0.5 + 0.08;
+        const dash = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.84, 0.12, 0.16, 2, 0.03), dark);
+        dash.position.set(0, top + 0.06, dashZ); group.add(dash);
+        const col = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.018, 0.018, 0.14, 8), dark);
+        col.rotation.x = Math.PI / 2 - 0.5; col.position.set(-0.22, top + 0.13, dashZ + 0.12); group.add(col);
+        const wheel = new THREE_REF.Mesh(new THREE_REF.TorusGeometry(0.1, 0.018, 8, 20), dark);
+        wheel.position.set(-0.22, top + 0.17, dashZ + 0.19); wheel.rotation.x = -0.5; group.add(wheel);
+        // хромовая дуга за передними креслами — концами в кузов
+        const hoop = new THREE_REF.Mesh(new THREE_REF.TorusGeometry(bodyW * 0.4, 0.03, 8, 24, Math.PI), chromeMat.clone());
+        hoop.position.set(0, top - 0.02, cabinZ + 0.18); group.add(hoop);
+    }
+
+    // === «ГАЗЕЛЬ» (gazel): кузов с деревянными бортами под синим тентом, кабина белая ===
+    if (isGaz) {
+        const top = cabinY + cabinH * 0.5 + 0.16, bot = bodyY + bodyH * 0.5 - 0.02;
+        const z0 = cabinZ + cabinLen * 0.5 + 0.06, z1 = bodyL * 0.5;
+        const tent = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 1.0, top - bot, z1 - z0, 3, 0.1), new THREE_REF.MeshStandardMaterial({ color: 0x2a4a8a, roughness: 0.95 }));
+        tent.position.set(0, (top + bot) / 2 + 0.06, (z0 + z1) / 2); group.add(tent);
+        const wood = new THREE_REF.MeshStandardMaterial({ color: 0x9a7a4a, roughness: 0.9 });
+        [-1, 1].forEach(function(sx) {
+            const board = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.04, 0.16, z1 - z0), wood);
+            board.position.set(sx * (bodyW * 0.5 + 0.01), bot + 0.08, (z0 + z1) / 2); group.add(board);
+            // верёвка-шнуровка тента
+            for (let i = 0; i < 5; i++) {
+                const tie = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.012, 0.04, 0.012), blackMat);
+                tie.position.set(sx * (bodyW * 0.5 + 0.03), bot + 0.18, z0 + (i + 0.5) * (z1 - z0) / 5); group.add(tie);
+            }
+        });
+        const back = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.98, 0.16, 0.04), wood);
+        back.position.set(0, bot + 0.08, z1 + 0.01); group.add(back);
+    }
+
+    // === «САРАЙ» (saray): вертикальная корма, багажник на крыше с поклажей «на дачу», широкие фонари ===
+    if (isWagon) {
+        const rack = new THREE_REF.MeshStandardMaterial({ color: 0x222222, metalness: 0.5, roughness: 0.5 });
+        const rt = cabinY + cabinH * 0.5 + 0.06;
+        [-1, 1].forEach(function(sx) {
+            const rail = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.035, 0.035, cabinLen * 0.86), rack);
+            rail.position.set(sx * bodyW * 0.38, rt + 0.06, cabinZ); group.add(rail);
+            [-0.35, 0.35].forEach(function(k) {
+                const leg = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.03, 0.07, 0.03), rack);
+                leg.position.set(sx * bodyW * 0.38, rt + 0.025, cabinZ + k * cabinLen); group.add(leg);
+            });
+            const tl = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.3, 0.13, 0.04), tailMat.clone());
+            tl.position.set(sx * bodyW * 0.32, 0.5, bodyL * 0.5 + 0.004); tl.userData.isLight = true; group.add(tl);
+        });
+        for (let i = 0; i < 4; i++) {
+            const bar = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.8, 0.025, 0.03), rack);
+            bar.position.set(0, rt + 0.06, cabinZ - cabinLen * 0.4 + i * cabinLen * 0.27); group.add(bar);
+        }
+        // поклажа: мешок картошки, свёрнутый ковёр, ящик рассады
+        const sack = new THREE_REF.Mesh(new RoundedBoxGeometry(0.34, 0.2, 0.42, 2, 0.08), new THREE_REF.MeshStandardMaterial({ color: 0xa88a5a, roughness: 0.95 }));
+        sack.position.set(-0.18, rt + 0.17, cabinZ + 0.2); group.add(sack);
+        const rug = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.09, 0.09, bodyW * 0.72, 12), new THREE_REF.MeshStandardMaterial({ color: 0xa02a2a, roughness: 0.9 }));
+        rug.rotation.z = Math.PI / 2; rug.position.set(0, rt + 0.15, cabinZ - 0.35); group.add(rug);
+        const box = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.3, 0.14, 0.3), new THREE_REF.MeshStandardMaterial({ color: 0x8a6a40, roughness: 0.9 }));
+        box.position.set(0.22, rt + 0.14, cabinZ + 0.3); group.add(box);
+        const sprouts = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.26, 0.06, 0.26), new THREE_REF.MeshStandardMaterial({ color: 0x4aa83a, roughness: 0.9 }));
+        sprouts.position.set(0.22, rt + 0.24, cabinZ + 0.3); group.add(sprouts);
+    }
+
+    // === «РАКЕТА» (raketa): поднятые фары, чёрные полосы, антикрыло, полоса фонарей, воздухозаборники ===
+    if (isRocket) {
+        const kit = new THREE_REF.MeshStandardMaterial({ color: 0x111111, metalness: 0.35, roughness: 0.5 });
+        const topY0 = bodyY + bodyH * 0.5;
+        [-1, 1].forEach(function(sx) {
+            // фара «глазом» из капота: крышка цвета кузова и линза
+            const lid = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.3, 0.1, 0.16), bodyMat2.clone());
+            lid.position.set(sx * bodyW * 0.3, topY0 + 0.02, -bodyL * 0.5 + 0.2); lid.userData.bodyPaint = true; group.add(lid);
+            const lens = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.26, 0.07), hlMat.clone());
+            lens.rotation.y = Math.PI; lens.position.set(sx * bodyW * 0.3, topY0 + 0.02, -bodyL * 0.5 + 0.2 - 0.081); lens.userData.isLight = true; group.add(lens);
+            // воздухозаборник за дверью
+            const vent = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.01, 0.1, 0.3), kit);
+            vent.position.set(sx * (bodyW * 0.5 + 0.005), bodyY + 0.02, 0.55); group.add(vent);
+        });
+        // две чёрные гоночные полосы по капоту, крыше и корме
+        [-0.12, 0.12].forEach(function(x) {
+            const st = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.09, 0.008, bodyL * 0.99), kit);
+            st.position.set(x, topY0 + 0.012, 0); group.add(st);
+        });
+        // антикрыло на корме
+        const wingY = topY0 + 0.2;
+        const wing = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.94, 0.04, 0.24, 2, 0.015), kit);
+        wing.position.set(0, wingY, bodyL * 0.5 - 0.14); group.add(wing);
+        [-1, 1].forEach(function(sx) {
+            const st = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.04, 0.2, 0.08), kit);
+            st.position.set(sx * bodyW * 0.36, wingY - 0.1, bodyL * 0.5 - 0.14); group.add(st);
+        });
+        const tl = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.92, 0.06, 0.04), tailMat.clone());
+        tl.position.set(0, bodyY + 0.07, bodyL * 0.5 + 0.005); tl.userData.isLight = true; group.add(tl);
+    }
+
+    // === «ШЕСТИСОТЫЙ» (shestisot): хромовые молдинги и рамки окон, широкие фонари, хромовый бампер ===
+    if (isLux) {
+        [-1, 1].forEach(function(sx) {
+            const st = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.014, 0.03, bodyL * 0.9), chromeMat.clone());
+            st.position.set(sx * (bodyW * 0.5 + 0.006), bodyY - 0.06, 0); group.add(st);
+            const wt = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.012, 0.02, cabinLen * 0.96), chromeMat.clone());
+            wt.position.set(sx * (bodyW * 0.44 + 0.004), cabinY - cabinH * 0.4, cabinZ); group.add(wt);
+            const tl = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.34, 0.1, 0.04), tailMat.clone());
+            tl.position.set(sx * bodyW * 0.3, 0.52, bodyL * 0.5 + 0.004); tl.userData.isLight = true; group.add(tl);
+            const amb = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.1, 0.1, 0.042), new THREE_REF.MeshStandardMaterial({ color: 0xffa020, emissive: 0xff7a00, emissiveIntensity: 0.6 }));
+            amb.position.set(sx * bodyW * 0.44, 0.52, bodyL * 0.5 + 0.004); group.add(amb);
+        });
+        const bc = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.98, 0.05, 0.05), chromeMat.clone());
+        bc.position.set(0, 0.35, -bodyL * 0.5 - 0.06); group.add(bc); // над номером, не поверх него
+    }
+
+    // === «РАФИК» (rafik): «скорая» — красная полоса по бортам, крест, маячок на крыше ===
+    if (isRaf) {
+        const red = new THREE_REF.MeshStandardMaterial({ color: 0xd01818, roughness: 0.5 });
+        [-1, 1].forEach(function(sx) {
+            const st = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.012, 0.09, bodyL * 0.92), red);
+            st.position.set(sx * (bodyW * 0.5 + 0.004), bodyY + 0.06, 0); group.add(st);
+        });
+        const cross = (function() {
+            const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64; const cx = cv.getContext('2d');
+            cx.fillStyle = '#d01818'; cx.fillRect(24, 6, 16, 52); cx.fillRect(6, 24, 52, 16);
+            const t = new THREE_REF.CanvasTexture(cv); return t;
+        })();
+        const cm = new THREE_REF.MeshBasicMaterial({ map: cross, transparent: true });
+        [-1, 1].forEach(function(sx) {
+            const c = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.22, 0.22), cm);
+            c.rotation.y = sx * Math.PI / 2; c.position.set(sx * (bodyW * 0.48 + 0.012), cabinY - 0.02, cabinZ + 0.1); group.add(c);
+        });
+        const beacon = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.07, 0.08, 0.1, 12), new THREE_REF.MeshStandardMaterial({ color: 0x3a7aff, emissive: 0x1a4aff, emissiveIntensity: 1.2 }));
+        beacon.position.set(0, cabinY + cabinH * 0.5 + 0.1, cabinZ - cabinLen * 0.4); beacon.userData.isLight = true; group.add(beacon);
+    }
+
+    // === «ПИРОЖОК» (pirozhok): будка за кабиной вровень с крышей, по бортам — вывеска «ХЛЕБ» ===
+    if (isPie) {
+        const top = cabinY + cabinH * 0.5 + 0.055, bot = bodyY + bodyH * 0.5 - 0.02;
+        const z0 = cabinZ + cabinLen * 0.5 + 0.03, z1 = bodyL * 0.5;
+        const box = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.98, top - bot, z1 - z0, 2, 0.05), bodyMat2.clone());
+        box.position.set(0, (top + bot) / 2, (z0 + z1) / 2); box.userData.bodyPaint = true; group.add(box);
+        const sign = (function() {
+            const cv = document.createElement('canvas'); cv.width = 256; cv.height = 96;
+            const cx = cv.getContext('2d');
+            cx.fillStyle = '#f6efe0'; cx.fillRect(0, 0, 256, 96);
+            cx.strokeStyle = '#c41a1a'; cx.lineWidth = 6; cx.strokeRect(4, 4, 248, 88);
+            cx.fillStyle = '#c41a1a'; cx.font = 'bold 64px Arial, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+            cx.fillText('ХЛЕБ', 128, 52);
+            const t = new THREE_REF.CanvasTexture(cv); t.anisotropy = 4; return t;
+        })();
+        const sm = new THREE_REF.MeshBasicMaterial({ map: sign });
+        [-1, 1].forEach(function(sx) {
+            const pl = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry((z1 - z0) * 0.8, (top - bot) * 0.5), sm);
+            pl.rotation.y = sx * Math.PI / 2; pl.position.set(sx * (bodyW * 0.49 + 0.006), (top + bot) / 2 + 0.02, (z0 + z1) / 2); group.add(pl);
+        });
+        // задние двери будки: стык и ручка
+        const seam = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.012, (top - bot) * 0.9, 0.012), blackMat);
+        seam.position.set(0, (top + bot) / 2, z1 + 0.003); group.add(seam);
+        const handle = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.08, 0.025, 0.02), chromeMat.clone());
+        handle.position.set(0.07, (top + bot) / 2, z1 + 0.012); group.add(handle);
+    }
+
+    // === «ГОРБАТЫЙ» (gorbaty): мотор сзади — жалюзи на корме, хромовые молдинги, круглые фонари ===
+    if (isHump) {
+        for (let i = 0; i < 5; i++) {
+            const sl = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.42, 0.018, 0.03), blackMat);
+            sl.position.set(0, bodyY - 0.02 + i * 0.045, bodyL * 0.5 + 0.005); group.add(sl);
+        }
+        [-1, 1].forEach(function(sx) {
+            const tl = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.06, 0.06, 0.04, 14), tailMat.clone());
+            tl.rotation.x = Math.PI / 2; tl.position.set(sx * bodyW * 0.36, bodyY + 0.06, bodyL * 0.5 + 0.01); tl.userData.isLight = true; group.add(tl);
         });
     }
 
@@ -517,7 +797,7 @@ export function buildShowroomCar(carId) {
     const partChrome = new THREE_REF.MeshStandardMaterial({ color: 0xcfd1d8, metalness: 0.45, roughness: 0.22 });
     const spoilerG = new THREE_REF.Group();
     // Нива: спойлер НА КРЫШЕ сзади; седан: на багажнике
-    const spoilerOnRoof = isJeep || isHatch; // у хэтчбека багажника нет — тюнинг-спойлер на крыше
+    const spoilerOnRoof = isJeep || wedge || isVan; // у хэтчбека багажника нет — тюнинг-спойлер на крыше
     const spoilerDeckY = spoilerOnRoof
         ? (cabin.position.y + cabinH * 0.5 + 0.02)
         : (bodyY + bodyH * 0.5 + 0.02);
@@ -534,7 +814,7 @@ export function buildShowroomCar(carId) {
     base.position.set(0, spoilerDeckY + 0.02, spoilerZ - 0.04); spoilerG.add(base);
     spoilerG.visible = false; group.add(spoilerG); parts.spoiler = spoilerG;
     // Нива: спойлер не в базе и не в слотах — только седан/Волга
-    if (isJeep) { spoilerG.visible = false; delete parts.spoiler; }
+    if (isJeep || isPie || isGaz) { spoilerG.visible = false; delete parts.spoiler; } // у «Пирожка» сзади будка — спойлеру места нет
 
     const skirts = new THREE_REF.Group();
     [-1, 1].forEach(side => {
@@ -574,7 +854,7 @@ export function buildShowroomCar(carId) {
     });
     roofRack.visible = false; group.add(roofRack); parts.roof_rack = roofRack;
     // Нива — джип, багажник на крышу не ставим (меш не показываем никогда)
-    if (isJeep) { roofRack.visible = false; delete parts.roof_rack; }
+    if (isJeep || isCabrio) { roofRack.visible = false; delete parts.roof_rack; } // у кабриолета крыши нет
 
     const lip = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.95, 0.07, 0.26), partBlack.clone());
     lip.position.set(0, 0.18, -bodyL * 0.55); lip.visible = false; group.add(lip); parts.lip = lip;
@@ -631,7 +911,7 @@ export function buildShowroomCar(carId) {
             cx.fillStyle = '#f4f4f0'; cx.fillRect(0, 0, 256, 56);
             cx.strokeStyle = '#111'; cx.lineWidth = 4; cx.strokeRect(2, 2, 252, 52);
             cx.fillStyle = '#111'; cx.font = 'bold 36px Arial, sans-serif'; cx.textBaseline = 'middle';
-            const txt = { cheburashka: 'К 101 АР', kirpich: 'Н 404 ИВ', turbo: 'В 024 ГА', zubilo: 'Е 109 ЗБ' }[carId] || 'А 000 АА';
+            const txt = { cheburashka: 'К 101 АР', kirpich: 'Н 404 ИВ', turbo: 'В 024 ГА', zubilo: 'Е 109 ЗБ', buhanka: 'У 452 АЗ', gorbaty: 'З 965 ЗА', pirozhok: 'Х 271 ЛБ', rafik: 'С 203 РФ', shestisot: 'А 600 АА', raketa: 'Р 911 КТ', saray: 'Д 104 АЧ', gazel: 'Г 330 ЧЛ', mechta: 'М 777 ЕЧ' }[carId] || 'А 000 АА';
             cx.fillText(txt, 12, 30);
             cx.fillRect(196, 4, 2, 48);
             cx.font = 'bold 22px Arial, sans-serif'; cx.fillText('25', 210, 22);
@@ -645,7 +925,7 @@ export function buildShowroomCar(carId) {
         pr.position.set(0, isJeep ? 0.22 : 0.35, rearZ + (isJeep ? 0.09 : 0.13)); group.add(pr); // у Нивы — под запаской
         // зеркала на стойках у лобового: кронштейн от стенки кабины до корпуса зеркала (без зазоров)
         [-1, 1].forEach(function(sx) {
-            const zM = isHatch ? cabinZ - cabinLen * 0.5 - hatchF * 0.8 : cabinZ - cabinLen * 0.42; // у «Зубила» — у основания лобового
+            const zM = wedge ? cabinZ - cabinLen * 0.5 - hatchF * 0.8 : cabinZ - cabinLen * 0.42; // у «Зубила» — у основания лобового
             const xIn = bodyW * 0.44, xOut = bodyW * 0.5 + 0.06;
             B(dark, sx * (xIn + xOut) / 2, topY + 0.08, zM, xOut - xIn + 0.02, 0.03, 0.03);
             B(bodyMat, sx * (bodyW * 0.5 + 0.09), topY + 0.1, zM, 0.07, 0.08, 0.1, true);
@@ -653,14 +933,14 @@ export function buildShowroomCar(carId) {
         });
         // дворники на лобовом
         [-0.18, 0.12].forEach(function(x) {
-            const w = isHatch ? B(dark, x, topY + 0.04, cabinZ - cabinLen * 0.5 - hatchF + 0.06, 0.34, 0.015, 0.015)
+            const w = wedge ? B(dark, x, topY + 0.04, cabinZ - cabinLen * 0.5 - hatchF + 0.06, 0.34, 0.015, 0.015)
                 : B(dark, x, cabinY2 - cabinH * 0.3, cabinZ - cabinLen * 0.5 - 0.05, 0.34, 0.015, 0.015);
             w.rotation.z = 0.25;
         });
         // стыки дверей и ручки, хромированный молдинг по поясу
         [-1, 1].forEach(function(sx) {
             const x = sx * (bodyW * 0.5 + 0.004);
-            const doorZs = isJeep ? [cabinZ - cabinLen * 0.1] : isHatch ? [cabinZ - cabinLen * 0.5 - hatchF * 0.8, cabinZ + cabinLen * 0.1] : [cabinZ - cabinLen * 0.45, cabinZ + cabinLen * 0.05];
+            const doorZs = isJeep ? [cabinZ - cabinLen * 0.1] : wedge ? [cabinZ - cabinLen * 0.5 - hatchF * 0.8, cabinZ + cabinLen * 0.1] : [cabinZ - cabinLen * 0.45, cabinZ + cabinLen * 0.05];
             doorZs.forEach(function(z) {
                 B(dark, x, bodyY, z, 0.008, bodyH * 0.9, 0.012);
                 B(chrome2, sx * (bodyW * 0.5 + 0.014), bodyY + bodyH * 0.25, z + 0.12, 0.012, 0.025, 0.09);
@@ -686,7 +966,7 @@ export function buildShowroomCar(carId) {
             // под кузовом: верх упирается в днище, наружу за борт не торчит
             if (w.z > 0) B(dark, Math.sign(w.x) * (bodyW * 0.5 - 0.1), bodyY - bodyH * 0.5 - 0.07, w.z + wheelR + 0.04, 0.18, 0.15, 0.02);
         });
-        if (!isJeep && !isSport && !isHatch) {
+        if (!isJeep && !isSport && !isHatch && !isVan && !isHump && !isPie && !isLux && !isRocket && !isWagon && !isGaz && !isCabrio) {
             // Ушастик — «копейка»: сдвоенные круглые фары и хромированные бамперы с клыками
             const hlY2 = 0.44, hlZ2 = frontZ - 0.05;
             [-1, 1].forEach(function(sx) {
@@ -740,7 +1020,7 @@ export function buildShowroomCar(carId) {
         const B = function(g, mat, x, y, z, sx, sy, sz) { const m = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(sx, sy, sz), mat); m.position.set(x, y, z); g.add(m); return m; };
         const C = function(g, mat, r1, r2, h, x, y, z, rx, rz) { const m = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(r1, r2, h, 12), mat); m.position.set(x, y, z); if (rx) m.rotation.x = rx; if (rz) m.rotation.z = rz; g.add(m); return m; };
         const topY = bodyY + bodyH * 0.5;
-        const hoodZ = isHatch ? -bodyL * 0.5 + 0.2 : -bodyL * 0.5 + hoodLen * 0.55; // у «Зубила» лобовое заходит на капот — детали ближе к носу
+        const hoodZ = (isHatch || isRocket) ? -bodyL * 0.5 + 0.2 : isHump ? -bodyL * 0.5 + 0.16 : -bodyL * 0.5 + hoodLen * 0.55; // у «Зубила» лобовое заходит на капот — детали ближе к носу
         const frontZ = -bodyL * 0.5, rearZ = bodyL * 0.5;
         const black = M(0x141414, { metalness: 0.3 }), chrome = M(0xc8ccd4, { metalness: 0.9, roughness: 0.2 });
         const red = M(0xd01818), yellow = M(0xf0c020), steel = M(0x6a6e74, { metalness: 0.7 }), blue = M(0x1a5ad8, { metalness: 0.6, roughness: 0.3 });
@@ -754,6 +1034,8 @@ export function buildShowroomCar(carId) {
         C(e2, black, 0.1, 0.1, 0.02, 0, topY + 0.25, hoodZ);
         const e3 = U('engine', 3);
         [-0.14, 0.14].forEach(function(x) { B(e3, M(0xf2f2f2), x, topY + 0.012, 0, 0.1, 0.012, bodyL * 0.98); });
+        // у «Буханки» капота нет — воздухозаборник, фильтр и полосы — на крыше
+        if (isVan) [e1, e2, e3].forEach(function(g) { g.position.set(0, cabinH + 0.07, g === e3 ? 0 : (cabinZ - cabinLen * 0.3) - hoodZ); });
         // Коробка: 1 — задний диффузор, 2 — буксировочный крюк, 3 — золотая шестерня на решётке
         const g1 = U('gearbox', 1);
         for (let i = 0; i < 4; i++) B(g1, black, -0.3 + i * 0.2, 0.16, rearZ + 0.08, 0.04, 0.12, 0.18);
@@ -799,7 +1081,7 @@ export function buildShowroomCar(carId) {
         [-0.18, 0.18].forEach(function(x) {
             // два баллона рядом с зазором (раньше входили друг в друга) и хромовые хомуты вокруг
             // у хэтчбека сзади наклонное стекло — баллоны на крыше
-            const ny = isHatch ? cabinY + cabinH * 0.5 + 0.14 : topY + (isJeep ? 0.12 : 0.1), nz = isHatch ? cabinZ - 0.1 : rearZ - 0.3;
+            const ny = isGaz ? cabinY + cabinH * 0.5 + 0.24 : (wedge || isVan || isPie) ? cabinY + cabinH * 0.5 + 0.14 : isWagon ? cabinY + cabinH * 0.5 + 0.3 : topY + (isJeep ? 0.12 : 0.1), nz = wedge ? cabinZ - 0.1 : (isVan ? cabinZ + 0.3 : (isPie ? bodyL * 0.3 : (isWagon ? cabinZ - 0.35 : (isGaz ? bodyL * 0.2 : rearZ - 0.3))));
             C(n1, blue, 0.08, 0.08, 0.3, x, ny, nz, 0, Math.PI / 2);
             [-0.08, 0.08].forEach(function(dx) { B(n1, chrome, x + dx, ny, nz, 0.03, 0.175, 0.175); });
         });

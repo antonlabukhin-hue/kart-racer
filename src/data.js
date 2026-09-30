@@ -170,9 +170,27 @@ export const CAR_PRESETS = {
         ability: { id: 'offroad', name: 'Внедорожник', desc: 'ямы, кочки, лёд и смола не тормозят' } },
     turbo:       { name: 'Волга',      color: 0xc0a060, maxSpeed: 0.492, accel: 0.0288, durability: 1.15, oilGrip: 0.72, priceChips: 450,
         ability: { id: 'turbo', name: 'Турбо', desc: 'нитро разгоняет сильнее (×1.6 вместо ×1.45)' } },
+    gorbaty:     { name: 'Горбатый',   color: 0x7fb6d9, maxSpeed: 0.384, accel: 0.0228, durability: 0.85, oilGrip: 1.0, priceChips: 300,
+        ability: { id: 'hop', name: 'Прыгун', desc: 'трамплины подбрасывают на 30% выше — золотая «Е» и без нитро' } },
+    pirozhok:    { name: 'Пирожок',    color: 0x3f74b0, maxSpeed: 0.4, accel: 0.02, durability: 1.05, oilGrip: 1.0, priceChips: 500,
+        ability: { id: 'cargo', name: 'Грузовой', desc: 'усиление «×2 Е» действует вдвое дольше' } },
+    saray:       { name: 'Сарай',      color: 0xe8e0c8, maxSpeed: 0.408, accel: 0.021, durability: 1.1, oilGrip: 1.05, priceChips: 900,
+        ability: { id: 'dacha', name: 'Дачник', desc: 'жвачка-сердечко лечит две аварии, а не одну' } },
+    gazel:       { name: 'Газель',     color: 0xf2f2ee, maxSpeed: 0.42, accel: 0.021, durability: 1.2, oilGrip: 1.05, priceChips: 1200,
+        ability: { id: 'trade', name: 'Челнок', desc: '+25% «Е» на итогах заезда' } },
+    rafik:       { name: 'Рафик',      color: 0xefefe8, maxSpeed: 0.405, accel: 0.0198, durability: 1.1, oilGrip: 1.0, priceChips: 700,
+        ability: { id: 'medic', name: 'Скорая', desc: 'шесть жизней вместо пяти' } },
+    buhanka:     { name: 'Буханка',    color: 0x5e7040, maxSpeed: 0.39, accel: 0.0192, durability: 1.35, oilGrip: 1.1, priceChips: 600,
+        ability: { id: 'armor', name: 'Броня', desc: 'каждый заезд — с бронёй: первый удар не авария' } },
+    shestisot:   { name: 'Шестисотый', color: 0x0e0e12, maxSpeed: 0.468, accel: 0.0252, durability: 1.2, oilGrip: 0.95, priceChips: 1500,
+        ability: { id: 'boss', name: 'Авторитет', desc: 'попутки почти не лезут в твою полосу' } },
+    raketa:      { name: 'Ракета',     color: 0xffd83a, maxSpeed: 0.5, accel: 0.03, durability: 0.8, oilGrip: 0.8, priceChips: 2500,
+        ability: { id: 'rocket', name: 'Форсаж', desc: 'нитро действует на 50% дольше' } },
     // уникальная: только за видеокассеты (📼 — редкая валюта бесконечной трассы и сундуков)
     zubilo:      { name: 'Зубило',     color: 0x9a1428, maxSpeed: 0.456, accel: 0.0264, durability: 0.9, oilGrip: 0.95, priceChips: 0, priceVhs: 5,
-        ability: { id: 'magnet', name: 'Магнит', desc: '«Е» рядом сами летят в машину — без усиления' } }
+        ability: { id: 'magnet', name: 'Магнит', desc: '«Е» рядом сами летят в машину — без усиления' } },
+    mechta:      { name: 'Мечта',      color: 0xd8161e, maxSpeed: 0.474, accel: 0.027, durability: 0.9, oilGrip: 0.95, priceChips: 0, priceVhs: 10,
+        ability: { id: 'lucky', name: 'Везунчик', desc: 'видеокассеты на трассе попадаются вдвое чаще' } }
 };
 
 export const ANIMAL_TYPES = {

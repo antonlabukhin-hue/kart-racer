@@ -4246,7 +4246,7 @@ function startGaragePreview(carId) {
             const TOTAL_LANES = 3;
             const CAR_WIDTH = 0.8;
             const TIME_LIMIT = config.timeLimit;
-            const MAX_STRIKES = 5;
+            const MAX_STRIKES = 5 + (carPreset.ability && carPreset.ability.id === 'medic' ? 1 : 0); // «Рафик» — шестая жизнь
             let TRIGGER_LOOKAHEAD = config.triggerLookahead;
             const _portrait = window.__isMobile && window.innerHeight > window.innerWidth;
             // мобилка: почти те же значения (без сильного урезания)
@@ -4970,7 +4970,7 @@ function startGaragePreview(carId) {
                             difficulty: (typeof difficulty !== 'undefined' ? difficulty : 'medium'),
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
-                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS, eChips: stats.eChips || 0,
+                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS, eChips: Math.round((stats.eChips || 0) * (ABILITY === 'trade' ? 1.25 : 1)), // «Газель» — челнок
                             // для контрактов дня на механики
                             cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
                             nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, riskPoints: risk.points, animalsJumped: stats.animalsJumped || 0,
@@ -7258,7 +7258,8 @@ function startGaragePreview(carId) {
             // бесконечная трасса: «Е», препятствия, нитро и жвачки круга k — из плана (src/infinite.js), мимо постановочных участков
             function infPlanLap(k) {
                 const LX = [-2, 0, 2], d0 = k * _trackSpan;
-                planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity }).items.forEach(function(it) {
+                // vhsMul — от пресета, не ABILITY: план круга 0 строится раньше её объявления (иначе заезд не стартует)
+                planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity, vhsMul: (carPreset.ability && carPreset.ability.id === 'lucky') ? 2 : 1 }).items.forEach(function(it) {
                     const z = START_Z - it.d;
                     if (infBusy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; })) return;
                     let c = null;
@@ -7970,13 +7971,13 @@ function startGaragePreview(carId) {
             const NITRO_ACCEL = ABILITY === 'turbo' ? 1.8 : 1.6;
             const OIL_GRIP = carStats.oilGrip;
             const DURABILITY = carStats.durability; // множитель штрафа времени (меньше = танк); броня его снижает
-            const NITRO_TIME = carStats.nitroTime;
+            const NITRO_TIME = carStats.nitroTime * ((carPreset.ability && carPreset.ability.id === 'rocket') ? 1.5 : 1); // «Ракета» — форсаж
 
             // ---- МЕТА-СИСТЕМЫ ----
             let comboTime = 0;
             let comboMax = 0;
             // «Чистый отрезок» (src/clean-run.js): 10 с без ударов — щит, потом фишки
-            const cleanRun = createCleanRun(); const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
+            const cleanRun = createCleanRun(); if (ABILITY === 'armor') cleanRun.grantShield(); /* «Буханка»: старт с бронёй */ let _armorShown = false; const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
             let shieldMesh = null;
             /** Крупная выскакивающая плашка по центру (броня и т. п.) — один слот */
             function showBigPlaque(title, sub, cls) {
@@ -8364,6 +8365,7 @@ function startGaragePreview(carId) {
                 ghostClock += deltaTime;
                 ghostRec.update(deltaTime, xPos, zPos, carYOffset);
                 {
+                    if (!_armorShown && ABILITY === 'armor') { _armorShown = true; setShieldVisible(true); }
                     const cleanGot = cleanRun.tick(deltaTime, speed > MAX_SPEED * 0.3);
                     if (cleanGot === 'shield') {
                         setShieldVisible(true);
@@ -8749,7 +8751,7 @@ function startGaragePreview(carId) {
                         speed = rs.speed;
                         carAirborne = true;
                         airTime = 0; strikesAtLaunch = strikes;
-                        carAirVel = rs.airVel;
+                        carAirVel = rs.airVel * (ABILITY === 'hop' ? 1.3 : 1); // «Горбатый» — прыгун
                         carYOffset = rs.y;
                         // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
                         if (rs.nitroJump) { try { showTimePenaltyPopup(0, '🚀 Нитро-прыжок!'); } catch (e) {} }
@@ -9035,7 +9037,7 @@ function startGaragePreview(carId) {
                             // Машина относительно близко — чаще лезет в полосу игрока
                             const playerLaneApprox = Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2);
                             const clampedLane = Math.max(0, Math.min(2, playerLaneApprox));
-                            if (car.lane !== clampedLane && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK) {
+                            if (car.lane !== clampedLane && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK * (ABILITY === 'boss' ? 0.1 : 1)) { // «Шестисотому» уступают
                                 car.targetLane = clampedLane;
                                 car.isChangingLane = true;
                                 car.laneChangeProgress = 0;
@@ -9045,7 +9047,7 @@ function startGaragePreview(carId) {
                         }
                         
                         if (!shouldCut && car.laneChangeTimer <= 0) {
-                            const chance = 0.035 * (1 + progress * 0.8) * (window.__laneChangeMul || 1) * infLaneK;
+                            const chance = 0.035 * (1 + progress * 0.8) * (window.__laneChangeMul || 1) * infLaneK * (ABILITY === 'boss' ? 0.3 : 1);
                             if (Math.random() < chance) {
                                 // С шансом целимся в игрока, иначе случайная полоса
                                 let newLane;
@@ -9374,6 +9376,7 @@ function startGaragePreview(carId) {
                             try { if (window.soundEngine) window.soundEngine.playSfx('ring', 1); } catch (e) {} // «колечко», как в 16-битных играх
                         } else if (c.type === 'power') {
                             activatePower(powers, c.power);
+                            if (ABILITY === 'cargo' && c.power === 'x2') powers.x2 *= 2; // «Пирожок» — ×2 вдвое дольше
                             stats.powers = (stats.powers || 0) + 1;
                             if (c.power === 'shield') { cleanRun.grantShield(); setShieldVisible(true); }
                             const pw = POWERS[c.power];
@@ -9431,7 +9434,7 @@ function startGaragePreview(carId) {
                             stats.gumPicked++;
                             radioSay(RADIO_LINES.gum[Math.floor(Math.random()*RADIO_LINES.gum.length)]);
                             if (strikes > 0) {
-                                strikes = Math.max(0, strikes - 1);
+                                strikes = Math.max(0, strikes - (ABILITY === 'dacha' ? 2 : 1)); // «Сарай» — дачник
                                 showTimePenaltyPopup(0, '❤️ −1 авария');
                                 const el = document.createElement('div');
                                 el.className = 'animal-shout';
@@ -11377,6 +11380,8 @@ function showLoreScreen(quality, difficulty) {
                     startMenuBg({ carId: car0, intro: true, still: reduce0, lowPower: !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) });
                 }
             } catch (e) { console.warn('intro', e); }
+            // 3D не запустилось (старый телефон, нет WebGL) — показать картинку-заставку
+            setTimeout(function() { if (!document.body.classList.contains('menu-live')) document.body.classList.add('splash-fallback'); }, 1500);
             function hideSplashShowProfile() {
                 const sp = document.getElementById('splash-screen');
                 if (sp) {
