@@ -243,6 +243,9 @@ export function applyRaceResult(profile, state, meta, ctx) {
     chips += Math.max(0, Math.min(20, m.bonusChips || 0));
     // собранные на трассе фишки «Е» (src/echip.js) — без потолка: в бесконечной трассе их сотни
     chips += Math.max(0, Math.floor(m.eChips || 0));
+    // видеокассеты (src/cassette.js) — редкая валюта, только за них — уникальная машина
+    const vhs = Math.max(0, Math.floor(m.vhs || 0));
+    profile.season.vhs = (profile.season.vhs || 0) + vhs;
     // бесконечная трасса: опыт за дальность (1 XP за 20 м) и рекорд
     let infBest = null;
     if (m.distance > 0) {
@@ -287,7 +290,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
     if (profile.history.length > HISTORY_LIMIT) profile.history.length = HISTORY_LIMIT;
 
     return {
-        xp: xp, gum: gum, chips: chips,
+        xp: xp, gum: gum, chips: chips, vhs: vhs,
         levelBefore: levelBefore, levelAfter: profile.season.level,
         achievements: achievements, trophies: trophies,
         contractDone: contractDone, contractTitle: contractDone ? k.title : '',

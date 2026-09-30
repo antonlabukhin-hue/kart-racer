@@ -28,7 +28,7 @@ export function disposeTree(o) {
     o.traverse(function(c) {
         if (c.geometry && !(c.geometry.userData && c.geometry.userData.keep)) c.geometry.dispose();
         const m = c.material;
-        if (m && !Array.isArray(m) && m.map && m.map.isCanvasTexture) m.map.dispose();
+        if (m && !Array.isArray(m) && m.map && m.map.isCanvasTexture && !m.map.userData.keep) m.map.dispose();
     });
 }
 

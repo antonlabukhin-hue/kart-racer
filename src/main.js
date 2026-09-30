@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip } from './echip.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -1277,7 +1277,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const n = document.getElementById('player-bar-name');
             const s = document.getElementById('player-bar-season');
             if (n) n.textContent = '👤 ' + currentPlayer.name;
-            if (s) s.textContent = 'S1 ур.' + currentPlayer.season.level + ' · 🪙' + (currentPlayer.season.chips||0) + ' · 🍬' + (currentPlayer.season.gum||0);
+            if (s) s.textContent = 'S1 ур.' + currentPlayer.season.level + ' · 🪙' + (currentPlayer.season.chips||0) + ' · 🍬' + (currentPlayer.season.gum||0) + ' · 📼' + (currentPlayer.season.vhs||0);
         }
 
         function renderProfileList() {
@@ -2205,7 +2205,7 @@ function renderGaragePartsPanel() {
         /** Шапка гаража: имя, фишки и жвачка — после любой покупки */
         function refreshGarageHeader() {
             const el = document.getElementById('garage-player-name');
-            if (el && currentPlayer && currentPlayer.season) el.textContent = currentPlayer.name + ' · 🪙' + (currentPlayer.season.chips || 0) + ' · 🍬' + (currentPlayer.season.gum || 0);
+            if (el && currentPlayer && currentPlayer.season) el.textContent = currentPlayer.name + ' · 🪙' + (currentPlayer.season.chips || 0) + ' · 🍬' + (currentPlayer.season.gum || 0) + ' · 📼' + (currentPlayer.season.vhs || 0);
         }
         /** Вкладка «Прокачка»: полосы характеристик выбранной машины и покупка уровней */
         function renderGarageUpgrades() {
@@ -4066,7 +4066,7 @@ function startGaragePreview(carId) {
             } catch (e) {}
             const _cont = document.getElementById('game-container');
             if (_cont) { while (_cont.firstChild) _cont.removeChild(_cont.firstChild); }
-            document.querySelectorAll('#finish-screen,#game-hud,#hud-menu-btn').forEach(el => { try { el.remove(); } catch(e){} });
+            document.querySelectorAll('#finish-screen,#game-hud,#hud-menu-btn,#power-hud,.chance-modal').forEach(el => { try { el.remove(); } catch(e){} });
             const _settings = loadSettings();
             window.__camMode = _settings.camera; // камера по умолчанию — из «Настроек»
             let weatherMode = weatherId || 'day'; // в бесконечной трассе меняется с пейзажем
@@ -4080,7 +4080,8 @@ function startGaragePreview(carId) {
             const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
             // «Бесконечная трасса» (src/infinite.js, src/inf-world.js): вместо финиша — круги расстановки один за другим
             const INF = typeof pendingMode !== 'undefined' && pendingMode === 'infinite';
-            let infWorld = null, infTheme = null, infSpeedK = 1, infHills = [];
+            let infWorld = null, infTheme = null, infSpeedK = 1, infHills = [], continues = 0;
+            const powers = createPowers(); // усиления бесконечной трассы (src/powerups.js)
             const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
                 : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave) : DIFFICULTY_CONFIG[difficulty]);
@@ -4499,7 +4500,7 @@ function startGaragePreview(carId) {
                     message = 'Проехано: ' + ir.dist + ' м · ' + formatTime(timeTaken) + '\nСчёт: ' + ir.score
                         + '\n' + (ib.isNew ? '🎉 НОВЫЙ РЕКОРД ДАЛЬНОСТИ!' : '🏆 Рекорд: ' + (ib.best || ir.dist) + ' м');
                     finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Фишки «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
-                        ['⛽', 'Нитро', stats.nitroPicked], ['🗺', 'Пейзажей', ir.lands], ['⚡', 'На волоске', nearMissCount]];
+                        ['📼', 'Кассеты', stats.vhs || 0], ['🗺', 'Пейзажей', ir.lands], ['⚡', 'На волоске', nearMissCount]];
                 } else if (isEndlessMode()) {
                     const run = window.__endless;
                     title = '🐾 ЗВЕРИНЫЙ ЧАС ОКОНЧЕН';
@@ -4809,8 +4810,34 @@ function startGaragePreview(carId) {
             }
 
 
+            // бесконечная трасса: после пятой аварии — продолжить за «Е» или кассету (не больше двух раз)
+            function offerContinue() {
+                if (continues >= MAX_CONTINUES || !currentPlayer) return false;
+                const se = currentPlayer.season, cost = continueCost(continues);
+                if ((se.chips || 0) < cost && !(se.vhs > 0)) return false;
+                gameState = 'chance';
+                showSecondChance({ costE: cost, haveE: se.chips || 0, haveVhs: se.vhs || 0, seconds: 6, dist: infWorld ? infWorld.dist : 0,
+                    onPay: function(kind) {
+                        if (kind === 'vhs') se.vhs--; else se.chips -= cost;
+                        continues++;
+                        try { saveCurrentPlayer(); } catch (e) {}
+                        strikes = MAX_STRIKES - 2; speed = 0; stunTimer = 0;
+                        cleanRun.grantShield(); setShieldVisible(true);
+                        // вокруг машины — чисто: звери убегают, ямы и попутки отодвигаются
+                        animalSpawner.animals.forEach(function(a) { if (Math.abs(a.z - zPos) < 30) a.hit = true; });
+                        obstacles.forEach(function(o) { if (o.active && Math.abs(o.z - zPos) < 25) { o.active = false; o.mesh.visible = false; } });
+                        cars.forEach(function(c) { if (c.z < zPos + 6 && c.z > zPos - 35) { c.z = zPos - 70 - Math.random() * 40; c.mesh.position.z = c.z; } });
+                        gameState = 'racing';
+                        try { showBigPlaque('▶ ВТОРОЙ ШАНС', 'Две жизни и броня — газу!', 'armor'); } catch (e) {}
+                    },
+                    onDecline: function() { gameState = 'racing'; continues = MAX_CONTINUES; endGame('crash'); }
+                });
+                return true;
+            }
+
             function endGame(state) {
                 if (gameState !== 'racing') return;
+                if (INF && state === 'crash' && offerContinue()) return;
                 gameState = state;
                 try { removeBossHud(); } catch (e) {}
                 // Запомнить кампанию ДО любых сбросов pendingMode
@@ -4839,7 +4866,7 @@ function startGaragePreview(carId) {
                 try { const ct = document.getElementById('coach-tip'); if (ct) ct.remove(); } catch (e) {}
                 const cheb = document.getElementById('cheburashkaWarn');
                 if (cheb) cheb.remove();
-                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque').forEach(el => el.remove());
+                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque, #power-hud').forEach(el => el.remove());
                 const timeTaken = raceTime;
                 const infRun = INF && infWorld ? { dist: Math.round(infWorld.dist), e: stats.eChips || 0, score: runScore(infWorld.dist, stats.eChips || 0, risk.points),
                     lands: Math.floor(infWorld.dist / 900) + 1 } : null;
@@ -4872,7 +4899,7 @@ function startGaragePreview(carId) {
                             // для контрактов дня на механики
                             cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
                             nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, riskPoints: risk.points, animalsJumped: stats.animalsJumped || 0,
-                            cleanSegments: cleanRun.segments, distance: infRun ? infRun.dist : 0, infScore: infRun ? infRun.score : 0
+                            cleanSegments: cleanRun.segments, vhs: stats.vhs || 0, distance: infRun ? infRun.dist : 0, infScore: infRun ? infRun.score : 0
                         }) || raceRewards;
                         try { updatePlayerBar(); } catch (e) {}
                         console.log('🪙 Награды заезда:', raceRewards);
@@ -6457,6 +6484,7 @@ function startGaragePreview(carId) {
                 const tm = window.__campaignTrafficMul || 1;
                 if (tm !== 1) maxCars = Math.max(4, Math.min(28, Math.round(maxCars * tm)));
             } catch (e) {}
+            if (INF) maxCars = Math.max(3, Math.round(maxCars * 0.7)); // бесконечная трасса: попуток на 30% меньше
             for (let i = 0; i < maxCars; i++) {
                 const z = INF ? START_Z - 70 - Math.random() * 300 : -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
@@ -6898,7 +6926,7 @@ function startGaragePreview(carId) {
             // бывшая «звезда» за нитро-прыжок — большая золотая «Е» (src/echip.js), даёт 5 «Е»
             function createStar(x, z) {
                 const g = new THREE.Group();
-                g.add(createEChip(true));
+                g.add(createEChip(true), eGlow());
                 g.position.set(x, 1.4, z);
                 scene.add(g);
                 return { mesh: g, x: x, z: z, type: 'star', active: true, bob: 0, radius: 1.05, airOnly: true, minY: 1.05, baseY: 1.4 };
@@ -6908,6 +6936,18 @@ function startGaragePreview(carId) {
                 m.position.set(x, y, z);
                 scene.add(m);
                 return { mesh: m, x: x, z: z, type: 'echip', active: true, bob: Math.random() * 6, radius: 0.6, baseY: y, airOnly: y > 1.05, minY: y - 0.7 };
+            }
+            function createPowerItem(x, z, type) {
+                const m = createPowerToken(type);
+                m.position.set(x, 0.8, z);
+                scene.add(m);
+                return { mesh: m, x: x, z: z, type: 'power', power: type, active: true, bob: Math.random() * 6, radius: 0.7, baseY: 0.8 };
+            }
+            function createVhsItem(x, y, z) {
+                const m = createCassette();
+                m.position.set(x, y, z);
+                scene.add(m);
+                return { mesh: m, x: x, z: z, type: 'vhs', active: true, bob: 0, radius: 0.7, baseY: y };
             }
             let nearMissCount = 0;
             let _nmCooldown = 0;
@@ -6951,7 +6991,7 @@ function startGaragePreview(carId) {
                 }
             }
             // генератор: в бесконечной трассе круг строится по участку за кадр (yield), в обычной — целиком
-            function* populateLap(mapId) {
+            function* populateLap(mapId, difficulty) {
             try {
                 // раскладка участков — из данных (src/tracks/layouts.json): карта → глава кампании
                 const _layout = (isEndlessMode() && window.__layoutOverride) || resolveLayout(null, { mapId: mapId, difficulty: difficulty, campaignId: window.__campaignTrackId || null });
@@ -7139,7 +7179,7 @@ function startGaragePreview(carId) {
             } catch (eSet) { console.warn('setpieces', eSet); }
             }
             const _infM0 = scene.children.length;
-            for (const _st of populateLap(mapId)) { /* обычный заезд — сразу целиком */ }
+            for (const _st of populateLap(mapId, INF ? 'easy' : difficulty)) { /* обычный заезд — сразу целиком */ }
             // бесконечная трасса: «Е», препятствия, нитро и жвачки круга k — из плана (src/infinite.js), мимо постановочных участков
             function infPlanLap(k) {
                 const LX = [-2, 0, 2], d0 = k * _trackSpan;
@@ -7148,6 +7188,8 @@ function startGaragePreview(carId) {
                     if (infBusy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; })) return;
                     let c = null;
                     if (it.kind === 'echip') { collectibles.push(createEChipItem(LX[it.lane], it.y, z)); return; }
+                    if (it.kind === 'vhs') { collectibles.push(createVhsItem(LX[it.lane], 0.75, z)); return; }
+                    if (it.kind === 'power') { collectibles.push(createPowerItem(LX[it.lane], z, it.type)); return; }
                     if (it.kind === 'obstacle') { c = createObstacle(z, it.type === 'slide' ? themeAt(it.d).theme.slide : it.type); obstacles.push(c); }
                     else { c = createCollectible(z, it.kind); collectibles.push(c); }
                     c.x = LX[it.lane]; c.mesh.position.x = c.x;
@@ -7157,6 +7199,11 @@ function startGaragePreview(carId) {
                 list.forEach(function(o) { _infBox.setFromObject(o); if (!_infBox.isEmpty()) infRoots.push([o, _infBox.min.z]); });
             }
             if (INF) { infPlanLap(0); infTrack(scene.children.slice(_infM0)); }
+            // обычные трассы: видеокассета изредка (~30% заездов), не у разлома
+            if (!INF && Math.random() < 0.3) {
+                const fr = [0.3, 0.45, 0.6, 0.72].filter(function(v) { return gaps.every(function(g) { return Math.abs(g.zNear - _zAt(v)) > 70; }); });
+                if (fr.length) collectibles.push(createVhsItem([-2, 0, 2][Math.floor(Math.random() * 3)], 0.75, _zAt(fr[Math.floor(Math.random() * fr.length)])));
+            }
             // позади машины: объекты кругов — из сцены и из списков игры
             function infPrune(zb) {
                 for (let i = infRoots.length - 1; i >= 0; i--) {
@@ -7178,8 +7225,10 @@ function startGaragePreview(carId) {
                 scene.children.forEach(function(o) { if (!had.has(o)) _infNew.push(o); });
                 return r;
             }
-            function infTick() {
+            function infTick(dt) {
                 const t = infWorld.tick(zPos), d = infWorld.dist;
+                tickPowers(powers, dt);
+                renderPowerHud(activePowers(powers));
                 if (t.theme !== infTheme) {
                     infTheme = t.theme;
                     animalSpawner.animalPool = t.theme.animals;
@@ -7203,7 +7252,7 @@ function startGaragePreview(carId) {
                     _infNew = []; _infStage = 0;
                 } else if (k > _lapK) {
                     _lapK = k; _lapZ0 = START_Z - k * _trackSpan;
-                    _infGen = populateLap(['arsenev', 'promzona', 'svalka'][k % 3]);
+                    _infGen = populateLap(['arsenev', 'promzona', 'svalka'][k % 3], k < 2 ? 'easy' : 'medium'); // первые круги — лёгкая расстановка
                 }
                 if (++_infN % 60 === 0) infPrune(zPos + 70);
             }
@@ -8131,7 +8180,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get chunks() { return chunkCull; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, get inf() { return infWorld; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get chunks() { return chunkCull; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, get inf() { return infWorld; }, powers: powers, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8195,7 +8244,7 @@ function startGaragePreview(carId) {
                     }
                 });
             }
-            initAnimals();
+            if (!INF) initAnimals(); // бесконечная трасса: без толпы зверей на старте
 
             // ============================================================
             // ФАРЫ
@@ -8295,7 +8344,7 @@ function startGaragePreview(carId) {
                 
                 // Комбо
                 comboTime += deltaTime; riskTick(risk, deltaTime); renderRiskHud(risk);
-                if (INF && infWorld) infTick();
+                if (INF && infWorld) infTick(deltaTime);
                 if (chunkCull) { chunkCull.update(zPos, Math.min(camera.far, scene.fog ? scene.fog.far + 25 : camera.far), 30); if (++_cullN % 30 === 0) chunkCull.sweep(); }
                 if (comboTime > comboMax) comboMax = comboTime;
                 if (radioCooldown > 0) radioCooldown -= deltaTime;
@@ -9211,6 +9260,13 @@ function startGaragePreview(carId) {
                         c.bob += deltaTime * 3;
                         c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.07;
                         c.mesh.rotation.y += deltaTime * 3.2;
+                    } else if (c.type === 'power') {
+                        c.bob += deltaTime * 3;
+                        c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.1;
+                    } else if (c.type === 'vhs') {
+                        c.bob += deltaTime * 2.2;
+                        c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.1;
+                        c.mesh.rotation.y += deltaTime * 1.8;
                     } else if (c.type === 'star') {
                         c.bob += deltaTime * 2.5;
                         c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.12;
@@ -9225,6 +9281,8 @@ function startGaragePreview(carId) {
                         });
                     }
 
+                    // магнит: «Е» впереди летят к машине
+                    if (c.type === 'echip' && !c.airOnly && magnetPull(powers, c, xPos, zPos, deltaTime)) c.mesh.position.set(c.x, c.mesh.position.y, c.z);
                     const dx = xPos - c.x;
                     const dz = zPos - c.z;
                     if (c.airOnly && carYOffset < (c.minY || 0.6)) return; // висит в воздухе — берётся только в прыжке
@@ -9233,8 +9291,19 @@ function startGaragePreview(carId) {
                         c.active = false;
                         c.mesh.visible = false;
                         if (c.type === 'echip') {
-                            stats.eChips = (stats.eChips || 0) + 1;
+                            stats.eChips = (stats.eChips || 0) + eValue(powers); // ×2 — каждая «Е» за две
                             try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 0.55); } catch (e) {}
+                        } else if (c.type === 'power') {
+                            activatePower(powers, c.power);
+                            stats.powers = (stats.powers || 0) + 1;
+                            if (c.power === 'shield') { cleanRun.grantShield(); setShieldVisible(true); }
+                            const pw = POWERS[c.power];
+                            try { showBigPlaque(pw.icon + ' ' + pw.name.toUpperCase(), c.power === 'magnet' ? '«Е» сами летят к тебе — ' + pw.time + ' с' : c.power === 'x2' ? 'Каждая «Е» за две — ' + pw.time + ' с' : 'Следующий удар — не авария', 'armor'); } catch (e) {}
+                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup_nitro', 1); } catch (e) {}
+                        } else if (c.type === 'vhs') {
+                            stats.vhs = (stats.vhs || 0) + 1;
+                            try { showBigPlaque('📼 ВИДЕОКАССЕТА!', 'Редкая валюта — копи на особую машину', 'armor'); } catch (e) {}
+                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.4); } catch (e) {}
                         } else if (c.type === 'star') {
                             raceTime = Math.max(0, raceTime - 3);
                             stats.starsPicked = (stats.starsPicked || 0) + 1;
@@ -10371,6 +10440,8 @@ function startGaragePreview(carId) {
             function animate(currentTime) {
                 animationId = requestAnimationFrame(animate);
                 window.__gameAnimationId = animationId;
+                // «Второй шанс»: сцена ждёт выбора — цикл не останавливаем, иначе после оплаты машина не поедет
+                if (gameState === 'chance') { lastTime = currentTime; renderer.render(scene, camera); return; }
                 if (gameState !== 'racing' && gameState !== 'countdown') {
                     _framesAfterRace++;
                     if (_framesAfterRace < 6) {

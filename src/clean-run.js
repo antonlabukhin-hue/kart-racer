@@ -27,6 +27,8 @@ export function createCleanRun() {
             shield = false;
             return true;
         },
+        /** Броня сразу (усиление «Броня», «Второй шанс») */
+        grantShield: function() { shield = true; },
         /** Удар, который броня не спасает (падение в разлом, снаряд босса) */
         reset: function() { t = 0; },
         get progress() { return Math.min(1, t / CLEAN_SEGMENT); },

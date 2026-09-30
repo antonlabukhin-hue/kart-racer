@@ -36,6 +36,7 @@ export function refreshMainMenu(d) {
     setText('mm-level', 'ур. ' + (se.level || 1));
     setText('mm-chips', String(se.chips || 0));
     setText('mm-gum', String(se.gum || 0));
+    setText('mm-vhs', String(se.vhs || 0));
     setText('mm-note-campaign', d.campaignDone + ' из ' + d.campaignTotal);
     const ups = affordableUpgrades(d.upgradeLevels, se.chips, d.upgrades, d.costOf, d.maxLevel);
     setBadge('mm-badge-garage', ups);
@@ -92,7 +93,7 @@ export function showChest(p, c) {
         + '<div class="ch-days">' + CHESTS.map(function(x, i) {
             const n = i + 1;
             return '<div class="ch-day' + (n < day ? ' past' : n === day ? ' today' + (claimed ? ' opened' : '') : '') + '"><small>день ' + n + '</small><i>' + (n === 7 ? '🎁' : '📦') + '</i>'
-                + '<span>🪙' + x.chips + '<br>🍬' + x.gum + '</span></div>';
+                + '<span>🪙' + x.chips + '<br>🍬' + x.gum + (x.vhs ? '<br>📼' + x.vhs : '') + '</span></div>';
         }).join('') + '</div>'
         + (claimed ? '<div class="ch-got">Сегодня уже забран — приходи завтра</div>' : '<button type="button" class="ch-claim">Забрать сундук</button>')
         + '<button type="button" class="ch-later">' + (claimed ? 'Понятно' : 'Позже') + '</button></div>';
@@ -104,7 +105,7 @@ export function showChest(p, c) {
     if (cl) cl.onclick = function() {
         const got = c.claim();
         if (!got) { close(); return; }
-        cl.outerHTML = '<div class="ch-got">+' + got.chips + ' 🪙 · +' + got.gum + ' 🍬</div>';
+        cl.outerHTML = '<div class="ch-got">+' + got.chips + ' 🪙 · +' + got.gum + ' 🍬' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>';
         m.querySelector('.ch-later').textContent = 'Отлично!';
         m.querySelector('.ch-day.today').classList.add('opened');
     };

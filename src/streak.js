@@ -4,8 +4,9 @@
  */
 export const CHESTS = [
     { chips: 2, gum: 5 }, { chips: 3, gum: 8 }, { chips: 4, gum: 10 }, { chips: 5, gum: 12 },
-    { chips: 6, gum: 15 }, { chips: 8, gum: 20 }, { chips: 12, gum: 30 }
+    { chips: 6, gum: 15 }, { chips: 8, gum: 20 }, { chips: 12, gum: 30, vhs: 1 }
 ];
+export const CHEST_VHS_CHANCE = 0.1; // видеокассета: в обычный день изредка, в 7-й — всегда
 
 /** Локальная дата 'ГГГГ-ММ-ДД' */
 export function dayKey(d) {
@@ -45,11 +46,13 @@ export function canClaimChest(profile, today) {
 }
 
 /** Забрать сундук дня: начисляет фишки и жвачку. null — сегодня уже забран */
-export function claimChest(profile, today) {
+export function claimChest(profile, today, rnd) {
     if (!canClaimChest(profile, today)) return null;
     const c = chestFor(profile.streak.count);
     profile.season.chips = (profile.season.chips || 0) + c.chips;
     profile.season.gum = (profile.season.gum || 0) + c.gum;
+    const vhs = c.vhs || ((rnd || Math.random)() < CHEST_VHS_CHANCE ? 1 : 0);
+    profile.season.vhs = (profile.season.vhs || 0) + vhs;
     profile.streak.claimed = today;
-    return { chips: c.chips, gum: c.gum, day: profile.streak.count };
+    return { chips: c.chips, gum: c.gum, vhs: vhs, day: profile.streak.count };
 }
