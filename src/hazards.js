@@ -15,6 +15,7 @@ export const CRATE_OUTCOMES = [
     { id: 'shield', w: 10, good: true, icon: '🛡', title: 'БРОНЯ!', sub: 'Следующий удар — не авария' },
     { id: 'e25', w: 14, good: true, icon: 'Е', title: '+25 Е', sub: 'Заначка в ящике', chips: 25 },
     { id: 'e75', w: 4, good: true, icon: 'Е', title: '+75 Е!', sub: 'Целый клад!', chips: 75 },
+    { id: 'badge', w: 7, good: true, icon: '🎖', title: 'ЗНАЧОК!', sub: 'В коллекцию «Значки 90-х»' }, // src/badges.js
     { id: 'slow', w: 12, good: false, icon: '🐌', title: 'ТОРМОЗ!', sub: 'В ящике был кирпич — скорость упала' },
     { id: 'oil', w: 10, good: false, icon: '🛢', title: 'МАСЛО!', sub: 'Ящик был с канистрой — занесло' },
     { id: 'empty', w: 6, good: false, icon: '💨', title: 'ПУСТО', sub: 'Повезёт в следующий раз' }

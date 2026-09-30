@@ -14,6 +14,8 @@ test('бесконечная трасса: пейзажи, «Е», уборка 
     await waitRacing(page);
     await expect(page.locator('#infDisplay')).toContainText('м · Е');
     await expect(page.locator('#weatherDisplay')).toContainText('Арсеньев, день');
+    // «До соперника N м»: первая цель — ближайший соперник из таблицы
+    await expect(page.locator('#chaseDisplay')).toContainText('🎯 До ');
 
     // «Е» на трассе: ставим машину на ближайшую — счётчик растёт
     const got = await page.evaluate(async () => {
@@ -219,10 +221,90 @@ test('первое знакомство: пауза с плашкой перед
 test('бесконечная трасса: «назад» из витрины машин — в главное меню', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
+    // событие недели — на карточке режима
+    await expect(page.locator('.menu-infinite .mm-note')).toContainText('×2 Е · ');
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await expect(page.locator('#shop-screen')).toBeVisible();
     await page.locator('#shop-close').click();
     await expect(page.locator('#main-menu-screen')).toBeVisible();
     for (const id of ['#difficulty-screen', '#shop-screen']) await expect(page.locator(id)).toBeHidden();
+    expect(problems).toEqual([]);
+});
+
+// погоня ГАИ: после аварии — «Жигуль» с мигалкой и отсчёт; вторая авария за это время — поймали (дальше «Второй шанс»)
+test('погоня ГАИ: вторая авария во время погони — заезд кончается', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await page.waitForTimeout(1500);
+    // попутка — прямо в машину игрока
+    const crash = () => page.evaluate(async () => {
+        const g = window.__raceDebug, before = g.strikes;
+        for (let i = 0; i < 20 && g.strikes === before && g.state === 'racing'; i++) {
+            const c = g.cars[0]; c.hitCooldown = 0; c.x = g.x; c.z = g.z; c.mesh.position.set(c.x, 0, c.z);
+            await new Promise(r => setTimeout(r, 50));
+        }
+        return g.strikes;
+    });
+    expect(await crash()).toBe(1);
+    await expect(page.locator('.police-hud')).toBeVisible();
+    await page.evaluate(() => { const c = window.__raceDebug.cars[0]; c.x = 99; c.mesh.position.x = 99; });
+    await page.waitForTimeout(600);
+    expect(await crash()).toBe(5);
+    await expect(page.locator('.police-hud')).toHaveCount(0);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// бусты перед стартом: «Разгон» (600 м на нитро, удары не считаются) и «Запаска» — списываются «Е»
+test('бусты: «Разгон» и «Запаска» покупаются в витрине и работают в заезде', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.season.chips = 1000; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await expect(page.locator('#shop-boosts')).toBeVisible();
+    await page.locator('#shop-boosts .bb-item[data-b="headstart"]').click();
+    await page.locator('#shop-boosts .bb-item[data-b="spare"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].season.chips)).toBe(550);
+    await page.keyboard.down('w');
+    await expect(page.locator('.big-plaque')).toContainText('РАЗГОН');
+    // попутка в машину во время «Разгона» — аварии нет
+    const strikes = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        for (let i = 0; i < 10; i++) { const c = g.cars[0]; c.hitCooldown = 0; c.x = g.x; c.z = g.z; c.mesh.position.set(c.x, 0, c.z); await new Promise(r => setTimeout(r, 50)); }
+        return g.strikes;
+    });
+    expect(strikes).toBe(0);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// коллекция значков 90-х (из ящиков «?») — в «Трофеях»
+test('значки 90-х: коллекция видна в «Трофеях»', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.badges = { got: { tech: 1, pager: 2 }, done: false }; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.locator('.mm-tab[data-menu="trophies"]').click();
+    await expect(page.locator('#badge-set')).toContainText('Значки 90-х');
+    await expect(page.locator('#badge-set')).toContainText('2 / 8');
+    await expect(page.locator('#badge-set .got')).toHaveCount(2);
     expect(problems).toEqual([]);
 });

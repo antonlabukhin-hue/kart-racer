@@ -121,3 +121,16 @@ describe('план участка', () => {
         expect(late).toBeGreaterThan(early * 1.4);
     });
 });
+
+import { weekTheme } from '../../src/infinite.js';
+describe('событие недели', () => {
+    it('всю неделю — один пейзаж, со следующего понедельника — другой; за 7 недель — все', () => {
+        const mon = new Date(2026, 8, 28, 10), sun = new Date(2026, 9, 4, 22), next = new Date(2026, 9, 5, 1);
+        expect(weekTheme(mon).theme.id).toBe(weekTheme(sun).theme.id);
+        expect(weekTheme(next).theme.id).not.toBe(weekTheme(mon).theme.id);
+        const ids = new Set();
+        for (let w = 0; w < 7; w++) ids.add(weekTheme(new Date(2026, 8, 28 + w * 7, 12)).theme.id);
+        expect(ids.size).toBe(7);
+        expect(weekTheme(mon).short.length).toBeLessThanOrEqual(9);
+    });
+});

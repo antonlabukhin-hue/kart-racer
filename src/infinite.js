@@ -175,3 +175,16 @@ export function planStretch(d0, d1, rnd, opts) {
     out.sort(function(a, b) { return a.d - b.d; });
     return { items: out, nextGap: nextGap };
 }
+
+/**
+ * Событие недели: один пейзаж на неделю «золотой» — в нём каждая «Е» за две. Неделя — с понедельника (местное время),
+ * пейзажи идут по кругу. Возвращает { theme, short } — short — короткое имя для карточки в меню.
+ */
+const WEEK_SHORT = { day: 'Арсеньев', promzona: 'Промзона', snow: 'Тайга', night: 'Ночь', svalka: 'Свалка', rain: 'Дождь', jungle: 'Джунгли' };
+export function weekTheme(now) {
+    const d = new Date(now != null ? now : Date.now());
+    const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7);
+    const week = Math.round((monday.getTime() - new Date(2026, 0, 5).getTime()) / (7 * 86400000)); // 5 янв 2026 — понедельник
+    const th = THEMES[((week % THEMES.length) + THEMES.length) % THEMES.length];
+    return { theme: th, short: WEEK_SHORT[th.id] || th.name };
+}
