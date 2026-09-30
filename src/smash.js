@@ -15,7 +15,7 @@ export const AD_TEXTS = [
     ['КООПЕРАТИВ «ЛУЧ»', 'ВСЁ ДЛЯ ДАЧИ']
 ];
 const AD_COLORS = [[0xffd23c, 0xc4161c], [0x2a9df4, 0xffffff], [0xff7a1a, 0x2a1400], [0xe0368f, 0xfff2a8], [0x33b24a, 0xffffff], [0xf1f1f1, 0x1a4fd8]];
-export const SMASH_CHIPS = 1;
+export const SMASH_CHIPS = 10;
 
 /**
  * Где поставить щиты: доли трассы подальше от разломов, арок, участков и босса; полоса — случайная.

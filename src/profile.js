@@ -73,6 +73,8 @@ export function ensureProfileFields(p, balanceVersion) {
     }
     if (!p.bestTimes) p.bestTimes = { easy: null, medium: null, hard: null };
     if (p.season.chips == null) p.season.chips = 0;
+    // экономика «Е» (v2): цены и награды выросли в 10 раз — накопленное тоже ×10, один раз
+    if (p.econVer !== 2) { p.season.chips = (p.season.chips || 0) * 10; p.econVer = 2; }
     // весь опыт за всё время (уровень и звание игрока, src/ranks.js): у старых профилей — из прогресса сезона
     if (p.totalXp == null) p.totalXp = totalFromSeason(p.season, seasonXpToNext);
     if (p.season.gum == null) p.season.gum = 0;
@@ -203,16 +205,16 @@ export function applyRaceResult(profile, state, meta, ctx) {
 
     let xp = 25;
     let gum = 0;
-    let chips = state === 'win' ? 3 : 1; // базовые фишки за любой заезд
+    let chips = state === 'win' ? 30 : 10; // базовые «Е» за любой заезд
     let newBest = false;
     const unlockedMaps = [];
 
     if (state === 'win') {
         st.wins = (st.wins || 0) + 1;
         xp += 60;
-        chips += 2;
+        chips += 20;
         tryAch('first_win');
-        if (m.strikes === 0) { st.perfectWins = (st.perfectWins || 0) + 1; tryAch('perfect'); xp += 40; chips += 1; }
+        if (m.strikes === 0) { st.perfectWins = (st.perfectWins || 0) + 1; tryAch('perfect'); xp += 40; chips += 10; }
         if (m.weather === 'night') { st.nightWins = (st.nightWins || 0) + 1; tryAch('night_rider'); xp += 15; }
         if (m.weather === 'rain') { st.rainWins = (st.rainWins || 0) + 1; tryAch('rain_man'); xp += 15; }
         if (m.difficulty === 'hard') { st.hardWins = (st.hardWins || 0) + 1; tryAch('hard_win'); xp += 30; }
@@ -243,7 +245,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
         xp += 10;
     }
     // фишки за «чистые отрезки» (src/clean-run.js) — за любой исход заезда
-    chips += Math.max(0, Math.min(20, m.bonusChips || 0));
+    chips += Math.max(0, Math.min(200, m.bonusChips || 0));
     // собранные на трассе фишки «Е» (src/echip.js) — без потолка: в бесконечной трассе их сотни
     chips += Math.max(0, Math.floor(m.eChips || 0));
     // видеокассеты (src/cassette.js) — редкая валюта, только за них — уникальная машина

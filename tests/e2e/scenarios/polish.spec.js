@@ -26,16 +26,16 @@ test('гараж: после покупки улучшения фишки в ш�
     await login(page);
     await page.evaluate(() => {
         const list = JSON.parse(localStorage.getItem('road_racing_profiles_v1') || '[]');
-        list.forEach(p => { p.season = Object.assign({}, p.season, { chips: 50 }); });
+        list.forEach(p => { p.season = Object.assign({}, p.season, { chips: 500 }); p.econVer = 2; });
         localStorage.setItem('road_racing_profiles_v1', JSON.stringify(list));
     });
     await page.reload();
     await page.locator('#splash-screen').click();
     await page.locator('#profile-list').getByText('Тестер').click();
     await page.locator('[data-menu="garage"]').click();
-    await expect(page.locator('#garage-player-name')).toContainText('Е 50');
+    await expect(page.locator('#garage-player-name')).toContainText('Е 500');
     await page.getByRole('button', { name: /Прокачка/ }).click();
     await page.locator('#garage-panel-upgrades button[data-up]').first().click();
-    await expect(page.locator('#garage-player-name')).not.toContainText('Е 50');
+    await expect(page.locator('#garage-player-name')).not.toContainText('Е 500');
     expect(problems).toEqual([]);
 });

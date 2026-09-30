@@ -4,7 +4,7 @@
  * Стоя на месте отрезок не копится.
  */
 export const CLEAN_SEGMENT = 10;
-export const CLEAN_CHIPS = 2;
+export const CLEAN_CHIPS = 20;
 
 export function createCleanRun() {
     let t = 0, shield = false, chips = 0, segments = 0;

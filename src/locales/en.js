@@ -225,7 +225,7 @@ export default {
         '🛡 БРОНЯ ПРИНЯЛА УДАР': '🛡 ARMOR TOOK THE HIT',
         '10 с без ударов — следующий удар не считается': '10 s without hits — the next hit does not count',
         'Аварии нет — копи новый чистый отрезок': 'No crash — build a new clean stretch',
-        '✨ Чистый отрезок — +2 Е': '✨ Clean stretch — +2 E',
+        '✨ Чистый отрезок — +20 Е': '✨ Clean stretch — +20 E',
         '👻 РЕКОРД:': '👻 RECORD:',
         'УШЁЛ': 'GOT AWAY',
         'Догоним в следующем заезде →': 'We will catch up next race →',
@@ -358,7 +358,7 @@ export default {
         '⚡ Нитро на трамплине — высокий прыжок за ⭐ (−3 с)': '⚡ Nitro on a ramp — a high jump for the ⭐ (−3 s)',
         '🪨 Над аркой висит груз — сейчас рухнет, уйди в сторону': '🪨 Cargo hangs over the arch — it is about to drop, move aside',
         '💨 Проскочи вплотную к зверю — «На волоске!» даст нитро': '💨 Squeeze past an animal — «Close call!» gives nitro',
-        '📋 В главе 3 задания — за каждое +3 Е (список на финише)': '📋 Each chapter has 3 tasks — +3 E each (listed at the finish)',
+        '📋 В главе 3 задания — за каждое +30 Е (список на финише)': '📋 Each chapter has 3 tasks — +30 E each (listed at the finish)',
         '🚦 Впереди опасный участок — смотри на сигнал и выбирай момент': '🚦 Danger ahead — watch the signal and pick your moment',
         '❤ Сердечко снимает одну аварию — не пропускай': "❤ A heart removes one crash — don't miss it"
     },
