@@ -191,8 +191,10 @@ function buildBull(k, m, group) {
     // перед: закрытые фары-«ресницы», поворотники, габариты
     [-1, 1].forEach(function(s) {
         k.box(m.matte, 0.3, 0.012, 0.16, s * 0.42, 0.51, -0.52, -0.26);
-        k.box(m.hl, 0.18, 0.035, 0.03, s * 0.44, 0.3, -1.225, 0, LIGHT);
-        k.box(new THREE.MeshStandardMaterial({ color: 0xffa020, emissive: 0xff8800, emissiveIntensity: 1.2 }), 0.1, 0.03, 0.03, s * 0.62, 0.3, -1.2, 0, LIGHT);
+        k.box(m.body, 0.3, 0.1, 0.16, s * 0.42, 0.56, -0.62, 0, paintFlag()); // поднятая фара
+        k.box(m.hl, 0.26, 0.07, 0.02, s * 0.42, 0.56, -0.705, 0, LIGHT);
+        k.box(m.hl, 0.18, 0.035, 0.03, s * 0.44, 0.3, -1.25, 0, LIGHT);
+        k.box(new THREE.MeshStandardMaterial({ color: 0xffa020, emissive: 0xff8800, emissiveIntensity: 1.2 }), 0.1, 0.03, 0.03, s * 0.6, 0.3, -1.245, 0, LIGHT);
     });
     // зад: чёрная панель, фонари, четыре трубы
     k.box(m.matte, W * 0.9, 0.2, 0.02, 0, 0.44, 1.215);
@@ -266,7 +268,7 @@ function buildAvenger(k, m, group) {
     [0.17, 0.11, 0.05].forEach(function(r) { const t = new THREE.Mesh(new THREE.TorusGeometry(r, 0.012, 6, 24), m.chrome); t.position.set(0, 0.4, -1.6); group.add(t); });
     // узкие фары и воздухозаборники по бокам
     [-1, 1].forEach(function(s) {
-        k.box(m.hl, 0.28, 0.035, 0.03, s * 0.46, 0.47, -1.44, 0, LIGHT);
+        k.box(m.hl, 0.3, 0.05, 0.03, s * 0.44, 0.44, -1.585, 0, LIGHT);
         k.box(m.matte, 0.012, 0.12, 0.5, s * (W / 2 + 0.004), 0.44, 0.35);
     });
     // плавники-крылья сзади
@@ -276,7 +278,7 @@ function buildAvenger(k, m, group) {
     // сопло с огнём
     k.cyl(m.black, 0.17, 0.2, 0, 0.42, 1.54, 'z', null, 24);
     k.cyl(new THREE.MeshStandardMaterial({ color: 0xff7a1a, emissive: 0xff5a00, emissiveIntensity: 1.8 }), 0.12, 0.05, 0, 0.42, 1.64, 'z', LIGHT, 24);
-    [-1, 1].forEach(function(s) { k.box(m.tail, 0.22, 0.04, 0.02, s * 0.46, 0.5, 1.53, 0, LIGHT); });
+    [-1, 1].forEach(function(s) { k.box(m.tail, 0.3, 0.06, 0.02, s * 0.44, 0.46, 1.585, 0, LIGHT); });
     return { L: 3.05, W: W, Y: 0.42, wheels: [[-0.62, 0.28, -0.98, 0.28, 0.26], [0.62, 0.28, -0.98, 0.28, 0.26], [-0.62, 0.28, 0.95, 0.28, 0.3], [0.62, 0.28, 0.95, 0.28, 0.3]] };
 }
 

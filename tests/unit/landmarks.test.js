@@ -34,6 +34,14 @@ describe('узнаваемые детали трасс', () => {
         }
     });
 
+    it('встречка: грузовик летит навстречу по своей полосе — в ней лобовое, соседние свободны', () => {
+        const ev = createSetpieceEvent('oncoming', 6, 0, LANES);
+        expect(drive(ev, LANES[ev.lane])).toMatchObject({ kind: 'oncoming', strike: true });
+        const ev2 = createSetpieceEvent('oncoming', 6, 0, LANES);
+        expect(drive(ev2, LANES[(ev2.lane + 1) % 3])).toBeNull();
+        expect(ev2.debug.state).not.toBe('wait'); // успел тронуться навстречу
+    });
+
     it('ПАЗик перекрывает правую полосу, левая свободна', () => {
         expect(drive(createSetpieceEvent('bus', 6, 0, LANES), 1.5)).toMatchObject({ kind: 'bus', strike: true });
         expect(drive(createSetpieceEvent('bus', 6, 0, LANES), -1.5)).toBeNull();

@@ -558,6 +558,9 @@ export function buildShowroomCar(carId) {
             lid.position.set(sx * bodyW * 0.3, topY0 + 0.02, -bodyL * 0.5 + 0.2); lid.userData.bodyPaint = true; group.add(lid);
             const lens = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.26, 0.07), hlMat.clone());
             lens.rotation.y = Math.PI; lens.position.set(sx * bodyW * 0.3, topY0 + 0.02, -bodyL * 0.5 + 0.2 - 0.081); lens.userData.isLight = true; group.add(lens);
+            // габариты-противотуманки в бампере — перед светится и спереди, и в заезде (линзы на капоте сверху почти не видно)
+            const fog = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.2, 0.05, 0.02), hlMat.clone());
+            fog.position.set(sx * bodyW * 0.32, 0.27, -bodyL * 0.5 - 0.1); fog.userData.isLight = true; group.add(fog); // на передней грани бампера
             // воздухозаборник за дверью
             const vent = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.01, 0.1, 0.3), kit);
             vent.position.set(sx * (bodyW * 0.5 + 0.005), bodyY + 0.02, 0.55); group.add(vent);

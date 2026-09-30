@@ -23,9 +23,14 @@ export const THEMES = [
 export const THEME_LEN = 900;   // длина пейзажа, ед. (~30–40 с езды)
 export const BLEND_LEN = 120;   // на стольких единицах небо, туман и земля плавно перетекают в следующий пейзаж
 
+/** С какого пейзажа начинается заезд (каждый раз свой: ночь, снег, дождь…) — индекс в THEMES */
+let themeStart = 0;
+export function setThemeStart(i) { themeStart = ((Math.floor(i) || 0) % THEMES.length + THEMES.length) % THEMES.length; }
+export function getThemeStart() { return themeStart; }
+
 /** Какой пейзаж на расстоянии dist: { theme, next, k } — k 0..1 — доля перехода в следующий */
 export function themeAt(dist) {
-    const d = Math.max(0, dist || 0);
+    const d = Math.max(0, dist || 0) + themeStart * THEME_LEN;
     const i = Math.floor(d / THEME_LEN);
     const into = d - i * THEME_LEN;
     const theme = THEMES[i % THEMES.length], next = THEMES[(i + 1) % THEMES.length];
@@ -44,7 +49,7 @@ export function mixHex(a, b, k) {
  * Машина разгоняется плавно с первого метра: speed — множитель максимальной скорости (0.85 → 1.35 к ~8 км).
  * Звери и попутки первые 1000 м — как на старте, дальше плавно растут вместе со скоростью машины (к ~8 км — потолок):
  *   animals — частота зверей (0.55 → 2.6), maxAnimals — сколько сразу (6 → 16), animalSpeed — скорость перебежки (×1 → ×1.6),
- *   traffic — сколько попуток добавить (0 → +5), trafficSpeed — их скорость (×1 → ×1.5).
+ *   traffic — сколько попуток добавить (0 → +8), trafficSpeed — их скорость (×1 → ×1.5).
  * density — плотность препятствий на участке (0.3 → 1.3)
  */
 export const RAMP_LEN = 8000;
@@ -54,7 +59,7 @@ export function rampAt(dist) {
     const a = Math.max(0, Math.min(1, ((dist || 0) - 1000) / (RAMP_LEN - 1000))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1000 м
     return { t: t, speed: 0.85 + 0.5 * e, density: 0.3 + e,
         animals: 0.55 + 2.05 * ea, maxAnimals: Math.round(6 + 10 * ea), animalSpeed: 1 + 0.6 * ea,
-        traffic: Math.round(5 * ea), trafficSpeed: 1 + 0.5 * ea };
+        traffic: Math.round(8 * ea), trafficSpeed: 1 + 0.5 * ea };
 }
 
 /** Очки забега: метры + «Е» по 10 + очки риска (множитель за риск уже внутри них) */
