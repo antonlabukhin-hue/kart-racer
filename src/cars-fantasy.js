@@ -175,9 +175,9 @@ function buildChariot(k, m, group) {
     const rim = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.04, 8, 32), m.body); rim.rotation.x = Math.PI / 2; rim.scale.set(1, 1.05, 1); rim.position.set(0, 0.86, 0.3); rim.userData.bodyPaint = true; group.add(rim);
     for (let i = 0; i <= 10; i++) {
         const a = -1.2 + i * 0.24;
-        const rib = k.box(m.body, 0.13, 1.0, 0.05, Math.sin(a) * 0.46, 0.86 + Math.cos(a) * 0.46, 0.88, 0, paintFlag());
+        const rib = k.box(m.body, 0.12, 0.66, 0.05, Math.sin(a) * 0.31, 0.86 + Math.cos(a) * 0.31, 0.88, 0, paintFlag()); // веер пониже — сзади видно Посейдона
         rib.rotation.z = -a;
-        k.sphere(pearl, 0.045, 1, 1, 1, Math.sin(a) * 0.98, 0.86 + Math.cos(a) * 0.98, 0.9);
+        k.sphere(pearl, 0.04, 1, 1, 1, Math.sin(a) * 0.66, 0.86 + Math.cos(a) * 0.66, 0.9);
     }
     k.box(M(0x2a8fd8, { roughness: 0.7 }), 0.9, 0.12, 0.42, 0, 0.9, 0.5);
     // дышло и два морских конька в упряжке
@@ -194,12 +194,30 @@ function buildChariot(k, m, group) {
         k.box(M(0x0e8f84), 0.02, 0.36, 0.09, x, Y(1.25), z + 0.11);  // гребень по спине
         const tail = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.035, 8, 16, Math.PI * 1.5), sea);
         tail.rotation.y = Math.PI / 2; tail.position.set(x, Y(0.66), z + 0.08); group.add(tail);
-        k.rod(m.body, 0.012, [x, Y(1.3), z - 0.02], [s * 0.2, 1.0, -0.2]);   // вожжи
+        k.rod(m.body, 0.012, [x, Y(1.3), z - 0.02], [-0.22, 1.2, -0.08]);   // вожжи — в левой руке Посейдона
     });
-    // трезубец у спинки
-    k.rod(m.body, 0.025, [0.62, 0.7, 0.75], [0.62, 1.95, 0.75]);
-    k.rod(m.body, 0.02, [0.5, 1.8, 0.75], [0.74, 1.8, 0.75]);
-    [0.5, 0.62, 0.74].forEach(function(x) { k.rod(m.body, 0.018, [x, 1.8, 0.75], [x, 2.02, 0.75]); const c = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.09, 8), m.body); c.position.set(x, 2.06, 0.75); group.add(c); });
+    // Посейдон: сидит в раковине (не закрывает дорогу), седая борода, корона, в правой руке — трезубец, в левой — вожжи
+    const skin = M(0xd9a47e, { roughness: 0.65 }), beard = M(0xf2f2f0, { roughness: 0.9 }), cloth = M(0x1fb5a8, { roughness: 0.7 });
+    k.rod(skin, 0.2, [0, 0.95, 0.42], [0, 1.4, 0.36]);                          // торс
+    k.sphere(skin, 0.2, 1.25, 0.55, 0.8, 0, 1.38, 0.34);                        // плечи и грудь
+    k.rod(cloth, 0.05, [-0.22, 1.42, 0.3], [0.2, 0.98, 0.3]);                   // перевязь через плечо
+    k.box(m.body, 0.42, 0.06, 0.34, 0, 0.98, 0.42);                             // золотой пояс
+    k.cyl(skin, 0.07, 0.1, 0, 1.49, 0.34, 'y');                                 // шея
+    k.sphere(skin, 0.14, 1, 1.1, 1, 0, 1.62, 0.33);                             // голова
+    k.sphere(beard, 0.15, 1.05, 1.25, 0.75, 0, 1.5, 0.24);                      // борода
+    k.sphere(beard, 0.16, 1.02, 0.85, 1.05, 0, 1.68, 0.37);                     // седые волосы
+    k.box(beard, 0.14, 0.03, 0.03, 0, 1.6, 0.2);                                // усы
+    [-1, 1].forEach(function(e) { k.sphere(M(0x1a2a3a), 0.018, 1, 1, 1, e * 0.05, 1.65, 0.2); });
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.08, 14, 1, true), m.body); crown.position.set(0, 1.77, 0.34); group.add(crown);
+    for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2, c = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.1, 6), m.body); c.position.set(Math.sin(a) * 0.12, 1.85, 0.34 + Math.cos(a) * 0.12); group.add(c); }
+    // руки: правая поднята с трезубцем, левая держит вожжи
+    k.rod(skin, 0.06, [0.26, 1.4, 0.34], [0.44, 1.46, 0.26]); k.rod(skin, 0.05, [0.44, 1.46, 0.26], [0.5, 1.64, 0.2]);
+    k.sphere(skin, 0.05, 1, 1, 1, 0.5, 1.66, 0.2);
+    k.rod(skin, 0.06, [-0.26, 1.4, 0.34], [-0.34, 1.22, 0.14]); k.rod(skin, 0.05, [-0.34, 1.22, 0.14], [-0.22, 1.2, -0.08]);
+    k.sphere(skin, 0.05, 1, 1, 1, -0.22, 1.2, -0.08);
+    k.rod(m.body, 0.025, [0.5, 0.9, 0.2], [0.5, 2.1, 0.2]);                     // трезубец
+    k.rod(m.body, 0.02, [0.38, 1.95, 0.2], [0.62, 1.95, 0.2]);
+    [0.38, 0.5, 0.62].forEach(function(x) { k.rod(m.body, 0.018, [x, 1.95, 0.2], [x, 2.17, 0.2]); const c = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.09, 8), m.body); c.position.set(x, 2.21, 0.2); group.add(c); });
     // жемчужные фонари спереди, красные — сзади
     [-1, 1].forEach(function(s) { k.sphere(m.hl, 0.07, 1, 1, 1, s * 0.34, 0.72, -0.26, LIGHT); k.sphere(m.tail, 0.045, 1, 1, 1, s * 0.3, 0.7, 0.92, LIGHT); });
     return { L: 2.7, W: 1.3, Y: 0.62, wheels: [[-0.66, 0.38, 0.3, 0.38, 0.1], [0.66, 0.38, 0.3, 0.38, 0.1]] };
