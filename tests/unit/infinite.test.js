@@ -60,5 +60,14 @@ describe('план участка', () => {
         expect(n).toBeGreaterThanOrEqual(12);
         expect(n).toBeLessThanOrEqual(35);
         expect(VHS_EVERY).toBe(1700);
+        // кассета и усиление — не в цепочке «Е»: ближайшая «Е» дальше 18 ед.
+        const p = planStretch(0, 20000, seq(21)).items;
+        const es = p.filter(i => i.kind === 'echip').map(i => i.d);
+        p.filter(i => i.kind === 'vhs' || i.kind === 'power').forEach(v => expect(es.every(e => Math.abs(e - v.d) > 18)).toBe(true));
+    });
+    it('усиления — раз в 450–750 м, всех трёх видов', () => {
+        const pw = planStretch(0, 20000, seq(9)).items.filter(i => i.kind === 'power');
+        expect(pw.length).toBeGreaterThan(20);
+        expect(new Set(pw.map(i => i.type))).toEqual(new Set(['magnet', 'x2', 'shield']));
     });
 });

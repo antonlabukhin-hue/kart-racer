@@ -63,12 +63,14 @@ export function runXp(dist) {
 
 /**
  * План участка трассы [d0, d1) (расстояния от старта): что где поставить. rnd — генератор [0,1).
- * Возвращает список { kind, d, lane, ... } — kind: 'obstacle' (type), 'echip' (lane, y), 'nitro', 'gum', 'vhs', 'gap' (rampLane).
+ * Возвращает список { kind, d, lane, ... } — kind: 'obstacle' (type), 'echip' (lane, y), 'nitro', 'gum', 'vhs', 'power' (type), 'gap' (rampLane).
  * Разлом — не чаще раза в GAP_EVERY, вокруг него чисто; «Е» — цепочками по полосам, змейкой и дугой над разломом.
  */
 export const LANES = 3;
 export const GAP_EVERY = [380, 560];
 export const VHS_EVERY = 1700;
+export const POWER_EVERY = [450, 750];
+export const POWER_KINDS = ['magnet', 'x2', 'shield']; // src/powerups.js
 export function planStretch(d0, d1, rnd, opts) {
     const o = opts || {};
     const r = rnd || Math.random;
@@ -114,11 +116,20 @@ export function planStretch(d0, d1, rnd, opts) {
     // нитро и сердечки — реже
     for (let dd = d0 + 90 + r() * 80; dd < d1; dd += 180 + r() * 140) if (!nearGap(dd)) out.push({ kind: 'nitro', d: dd, lane: lane() });
     for (let dd = d0 + 300 + r() * 300; dd < d1; dd += 600 + r() * 400) if (!nearGap(dd)) out.push({ kind: 'gum', d: dd, lane: lane() });
+    // кассеты и усиления — отдельно, в стороне от цепочек «Е» (не теряются среди них)
+    const eDs = out.filter(function(i) { return i.kind === 'echip'; }).map(function(i) { return i.d; });
+    const clearOfE = function(dd) { return !nearGap(dd) && eDs.every(function(e) { return Math.abs(e - dd) > 18; }); };
+    const spot = function(dd) { for (let k = 0; k < 12 && !clearOfE(dd); k++) dd += 20; return clearOfE(dd) && dd < d1 ? dd : null; };
+    // усиления: магнит, ×2, броня — раз в 450–750 м
+    for (let dd = d0 + 150 + r() * 250; dd < d1; dd += POWER_EVERY[0] + r() * (POWER_EVERY[1] - POWER_EVERY[0])) {
+        const at = spot(dd);
+        if (at != null) out.push({ kind: 'power', d: at, lane: lane(), type: POWER_KINDS[Math.floor(r() * POWER_KINDS.length)] });
+    }
     // видеокассета — редкость: ~1 на 1.7 км (иногда 2), за длинный заезд 1–3
     const vhsN = Math.floor((d1 - d0) / VHS_EVERY + r());
     for (let i = 0; i < vhsN; i++) {
-        const dd = d0 + 40 + r() * Math.max(0, d1 - d0 - 80);
-        if (!nearGap(dd)) out.push({ kind: 'vhs', d: dd, lane: lane() });
+        const at = spot(d0 + 40 + r() * Math.max(0, d1 - d0 - 300));
+        if (at != null) out.push({ kind: 'vhs', d: at, lane: lane() });
     }
     out.sort(function(a, b) { return a.d - b.d; });
     return { items: out, nextGap: nextGap };

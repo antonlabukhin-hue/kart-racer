@@ -65,3 +65,49 @@ test('бесконечная трасса: пейзажи, «Е», уборка 
     await expect(page.locator('#mm-vhs')).toHaveText('1');
     expect(problems).toEqual([]);
 });
+
+// Усиления (магнит, ×2, броня) и «Второй шанс»: после пятой аварии — продолжить за «Е» (100, потом 200) или кассету
+test('бесконечная трасса: усиление подбирается; «Второй шанс» продолжает заезд за «Е»', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const list = JSON.parse(localStorage.getItem('road_racing_profiles_v1') || '[]');
+        list.forEach(p => { p.season = Object.assign({}, p.season, { chips: 500 }); });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(list));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await waitRacing(page);
+
+    const picked = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        let c = null;
+        for (let i = 0; i < 6 && !c; i++) {
+            c = g.collectibles.find(o => o.type === 'power' && o.active);
+            if (!c) { g.setZ(g.z - 400); await new Promise(r => setTimeout(r, 1500)); }
+        }
+        g.setStrikes(0); g.setX(c.x); g.setZ(c.z + 0.2);
+        await new Promise(r => setTimeout(r, 400));
+        return g.powers.picked;
+    });
+    expect(picked).toBe(1);
+
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('.chance-modal')).toContainText('100 Е');
+    await page.locator('.chance-modal .cc-pay-e').click();
+    await expect(page.locator('.chance-modal')).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => [window.__raceDebug.state, window.__raceDebug.strikes].join())).toBe('racing,3');
+    // после оплаты машина едет дальше (раньше игровой цикл вставал)
+    const z0 = await page.evaluate(() => window.__raceDebug.z);
+    await page.keyboard.down('w');
+    await expect.poll(() => page.evaluate(z0 => z0 - window.__raceDebug.z, z0), { timeout: 8_000 }).toBeGreaterThan(5);
+    await page.keyboard.up('w');
+    // второй раз дороже; отказ — итоги
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('.chance-modal')).toContainText('200 Е');
+    await page.locator('.chance-modal .cc-no').click();
+    await expect(page.locator('#finish-screen')).toContainText('ЗАЕЗД ОКОНЧЕН', { timeout: 10_000 });
+    expect(problems).toEqual([]);
+});
