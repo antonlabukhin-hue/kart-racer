@@ -25,11 +25,13 @@ test('рекламный щит в полосе: снёс — не авария,
         (d.obstacles || []).forEach(o => { o.active = false; });
         if (window.__fallingDebris) window.__fallingDebris.length = 0;
     }, 30));
+    // плашка «Реклама снесена!» живёт ~2 с — запоминаем сам факт появления (на медленной машине проверка могла опоздать)
+    await page.evaluate(() => { window.__sawSmash = false; new MutationObserver(() => { if (document.querySelector('.big-plaque.smash')) window.__sawSmash = true; }).observe(document.body, { childList: true }); });
     await page.keyboard.down('w');
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.billboards || 0), { timeout: 30_000 }).toBeGreaterThanOrEqual(1);
     // перед щитом — подсказка «рекламу можно сносить», после удара — плашка с бонусом
     expect(await page.evaluate(() => Number(localStorage.getItem('road_racing_hint_board') || 0))).toBe(1);
-    await expect(page.locator('.big-plaque.smash')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.__sawSmash), { timeout: 5_000 }).toBe(true);
     await page.keyboard.up('w');
     expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
     expect(problems).toEqual([]);

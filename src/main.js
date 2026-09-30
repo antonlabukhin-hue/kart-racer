@@ -8768,6 +8768,8 @@ function startGaragePreview(carId) {
                 const moveAmount = speed * 60 * deltaTime;
                 const zPosBeforeMove = zPos; // для проверки трамплина отрезком, а не точкой (см. ниже)
                 zPos -= moveAmount;
+                // попадание по z — отрезком, пройденным за кадр: при низком FPS машина иначе «перепрыгивает» шипы, ямы и «Е»
+                const sweptZ = function(z, r) { return z <= Math.max(zPosBeforeMove, zPos) + r && z >= Math.min(zPosBeforeMove, zPos) - r; };
 
                 if (Math.abs(speed) > 0.05) {
                     const pos = playerCar.position;
@@ -8841,7 +8843,7 @@ function startGaragePreview(carId) {
                 if (gameState === 'racing') {
                     for (let si = 0; si < smashBoards.length; si++) {
                         const b = smashBoards[si];
-                        if (b.smashed || Math.abs(zPos - b.z) > 0.9 || Math.abs(xPos - b.x) > 1.25 || carYOffset > 1.1) continue;
+                        if (b.smashed || !sweptZ(b.z, 0.9) || Math.abs(xPos - b.x) > 1.25 || carYOffset > 1.1) continue;
                         smashBoard(b, scene, Math.abs(speed) * 60).forEach(function(pt) { smashParts.push(pt); });
                         stats.billboards = (stats.billboards || 0) + 1; riskEvent(risk, 'billboard'); stats.eChips = (stats.eChips || 0) + SMASH_CHIPS; // сразу в счётчик «Е»
                         speed *= 0.9;
@@ -9162,7 +9164,7 @@ function startGaragePreview(carId) {
                     const dz = zPos - obs.z;
                     const hitR = (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') ? 0.55 : 0.42;
                     
-                    if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && Math.abs(dz) < hitR) {
+                    if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && sweptZ(obs.z, hitR)) {
                         if (carAirborne || carYOffset > 0.45) {
                             // в прыжке ямы/кочки/масло не срабатывают
                         } else if (obs.type === 'spikes') {
@@ -9428,7 +9430,7 @@ function startGaragePreview(carId) {
                     if (c.airOnly && carYOffset < (c.minY || 0.6)) return; // висит в воздухе — берётся только в прыжке
                     if (c.type === 'crate' && carYOffset > 0.95) return; // ящик перепрыгнул
                     const hitR = c.type === 'nitro' ? 0.85 : (c.radius || 0.55);
-                    if (Math.abs(dx) < hitR && Math.abs(dz) < hitR * (c.type === 'nitro' ? 1.4 : 1)) {
+                    if (Math.abs(dx) < hitR && sweptZ(c.z, hitR * (c.type === 'nitro' ? 1.4 : 1))) {
                         c.active = false;
                         c.mesh.visible = false;
                         if (c.type === 'echip') {
