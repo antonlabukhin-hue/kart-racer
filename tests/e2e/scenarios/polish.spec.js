@@ -26,16 +26,23 @@ test('гараж: после покупки улучшения фишки в ш�
     await login(page);
     await page.evaluate(() => {
         const list = JSON.parse(localStorage.getItem('road_racing_profiles_v1') || '[]');
-        list.forEach(p => { p.season = Object.assign({}, p.season, { chips: 500 }); p.econVer = 2; });
+        list.forEach(p => { p.season = Object.assign({}, p.season, { chips: 5000 }); p.econVer = 2; });
         localStorage.setItem('road_racing_profiles_v1', JSON.stringify(list));
     });
     await page.reload();
     await page.locator('#splash-screen').click();
     await page.locator('#profile-list').getByText('Тестер').click();
     await page.locator('[data-menu="garage"]').click();
-    await expect(page.locator('#garage-player-name')).toContainText('Е 500');
+    await expect(page.locator('#garage-player-name')).toContainText('Е 5000');
+    // краска: нажал — примерка и плашка «Купить / Отмена», «Е» не списаны; «Купить» — списаны
+    await page.getByRole('button', { name: /Кастом/ }).click();
+    await page.locator('.color-swatch[data-paint="red"]').click();
+    await expect(page.locator('.try-bar')).toContainText('Арсеньев красный');
+    await expect(page.locator('#garage-player-name')).toContainText('Е 5000');
+    await page.locator('.try-bar .try-buy').click();
+    await expect(page.locator('#garage-player-name')).toContainText('Е 4500');
     await page.getByRole('button', { name: /Прокачка/ }).click();
     await page.locator('#garage-panel-upgrades button[data-up]').first().click();
-    await expect(page.locator('#garage-player-name')).not.toContainText('Е 500');
+    await expect(page.locator('#garage-player-name')).not.toContainText('Е 4500');
     expect(problems).toEqual([]);
 });

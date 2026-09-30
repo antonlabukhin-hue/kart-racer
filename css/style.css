@@ -5278,3 +5278,61 @@ body.splash-fallback #splash-screen .splash-title { display: none; }
 @media (max-width: 700px), (max-height: 560px) {
     body #shop-screen .menu-pane #shop-action { position: sticky; bottom: 4px; z-index: 5; box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.55), 0 4px 0 #a86a00; }
 }
+
+/* «Трофеи» из меню — отдельным экраном: без превью машины, вкладок и кнопок гаража */
+#garage-screen.gar-trophies :is(#garage-canvas-wrap, #garage-player-name, #garage-stats, .season-bar-bg, #garage-cars, .garage-tabs, #garage-panel-parts, #garage-panel-upgrades, #garage-panel-achs) { display: none !important; }
+#garage-screen.gar-trophies #garage-panel-trophies { display: block !important; }
+#garage-screen.gar-trophies > .content > h1 { font-size: 0 !important; }
+#garage-screen.gar-trophies > .content > h1::after { content: '🏆 ТРОФЕИ 90-х'; font-size: 24px; }
+@media (orientation: portrait) and (max-width: 700px) { body #garage-screen.gar-trophies .menu-pane { zoom: var(--menu-z); } }
+
+/* счётчик железных «Е» в заезде — крупно, золотом, сверху по центру; при подборе «подпрыгивает» */
+#e-counter {
+    position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 110; pointer-events: none;
+    display: flex; align-items: center; gap: 6px; padding: 4px 14px 4px 8px; border-radius: 20px;
+    background: linear-gradient(180deg, rgba(40, 26, 0, 0.85), rgba(20, 12, 0, 0.85)); border: 2px solid #ffd23c; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+#e-counter i { font-style: normal; font: 900 24px/1 Georgia, 'Times New Roman', serif; color: #ffd23c; text-shadow: 0 0 8px rgba(255, 170, 0, 0.8); width: 26px; text-align: center; }
+#e-counter b { font: 900 24px/1 system-ui, 'Segoe UI', sans-serif; color: #fff; min-width: 30px; }
+#e-counter.pop { animation: ePop 0.25s ease-out; }
+@keyframes ePop { 50% { transform: translateX(-50%) scale(1.18); } }
+@media (max-height: 500px) { #e-counter { top: max(4px, env(safe-area-inset-top)); padding: 2px 12px 2px 6px; } #e-counter i, #e-counter b { font-size: 20px; } }
+
+/* в заезде плашка профиля не нужна — сверху счётчик «Е» */
+body:has(#game-hud) #player-bar { display: none !important; }
+
+/* гараж: примерка краски или детали — плашка «Купить / Отмена» */
+.try-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 210, 60, 0.12); border: 1.5px solid #ffd23c; color: #fff; font-size: 14px; }
+.try-bar span { flex: 1 1 160px; }
+.try-bar b { color: #ffd23c; }
+.try-bar button { border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 800; font-size: 15px; cursor: pointer; }
+.try-bar .try-buy { background: linear-gradient(180deg, #ffe066, #ffb000); color: #1a1000; }
+.try-bar .try-cancel { background: rgba(255, 255, 255, 0.12); color: #ddd; }
+
+/* ===== конец заезда: «вкус победы» (src/ui/reward-reveal.js) ===== */
+.reward-reveal { position: fixed; inset: 0; z-index: 9700; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    background: radial-gradient(circle at 50% 42%, rgba(80, 50, 0, 0.55), rgba(8, 6, 12, 0.94) 65%); padding: 16px; box-sizing: border-box; }
+.reward-reveal.rr-record { background: linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.6)); justify-content: flex-end; padding-bottom: max(40px, env(safe-area-inset-bottom)); }
+.rr-fireworks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.rr-record-plaque { position: relative; font: 900 clamp(34px, 9vw, 64px)/1.05 system-ui, 'Segoe UI', sans-serif; color: #fff; text-align: center; padding: 14px 26px; border-radius: 20px;
+    background: linear-gradient(180deg, #ff4a3c, #c41a6a); border: 3px solid #ffd23c; box-shadow: 0 0 40px rgba(255, 90, 60, 0.7), 0 10px 30px rgba(0,0,0,0.6); animation: rrPop 0.6s cubic-bezier(.2,1.6,.4,1) both; }
+.rr-record-plaque small { display: block; font-size: 0.5em; color: #ffe066; margin-top: 6px; }
+.rr-spin { display: block; filter: drop-shadow(0 0 24px rgba(255, 190, 40, 0.55)); }
+.rr-plaque { display: flex; flex-direction: column; align-items: center; padding: 10px 28px 12px; border-radius: 18px; animation: rrPop 0.5s cubic-bezier(.2,1.6,.4,1) both; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+.rr-plaque i { font-style: normal; font: 900 30px/1 Georgia, serif; }
+.rr-plaque b { font: 900 clamp(40px, 11vw, 64px)/1 system-ui, 'Segoe UI', sans-serif; }
+.rr-plaque small { font-size: 14px; font-weight: 700; opacity: 0.85; margin-top: 4px; }
+.rr-gold { background: linear-gradient(180deg, #ffe066, #ffb000); color: #2a1a00; border: 3px solid #fff3b0; }
+.rr-vhs { background: linear-gradient(180deg, #b070ff, #6a28c8); color: #fff; border: 3px solid #e0c8ff; }
+.rr-next { position: relative; margin-top: 10px; min-width: 220px; min-height: 56px; border: 0; border-radius: 16px; font: 900 20px system-ui, sans-serif; cursor: pointer;
+    background: linear-gradient(180deg, #ffffff, #d8d8e0); color: #1a1020; box-shadow: 0 6px 0 #8a8a98, 0 10px 24px rgba(0,0,0,0.5); opacity: 0; transition: opacity .3s; }
+.rr-next.show { opacity: 1; }
+@keyframes rrPop { from { transform: scale(0.3); opacity: 0; } to { transform: none; opacity: 1; } }
+/* на время наград — без интерфейса гонки поверх «кино» */
+body:has(.reward-reveal) :is(#hud-speedo, #hud-menu-btn, #hud-pause-btn, #volume-controls, #player-bar, #mobile-controls, #e-counter, #game-hud) { display: none !important; }
+@media (max-height: 500px) {
+    .reward-reveal { gap: 4px; padding: 8px; }
+    .rr-plaque { padding: 6px 20px 8px; } .rr-plaque b { font-size: 34px; } .rr-plaque i { font-size: 20px; } .rr-plaque small { font-size: 11px; }
+    .rr-next { min-height: 44px; font-size: 17px; margin-top: 4px; }
+    .rr-record-plaque { font-size: 32px; padding: 10px 20px; }
+}

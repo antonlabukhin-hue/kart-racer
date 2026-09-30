@@ -55,26 +55,26 @@ export const ACHIEVEMENTS = [
 export const CAR_SHOP_ORDER = ['cheburashka', 'kirpich', 'gorbaty', 'turbo', 'pirozhok', 'buhanka', 'rafik', 'saray', 'gazel', 'shestisot', 'raketa', 'zubilo', 'mechta'];
 
 export const CAR_PARTS = [
-    { id: 'spoiler', name: 'Спойлер «Кирпич»', price: 80, slot: 'spoiler' },
-    { id: 'skirts', name: 'Пороги', price: 60, slot: 'skirts' },
-    { id: 'exhaust', name: 'Выхлоп двойной', price: 70, slot: 'exhaust' },
-    { id: 'roof_rack', name: 'Багажник на крышу', price: 90, slot: 'roof' },
-    { id: 'lip', name: 'Губа передняя', price: 50, slot: 'lip' },
-    { id: 'rims', name: 'Литьё «Мелодия»', price: 100, slot: 'rims' },
-    { id: 'antenna', name: 'Антенна-кнут', price: 30, slot: 'antenna' },
-    { id: 'fog', name: 'Противотуманки', price: 40, slot: 'fog' },
-    { id: 'xenon', name: 'Ксенон фар', price: 110, slot: 'lights' }
+    { id: 'spoiler', name: 'Спойлер «Кирпич»', price: 800, slot: 'spoiler' },
+    { id: 'skirts', name: 'Пороги', price: 600, slot: 'skirts' },
+    { id: 'exhaust', name: 'Выхлоп двойной', price: 700, slot: 'exhaust' },
+    { id: 'roof_rack', name: 'Багажник на крышу', price: 900, slot: 'roof' },
+    { id: 'lip', name: 'Губа передняя', price: 500, slot: 'lip' },
+    { id: 'rims', name: 'Литьё «Мелодия»', price: 1000, slot: 'rims' },
+    { id: 'antenna', name: 'Антенна-кнут', price: 300, slot: 'antenna' },
+    { id: 'fog', name: 'Противотуманки', price: 400, slot: 'fog' },
+    { id: 'xenon', name: 'Ксенон фар', price: 1100, slot: 'lights' }
 ];
 
 export const CAR_PAINTS = [
     { id: 'stock', name: 'Завод', color: null, price: 0 },
-    { id: 'red', name: 'Арсеньев красный', color: 0xcc2200, price: 50 },
-    { id: 'black', name: 'Чёрный кирпич', color: 0x1a1a1a, price: 60 },
-    { id: 'yellow', name: 'Такси 90-х', color: 0xe8b800, price: 60 },
-    { id: 'white', name: 'Белая ночь', color: 0xd8d8d8, price: 50 },
-    { id: 'green', name: 'Промзона', color: 0x3a6a3a, price: 50 },
-    { id: 'purple', name: 'Дискотека', color: 0x5a2a7a, price: 80 },
-    { id: 'chrome', name: 'Хром-мечта', color: 0xaaaaaa, price: 120 }
+    { id: 'red', name: 'Арсеньев красный', color: 0xcc2200, price: 500 },
+    { id: 'black', name: 'Чёрный кирпич', color: 0x1a1a1a, price: 600 },
+    { id: 'yellow', name: 'Такси 90-х', color: 0xe8b800, price: 600 },
+    { id: 'white', name: 'Белая ночь', color: 0xd8d8d8, price: 500 },
+    { id: 'green', name: 'Промзона', color: 0x3a6a3a, price: 500 },
+    { id: 'purple', name: 'Дискотека', color: 0x5a2a7a, price: 800 },
+    { id: 'chrome', name: 'Хром-мечта', color: 0xaaaaaa, price: 1200 }
 ];
 
 export const TROPHIES = [

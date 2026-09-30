@@ -20,11 +20,14 @@ describe('бесконечная трасса: пейзажи', () => {
 
 describe('рост сложности и счёт', () => {
     it('скорость, звери и препятствия растут и упираются в потолок', () => {
-        // старт лёгкий, первый километр почти не усложняется, потолок — к 8 км
-        expect(rampAt(0)).toMatchObject({ speed: 0.85, animals: 0.55, density: 0.3, maxAnimals: 6 });
-        expect(rampAt(1000).speed).toBeLessThan(0.9);
-        expect(rampAt(4000).speed).toBeCloseTo(1.075, 3);
-        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.3, animals: 2.2, maxAnimals: 14 });
+        // старт лёгкий; звери и попутки первые 1000 м как на старте, дальше плавно; потолок — к 8 км
+        expect(rampAt(0)).toMatchObject({ speed: 0.85, animals: 0.55, density: 0.3, maxAnimals: 6, animalSpeed: 1, traffic: 0 });
+        expect(rampAt(1000)).toMatchObject({ animals: 0.55, animalSpeed: 1, traffic: 0 });
+        expect(rampAt(1000).speed).toBeGreaterThan(0.85);
+        expect(rampAt(4000).speed).toBeCloseTo(1.1, 3);
+        expect(rampAt(4000).animals).toBeGreaterThan(1);
+        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.35, maxAnimals: 16, animalSpeed: 1.6, traffic: 5, trafficSpeed: 1.5 });
+        expect(rampAt(1e6).animals).toBeCloseTo(2.6, 6);
     });
     it('очки и опыт', () => {
         expect(runScore(1234.4, 7, 150)).toBe(1234 + 70 + 150);
@@ -69,6 +72,14 @@ describe('план участка', () => {
         const p = planStretch(0, 20000, seq(21)).items;
         const es = p.filter(i => i.kind === 'echip').map(i => i.d);
         p.filter(i => i.kind === 'vhs' || i.kind === 'power').forEach(v => expect(es.every(e => Math.abs(e - v.d) > 18)).toBe(true));
+    });
+    it('после магнита — «Е» вдоль обеих обочин', () => {
+        const p = planStretch(0, 20000, seq(9)).items;
+        const mag = p.find(i => i.kind === 'power' && i.type === 'magnet');
+        const side = p.filter(i => i.side && i.d > mag.d && i.d < mag.d + 200);
+        expect(side.some(i => i.x < -3)).toBe(true);
+        expect(side.some(i => i.x > 3)).toBe(true);
+        expect(side.length).toBeGreaterThan(40);
     });
     it('усиления — раз в 450–750 м, всех трёх видов', () => {
         const pw = planStretch(0, 20000, seq(9)).items.filter(i => i.kind === 'power');

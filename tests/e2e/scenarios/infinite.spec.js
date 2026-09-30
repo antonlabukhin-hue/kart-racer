@@ -117,3 +117,27 @@ test('бесконечная трасса: усиление подбираетс
     await expect(page.locator('#finish-screen')).toContainText('ЗАЕЗД ОКОНЧЕН', { timeout: 10_000 });
     expect(problems).toEqual([]);
 });
+
+// «Вкус победы»: новый рекорд — салют и плашка, потом крутится золотая «Е» с набегающим числом, потом итоги
+test('бесконечная трасса: рекорд — салют, потом золотая «Е», потом итоги', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => { sessionStorage.setItem('keep_reveal', '1'); localStorage.removeItem('road_racing_skip_reveal'); });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.z - 300); });
+    await page.waitForTimeout(500);
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('.reward-reveal .rr-record-plaque')).toContainText('НОВЫЙ РЕКОРД', { timeout: 10_000 });
+    await page.locator('.reward-reveal .rr-next').click();
+    await expect(page.locator('.reward-reveal .rr-gold')).toBeVisible();
+    await expect(page.locator('.reward-reveal .rr-spin')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => parseInt(document.querySelector('.rr-gold b').textContent.replace('+', ''), 10))).toBeGreaterThan(0);
+    await page.locator('.reward-reveal .rr-next').click();
+    await expect(page.locator('#finish-screen')).toContainText('ЗАЕЗД ОКОНЧЕН');
+    expect(problems).toEqual([]);
+});

@@ -40,16 +40,21 @@ export function mixHex(a, b, k) {
 }
 
 /**
- * Рост сложности по расстоянию: 0 на старте → 1 к ~8 км, плавно (сначала почти не растёт — первые километры в кайф,
- * потом всё быстрее, к концу выходит на потолок). База — «лёгкая» сложность (src/difficulty.js).
- * speed — множитель максимальной скорости (0.85 → 1.3), animals — частота зверей (0.55 → 2.2),
- * density — плотность препятствий на участке (0.3 → 1.3), maxAnimals — сколько зверей сразу (6 → 14)
+ * Рост сложности по расстоянию. База — «лёгкая» сложность (src/difficulty.js).
+ * Машина разгоняется плавно с первого метра: speed — множитель максимальной скорости (0.85 → 1.35 к ~8 км).
+ * Звери и попутки первые 1000 м — как на старте, дальше плавно растут вместе со скоростью машины (к ~8 км — потолок):
+ *   animals — частота зверей (0.55 → 2.6), maxAnimals — сколько сразу (6 → 16), animalSpeed — скорость перебежки (×1 → ×1.6),
+ *   traffic — сколько попуток добавить (0 → +5), trafficSpeed — их скорость (×1 → ×1.5).
+ * density — плотность препятствий на участке (0.3 → 1.3)
  */
 export const RAMP_LEN = 8000;
 export function rampAt(dist) {
     const t = Math.max(0, Math.min(1, (dist || 0) / RAMP_LEN));
     const e = t * t * (3 - 2 * t); // медленно в начале, быстрее в середине, мягко к потолку
-    return { t: t, speed: 0.85 + 0.45 * e, animals: 0.55 + 1.65 * e, density: 0.3 + e, maxAnimals: Math.round(6 + 8 * e) };
+    const a = Math.max(0, Math.min(1, ((dist || 0) - 1000) / (RAMP_LEN - 1000))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1000 м
+    return { t: t, speed: 0.85 + 0.5 * e, density: 0.3 + e,
+        animals: 0.55 + 2.05 * ea, maxAnimals: Math.round(6 + 10 * ea), animalSpeed: 1 + 0.6 * ea,
+        traffic: Math.round(5 * ea), trafficSpeed: 1 + 0.5 * ea };
 }
 
 /** Очки забега: метры + «Е» по 10 + очки риска (множитель за риск уже внутри них) */
@@ -124,7 +129,18 @@ export function planStretch(d0, d1, rnd, opts) {
     // усиления: магнит, ×2, броня — раз в 450–750 м
     for (let dd = d0 + 150 + r() * 250; dd < d1; dd += POWER_EVERY[0] + r() * (POWER_EVERY[1] - POWER_EVERY[0])) {
         const at = spot(dd);
-        if (at != null) out.push({ kind: 'power', d: at, lane: lane(), type: POWER_KINDS[Math.floor(r() * POWER_KINDS.length)] });
+        if (at == null) continue;
+        const type = POWER_KINDS[Math.floor(r() * POWER_KINDS.length)];
+        out.push({ kind: 'power', d: at, lane: lane(), type: type });
+        // после магнита — «Е» вдоль обеих обочин: без магнита не взять, с ним — собираешь всё (как в Subway Surfers)
+        if (type === 'magnet') {
+            for (let k = 0; k < 44; k++) {
+                const dd2 = at + 24 + k * 3.6;
+                if (dd2 >= d1 || nearGap(dd2)) continue;
+                out.push({ kind: 'echip', d: dd2, x: -3.5, y: 0.6, side: true });
+                out.push({ kind: 'echip', d: dd2, x: 3.5, y: 0.6, side: true });
+            }
+        }
     }
     // видеокассета — редкость: ~1 на 1.7 км (иногда 2), за длинный заезд 1–3
     const vhsN = Math.floor((d1 - d0) / VHS_EVERY * (o.vhsMul || 1) + r()); // vhsMul — «Мечта»-везунчик: вдвое чаще
