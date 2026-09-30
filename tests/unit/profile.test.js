@@ -84,11 +84,11 @@ describe('итог заезда', () => {
     it('победа: фишки, жвачка, опыт, ачивки, рекорд, история', () => {
         const p = fresh();
         const r = applyRaceResult(p, 'win', win({ strikes: 0, gumPicked: 2, nitroPicked: 0 }), { trophies: TROPHIES, now: 1 });
-        expect(r.chips).toBe(3 + 2 + 1);
+        expect(r.chips).toBe(30 + 20 + 10);
         expect(r.gum).toBe(5 + 2 * 3);
         expect(r.xp).toBe(25 + 60 + 40);
         // фишки за выполненные задания (src/missions.js) идут отдельной строкой — задания случайные
-        expect(p.season.chips).toBe(6 + r.missions.chips);
+        expect(p.season.chips).toBe(60 + r.missions.chips);
         expect(r.missions.progressed.length).toBeGreaterThanOrEqual(0);
         expect(r.achievements.sort()).toEqual(['first_win', 'gum_2', 'no_nitro', 'perfect'].sort());
         expect(r.newBest).toBe(true);
@@ -103,8 +103,8 @@ describe('итог заезда', () => {
 
     it('авария и время вышло: утешительная фишка и опыт, без рекорда', () => {
         const p = fresh();
-        expect(applyRaceResult(p, 'crash', win(), {})).toMatchObject({ chips: 1, xp: 35, gum: 0, newBest: false });
-        expect(applyRaceResult(p, 'timeout', win(), {})).toMatchObject({ chips: 1, xp: 35 });
+        expect(applyRaceResult(p, 'crash', win(), {})).toMatchObject({ chips: 10, xp: 35, gum: 0, newBest: false });
+        expect(applyRaceResult(p, 'timeout', win(), {})).toMatchObject({ chips: 10, xp: 35 });
         expect(p.stats).toMatchObject({ crashes: 1, timeouts: 1, wins: 0 });
     });
 
@@ -163,12 +163,12 @@ describe('гараж', () => {
         const p = fresh();
         const red = CAR_PAINTS.find(c => c.id === 'red');
         expect(buyPaint(p, 'cheburashka', red)).toMatchObject({ ok: false, reason: 'no_chips' });
-        p.season.chips = 20;
+        p.season.chips = 200;
         expect(buyPaint(p, 'cheburashka', red)).toMatchObject({ ok: true, paid: red.price });
         expect(buyPaint(p, 'cheburashka', red)).toMatchObject({ ok: false, reason: 'same' });
         p.carLoadout.paintByCar.turbo = 'stock'; // своя краска у Волги — заводская
         expect(buyPaint(p, 'turbo', red)).toMatchObject({ ok: true, paid: 0 }); // уже куплена — на другую машину бесплатно
-        expect(p.season.chips).toBe(20 - red.price);
+        expect(p.season.chips).toBe(200 - red.price);
         expect(p.carLoadout.paintByCar).toMatchObject({ cheburashka: 'red', turbo: 'red' });
     });
 
@@ -232,7 +232,7 @@ describe('фишки за чистые отрезки', () => {
         const base = applyRaceResult(a, 'crash', {}, {}).chips;
         expect(applyRaceResult(b, 'crash', { bonusChips: 4 }, {}).chips).toBe(base + 4);
         const c = createProfile('C', 1, () => 0.5); ensureProfileFields(c, 99);
-        expect(applyRaceResult(c, 'crash', { bonusChips: 999 }, {}).chips).toBe(base + 20);
+        expect(applyRaceResult(c, 'crash', { bonusChips: 999 }, {}).chips).toBe(base + 200);
     });
 });
 
@@ -275,7 +275,7 @@ describe('фишки «Е» с трассы', () => {
     it('идут в кошелёк без потолка бонусов', () => {
         const p = fresh();
         const r = applyRaceResult(p, 'crash', { time: 30, strikes: 5, difficulty: 'easy', eChips: 137, bonusChips: 50 }, { trophies: TROPHIES, now: 1 });
-        expect(r.chips).toBe(1 + 20 + 137);
+        expect(r.chips).toBe(10 + 50 + 137);
     });
     it('бесконечная трасса: опыт за дальность и рекорд', () => {
         const p = fresh();

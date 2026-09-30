@@ -4,7 +4,7 @@
  * Прогресс: profile.campaign.tasks[taskKey(trackId)] = [bool, bool, bool] (по позициям набора текущей ревизии).
  * Ревизия 1 хранилась под ключом trackId — при чтении переносится по id заданий (chapterTaskProgress).
  */
-export const TASK_REWARD_CHIPS = 3;
+export const TASK_REWARD_CHIPS = 30;
 
 // целевое время по сложности — чуть быстрее «чистого» заезда (см. баланс v2)
 const TIME_TARGET = { easy: 64, medium: 68, hard: 72 };

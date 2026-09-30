@@ -14,9 +14,34 @@ export const POWERS = {
 export const POWER_TYPES = Object.keys(POWERS);
 export const POWER_EVERY = [450, 750];
 
-/** Состояние усилений заезда: секунды, сколько ещё действует каждое */
-export function createPowers() {
-    return { magnet: 0, x2: 0, picked: 0 };
+/**
+ * Прокачка усилений за «Е» (как в Subway Surfers — главная трата монет): каждый уровень +2 с действия, 5 уровней.
+ * profile.powerLv = { magnet, x2 }
+ */
+export const POWER_LEVELS = 5;
+export const POWER_UP_COST = [150, 300, 600, 1200, 2400];
+export const POWER_UPGRADABLE = ['magnet', 'x2'];
+export function powerTime(type, lv) {
+    return POWERS[type].time + 2 * Math.max(0, Math.min(POWER_LEVELS, lv || 0));
+}
+export function nextPowerCost(lv) {
+    return (lv || 0) >= POWER_LEVELS ? null : POWER_UP_COST[lv || 0];
+}
+/** Купить следующий уровень усиления: списывает «Е». { ok, cost } | { ok: false, reason: 'max' | 'no_chips' } */
+export function buyPowerLevel(profile, type) {
+    if (POWER_UPGRADABLE.indexOf(type) < 0) return { ok: false, reason: 'max' };
+    const lv = profile.powerLv = Object.assign({ magnet: 0, x2: 0 }, profile.powerLv);
+    const cost = nextPowerCost(lv[type]);
+    if (cost == null) return { ok: false, reason: 'max' };
+    if ((profile.season.chips || 0) < cost) return { ok: false, reason: 'no_chips', cost: cost };
+    profile.season.chips -= cost;
+    lv[type]++;
+    return { ok: true, cost: cost, level: lv[type] };
+}
+
+/** Состояние усилений заезда: секунды, сколько ещё действует каждое; lv — прокачка из профиля */
+export function createPowers(lv) {
+    return { magnet: 0, x2: 0, picked: 0, lv: Object.assign({ magnet: 0, x2: 0 }, lv) };
 }
 
 /** Подобрано усиление: время действия не складывается, а обновляется до полного */
@@ -24,7 +49,7 @@ export function activatePower(st, type) {
     const p = POWERS[type];
     if (!p) return false;
     st.picked++;
-    if (p.time > 0) st[type] = p.time;
+    if (p.time > 0) st[type] = powerTime(type, st.lv && st.lv[type]);
     return true;
 }
 
@@ -54,7 +79,7 @@ export function magnetPull(st, chip, carX, carZ, dt, reach) {
 /** Активные усиления для значков на экране: [{ type, icon, left, k }] */
 export function activePowers(st) {
     return ['magnet', 'x2'].filter(function(t) { return st[t] > 0; })
-        .map(function(t) { return { type: t, icon: POWERS[t].icon, left: st[t], k: st[t] / POWERS[t].time }; });
+        .map(function(t) { return { type: t, icon: POWERS[t].icon, left: st[t], k: st[t] / powerTime(t, st.lv && st.lv[t]) }; });
 }
 
 export const MAX_CONTINUES = 2;

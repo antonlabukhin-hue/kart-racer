@@ -55,26 +55,26 @@ export const ACHIEVEMENTS = [
 export const CAR_SHOP_ORDER = ['cheburashka', 'kirpich', 'turbo', 'zubilo'];
 
 export const CAR_PARTS = [
-    { id: 'spoiler', name: 'Спойлер «Кирпич»', price: 8, slot: 'spoiler' },
-    { id: 'skirts', name: 'Пороги', price: 6, slot: 'skirts' },
-    { id: 'exhaust', name: 'Выхлоп двойной', price: 7, slot: 'exhaust' },
-    { id: 'roof_rack', name: 'Багажник на крышу', price: 9, slot: 'roof' },
-    { id: 'lip', name: 'Губа передняя', price: 5, slot: 'lip' },
-    { id: 'rims', name: 'Литьё «Мелодия»', price: 10, slot: 'rims' },
-    { id: 'antenna', name: 'Антенна-кнут', price: 3, slot: 'antenna' },
-    { id: 'fog', name: 'Противотуманки', price: 4, slot: 'fog' },
-    { id: 'xenon', name: 'Ксенон фар', price: 11, slot: 'lights' }
+    { id: 'spoiler', name: 'Спойлер «Кирпич»', price: 80, slot: 'spoiler' },
+    { id: 'skirts', name: 'Пороги', price: 60, slot: 'skirts' },
+    { id: 'exhaust', name: 'Выхлоп двойной', price: 70, slot: 'exhaust' },
+    { id: 'roof_rack', name: 'Багажник на крышу', price: 90, slot: 'roof' },
+    { id: 'lip', name: 'Губа передняя', price: 50, slot: 'lip' },
+    { id: 'rims', name: 'Литьё «Мелодия»', price: 100, slot: 'rims' },
+    { id: 'antenna', name: 'Антенна-кнут', price: 30, slot: 'antenna' },
+    { id: 'fog', name: 'Противотуманки', price: 40, slot: 'fog' },
+    { id: 'xenon', name: 'Ксенон фар', price: 110, slot: 'lights' }
 ];
 
 export const CAR_PAINTS = [
     { id: 'stock', name: 'Завод', color: null, price: 0 },
-    { id: 'red', name: 'Арсеньев красный', color: 0xcc2200, price: 5 },
-    { id: 'black', name: 'Чёрный кирпич', color: 0x1a1a1a, price: 6 },
-    { id: 'yellow', name: 'Такси 90-х', color: 0xe8b800, price: 6 },
-    { id: 'white', name: 'Белая ночь', color: 0xd8d8d8, price: 5 },
-    { id: 'green', name: 'Промзона', color: 0x3a6a3a, price: 5 },
-    { id: 'purple', name: 'Дискотека', color: 0x5a2a7a, price: 8 },
-    { id: 'chrome', name: 'Хром-мечта', color: 0xaaaaaa, price: 12 }
+    { id: 'red', name: 'Арсеньев красный', color: 0xcc2200, price: 50 },
+    { id: 'black', name: 'Чёрный кирпич', color: 0x1a1a1a, price: 60 },
+    { id: 'yellow', name: 'Такси 90-х', color: 0xe8b800, price: 60 },
+    { id: 'white', name: 'Белая ночь', color: 0xd8d8d8, price: 50 },
+    { id: 'green', name: 'Промзона', color: 0x3a6a3a, price: 50 },
+    { id: 'purple', name: 'Дискотека', color: 0x5a2a7a, price: 80 },
+    { id: 'chrome', name: 'Хром-мечта', color: 0xaaaaaa, price: 120 }
 ];
 
 export const TROPHIES = [
@@ -94,50 +94,50 @@ export const SEASON_REWARDS = [
     { level: 1,  text: 'Рамка «Курьер 2037»', gum: 10, chips: 0 },
     { level: 2,  text: 'Реплика радио №1', gum: 5, chips: 0 },
     { level: 3,  text: 'Стикер «Не бить — засудит»', gum: 10, chips: 0 },
-    { level: 4,  text: 'Гудок «Мелодия»', gum: 5, chips: 1 },
-    { level: 5,  text: 'Номер «АРС–90»', gum: 15, chips: 1 },
+    { level: 4,  text: 'Гудок «Мелодия»', gum: 5, chips: 10 },
+    { level: 5,  text: 'Номер «АРС–90»', gum: 15, chips: 10 },
     { level: 6,  text: 'Пачка «Разгона»', gum: 50, chips: 0 },
-    { level: 7,  text: 'Фишка из автомата', gum: 0, chips: 1 },
+    { level: 7,  text: 'Фишка из автомата', gum: 0, chips: 10 },
     { level: 8,  text: 'Титул «Без нитро»', gum: 10, chips: 0 },
     { level: 9,  text: 'Новый крик зверя', gum: 5, chips: 0 },
-    { level: 10, text: 'Окрас «Ночная пыль»', gum: 20, chips: 2 },
+    { level: 10, text: 'Окрас «Ночная пыль»', gum: 20, chips: 20 },
     { level: 11, text: 'Жвачка ×30', gum: 30, chips: 0 },
-    { level: 12, text: 'Фишка ×1', gum: 0, chips: 1 },
+    { level: 12, text: 'Фишка ×1', gum: 0, chips: 10 },
     { level: 13, text: 'Рамка «Промзона FM»', gum: 15, chips: 0 },
     { level: 14, text: 'Титул «Друг медведя»', gum: 10, chips: 0 },
-    { level: 15, text: 'Окрас «Кирпич ржавый»', gum: 20, chips: 2 },
+    { level: 15, text: 'Окрас «Кирпич ржавый»', gum: 20, chips: 20 },
     { level: 16, text: 'Жвачка ×40', gum: 40, chips: 0 },
-    { level: 17, text: 'Фишка ×1', gum: 0, chips: 1 },
+    { level: 17, text: 'Фишка ×1', gum: 0, chips: 10 },
     { level: 18, text: 'Реплика радио №2', gum: 10, chips: 0 },
     { level: 19, text: 'Титул «Масломан»', gum: 10, chips: 0 },
-    { level: 20, text: 'Гудок «Яблоньки»', gum: 25, chips: 2 },
+    { level: 20, text: 'Гудок «Яблоньки»', gum: 25, chips: 20 },
     { level: 21, text: 'Стикер «Свалка»', gum: 15, chips: 0 },
-    { level: 22, text: 'Фишка ×2', gum: 0, chips: 2 },
+    { level: 22, text: 'Фишка ×2', gum: 0, chips: 20 },
     { level: 23, text: 'Рамка «Надежда»', gum: 15, chips: 0 },
     { level: 24, text: 'Титул «С Арсеньева»', gum: 15, chips: 0 },
-    { level: 25, text: 'Окрас «Турбо сезон»', gum: 30, chips: 3 },
+    { level: 25, text: 'Окрас «Турбо сезон»', gum: 30, chips: 30 },
     { level: 26, text: 'Жвачка ×50', gum: 50, chips: 0 },
-    { level: 27, text: 'Фишка ×2', gum: 0, chips: 2 },
+    { level: 27, text: 'Фишка ×2', gum: 0, chips: 20 },
     { level: 28, text: 'Реплика босса', gum: 15, chips: 0 },
-    { level: 29, text: 'Рамка «Золотой Кирпич»', gum: 20, chips: 2 },
-    { level: 30, text: 'Звание «Кассета ЗвероСуда»', gum: 100, chips: 5 }
+    { level: 29, text: 'Рамка «Золотой Кирпич»', gum: 20, chips: 20 },
+    { level: 30, text: 'Звание «Кассета ЗвероСуда»', gum: 100, chips: 50 }
 ];
 
 export const DAILY_CONTRACTS = [
-    { id: 'fin_2crash', title: 'Аккуратный рейс', desc: 'Финиш с ≤2 авариями', check: m => m.state==='win' && m.strikes<=2, xp: 100, gum: 25, chips: 1 },
-    { id: 'gum2', title: 'Сладкий груз', desc: 'Финиш и собери ≥2 жвачки', check: m => m.state==='win' && (m.gumPicked||0)>=2, xp: 90, gum: 30, chips: 1 },
-    { id: 'nitro1', title: 'Зелёная стрела', desc: 'Финиш, взяв нитро ≥1', check: m => m.state==='win' && (m.nitroPicked||0)>=1, xp: 80, gum: 20, chips: 1 },
-    { id: 'no_nitro', title: 'На своих двоих', desc: 'Финиш без нитро', check: m => m.state==='win' && (m.nitroPicked||0)===0, xp: 100, gum: 25, chips: 1 },
-    { id: 'night', title: 'Ночная смена', desc: 'Финиш в погоде «Ночь»', check: m => m.state==='win' && m.weather==='night', xp: 110, gum: 30, chips: 2 },
-    { id: 'rain', title: 'Мокрый асфальт', desc: 'Финиш в дождь', check: m => m.state==='win' && m.weather==='rain', xp: 100, gum: 25, chips: 1 },
-    { id: 'perfect', title: 'Чистый лист', desc: 'Финиш без аварий', check: m => m.state==='win' && m.strikes===0, xp: 130, gum: 40, chips: 2 },
-    { id: 'hard', title: 'ЗвероСуд', desc: 'Победа на сложном', check: m => m.state==='win' && m.difficulty==='hard', xp: 150, gum: 35, chips: 2 },
+    { id: 'fin_2crash', title: 'Аккуратный рейс', desc: 'Финиш с ≤2 авариями', check: m => m.state==='win' && m.strikes<=2, xp: 100, gum: 25, chips: 10 },
+    { id: 'gum2', title: 'Сладкий груз', desc: 'Финиш и собери ≥2 жвачки', check: m => m.state==='win' && (m.gumPicked||0)>=2, xp: 90, gum: 30, chips: 10 },
+    { id: 'nitro1', title: 'Зелёная стрела', desc: 'Финиш, взяв нитро ≥1', check: m => m.state==='win' && (m.nitroPicked||0)>=1, xp: 80, gum: 20, chips: 10 },
+    { id: 'no_nitro', title: 'На своих двоих', desc: 'Финиш без нитро', check: m => m.state==='win' && (m.nitroPicked||0)===0, xp: 100, gum: 25, chips: 10 },
+    { id: 'night', title: 'Ночная смена', desc: 'Финиш в погоде «Ночь»', check: m => m.state==='win' && m.weather==='night', xp: 110, gum: 30, chips: 20 },
+    { id: 'rain', title: 'Мокрый асфальт', desc: 'Финиш в дождь', check: m => m.state==='win' && m.weather==='rain', xp: 100, gum: 25, chips: 10 },
+    { id: 'perfect', title: 'Чистый лист', desc: 'Финиш без аварий', check: m => m.state==='win' && m.strikes===0, xp: 130, gum: 40, chips: 20 },
+    { id: 'hard', title: 'ЗвероСуд', desc: 'Победа на сложном', check: m => m.state==='win' && m.difficulty==='hard', xp: 150, gum: 35, chips: 20 },
     // контракты на механики — не только «финишируй»
-    { id: 'landings2', title: 'Каскадёр', desc: 'Финиш и 2 чистые посадки с трамплина', check: m => m.state==='win' && (m.cleanLandings||0)>=2, xp: 120, gum: 30, chips: 2 },
-    { id: 'boss', title: 'Охотник', desc: 'Сбей босса в одном заезде', check: m => !!m.bossDefeated, xp: 130, gum: 30, chips: 2 },
-    { id: 'clean2', title: 'Без царапины', desc: '2 чистых отрезка по 10 с за заезд', check: m => (m.cleanSegments||0)>=2, xp: 110, gum: 25, chips: 2 },
-    { id: 'boards1', title: 'Долой рекламу', desc: 'Снеси рекламный щит и финишируй', check: m => m.state==='win' && (m.billboards||0)>=1, xp: 100, gum: 25, chips: 1 },
-    { id: 'nearmiss5', title: 'На волоске', desc: '«На волоске!» ×5 и финиш', check: m => m.state==='win' && (m.nearMiss||0)>=5, xp: 120, gum: 30, chips: 2 }
+    { id: 'landings2', title: 'Каскадёр', desc: 'Финиш и 2 чистые посадки с трамплина', check: m => m.state==='win' && (m.cleanLandings||0)>=2, xp: 120, gum: 30, chips: 20 },
+    { id: 'boss', title: 'Охотник', desc: 'Сбей босса в одном заезде', check: m => !!m.bossDefeated, xp: 130, gum: 30, chips: 20 },
+    { id: 'clean2', title: 'Без царапины', desc: '2 чистых отрезка по 10 с за заезд', check: m => (m.cleanSegments||0)>=2, xp: 110, gum: 25, chips: 20 },
+    { id: 'boards1', title: 'Долой рекламу', desc: 'Снеси рекламный щит и финишируй', check: m => m.state==='win' && (m.billboards||0)>=1, xp: 100, gum: 25, chips: 10 },
+    { id: 'nearmiss5', title: 'На волоске', desc: '«На волоске!» ×5 и финиш', check: m => m.state==='win' && (m.nearMiss||0)>=5, xp: 120, gum: 30, chips: 20 }
 ];
 
 export const ANIMAL_SHOUTS_LIST = [

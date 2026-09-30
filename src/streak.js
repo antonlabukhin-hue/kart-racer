@@ -3,8 +3,8 @@
  * Пропустил день — серия заново. profile.streak = { count, last: 'ГГГГ-ММ-ДД', claimed: 'ГГГГ-ММ-ДД' | null }
  */
 export const CHESTS = [
-    { chips: 2, gum: 5 }, { chips: 3, gum: 8 }, { chips: 4, gum: 10 }, { chips: 5, gum: 12 },
-    { chips: 6, gum: 15 }, { chips: 8, gum: 20 }, { chips: 12, gum: 30, vhs: 1 }
+    { chips: 20, gum: 5 }, { chips: 30, gum: 8 }, { chips: 40, gum: 10 }, { chips: 50, gum: 12 },
+    { chips: 60, gum: 15 }, { chips: 80, gum: 20 }, { chips: 120, gum: 30, vhs: 1 }
 ];
 export const CHEST_VHS_CHANCE = 0.1; // видеокассета: в обычный день изредка, в 7-й — всегда
 
