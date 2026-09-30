@@ -9115,14 +9115,14 @@ function startGaragePreview(carId) {
                     else if (!car._nm && dz < -0.8 && dz > -3 && car.hitCooldown <= 0 && Math.abs(dx) < (car.hitW || 0.75) * 0.55 + 0.75) { car._nm = true; nearMiss(); }
                     const hw = (car.hitW || 0.75) * (ABILITY === 'narrow' ? 0.4 : 0.55); // «Мопед» — узкий
                     const hl = (car.hitL || 1.4) * 0.45;
-                    if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl && (carAirborne || carYOffset > 0.55)) {
+                    if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && (carAirborne || carYOffset > 0.55)) {
                         car.hitCooldown = 1.2;
                         try { showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
-                    } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl && ABILITY === 'avenger') {
+                    } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && ABILITY === 'avenger') {
                         // «Ночной мститель» — таран: попутку отбрасывает вперёд, аварии нет
                         car.hitCooldown = 1.2; car.z = zPos - 60 - Math.random() * 40; car.mesh.position.z = car.z; speed *= 0.9; shakeTime = 0.15;
                         try { showTimePenaltyPopup(0, '🦇 Таран!'); } catch (e) {}
-                    } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && Math.abs(dz) < hl) {
+                    } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl))) {
                         car.hitCooldown = 1.2;
                         const pen = car.kind === 'bus' || car.kind === 'truck' ? 5 : 4;
                         handleObstacleHit({ penalty: 0.3, timePenalty: pen, cause: 'car:' + (car.kind || 'car') });
@@ -10468,7 +10468,8 @@ function startGaragePreview(carId) {
                         const dz = zPos - obs.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
                         if (!obs._nm && dz < -0.6 && dz > -3 && Math.abs(dx) < obs.radius + 1.1) { obs._nm = true; nearMiss(); }
-                        if (dist < obs.radius + (ABILITY === 'narrow' ? 0.25 : 0.45)) {
+                        const hitR = obs.radius + (ABILITY === 'narrow' ? 0.25 : 0.45);
+                        if (dist < hitR || (Math.abs(dx) < hitR && sweptZ(obs.z, hitR))) { // отрезком кадра: при низком FPS зверя не проскочить насквозь
                             if (ABILITY === 'cyborg' && !(carAirborne || carYOffset > 0.4)) {
                                 obs.hit = true; speed *= 0.9; // «Киборг» — зверь не авария
                                 try { showTimePenaltyPopup(0, '🤖 Киборг не заметил'); } catch (e) {}
