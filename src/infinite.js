@@ -75,7 +75,8 @@ export function runXp(dist) {
 /**
  * План участка трассы [d0, d1) (расстояния от старта): что где поставить. rnd — генератор [0,1).
  * Возвращает список { kind, d, lane, ... } — kind: 'obstacle' (type), 'echip' (lane, y), 'nitro', 'gum', 'vhs', 'power' (type), 'gap' (rampLane),
- * 'crate' — ящик «?» (src/hazards.js), 'spikes' — шипы поперёк полосы (с SPIKES_FROM м, чаще с ростом сложности).
+ * 'crate' — ящик «?» (src/hazards.js), 'spikes' — шипы поперёк полосы (с SPIKES_FROM м, чаще с ростом сложности),
+ * 'letter' — буква «Слова дня» (только с opts.letters).
  * Разлом — не чаще раза в GAP_EVERY, вокруг него чисто; «Е» — цепочками по полосам, змейкой и дугой над разломом.
  */
 export const LANES = 3;
@@ -85,6 +86,7 @@ export const POWER_EVERY = [450, 750];
 export const POWER_KINDS = ['magnet', 'x2', 'shield']; // src/powerups.js
 export const CRATE_EVERY = [260, 420];
 export const SPIKES_FROM = 600;
+export const LETTER_EVERY = [260, 420]; // «Слово дня» (src/word-day.js): буква — раз в столько метров
 export function planStretch(d0, d1, rnd, opts) {
     const o = opts || {};
     const r = rnd || Math.random;
@@ -154,6 +156,11 @@ export function planStretch(d0, d1, rnd, opts) {
     for (let dd = Math.max(d0, 120) + r() * 120; dd < d1; dd += CRATE_EVERY[0] + r() * (CRATE_EVERY[1] - CRATE_EVERY[0])) {
         const at = spot(dd);
         if (at != null) out.push({ kind: 'crate', d: at, lane: lane() });
+    }
+    // «Слово дня»: буквы — пока слово не собрано (opts.letters), в стороне от «Е»
+    if (o.letters) for (let dd = d0 + 180 + r() * 120; dd < d1; dd += LETTER_EVERY[0] + r() * (LETTER_EVERY[1] - LETTER_EVERY[0])) {
+        const at = spot(dd);
+        if (at != null) out.push({ kind: 'letter', d: at, lane: lane() });
     }
     // шипы — после SPIKES_FROM м; чем дальше, тем чаще (шаг 380 → 190 м)
     for (let dd = Math.max(d0, SPIKES_FROM) + r() * 150; dd < d1; dd += (380 - 190 * ramp.t) * (0.8 + r() * 0.4)) {

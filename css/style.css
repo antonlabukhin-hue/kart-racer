@@ -5417,3 +5417,32 @@ body:has(.meet-overlay) #pause-overlay { display: none !important; }
 @keyframes infGlow { 0%, 100% { box-shadow: 0 0 12px 2px rgba(255, 200, 40, 0.55), 0 0 0 0 rgba(255, 210, 60, 0.4); } 50% { box-shadow: 0 0 28px 8px rgba(255, 200, 40, 0.9), 0 0 0 4px rgba(255, 210, 60, 0.25); } }
 @keyframes infShine { 0%, 55% { background-position: 150% 0; } 100% { background-position: -60% 0; } }
 @media (prefers-reduced-motion: reduce) { #main-menu-screen .mm-modes .menu-card.menu-infinite, #main-menu-screen .mm-modes .menu-card.menu-infinite::after { animation: none; } #main-menu-screen .mm-modes .menu-card.menu-infinite { box-shadow: 0 0 22px 6px rgba(255, 200, 40, 0.8); } }
+
+/* главное меню: «Слово дня» и «Рекорды» */
+.mm-extras { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.mm-extra { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; cursor: pointer; text-align: left; color: #fff; font: inherit;
+    background: linear-gradient(180deg, rgba(122, 44, 255, 0.22), rgba(20, 12, 30, 0.8)); border: 1px solid rgba(160, 110, 255, 0.55); }
+.mm-extra:nth-child(2) { background: linear-gradient(180deg, rgba(255, 190, 40, 0.2), rgba(20, 12, 30, 0.8)); border-color: rgba(255, 210, 60, 0.55); }
+.mm-extra i { font-style: normal; font-size: 22px; }
+.mm-extra b { display: block; font-size: 13px; font-weight: 900; }
+.mm-extra small { display: block; font-size: 12px; font-weight: 800; color: #ffe066; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mm-extra span { min-width: 0; }
+.board-modal { position: fixed; inset: 0; z-index: 9400; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.6); }
+.board-card { width: min(420px, 100%); max-height: 90vh; overflow-y: auto; padding: 16px; border-radius: 18px; color: #fff; background: #17111f; border: 2px solid #ffd23c; box-shadow: 0 16px 40px rgba(0,0,0,0.6); }
+.bd-title { font-size: 20px; font-weight: 900; color: #ffe066; text-align: center; margin-bottom: 10px; }
+.bd-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(0,0,0,0.45); margin-bottom: 8px; }
+.bd-tabs button { border: 0; border-radius: 9px; padding: 8px; font: inherit; font-weight: 800; color: #cfc8dc; background: transparent; cursor: pointer; }
+.bd-tabs button.on { background: #ffd23c; color: #1a1200; }
+.bd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.bd-list li { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,0.05); }
+.bd-list li i { font-style: normal; font-weight: 900; text-align: center; color: #bbb; }
+.bd-list li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.bd-list li small { display: block; font-size: 11px; color: #9a92a8; font-weight: 600; }
+.bd-list li b { color: #ffe066; font-variant-numeric: tabular-nums; }
+.bd-list li.me { background: rgba(255, 210, 60, 0.18); border: 1px solid #ffd23c; }
+.bd-list li.rival span { color: #cfc8dc; }
+.bd-note { margin-top: 10px; font-size: 11px; color: #9a92a8; text-align: center; }
+.bd-close { display: block; width: 100%; margin-top: 12px; min-height: 44px; border: 0; border-radius: 12px; font: inherit; font-weight: 900; background: rgba(255,255,255,0.12); color: #fff; cursor: pointer; }
+.wd-word { font: 900 30px/1.2 system-ui, 'Segoe UI', sans-serif; letter-spacing: 0.12em; text-align: center; color: #ffe066; margin: 6px 0 10px; text-shadow: 0 0 12px rgba(160, 110, 255, 0.8); }
+.wd-text { font-size: 14px; line-height: 1.45; color: #e8e2f2; text-align: center; }
+.wd-text b { color: #ffe066; }

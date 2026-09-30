@@ -48,7 +48,7 @@ test('бесконечная трасса: пейзажи, «Е», уборка 
     const vhs = await page.evaluate(async () => {
         const g = window.__raceDebug;
         let c = null;
-        for (let i = 0; i < 10 && !c; i++) {
+        for (let i = 0; i < 20 && !c; i++) { // кассета — ~раз в 1.7 км: ищем до 10 км вперёд
             c = g.collectibles.find(o => o.type === 'vhs' && o.active);
             if (!c) { g.setStrikes(0); g.setZ(g.z - 500); await new Promise(r => setTimeout(r, 1500)); }
         }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { setThemeStart, THEMES, THEME_LEN, BLEND_LEN, themeAt, mixHex, rampAt, runScore, runXp, planStretch, GAP_EVERY, VHS_EVERY, CRATE_EVERY, SPIKES_FROM } from '../../src/infinite.js';
+import { setThemeStart, THEMES, THEME_LEN, BLEND_LEN, themeAt, mixHex, rampAt, runScore, runXp, planStretch, GAP_EVERY, VHS_EVERY, CRATE_EVERY, SPIKES_FROM, LETTER_EVERY } from '../../src/infinite.js';
 
 const seq = (seed) => { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; };
 
@@ -97,6 +97,12 @@ describe('план участка', () => {
         const pw = planStretch(0, 20000, seq(9)).items.filter(i => i.kind === 'power');
         expect(pw.length).toBeGreaterThan(20);
         expect(new Set(pw.map(i => i.type))).toEqual(new Set(['magnet', 'x2', 'shield']));
+    });
+    it('буквы «Слова дня» — только пока слово не собрано, раз в 260–420 м', () => {
+        expect(planStretch(0, 5000, seq(4)).items.some(i => i.kind === 'letter')).toBe(false);
+        const l = planStretch(0, 5000, seq(4), { letters: true }).items.filter(i => i.kind === 'letter');
+        expect(l.length).toBeGreaterThan(5000 / LETTER_EVERY[1] * 0.6);
+        expect(l.length).toBeLessThan(5000 / LETTER_EVERY[0] * 1.2);
     });
     it('ящики «?» — раз в 260–420 м; шипы — только после SPIKES_FROM и чем дальше, тем чаще', () => {
         const p = planStretch(0, 20000, seq(13)).items;
