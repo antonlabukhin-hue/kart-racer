@@ -51,14 +51,16 @@ export function buildShowroomCar(carId) {
     const isVan = isUaz || isRaf;       // кузов-фургон: верх — кузов с окнами полосой
     if (isRaf) [bodyMat, bodyMat2].forEach(function(m) { m.metalness = 0.12; m.roughness = 0.45; }); // белая эмаль «скорой», не серый металлик
     const isHump = carId === 'gorbaty'; // «Горбатый»: крошка-«горбатый» с мотором сзади, покатая крыша до кормы
+    const isLux = carId === 'shestisot'; // «Шестисотый»: длинный чёрный седан 90-х — хром, тонировка
+    if (isLux) [bodyMat, bodyMat2].forEach(function(m) { m.metalness = 0.65; m.roughness = 0.18; }); // лак «как зеркало»
     const isPie = carId === 'pirozhok'; // «Пирожок»: легковой нос и кабина, сзади — высокая будка «ХЛЕБ»
     const wedge = isHatch || isHump;    // лобовое и корма — скосами (клинья), а не вертикальными стенками
 
     // --- габариты ---
-    const bodyH = isJeep ? 0.52 : (isSport ? 0.32 : (isHatch ? 0.36 : (isRaf ? 0.42 : isVan ? 0.46 : (isHump ? 0.34 : 0.4))));
+    const bodyH = isJeep ? 0.52 : isLux ? 0.38 : (isSport ? 0.32 : (isHatch ? 0.36 : (isRaf ? 0.42 : isVan ? 0.46 : (isHump ? 0.34 : 0.4))));
     const bodyY = isJeep ? 0.48 : (isRaf ? 0.48 : isVan ? 0.52 : (isHump ? 0.4 : 0.42));
-    const bodyL = isJeep ? 2.0 : (isSport ? 2.45 : (isHatch ? 2.2 : (isRaf ? 2.25 : isVan ? 2.05 : (isHump ? 1.82 : 2.25))));
-    const bodyW = isJeep ? 1.28 : (isRaf ? 1.24 : isVan ? 1.26 : (isHump ? 1.1 : 1.22));
+    const bodyL = isJeep ? 2.0 : isLux ? 2.6 : (isSport ? 2.45 : (isHatch ? 2.2 : (isRaf ? 2.25 : isVan ? 2.05 : (isHump ? 1.82 : 2.25))));
+    const bodyW = isJeep ? 1.28 : isLux ? 1.3 : (isRaf ? 1.24 : isVan ? 1.26 : (isHump ? 1.1 : 1.22));
 
     // 1) Кузов
     // кузов скруглён: «игрушечный» силуэт читается лучше острых коробок
@@ -66,7 +68,7 @@ export function buildShowroomCar(carId) {
     main.position.y = bodyY; main.userData.bodyPaint = true; group.add(main);
 
     // Расширители арок
-    const archZ = isJeep ? 0.58 : (isRaf ? 0.72 : isVan ? 0.66 : (isHump ? 0.56 : 0.72));
+    const archZ = isJeep ? 0.58 : isLux ? 0.84 : (isRaf ? 0.72 : isVan ? 0.66 : (isHump ? 0.56 : 0.72));
     [-1, 1].forEach(side => {
         const f = new THREE_REF.Mesh(new RoundedBoxGeometry(0.12, bodyH * 0.65, isJeep ? 0.42 : 0.55, 2, 0.04), bodyMat2.clone());
         f.position.set(side * (bodyW / 2 + 0.01), bodyY - 0.02, archZ);
@@ -75,7 +77,7 @@ export function buildShowroomCar(carId) {
     });
 
     // 2) Капот (короткий у Нивы, спереди = -Z)
-    const hoodLen = isJeep ? 0.48 : (isSport ? 1.03 : (isHatch ? 0.62 : (isVan ? 0.4 : (isHump ? 0.5 : 0.7)))); // Волга капот ещё +10%
+    const hoodLen = isJeep ? 0.48 : isLux ? 0.86 : (isSport ? 1.03 : (isHatch ? 0.62 : (isVan ? 0.4 : (isHump ? 0.5 : 0.7)))); // Волга капот ещё +10%
     const hood = new THREE_REF.Mesh(
         new RoundedBoxGeometry(bodyW * 0.9, 0.09, hoodLen, 2, 0.035),
         bodyMat2.clone()
@@ -89,17 +91,17 @@ export function buildShowroomCar(carId) {
     // Багажник только у седана/спорта
     if (!isJeep && !wedge && !isVan && !isPie) {
         const trunk = new THREE_REF.Mesh(
-            new RoundedBoxGeometry(bodyW * 0.9, 0.12, 0.45, 2, 0.04),
+            new RoundedBoxGeometry(bodyW * 0.9, 0.12, isLux ? 0.62 : 0.45, 2, 0.04),
             bodyMat2.clone()
         );
-        trunk.position.set(0, bodyY + bodyH * 0.4, bodyL * 0.32);
+        trunk.position.set(0, bodyY + bodyH * 0.4, bodyL * (isLux ? 0.34 : 0.32));
         trunk.userData.bodyPaint = true; group.add(trunk);
     }
 
     // 3) Кабина: высокая, зад вровень с кузовом
     const cabinH = isJeep ? 0.56 : (isHatch ? 0.33 : (isRaf ? 0.6 : isVan ? 0.56 : (isHump ? 0.34 : 0.4)));
-    const cabinLen = isJeep ? 1.21 : (isHatch ? 0.78 : (isRaf ? 1.72 : isVan ? 1.98 : (isHump ? 0.5 : (isPie ? 0.7 : 0.95)))); // Нива +15% к капоту; «Зубило» — короткая крыша между скосами
-    const cabinZ = isJeep ? (bodyL * 0.5 - cabinLen * 0.5 - 0.01) : (isSport ? 0.1 : (isHatch ? 0.2 : (isRaf ? 0.26 : isVan ? 0 : (isHump ? -0.02 : (isPie ? -0.1 : 0.05)))));
+    const cabinLen = isJeep ? 1.21 : isLux ? 1.08 : (isHatch ? 0.78 : (isRaf ? 1.72 : isVan ? 1.98 : (isHump ? 0.5 : (isPie ? 0.7 : 0.95)))); // Нива +15% к капоту; «Зубило» — короткая крыша между скосами
+    const cabinZ = isJeep ? (bodyL * 0.5 - cabinLen * 0.5 - 0.01) : isLux ? 0.16 : (isSport ? 0.1 : (isHatch ? 0.2 : (isRaf ? 0.26 : isVan ? 0 : (isHump ? -0.02 : (isPie ? -0.1 : 0.05)))));
     // «девятка»: лобовое — плавный скос вперёд над капотом, пятая дверь — резкий скос назад
     const hatchF = isHatch ? 0.52 : (isHump ? 0.3 : 0), hatchR = isHatch ? 0.3 : (isHump ? 0.6 : 0);
     const cabinY = bodyY + bodyH * 0.5 + cabinH * 0.5;
@@ -112,7 +114,8 @@ export function buildShowroomCar(carId) {
     cabinShell.position.set(0, cabinY, cabinZ);
     cabinShell.material.transparent = true;
     cabinShell.material.opacity = isJeep ? 0.38 : 0.55;
-    cabinShell.material.color.setHex(isJeep ? 0x88b0cc : 0x1a3048);
+    cabinShell.material.color.setHex(isJeep ? 0x88b0cc : isLux ? 0x0a0c10 : 0x1a3048);
+    if (isLux) cabinShell.material.opacity = 0.82; // тонировка «в ноль»
     cabinShell.material.depthWrite = false;
     cabinShell.material.metalness = 0.35;
     cabinShell.material.roughness = 0.12;
@@ -148,7 +151,8 @@ export function buildShowroomCar(carId) {
         const gMat = glassMat.clone();
         gMat.transparent = true;
         gMat.opacity = isJeep ? 0.36 : 0.48;
-        gMat.color.setHex(0xa8c8e0);
+        gMat.color.setHex(isLux ? 0x141820 : 0xa8c8e0);
+        if (isLux) gMat.opacity = 0.85;
         gMat.depthWrite = false;
         gMat.metalness = 0.4;
         gMat.roughness = 0.1;
@@ -277,6 +281,14 @@ export function buildShowroomCar(carId) {
                 bar.position.set(0, grillY - 0.08 + i * 0.05, grillZ - 0.02);
                 grillG.add(bar);
             }
+        } else if (isLux) {
+            // «Шестисотый»: высокая хромовая решётка с вертикальными рёбрами
+            const fr = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.3, 0.2, 0.05), chromeMat.clone());
+            fr.position.set(0, 0.46, grillZ); grillG.add(fr);
+            for (let i = 0; i < 7; i++) {
+                const rb = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.018, 0.16, 0.03), blackMat);
+                rb.position.set(-bodyW * 0.12 + i * (bodyW * 0.24 / 6), 0.46, grillZ - 0.02); grillG.add(rb);
+            }
         } else if (isHump) {
             // «Горбатый»: решётки нет (мотор сзади) — хромовые «усы» под носом
             const mus = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.56, 0.035, 0.04), chromeMat.clone());
@@ -305,7 +317,7 @@ export function buildShowroomCar(carId) {
     {
         const hlY = (isJeep || isVan) ? bodyY + 0.04 : (isSport ? 0.42 : (isHump ? 0.47 : 0.44));
         const hlZ = -bodyL * 0.5 - ((isJeep || isVan || isHump) ? 0.02 : 0.04);
-        const hlX = isJeep ? bodyW * 0.33 : (isHatch ? bodyW * 0.33 : (isVan ? bodyW * 0.36 : (isHump ? bodyW * 0.36 : bodyW * 0.40)));
+        const hlX = isJeep ? bodyW * 0.33 : (isHatch ? bodyW * 0.33 : isLux ? bodyW * 0.35 : (isVan ? bodyW * 0.36 : (isHump ? bodyW * 0.36 : bodyW * 0.40)));
         [-1, 1].forEach(side => {
             if (isJeep || isVan || isHump) {
                 // хромированный корпус (короткий цилиндр вдоль Z)
@@ -325,8 +337,8 @@ export function buildShowroomCar(carId) {
                 lens.position.set(side * hlX, hlY, hlZ - 0.036);
                 lens.userData.isLight = true;
                 group.add(lens);
-            } else if (isHatch) {
-                // узкие прямоугольные фары «девятки»
+            } else if (isHatch || isLux) {
+                // узкие прямоугольные фары («девятка», «шестисотый»)
                 const shell = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.34, 0.09, 0.08), blackMat);
                 shell.position.set(side * hlX, hlY, hlZ);
                 group.add(shell);
@@ -349,7 +361,7 @@ export function buildShowroomCar(carId) {
     }
 
     // Стоп-сигналы (не спорт — у Волги свои горизонтальные ниже)
-    if (!isSport && !isHatch && !isHump) {
+    if (!isSport && !isHatch && !isHump && !isLux) {
         const tlMat = tailMat.clone();
         tlMat.emissiveIntensity = 1.5;
         const stopY = isJeep ? (bodyY + 0.08) : 0.50;
@@ -436,6 +448,22 @@ export function buildShowroomCar(carId) {
             const step = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.42, 0.025, 0.03), blackMat);
             step.position.set(0.25, cabinY - cabinH * 0.4 + i * 0.14, bodyL * 0.5 + 0.06); group.add(step);
         }
+    }
+
+    // === «ШЕСТИСОТЫЙ» (shestisot): хромовые молдинги и рамки окон, широкие фонари, хромовый бампер ===
+    if (isLux) {
+        [-1, 1].forEach(function(sx) {
+            const st = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.014, 0.03, bodyL * 0.9), chromeMat.clone());
+            st.position.set(sx * (bodyW * 0.5 + 0.006), bodyY - 0.06, 0); group.add(st);
+            const wt = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.012, 0.02, cabinLen * 0.96), chromeMat.clone());
+            wt.position.set(sx * (bodyW * 0.44 + 0.004), cabinY - cabinH * 0.4, cabinZ); group.add(wt);
+            const tl = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.34, 0.1, 0.04), tailMat.clone());
+            tl.position.set(sx * bodyW * 0.3, 0.52, bodyL * 0.5 + 0.004); tl.userData.isLight = true; group.add(tl);
+            const amb = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.1, 0.1, 0.042), new THREE_REF.MeshStandardMaterial({ color: 0xffa020, emissive: 0xff7a00, emissiveIntensity: 0.6 }));
+            amb.position.set(sx * bodyW * 0.44, 0.52, bodyL * 0.5 + 0.004); group.add(amb);
+        });
+        const bc = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.98, 0.05, 0.05), chromeMat.clone());
+        bc.position.set(0, 0.35, -bodyL * 0.5 - 0.06); group.add(bc); // над номером, не поверх него
     }
 
     // === «РАФИК» (rafik): «скорая» — красная полоса по бортам, крест, маячок на крыше ===
@@ -756,7 +784,7 @@ export function buildShowroomCar(carId) {
             cx.fillStyle = '#f4f4f0'; cx.fillRect(0, 0, 256, 56);
             cx.strokeStyle = '#111'; cx.lineWidth = 4; cx.strokeRect(2, 2, 252, 52);
             cx.fillStyle = '#111'; cx.font = 'bold 36px Arial, sans-serif'; cx.textBaseline = 'middle';
-            const txt = { cheburashka: 'К 101 АР', kirpich: 'Н 404 ИВ', turbo: 'В 024 ГА', zubilo: 'Е 109 ЗБ', buhanka: 'У 452 АЗ', gorbaty: 'З 965 ЗА', pirozhok: 'Х 271 ЛБ', rafik: 'С 203 РФ' }[carId] || 'А 000 АА';
+            const txt = { cheburashka: 'К 101 АР', kirpich: 'Н 404 ИВ', turbo: 'В 024 ГА', zubilo: 'Е 109 ЗБ', buhanka: 'У 452 АЗ', gorbaty: 'З 965 ЗА', pirozhok: 'Х 271 ЛБ', rafik: 'С 203 РФ', shestisot: 'А 600 АА' }[carId] || 'А 000 АА';
             cx.fillText(txt, 12, 30);
             cx.fillRect(196, 4, 2, 48);
             cx.font = 'bold 22px Arial, sans-serif'; cx.fillText('25', 210, 22);
@@ -811,7 +839,7 @@ export function buildShowroomCar(carId) {
             // под кузовом: верх упирается в днище, наружу за борт не торчит
             if (w.z > 0) B(dark, Math.sign(w.x) * (bodyW * 0.5 - 0.1), bodyY - bodyH * 0.5 - 0.07, w.z + wheelR + 0.04, 0.18, 0.15, 0.02);
         });
-        if (!isJeep && !isSport && !isHatch && !isVan && !isHump && !isPie) {
+        if (!isJeep && !isSport && !isHatch && !isVan && !isHump && !isPie && !isLux) {
             // Ушастик — «копейка»: сдвоенные круглые фары и хромированные бамперы с клыками
             const hlY2 = 0.44, hlZ2 = frontZ - 0.05;
             [-1, 1].forEach(function(sx) {

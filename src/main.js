@@ -9036,7 +9036,7 @@ function startGaragePreview(carId) {
                             // Машина относительно близко — чаще лезет в полосу игрока
                             const playerLaneApprox = Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2);
                             const clampedLane = Math.max(0, Math.min(2, playerLaneApprox));
-                            if (car.lane !== clampedLane && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK) {
+                            if (car.lane !== clampedLane && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK * (ABILITY === 'boss' ? 0.1 : 1)) { // «Шестисотому» уступают
                                 car.targetLane = clampedLane;
                                 car.isChangingLane = true;
                                 car.laneChangeProgress = 0;
@@ -9046,7 +9046,7 @@ function startGaragePreview(carId) {
                         }
                         
                         if (!shouldCut && car.laneChangeTimer <= 0) {
-                            const chance = 0.035 * (1 + progress * 0.8) * (window.__laneChangeMul || 1) * infLaneK;
+                            const chance = 0.035 * (1 + progress * 0.8) * (window.__laneChangeMul || 1) * infLaneK * (ABILITY === 'boss' ? 0.3 : 1);
                             if (Math.random() < chance) {
                                 // С шансом целимся в игрока, иначе случайная полоса
                                 let newLane;
