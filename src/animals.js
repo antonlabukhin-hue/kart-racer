@@ -175,7 +175,8 @@ class AnimalSpawner {
                 const base = 1.15 + Math.random() * 0.3;
                 const mul = Math.max(0.85, this.crossMul || 1.0);
                 const sp = Math.max(0.9, Math.min(1.15, (type.speedCross || 4) / 4));
-                return Math.max(0.75, Math.min(1.45, base / (mul * sp)));
+                const k = this.speedMul || 1; // бесконечная трасса: к дальним километрам звери бегут быстрее
+                return Math.max(0.75 / k, Math.min(1.45, base / (mul * sp * k)));
             }.call(this)),
             elapsed: 0,
             triggered: false,

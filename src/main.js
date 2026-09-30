@@ -4161,7 +4161,7 @@ function startGaragePreview(carId) {
             const INF = typeof pendingMode !== 'undefined' && pendingMode === 'infinite';
             let infWorld = null, infTheme = null, infSpeedK = 1, infHills = [], continues = 0;
             // попутки в бесконечной трассе: первые ~700 м не перестраиваются, дальше — постепенно (к ~3.2 км как обычно)
-            let infLaneK = INF ? 0 : 1;
+            let infLaneK = INF ? 0 : 1, infTrafficK = 1, infCarsBase = 0;
             const powers = createPowers(currentPlayer && currentPlayer.powerLv); // усиления бесконечной трассы с прокачкой (src/powerups.js)
             const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
@@ -6577,7 +6577,7 @@ function startGaragePreview(carId) {
                 const tm = window.__campaignTrafficMul || 1;
                 if (tm !== 1) maxCars = Math.max(4, Math.min(28, Math.round(maxCars * tm)));
             } catch (e) {}
-            if (INF) maxCars = Math.max(3, Math.round(maxCars * 0.7)); // бесконечная трасса: попуток на 30% меньше
+            if (INF) { maxCars = Math.max(3, Math.round(maxCars * 0.7)); infCarsBase = maxCars; } // бесконечная трасса: попуток на 30% меньше, дальше — больше
             for (let i = 0; i < maxCars; i++) {
                 const z = INF ? START_Z - 70 - Math.random() * 300 : -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
@@ -7349,6 +7349,10 @@ function startGaragePreview(carId) {
                 const rp = rampAt(d);
                 infSpeedK = rp.speed;
                 animalSpawner.maxAnimals = rp.maxAnimals;
+                animalSpawner.speedMul = rp.animalSpeed;
+                infTrafficK = rp.trafficSpeed;
+                // попуток больше с километрами: новые — далеко впереди
+                if (cars.length < infCarsBase + rp.traffic) cars.push(createOpponentCar(zPos - 180 - Math.random() * 200, Math.floor(Math.random() * 3)));
                 // следующий круг расстановки — за 450 ед. до его начала (дальше тумана)
                 const k = Math.floor((d + 450) / _trackSpan);
                 // по шагу за кадр (участки расстановки → план → разбивка по участкам): стройка круга не даёт рывка
@@ -9122,7 +9126,7 @@ function startGaragePreview(carId) {
                         car.targetLane = car.lane;
                         car.x = -TRACK_WIDTH / 2 + 0.5 + car.lane * 2;
                         car.mesh.position.set(car.x, 0.1, car.z);
-                        car.speed = 0.01 + Math.random() * 0.025 * (1 + progress * 0.3);
+                        car.speed = (0.01 + Math.random() * 0.025 * (1 + progress * 0.3)) * infTrafficK;
                         car.laneChangeTimer = 2 + Math.random() * 3;
                         car.isChangingLane = false;
                         car.laneChangeProgress = 0;
