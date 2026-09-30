@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { THEMES, THEME_LEN, BLEND_LEN, themeAt, mixHex, rampAt, runScore, runXp, planStretch, GAP_EVERY } from '../../src/infinite.js';
+import { THEMES, THEME_LEN, BLEND_LEN, themeAt, mixHex, rampAt, runScore, runXp, planStretch, GAP_EVERY, VHS_EVERY } from '../../src/infinite.js';
 
 const seq = (seed) => { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; };
 
@@ -20,7 +20,8 @@ describe('бесконечная трасса: пейзажи', () => {
 
 describe('рост сложности и счёт', () => {
     it('скорость, звери и препятствия растут и упираются в потолок', () => {
-        expect(rampAt(0)).toMatchObject({ speed: 1, animals: 1, density: 0.5 });
+        // старт на 30% легче: зверей и препятствий меньше, скорость ниже
+        expect(rampAt(0)).toMatchObject({ speed: 0.9, animals: 0.7, density: 0.35 });
         expect(rampAt(3000).speed).toBeGreaterThan(1.2);
         expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.35, animals: 1.8 });
     });
@@ -52,5 +53,12 @@ describe('план участка', () => {
         const late = planStretch(6000, 7000, seq(11)).items.filter(i => i.kind === 'obstacle').length;
         expect(late).toBeGreaterThan(early);
         expect(planStretch(0, 1000, seq(5)).items.filter(i => i.kind === 'echip').length).toBeGreaterThan(20);
+    });
+    it('видеокассеты редкие: ~1 на 1.7 км', () => {
+        let n = 0;
+        for (let k = 0; k < 20; k++) n += planStretch(k * 1720, (k + 1) * 1720, seq(100 + k)).items.filter(i => i.kind === 'vhs').length;
+        expect(n).toBeGreaterThanOrEqual(12);
+        expect(n).toBeLessThanOrEqual(35);
+        expect(VHS_EVERY).toBe(1700);
     });
 });

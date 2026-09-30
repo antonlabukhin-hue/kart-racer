@@ -41,11 +41,27 @@ test('бесконечная трасса: пейзажи, «Е», уборка 
     const t = await page.evaluate(() => window.__raceDebug.raceTime);
     expect(t).toBeGreaterThan(1);
 
+    // видеокассета — редкая валюта: ищем впереди, подбираем
+    const vhs = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        let c = null;
+        for (let i = 0; i < 10 && !c; i++) {
+            c = g.collectibles.find(o => o.type === 'vhs' && o.active);
+            if (!c) { g.setStrikes(0); g.setZ(g.z - 500); await new Promise(r => setTimeout(r, 1500)); }
+        }
+        g.setStrikes(0); g.setX(c.x); g.setZ(c.z + 0.2);
+        await new Promise(r => setTimeout(r, 400));
+        return g.stats.vhs || 0;
+    });
+    expect(vhs).toBe(1);
+
     // конец — по авариям: итог с дальностью и рекордом, в меню — рекорд на карточке
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await expect(page.locator('#finish-screen')).toContainText('ЗАЕЗД ОКОНЧЕН', { timeout: 10_000 });
     await expect(page.locator('#finish-screen')).toContainText('НОВЫЙ РЕКОРД ДАЛЬНОСТИ');
+    await expect(page.locator('#finish-screen .fin-chip[title="видеокассеты"]')).toContainText('1');
     await page.locator('#finish-menu-btn').click();
     await expect(page.locator('#menu-inf-best')).toContainText(/🏆 \d+ м/);
+    await expect(page.locator('#mm-vhs')).toHaveText('1');
     expect(problems).toEqual([]);
 });

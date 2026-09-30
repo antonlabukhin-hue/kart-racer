@@ -44,7 +44,7 @@ export function statTilesHtml(list) {
 /** Награды «фишками»: число набегает от 0 (animateRewardChips). totals — { chips, gum } после заезда */
 export function rewardChipsHtml(r, totals) {
     if (!r) return '';
-    const items = [['🪙', r.chips, 'фишки'], ['🍬', r.gum, 'жвачки'], ['XP', r.xp, 'опыт']].filter(function(x) { return (x[1] || 0) > 0; });
+    const items = [['🪙', r.chips, 'фишки'], ['🍬', r.gum, 'жвачки'], ['📼', r.vhs, 'видеокассеты'], ['XP', r.xp, 'опыт']].filter(function(x) { return (x[1] || 0) > 0; });
     if (!items.length) return '';
     return '<div class="fin-rewards">' + items.map(function(x, i) {
         return '<span class="fin-chip" style="animation-delay:' + (0.15 + i * 0.12) + 's" title="' + x[2] + '"><i>' + x[0] + '</i> +<b data-to="' + x[1] + '">' + x[1] + '</b></span>';
