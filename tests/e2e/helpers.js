@@ -36,6 +36,8 @@ export async function countShouts(page) {
 // briefing: true — не отмечать «Даю установку:» как прочитанный (плашка первого заезда покажется)
 export async function login(page, name = 'Тестер', url = './', { briefing = false } = {}) {
     if (!briefing) await page.addInitScript(() => localStorage.setItem('road_racing_briefing_v2', '1'));
+    // показ наград в конце заезда (крутящаяся «Е», кассета, салют рекорда) проверяет свой тест — остальным сразу итоги
+    await page.addInitScript(() => { if (!sessionStorage.getItem('keep_reveal')) localStorage.setItem('road_racing_skip_reveal', '1'); });
     await page.goto(url);
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
     await page.locator('#splash-screen').click();

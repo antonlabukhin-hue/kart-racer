@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -4167,7 +4167,7 @@ function startGaragePreview(carId) {
                 }
             } catch (e) {}
             const _cont = document.getElementById('game-container');
-            if (_cont) { while (_cont.firstChild) _cont.removeChild(_cont.firstChild); }
+            if (_cont) { while (_cont.firstChild) _cont.removeChild(_cont.firstChild); _cont.style.visibility = ''; } // после праздника рекорда заезд снова виден
             document.querySelectorAll('#finish-screen,#game-hud,#hud-menu-btn,#power-hud,.chance-modal,#e-counter').forEach(el => { try { el.remove(); } catch(e){} });
             const _settings = loadSettings();
             window.__camMode = _settings.camera; // камера по умолчанию — из «Настроек»
@@ -5076,6 +5076,19 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) { console.warn('campaign win', e); }
                 
+                // «вкус победы»: новый рекорд — салют и «кино» с машиной, потом крутится золотая «Е» и кассета (src/ui/reward-reveal.js)
+                function revealThenEnd() {
+                    const done = function() { showEndScreen(state, timeTaken, raceRewards); showRaceAchievementPlaques(raceRewards); };
+                    try {
+                        showRewardReveal({ chips: raceRewards.chips || 0, vhs: raceRewards.vhs || 0,
+                            record: (INF && raceRewards.inf && raceRewards.infBest && raceRewards.infBest.isNew) ? { dist: raceRewards.inf.dist } : null,
+                            onRecordStart: function() {
+                                const gc = document.getElementById('game-container'); if (gc) gc.style.visibility = 'hidden';
+                                startMenuBg({ carId: carId, profile: currentPlayer, intro: true, lowPower: isMobile });
+                            },
+                            onDone: done });
+                    } catch (e) { console.warn('reveal', e); done(); }
+                }
                 // Финишный cinematic ~5.5с: облёт машины, время прочитать плашки
                 if (state === 'win') {
                     const startCam = camera.position.clone();
@@ -5117,8 +5130,7 @@ function startGaragePreview(carId) {
                         if (k < 1) requestAnimationFrame(cineFrame);
                         else {
                             try { soundEngine.stopMusic(); } catch(e) {}
-                            showEndScreen(state, timeTaken, raceRewards);
-                            showRaceAchievementPlaques(raceRewards);
+                            revealThenEnd();
                         }
                     }
                     requestAnimationFrame(cineFrame);
@@ -5126,7 +5138,7 @@ function startGaragePreview(carId) {
                 }
                 try { soundEngine.stopMusic(); } catch(e) {}
                 setTimeout(() => {
-                    showEndScreen(state, timeTaken, raceRewards); showRaceAchievementPlaques(raceRewards);
+                    revealThenEnd();
                     // Optionally cancel further animation after screen shows
                     if (animationId) {
                         // keep rendering for a while, no need to cancel hard
