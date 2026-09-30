@@ -4612,9 +4612,12 @@ function startGaragePreview(carId) {
                     const ir = rewards.inf, ib = rewards.infBest || {};
                     title = '🛣 ЗАЕЗД ОКОНЧЕН';
                     color = '#ffd23c';
-                    message = 'Проехано: ' + ir.dist + ' м · ' + formatTime(timeTaken) + '\nСчёт: ' + ir.score + (ir.mult > 1 ? ' (×' + ir.mult + ' за задания)' : '')
+                    // очки забега — не «Е» (в длинном заезде их десятки тысяч); уровень сезона — +100 «Е» сверх заезда
+                    const lvUp = Math.max(0, (rewards.levelAfter || 0) - (rewards.levelBefore || 0));
+                    message = 'Проехано: ' + ir.dist + ' м · ' + formatTime(timeTaken) + '\nОчки забега: ' + ir.score.toLocaleString('ru-RU') + (ir.mult > 1 ? ' (×' + ir.mult + ' за задания)' : '')
+                        + (lvUp ? '\n⬆ Уровень сезона: +' + lvUp * 100 + ' Е' : '')
                         + '\n' + (ib.isNew ? '🎉 НОВЫЙ РЕКОРД ДАЛЬНОСТИ!' : '🏆 Рекорд: ' + (ib.best || ir.dist) + ' м');
-                    finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Фишки «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
+                    finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Собрано «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
                         ['📼', 'Кассеты', stats.vhs || 0], ['🗺', 'Пейзажей', ir.lands], ['⚡', 'На волоске', nearMissCount]];
                 } else if (isEndlessMode()) {
                     const run = window.__endless;
