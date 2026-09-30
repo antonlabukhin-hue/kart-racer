@@ -8,6 +8,7 @@ import { seasonBadge, unclaimedRewards, affordableUpgrades, badgeText } from './
 import { rankLabel, rankOf } from '../ranks.js';
 import { CHESTS } from '../streak.js';
 import { scoreMult } from '../missions.js';
+import { weekTheme } from '../infinite.js';
 
 let chestAutoShown = null; // сундук дня предлагаем сам один раз за день
 
@@ -38,6 +39,8 @@ export function refreshMainMenu(d) {
     setText('mm-level', rankLabel(p.totalXp)); // уровень и звание игрока (src/ranks.js); уровень сезона — в «Сезоне»
     setText('mm-chips', String(se.chips || 0));
     setText('mm-vhs', String(se.vhs || 0));
+    // событие недели — на карточке бесконечной трассы (src/infinite.js weekTheme)
+    { const n = document.querySelector('.menu-infinite .mm-note'); if (n) n.textContent = '×2 Е · ' + weekTheme().short; }
     setText('mm-note-campaign', d.campaignDone + ' из ' + d.campaignTotal);
     const ups = affordableUpgrades(d.upgradeLevels, se.chips, d.upgrades, d.costOf, d.maxLevel);
     setBadge('mm-badge-garage', ups);

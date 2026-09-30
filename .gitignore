@@ -5,3 +5,4 @@ test-results/
 playwright-report/
 dist-test/
 release/
+dist-art

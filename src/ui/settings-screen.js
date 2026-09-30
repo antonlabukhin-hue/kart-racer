@@ -1,9 +1,10 @@
 /**
  * Экран настроек — карточка поверх меню. Значения хранит src/settings.js.
  * Зависимости от игры передаются явно (deps), без глобальных window.*:
- *   onQuality(v), onLang(v), briefingKey, sound() → звуковой движок.
+ *   onQuality(v), onLang(v), briefingKey, sound() → звуковой движок, cloud — облачное сохранение включено (src/cloud-save.js).
  */
 import { loadSettings, saveSettings } from '../settings.js';
+import { getCode, normalizeCode, pullSave, pushSave, snapshot, applySnapshot } from '../cloud-save.js';
 
 export function openSettingsScreen(deps) {
     const d = deps || {};
@@ -41,6 +42,11 @@ export function openSettingsScreen(deps) {
         toggle('vibrate', 'Вибрация телефона при аварии') +
         toggle('ghost', '👻 Призрак лучшего заезда') +
         toggle('curve', '🛣 Повороты и холмы дороги') +
+        (d.cloud ? '<div class="st-group">☁ Облачное сохранение</div>' +
+            '<div class="st-cloud"><div class="sc-code"><small>Твой код — запиши или сохрани:</small><b id="cloud-code">' + getCode() + '</b><button type="button" class="st-btn" id="cloud-copy">Скопировать</button></div>' +
+            '<small class="sc-note">Прогресс сохраняется сам. На новом телефоне введи код — всё вернётся.</small>' +
+            '<div class="sc-load"><input id="cloud-input" placeholder="XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters"><button type="button" class="st-btn" id="cloud-load">Загрузить</button></div>' +
+            '<small class="sc-status" id="cloud-status"></small></div>' : '') +
         '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
         '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
         // для разбора вёрстки на телефоне: экран устройства, окно страницы, масштаб интерфейса, режим приложения
@@ -79,6 +85,26 @@ export function openSettingsScreen(deps) {
     el.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
         cb.addEventListener('change', function() { save({ [cb.dataset.key]: cb.checked }); });
     });
+    if (d.cloud) {
+        const status = function(t) { el.querySelector('#cloud-status').textContent = t; };
+        el.querySelector('#cloud-copy').onclick = function() {
+            const c = getCode();
+            try { navigator.clipboard.writeText(c).then(function() { status('Код скопирован'); }, function() { status('Код: ' + c); }); } catch (e) { status('Код: ' + c); }
+            pushSave(c, snapshot()).then(function(ok) { if (ok) status('Код скопирован · прогресс в облаке'); });
+        };
+        el.querySelector('#cloud-load').onclick = function() {
+            const code = normalizeCode(el.querySelector('#cloud-input').value);
+            if (!code) { status('Код — 12 знаков, например K7PQ-2ZMA-9XRD'); return; }
+            status('Загружаю…');
+            pullSave(code).then(function(data) {
+                if (!data) { status('Сохранение не найдено (или нет сети)'); return; }
+                if (!confirm('Заменить прогресс на этом устройстве сохранением из облака?')) { status(''); return; }
+                applySnapshot(data);
+                try { localStorage.setItem('road_racing_cloud_code', code); } catch (e) {}
+                location.reload();
+            });
+        };
+    }
     el.querySelector('#settings-briefing').addEventListener('click', function(ev) {
         try { if (d.briefingKey) localStorage.removeItem(d.briefingKey); } catch (e) {}
         ev.currentTarget.textContent = '✓ Покажем в следующем заезде';

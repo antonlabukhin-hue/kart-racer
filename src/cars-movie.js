@@ -10,10 +10,11 @@
  * Спереди машины — −Z, сзади — +Z.
  */
 import * as THREE from 'three';
+import { FANTASY_BUILDERS, FANTASY_FINISH, fantasyRim } from './cars-fantasy.js';
 
-export const MOVIE_CARS = ['thief', 'neon', 'bull', 'cyborg', 'avenger'];
+export const MOVIE_CARS = ['thief', 'neon', 'bull', 'cyborg', 'avenger', 'trike', 'ghostcar', 'moped', 'chariot', 'timecar', 'carpet']; // вторая шестёрка — src/cars-fantasy.js
 
-function mats(color, o) {
+export function mats(color, o) {
     const body = new THREE.MeshStandardMaterial({ color: color, metalness: o.metal != null ? o.metal : 0.45, roughness: o.rough != null ? o.rough : 0.3 });
     return {
         body: body,
@@ -27,7 +28,7 @@ function mats(color, o) {
     };
 }
 
-function kit(group) {
+export function kit(group) {
     const add = function(mesh, flags) { if (flags) Object.assign(mesh.userData, flags); group.add(mesh); return mesh; };
     return {
         /** Коробка: размер (w, h, l), центр (x, y, z), наклон rx */
@@ -74,7 +75,7 @@ function kit(group) {
 }
 
 /** Стекло поверх кузова между двумя точками профиля (лобовое / заднее): ширина w */
-function pane(k, mat, a, b, w, lift) {
+export function pane(k, mat, a, b, w, lift) {
     const dz = b[0] - a[0], dy = b[1] - a[1];
     const len = Math.sqrt(dz * dz + dy * dy);
     const m = k.box(mat, w, 0.02, len, 0, (a[1] + b[1]) / 2 + (lift || 0.012), (a[0] + b[0]) / 2);
@@ -82,7 +83,7 @@ function pane(k, mat, a, b, w, lift) {
     return m;
 }
 
-function wheelSet(group, m, list, rimMat, capMat) {
+export function wheelSet(group, m, list, rimMat, capMat) {
     const wheels = [];
     list.forEach(function(p) {
         const r = p[3], w = p[4] || 0.2;
@@ -104,8 +105,8 @@ function wheelSet(group, m, list, rimMat, capMat) {
     return wheels;
 }
 
-function paintFlag() { return { bodyPaint: true }; }
-const LIGHT = { isLight: true };
+export function paintFlag() { return { bodyPaint: true }; }
+export const LIGHT = { isLight: true };
 
 // ---------------- «Угонщик»: фастбэк 60-х ----------------
 function buildThief(k, m, group) {
@@ -287,13 +288,13 @@ const FINISH = { thief: { metal: 0.55, rough: 0.28 }, neon: { metal: 0.3, rough:
 
 export function buildMovieCar(carId, preset) {
     const group = new THREE.Group();
-    const m = mats((preset && preset.color) || 0x333333, FINISH[carId] || {});
+    const m = mats((preset && preset.color) || 0x333333, FINISH[carId] || FANTASY_FINISH[carId] || {});
     const k = kit(group);
-    const d = BUILDERS[carId](k, m, group);
-    const rim = carId === 'avenger' ? m.black : carId === 'thief' ? new THREE.MeshStandardMaterial({ color: 0x5a5e66, metalness: 0.7, roughness: 0.3 }) : m.chrome;
+    const d = (BUILDERS[carId] || FANTASY_BUILDERS[carId])(k, m, group);
+    const rim = carId === 'avenger' ? m.black : carId === 'thief' ? new THREE.MeshStandardMaterial({ color: 0x5a5e66, metalness: 0.7, roughness: 0.3 }) : (fantasyRim(carId, m) || m.chrome);
     const wheels = wheelSet(group, m, d.wheels, rim, carId === 'avenger' ? new THREE.MeshStandardMaterial({ color: 0xe8c020, metalness: 0.6, roughness: 0.3 }) : null);
     group.traverse(function(o) { if (o.isMesh) o.castShadow = true; });
     group.userData.carId = carId;
     group.userData.dims = { bodyL: d.L, bodyY: d.Y, bodyW: d.W };
-    return { group: group, parts: {}, bodyMat: m.body, upgrades: { wheels: wheels, wheelR: d.wheels[0][3], byLevel: {} } };
+    return { group: group, parts: {}, bodyMat: m.body, upgrades: { wheels: wheels, wheelR: d.wheels.length ? d.wheels[0][3] : 0.3, byLevel: {} } }; // у ковра-самолёта колёс нет
 }
