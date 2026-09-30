@@ -7970,7 +7970,7 @@ function startGaragePreview(carId) {
             const NITRO_ACCEL = ABILITY === 'turbo' ? 1.8 : 1.6;
             const OIL_GRIP = carStats.oilGrip;
             const DURABILITY = carStats.durability; // множитель штрафа времени (меньше = танк); броня его снижает
-            const NITRO_TIME = carStats.nitroTime;
+            const NITRO_TIME = carStats.nitroTime * ((carPreset.ability && carPreset.ability.id === 'rocket') ? 1.5 : 1); // «Ракета» — форсаж
 
             // ---- МЕТА-СИСТЕМЫ ----
             let comboTime = 0;

@@ -180,6 +180,8 @@ export const CAR_PRESETS = {
         ability: { id: 'armor', name: 'Броня', desc: 'каждый заезд — с бронёй: первый удар не авария' } },
     shestisot:   { name: 'Шестисотый', color: 0x0e0e12, maxSpeed: 0.468, accel: 0.0252, durability: 1.2, oilGrip: 0.95, priceChips: 1500,
         ability: { id: 'boss', name: 'Авторитет', desc: 'попутки почти не лезут в твою полосу' } },
+    raketa:      { name: 'Ракета',     color: 0xffd83a, maxSpeed: 0.5, accel: 0.03, durability: 0.8, oilGrip: 0.8, priceChips: 2500,
+        ability: { id: 'rocket', name: 'Форсаж', desc: 'нитро действует на 50% дольше' } },
     // уникальная: только за видеокассеты (📼 — редкая валюта бесконечной трассы и сундуков)
     zubilo:      { name: 'Зубило',     color: 0x9a1428, maxSpeed: 0.456, accel: 0.0264, durability: 0.9, oilGrip: 0.95, priceChips: 0, priceVhs: 5,
         ability: { id: 'magnet', name: 'Магнит', desc: '«Е» рядом сами летят в машину — без усиления' } }
