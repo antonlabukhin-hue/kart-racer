@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // На сервере GitHub игра рисуется на процессоре в 2–3 раза медленнее, чем дома:
 // проверяем, что машина едет, а не как быстро
-import { watchProblems, countShouts, login, startFreeRace, startCampaign, progress } from './helpers.js';
+import { openFreeRace, watchProblems, countShouts, login, startFreeRace, startCampaign, progress } from './helpers.js';
 
 test('игра загружается, three из сборки', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
@@ -24,7 +24,7 @@ test('вход по Enter, профиль сохраняется после пе
 test('«Сразу в путь» из «Заезда» открывает заезд без выбора трассы', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
-    await page.locator('.menu-card[data-menu="race"]').click();
+    await openFreeRace(page);
     const shop = page.locator('#shop-action');
     if (await shop.isVisible()) await shop.click();
     await page.locator('#main-menu-quick-race').click();
@@ -194,7 +194,7 @@ test('с выбора карты можно вернуться к сложнос
     await expect(page.locator('#player-bar')).toBeHidden();
     await expect(page.locator('#volume-controls')).toBeHidden();
     const toMapSelect = async () => {
-        await page.locator('.menu-card[data-menu="race"]').click();
+        await openFreeRace(page);
         const shop = page.locator('#shop-action');
         if (await shop.isVisible()) await shop.click();
         await page.locator('.difficulty-btn[data-diff="easy"]').click();

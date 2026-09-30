@@ -42,8 +42,8 @@ export function buildChunks(scene) {
             return scene;
         };
     }
-    scene.updateMatrixWorld(true);
-    scene.children.slice().forEach(function(o) {
+    const chunks = [];
+    const place = function(o) {
         box.setFromObject(o);
         if (!cullable(o, box)) return;
         const k = Math.floor((box.min.z + box.max.z) / 2 / SPAN);
@@ -56,14 +56,16 @@ export function buildChunks(scene) {
             scene.add(g);
             b = g;
             buckets.set(k, g);
+            chunks.push(g);
         }
         b.userData.chunk.min = Math.min(b.userData.chunk.min, box.min.z);
         b.userData.chunk.max = Math.max(b.userData.chunk.max, box.max.z);
         b.add(o); // родитель в начале координат без поворота — мировая матрица объекта та же
         roots.push([o, o.position.x, o.position.y, o.position.z]);
         moved++;
-    });
-    const chunks = Array.from(buckets.values());
+    };
+    scene.updateMatrixWorld(true);
+    scene.children.slice().forEach(place);
     return {
         chunks: chunks,
         moved: moved,
@@ -79,6 +81,20 @@ export function buildChunks(scene) {
                 }
             }
             return n;
+        },
+        /** Бесконечная трасса: разложить по участкам новые объекты (уже в сцене) */
+        adopt: function(list) {
+            list.forEach(function(o) { if (o.parent === scene) { o.updateMatrixWorld(true); place(o); } });
+        },
+        /** Убрать опустевшие участки позади zBehind (их объекты игра уже удалила) */
+        prune: function(zBehind) {
+            for (let i = chunks.length - 1; i >= 0; i--) {
+                const c = chunks[i];
+                if (c.children.length || c.userData.chunk.min < zBehind) continue;
+                scene.remove(c);
+                chunks.splice(i, 1);
+                buckets.forEach(function(v, k) { if (v === c) buckets.delete(k); });
+            }
         },
         // трасса идёт к −z: «впереди» — меньшие z
         update: function(zPos, ahead, behind) {

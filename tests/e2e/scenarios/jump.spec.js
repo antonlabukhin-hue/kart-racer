@@ -11,13 +11,14 @@ test('разлом: по полосе трамплина машина взлет
     const laneX = [-1.5, 0, 1.5][gap.lane];
     await page.keyboard.down('w');
     const r = await page.evaluate(({ laneX, zFar }) => new Promise(res => {
-        const d = window.__raceDebug; const s0 = d.strikes; let flew = false, maxY = 0; const t0 = performance.now();
+        // удары за перелёт — по журналу ударов: жвачка над разломом лечит, и разница аварий бывала −1
+        const d = window.__raceDebug; const h0 = d.hitLog.length; let flew = false, maxY = 0; const t0 = performance.now();
         // звери не мешают замеру
         const f = () => {
             (d.animals || []).forEach(a => { a.hit = true; if (a.mesh) a.mesh.visible = false; });
             d.setX(laneX);
             if (d.air) { flew = true; maxY = Math.max(maxY, d.y); }
-            if (d.z < zFar - 6 || performance.now() - t0 > 30000) res({ flew, maxY, strikes: d.strikes - s0 }); else requestAnimationFrame(f);
+            if (d.z < zFar - 6 || performance.now() - t0 > 30000) res({ flew, maxY, strikes: d.hitLog.length - h0 }); else requestAnimationFrame(f);
         };
         f();
     }), { laneX, zFar: gap.zFar });

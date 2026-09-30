@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip } from './echip.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -698,6 +698,15 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             launchEndlessWave();
         }
         window.startEndlessRun = startEndlessRun;
+        /** «Бесконечная трасса» — вместо свободного заезда: сразу в путь на своей машине */
+        function startInfiniteRun() {
+            if (!currentPlayer) return;
+            clearCampaignGlobals();
+            pendingMode = 'infinite';
+            try { hideMainMenu(); } catch (e) {}
+            const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
+            initGame((typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium', 'medium', car, 'arsenev', 'day');
+        }
         // карточка волны между трассами
         function showWaveCard(run, gained, onDone) {
             const el = document.createElement('div');
@@ -1251,6 +1260,8 @@ function createProfile(name) { return Profile.createProfile(name); }
             try {
                 const eb = document.getElementById('menu-endless-best');
                 const today = currentPlayer.beastDaily && currentPlayer.beastDaily.seed === dailySeed() ? currentPlayer.beastDaily.best : 0;
+                const ib = document.getElementById('menu-inf-best');
+                if (ib) ib.textContent = currentPlayer.infinite && currentPlayer.infinite.best ? '🏆 ' + currentPlayer.infinite.best + ' м' : '';
                 if (eb) eb.textContent = currentPlayer.endlessBest ? '🏆 ' + currentPlayer.endlessBest + (today ? ' · сегодня ' + today : '') : '';
             } catch (e) {}
             // «Звериный час» — под замком до главы 1
@@ -2755,7 +2766,9 @@ function startGaragePreview(carId) {
                     : (halfTW + localAcross);
                 // ближе к дороге — меньше высота, дальше — полный amp
                 const edgeFade = Math.min(1, localAcross / 8);
-                const n = fbm2D(worldX * scale, z * scale, seed, 4);
+                // period — узор повторяется вдоль трассы (бесконечная трасса: холмы едут с дорогой шагом period)
+                const a = opts.period ? z / opts.period * Math.PI * 2 : 0, R = opts.period ? opts.period * scale / (Math.PI * 2) : 0;
+                const n = opts.period ? fbm2D(worldX * scale + R * Math.cos(a), R * Math.sin(a), seed, 4) : fbm2D(worldX * scale, z * scale, seed, 4);
                 const h = (n - 0.35) * amp * edgeFade;
                 pos.setY(i, Math.max(-0.5, h));
                 pos.setX(i, worldX);
@@ -2776,7 +2789,7 @@ function startGaragePreview(carId) {
 
             const mat = new THREE.MeshLambertMaterial({
                 color: opts.colorAt ? 0xffffff : color,
-                vertexColors: !!opts.colorAt,
+                vertexColors: !!opts.colorAt, side: opts.period ? THREE.DoubleSide : THREE.FrontSide, // левая полоса зеркальна — в бесконечной трассе видна с обеих сторон
                 flatShading: false
             });
             const mesh = new THREE.Mesh(geo, mat);
@@ -4056,7 +4069,7 @@ function startGaragePreview(carId) {
             document.querySelectorAll('#finish-screen,#game-hud,#hud-menu-btn').forEach(el => { try { el.remove(); } catch(e){} });
             const _settings = loadSettings();
             window.__camMode = _settings.camera; // камера по умолчанию — из «Настроек»
-            const weatherMode = weatherId || 'day';
+            let weatherMode = weatherId || 'day'; // в бесконечной трассе меняется с пейзажем
             window.weatherMode = weatherMode;
             // тема уже выставлена в начале initGame
             const trackTheme = window.__trackThemeActive || 'default';
@@ -4065,12 +4078,15 @@ function startGaragePreview(carId) {
             
             // кампания: «сложные» главы плавно ужесточаются к финалу (src/balance.js)
             const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
+            // «Бесконечная трасса» (src/infinite.js, src/inf-world.js): вместо финиша — круги расстановки один за другим
+            const INF = typeof pendingMode !== 'undefined' && pendingMode === 'infinite';
+            let infWorld = null, infTheme = null, infSpeedK = 1, infHills = [];
             const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
                 : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave) : DIFFICULTY_CONFIG[difficulty]);
             // глава может задать свою длину трассы (глава 1 — короткая, ~45–60 с)
             const _cmods = (_campIdx >= 0 && window.__campaignMods) || null;
-            const config = (_cmods && _cmods.trackLength) ? Object.assign({}, baseConfig, { trackLength: _cmods.trackLength }) : baseConfig;
+            const config = INF ? Object.assign({}, baseConfig, { trackLength: 1800 }) : (_cmods && _cmods.trackLength) ? Object.assign({}, baseConfig, { trackLength: _cmods.trackLength }) : baseConfig;
             // босс главы: своё HP и сколько фаз он показывает (в главе 1 — только первая)
             const bossMaxPhase = (_cmods && _cmods.bossMaxPhase) || 3;
 
@@ -4222,9 +4238,10 @@ function startGaragePreview(carId) {
                 // новый HUD: крупный таймер, аварии сердцами; скорость и нитро — на циферблате (#hud-speedo)
                 hud.className = 'hud-v2';
                 hud.innerHTML = `
-                    <div class="hud-time"><span class="hud-lbl">⏱ ВРЕМЯ:</span> <span id="timeDisplay" class="hud-big">${formatTime(TIME_LIMIT)}</span></div>
+                    <div class="hud-time"><span class="hud-lbl">⏱ ВРЕМЯ:</span> <span id="timeDisplay" class="hud-big">${formatTime(INF ? 0 : TIME_LIMIT)}</span></div>
                     <div class="hud-crash"><span class="hud-lbl">💥 АВАРИИ:</span> <span id="heartsDisplay" class="hud-hearts">${'<i>♥︎</i>'.repeat(MAX_STRIKES)}</span><span id="strikesDisplay" class="hud-sr">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
                     ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">🐾 ВОЛНА ' + window.__endless.wave + ' · ' + window.__endless.score + '</div>' : ''}
+                    ${INF ? '<div id="infDisplay" style="color:#ffd23c;">🛣 0 м · Е 0</div>' : ''}
                     <div id="ghostDeltaDisplay" style="display:none;font-weight:800;">👻 РЕКОРД: <span></span></div>
                     <div id="cleanDisplay" title="10 с без ударов — броня, дальше +2 🪙"><span class="cl-label">✨ ЧИСТО</span><span class="cl-shield">🛡</span><div class="cl-bar"><i></i></div></div>
                     <div id="comboDisplay" style="display:none;color:#ffaa66;margin-top:4px;font-size:13px;">🔥 КОМБО</div>
@@ -4306,8 +4323,8 @@ function startGaragePreview(carId) {
                 const weatherEl = refs.weatherEl;
                 
                 if (timeEl) {
-                    const remaining = TIME_LIMIT - raceTime;
-                    timeEl.textContent = formatTime(Math.max(0, remaining));
+                    const remaining = INF ? 999 : TIME_LIMIT - raceTime;
+                    timeEl.textContent = formatTime(INF ? raceTime : Math.max(0, remaining));
                     timeEl.style.color = remaining <= 15 ? '#ff3333' : '#fff';
                     timeEl.classList.toggle('low', remaining <= 15);
                 }
@@ -4369,7 +4386,8 @@ function startGaragePreview(carId) {
                     }
                 } catch (e) {}
                 if (progressBar) {
-                    const progress = Math.min(100, ((START_Z - zPos) / (START_Z - FINISH_Z)) * 100);
+                    // бесконечная трасса: полоска — сколько проехано по текущему пейзажу
+                    const progress = INF ? (infWorld ? (infWorld.dist % 900) / 9 : 0) : Math.min(100, ((START_Z - zPos) / (START_Z - FINISH_Z)) * 100);
                     progressBar.style.width = Math.max(0, progress) + '%';
                 }
                 if (comboEl && typeof comboTime !== 'undefined') {
@@ -4392,6 +4410,9 @@ function startGaragePreview(carId) {
                         if (weatherZone === 'dust') { wtxt = '🌪 ПЫЛЬНАЯ БУРЯ'; wcol = '#c4a574'; }
                         else if (weatherZone === 'acid') { wtxt = '☢ КИСЛОТНЫЙ ДОЖДЬ'; wcol = '#66ff88'; }
                     }
+                    if (INF && infTheme) { wtxt = '🗺 ' + infTheme.name; wcol = '#ffd98a'; }
+                    const infEl = INF && infWorld && document.getElementById('infDisplay');
+                    if (infEl) infEl.textContent = '🛣 ' + Math.round(infWorld.dist) + ' м · Е ' + (stats.eChips || 0);
                     weatherEl.textContent = wtxt;
                     weatherEl.style.color = wcol;
                 }
@@ -4471,6 +4492,14 @@ function startGaragePreview(carId) {
                     else if (stats.maxSpeedReached >= 180) titleExtra = 'Таз на стероидах';
                     else if (difficulty === 'hard') titleExtra = 'Выжил в ЗвероСуде';
                     if (titleExtra) message += '\n✨ Титул: ' + titleExtra;
+                } else if (INF && rewards.inf) {
+                    const ir = rewards.inf, ib = rewards.infBest || {};
+                    title = '🛣 ЗАЕЗД ОКОНЧЕН';
+                    color = '#ffd23c';
+                    message = 'Проехано: ' + ir.dist + ' м · ' + formatTime(timeTaken) + '\nСчёт: ' + ir.score
+                        + '\n' + (ib.isNew ? '🎉 НОВЫЙ РЕКОРД ДАЛЬНОСТИ!' : '🏆 Рекорд: ' + (ib.best || ir.dist) + ' м');
+                    finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Фишки «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
+                        ['⛽', 'Нитро', stats.nitroPicked], ['🗺', 'Пейзажей', ir.lands], ['⚡', 'На волоске', nearMissCount]];
                 } else if (isEndlessMode()) {
                     const run = window.__endless;
                     title = '🐾 ЗВЕРИНЫЙ ЧАС ОКОНЧЕН';
@@ -4500,7 +4529,7 @@ function startGaragePreview(carId) {
                 let imgHtml = '';
                 if (state === 'win') {
                     imgHtml = `<img src="images/win.jpg" alt="Победа" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:14px;display:block;" onerror="this.onerror=null;this.src='images/win.png';">`;
-                } else if (state === 'crash') {
+                } else if (state === 'crash' && !INF) {
                     imgHtml = `<img src="images/lose.jpg" alt="Поражение" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:14px;display:block;" onerror="this.onerror=null;this.src='images/lose.png';">`;
                 }
 
@@ -4812,6 +4841,8 @@ function startGaragePreview(carId) {
                 if (cheb) cheb.remove();
                 document.querySelectorAll('.animal-shout, .radio-line, .story-plaque').forEach(el => el.remove());
                 const timeTaken = raceTime;
+                const infRun = INF && infWorld ? { dist: Math.round(infWorld.dist), e: stats.eChips || 0, score: runScore(infWorld.dist, stats.eChips || 0, risk.points),
+                    lands: Math.floor(infWorld.dist / 900) + 1 } : null;
                 try {
                     trackEvent('race_end', {
                         state: state, time: Math.round(timeTaken * 10) / 10, strikes: strikes,
@@ -4837,17 +4868,17 @@ function startGaragePreview(carId) {
                             difficulty: (typeof difficulty !== 'undefined' ? difficulty : 'medium'),
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
-                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS,
+                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS, eChips: stats.eChips || 0,
                             // для контрактов дня на механики
                             cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
                             nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, riskPoints: risk.points, animalsJumped: stats.animalsJumped || 0,
-                            cleanSegments: cleanRun.segments
+                            cleanSegments: cleanRun.segments, distance: infRun ? infRun.dist : 0, infScore: infRun ? infRun.score : 0
                         }) || raceRewards;
                         try { updatePlayerBar(); } catch (e) {}
                         console.log('🪙 Награды заезда:', raceRewards);
                     }
                 } catch (e) { console.warn('rewards', e); }
-                window.__lastRaceRewards = raceRewards; raceRewards.left = Math.max(0, Math.round((zPos - FINISH_Z) / (START_Z - FINISH_Z) * 100)); raceRewards.risk = { points: risk.points, best: risk.best }; // сколько % трассы не доехал
+                window.__lastRaceRewards = raceRewards; raceRewards.left = Math.max(0, Math.round((zPos - FINISH_Z) / (START_Z - FINISH_Z) * 100)); raceRewards.risk = { points: risk.points, best: risk.best }; raceRewards.inf = infRun; // сколько % трассы не доехал
                 window.__lastRecord = null;
                 if (state === 'win' && !isEndlessMode()) {
                     try {
@@ -5170,6 +5201,8 @@ function startGaragePreview(carId) {
             // ============================================================
             // ЗЕМЛЯ И ТРАССА
             // ============================================================
+            const roadRig = new THREE.Group(); // дорога, земля и дальний план (в бесконечной трассе едут за машиной)
+            scene.add(roadRig);
             const ground = new THREE.Mesh(
                 // сетка, а не 4 вершины: «кривой мир» гнёт вершины (src/curved-world.js)
                 new THREE.PlaneGeometry(400, TRACK_LENGTH + 200, 16, Math.ceil((TRACK_LENGTH + 200) / 6)),
@@ -5178,8 +5211,12 @@ function startGaragePreview(carId) {
             ground.rotation.x = -Math.PI / 2;
             ground.position.y = -0.05;
             ground.receiveShadow = true;
-            scene.add(ground);
-            try {
+            roadRig.add(ground);
+            if (INF) ground.material.map = null; // бесконечная трасса: земля одного цвета с пейзажем (у обочин — холмы)
+            // холмы вдоль обочин: вершины через 18 (30) ед. — сдвиг на 180 попадает в те же точки, шва нет
+            if (INF) infHills = [-1, 1].map(function(side) { return createNoiseShoulder(roadRig, side, { trackWidth: TRACK_WIDTH, length: 1980, segsZ: isMobile ? 66 : 110,
+                segsX: isMobile ? 8 : 14, scale: 0.032, amp: 1.8, seed: side < 0 ? 40 : 57, period: 180, color: 0xa08866 }); });
+            if (!INF) try {
                 addNoiseLandscape(scene, mapId, !!(window.__isMobile), {
                     trackWidth: TRACK_WIDTH, length: TRACK_LENGTH,
                     colorAt: function(z, c) { return groundColorAt(mapId, (START_Z - z) / (START_Z - FINISH_Z), c); }
@@ -5188,7 +5225,7 @@ function startGaragePreview(carId) {
 
             // === Снегопад — только на snow-теме, раньше с неба вообще ничего не падало ===
             let snowfall = null;
-            if (window.__trackThemeActive === 'snow') {
+            if (INF || window.__trackThemeActive === 'snow') {
                 try {
                     const snowCount = quality === 'low' ? 140 : (window.__isMobile ? 200 : 360);
                     const snowPos = new Float32Array(snowCount * 3);
@@ -5228,7 +5265,7 @@ function startGaragePreview(carId) {
             track.rotation.x = -Math.PI / 2;
             track.position.set(0, 0.01, 0);
             track.receiveShadow = true;
-            scene.add(track);
+            roadRig.add(track);
 
             // ============================================================
             // РАЗМЕТКА - ОПТИМИЗИРОВАННАЯ (INSTANCED MESH)
@@ -5261,7 +5298,7 @@ function startGaragePreview(carId) {
                 mesh.instanceMatrix.needsUpdate = true;
                 mesh.castShadow = false;
                 mesh.receiveShadow = false;
-                scene.add(mesh);
+                roadRig.add(mesh);
                 return mesh;
             }
             createLaneMarkings();
@@ -5303,8 +5340,8 @@ function startGaragePreview(carId) {
                 mesh2.castShadow = false;
                 mesh1.receiveShadow = false;
                 mesh2.receiveShadow = false;
-                if (idx1 > 0) scene.add(mesh1);
-                if (idx2 > 0) scene.add(mesh2);
+                if (idx1 > 0) roadRig.add(mesh1);
+                if (idx2 > 0) roadRig.add(mesh2);
             }
             createCurbs();
 
@@ -5319,7 +5356,7 @@ function startGaragePreview(carId) {
             startLine.position.set(0, 0.02, TRACK_LENGTH / 2 - 5);
             scene.add(startLine);
 
-            for (let i = -TRACK_WIDTH / 2 + 0.3; i < TRACK_WIDTH / 2 - 0.3; i += 0.35) {
+            if (!INF) for (let i = -TRACK_WIDTH / 2 + 0.3; i < TRACK_WIDTH / 2 - 0.3; i += 0.35) {
                 const flag = new THREE.Mesh(
                     new THREE.PlaneGeometry(0.2, 0.2),
                     new THREE.MeshStandardMaterial({ color: (Math.floor(i * 4) % 2 === 0) ? 0xffffff : 0x000000, side: THREE.DoubleSide })
@@ -5333,6 +5370,7 @@ function startGaragePreview(carId) {
             // ЗОЛОТОЙ МОСТ (финиш) — постапокалиптичный
             // ============================================================
             (function buildGoldenBridge() {
+                if (INF) return; // финиша нет
                 const bridgeZ = FINISH_Z - 35; // за финишной чертой
                 const concrete = new THREE.MeshStandardMaterial({ color: 0x6a655c, roughness: 0.9 });
                 const darkConc = new THREE.MeshStandardMaterial({ color: 0x4a453c, roughness: 0.95 });
@@ -5493,265 +5531,27 @@ function startGaragePreview(carId) {
             // ПОСТАПОКАЛИПТИЧЕСКОЕ ОКРУЖЕНИЕ: руины + мёртвые деревья
             // ============================================================
             const envMark = scene.children.length; // всё, что добавлено до «МАШИНЫ ИГРОКА», — неподвижный декор (склеится)
+            // декор обочин — src/decor.js (возвращает группу; здесь — сразу в сцену)
+            const createDeadTree = (x, z, s) => scene.add(Decor.createDeadTree(x, z, s)), createRuinedBuilding = (x, z, s) => scene.add(Decor.createRuinedBuilding(x, z, s)),
+                createFactory = (x, z, s) => scene.add(Decor.createFactory(x, z, s)), createPipeStack = (x, z, s) => scene.add(Decor.createPipeStack(x, z, s)),
+                createScrapPile = (x, z, s) => scene.add(Decor.createScrapPile(x, z, s)), createWreckCar = (x, z, s) => scene.add(Decor.createWreckCar(x, z, s)),
+                createBillboard = (x, z, s) => scene.add(Decor.createBillboard(x, z, s)), createCinemaBanner = (x, z, t) => scene.add(Decor.createCinemaBanner(x, z, t)),
+                createCrateStack = (x, z, s) => scene.add(Decor.createCrateStack(x, z, s)), createFence = (x, z, s) => scene.add(Decor.createFence(x, z, s)),
+                createBush = (x, z, s) => scene.add(Decor.createBush(x, z, s)), createTireStack = (x, z, s) => scene.add(Decor.createTireStack(x, z, s)),
+                createRoadBarrier = (x, z, s) => scene.add(Decor.createRoadBarrier(x, z, s)), createSatelliteDish = (x, z, s) => scene.add(Decor.createSatelliteDish(x, z, s));
             
-            function createDeadTree(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1a, roughness: 0.95 });
-                const trunk = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.05 * scale, 0.1 * scale, 0.9 * scale, 5),
-                    trunkMat
-                );
-                trunk.position.y = 0.45 * scale;
-                trunk.castShadow = true;
-                group.add(trunk);
-                // Сломанные ветки
-                for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
-                    const branch = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.02 * scale, 0.03 * scale, 0.35 * scale, 4),
-                        trunkMat
-                    );
-                    branch.position.set(
-                        (Math.random() - 0.5) * 0.3 * scale,
-                        0.5 * scale + Math.random() * 0.3 * scale,
-                        (Math.random() - 0.5) * 0.2 * scale
-                    );
-                    branch.rotation.z = (Math.random() - 0.5) * 1.2;
-                    branch.rotation.x = (Math.random() - 0.5) * 0.8;
-                    branch.castShadow = true;
-                    group.add(branch);
-                }
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
 
-            function createRuinedBuilding(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const concrete = new THREE.MeshStandardMaterial({ color: 0x6a655c, roughness: 0.9, metalness: 0.05 });
-                const darkConcrete = new THREE.MeshStandardMaterial({ color: 0x4a453c, roughness: 0.95 });
-                const rust = new THREE.MeshStandardMaterial({ color: 0x8a4a2a, roughness: 0.7, metalness: 0.3 });
-                const rebar = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.8 });
-
-                const w = (1.2 + Math.random() * 1.8) * scale;
-                const d = (1.0 + Math.random() * 1.4) * scale;
-                const h = (1.5 + Math.random() * 2.5) * scale;
-
-                // Основной корпус (частично разрушен)
-                const body = new THREE.Mesh(new THREE.BoxGeometry(w, h * 0.7, d), concrete);
-                body.position.y = h * 0.35;
-                body.castShadow = true;
-                body.receiveShadow = true;
-                group.add(body);
-
-                // Верхние обломки / неровный верх
-                const topChunks = 2 + Math.floor(Math.random() * 3);
-                for (let i = 0; i < topChunks; i++) {
-                    const cw = w * (0.2 + Math.random() * 0.4);
-                    const ch = h * (0.15 + Math.random() * 0.35);
-                    const cd = d * (0.2 + Math.random() * 0.4);
-                    const chunk = new THREE.Mesh(new THREE.BoxGeometry(cw, ch, cd), Math.random() > 0.5 ? concrete : darkConcrete);
-                    chunk.position.set(
-                        (Math.random() - 0.5) * w * 0.6,
-                        h * 0.7 + ch * 0.4,
-                        (Math.random() - 0.5) * d * 0.6
-                    );
-                    chunk.rotation.y = Math.random() * 0.5;
-                    chunk.rotation.z = (Math.random() - 0.5) * 0.3;
-                    chunk.castShadow = true;
-                    group.add(chunk);
-                }
-
-                // Окна-дыры
-                const windowMat = new THREE.MeshStandardMaterial({ color: 0x1a1814, roughness: 1 });
-                for (let i = 0; i < 2; i++) {
-                    const win = new THREE.Mesh(new THREE.BoxGeometry(0.25 * scale, 0.3 * scale, 0.08), windowMat);
-                    win.position.set(
-                        (i === 0 ? -1 : 1) * w * 0.25,
-                        h * 0.4 + Math.random() * 0.2,
-                        d * 0.5 + 0.01
-                    );
-                    group.add(win);
-                }
-
-                // Торчащая арматура
-                for (let i = 0; i < 3; i++) {
-                    const bar = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.015 * scale, 0.015 * scale, 0.4 * scale + Math.random() * 0.3, 4),
-                        rebar
-                    );
-                    bar.position.set(
-                        (Math.random() - 0.5) * w * 0.7,
-                        h * 0.75 + 0.2,
-                        (Math.random() - 0.5) * d * 0.7
-                    );
-                    bar.rotation.x = (Math.random() - 0.5) * 0.6;
-                    bar.rotation.z = (Math.random() - 0.5) * 0.6;
-                    group.add(bar);
-                }
-
-                // Ржавые куски металла
-                if (Math.random() > 0.4) {
-                    const plate = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.4 * scale, 0.03, 0.5 * scale),
-                        rust
-                    );
-                    plate.position.set((Math.random() - 0.5) * w * 0.5, h * 0.55, d * 0.4);
-                    plate.rotation.z = (Math.random() - 0.5) * 0.4;
-                    group.add(plate);
-                }
-
-                // Обломки у основания
-                for (let i = 0; i < 3; i++) {
-                    const rubble = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.2 + Math.random() * 0.3, 0.1 + Math.random() * 0.15, 0.2 + Math.random() * 0.3),
-                        darkConcrete
-                    );
-                    rubble.position.set(
-                        (Math.random() - 0.5) * (w + 0.8),
-                        0.08,
-                        (Math.random() - 0.5) * (d + 0.8)
-                    );
-                    rubble.rotation.y = Math.random() * Math.PI;
-                    rubble.castShadow = true;
-                    group.add(rubble);
-                }
-
-                group.position.set(x, 0, z);
-                group.rotation.y = Math.random() * Math.PI * 2;
-                scene.add(group);
-            }
 
             // ============================================================
             // КАРТЫ — уникальное окружение
             // ============================================================
-            function createFactory(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const concrete = new THREE.MeshStandardMaterial({ color: 0x5a5854, roughness: 0.9 });
-                const metal = new THREE.MeshStandardMaterial({ color: 0x6a5040, roughness: 0.5, metalness: 0.6 });
-                const dark = new THREE.MeshStandardMaterial({ color: 0x3a3834, roughness: 0.95 });
-                // Корпус
-                const body = new THREE.Mesh(new THREE.BoxGeometry(2.2*scale, 2.4*scale, 1.6*scale), concrete);
-                body.position.y = 1.2*scale;
-                body.castShadow = true;
-                group.add(body);
-                // Труба
-                const chimney = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.25*scale, 0.3*scale, 3.5*scale, 8),
-                    metal
-                );
-                chimney.position.set(0.6*scale, 2.8*scale, 0);
-                chimney.castShadow = true;
-                group.add(chimney);
-                // Дым-шар (статичный намёк)
-                const smoke = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.45*scale, 8, 8),
-                    new THREE.MeshBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.35 })
-                );
-                smoke.position.set(0.6*scale, 4.8*scale, 0);
-                group.add(smoke);
-                // Пристройка
-                const wing = new THREE.Mesh(new THREE.BoxGeometry(1.2*scale, 1.2*scale, 1.2*scale), dark);
-                wing.position.set(-1.2*scale, 0.6*scale, 0);
-                group.add(wing);
-                group.position.set(x, 0, z);
-                group.rotation.y = Math.random() * 0.5;
-                scene.add(group);
-            }
 
-            function createPipeStack(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const metal = new THREE.MeshStandardMaterial({ color: 0x7a5a3a, roughness: 0.45, metalness: 0.7 });
-                for (let i = 0; i < 3; i++) {
-                    const pipe = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.12*scale, 0.12*scale, 1.5*scale + Math.random(), 6),
-                        metal
-                    );
-                    pipe.position.set((i-1)*0.35*scale, 0.8*scale, 0);
-                    pipe.rotation.z = (Math.random()-0.5)*0.4;
-                    pipe.castShadow = true;
-                    group.add(pipe);
-                }
-                // Горизонтальная труба
-                const hpipe = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.1*scale, 0.1*scale, 2*scale, 6),
-                    metal
-                );
-                hpipe.rotation.z = Math.PI/2;
-                hpipe.position.set(0, 1.4*scale, 0);
-                group.add(hpipe);
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
 
-            function createScrapPile(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const colors = [0x5a554c, 0x6a4a2a, 0x444444, 0x3a5030, 0x8a5a2a];
-                for (let i = 0; i < 6 + Math.floor(Math.random()*4); i++) {
-                    const mat = new THREE.MeshStandardMaterial({
-                        color: colors[Math.floor(Math.random()*colors.length)],
-                        roughness: 0.7 + Math.random()*0.3,
-                        metalness: Math.random()*0.5
-                    });
-                    const mesh = new THREE.Mesh(
-                        new THREE.BoxGeometry(
-                            0.3*scale + Math.random()*0.8*scale,
-                            0.2*scale + Math.random()*0.5*scale,
-                            0.3*scale + Math.random()*0.8*scale
-                        ),
-                        mat
-                    );
-                    mesh.position.set(
-                        (Math.random()-0.5)*1.8*scale,
-                        0.15*scale + Math.random()*0.8*scale,
-                        (Math.random()-0.5)*1.8*scale
-                    );
-                    mesh.rotation.set(Math.random(), Math.random(), Math.random());
-                    mesh.castShadow = true;
-                    group.add(mesh);
-                }
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
 
-            function createWreckCar(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.8, metalness: 0.3 });
-                const body = new THREE.Mesh(new THREE.BoxGeometry(1.6*scale, 0.45*scale, 0.9*scale), bodyMat);
-                body.position.y = 0.35*scale;
-                body.rotation.z = (Math.random()-0.5)*0.4;
-                body.rotation.y = Math.random()*Math.PI;
-                body.castShadow = true;
-                group.add(body);
-                const cabin = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.7*scale, 0.35*scale, 0.8*scale),
-                    new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.9 })
-                );
-                cabin.position.set(0.2*scale, 0.65*scale, 0);
-                group.add(cabin);
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
 
-            function createBillboard(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const pole = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.06*scale, 0.08*scale, 2.2*scale, 6),
-                    new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.6, roughness: 0.5 })
-                );
-                pole.position.y = 1.1*scale;
-                group.add(pole);
-                const board = new THREE.Mesh(
-                    new THREE.BoxGeometry(1.8*scale, 1.0*scale, 0.08*scale),
-                    new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.9 })
-                );
-                board.position.y = 2.3*scale;
-                board.rotation.z = (Math.random()-0.5)*0.2;
-                group.add(board);
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
 
-            const envCount = quality === 'low' ? 18 : quality === 'medium' ? 34 : (window.__isMobile ? 42 : 58);
-            const debrisCount = quality === 'low' ? 10 : (window.__isMobile ? 16 : 22);
+            const envCount = INF ? 0 : quality === 'low' ? 18 : quality === 'medium' ? 34 : (window.__isMobile ? 42 : 58);
+            const debrisCount = INF ? 0 : quality === 'low' ? 10 : (window.__isMobile ? 16 : 22);
 
             // Тон карты + погода
             function applyMapAndWeather() {
@@ -5899,40 +5699,7 @@ function startGaragePreview(carId) {
                 'ПРИСТАВКА 16 БИТ', 'VHS ONLY', 'ГРУППА «ЯБЛОНЬКИ»',
                 'НОСТАЛЬДЖГИЯ CAFE', 'КИНОЗАЛ «ОКТЯБРЬ»', 'ЛИМОНАД «ЁЛОЧКА»'
             ];
-            function createCinemaBanner(x, z, text) {
-                const g = new THREE.Group();
-                const pole = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.06, 0.08, 3.2, 6),
-                    new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.5, roughness: 0.5 })
-                );
-                pole.position.y = 1.6; pole.castShadow = true; g.add(pole);
-                const board = new THREE.Mesh(
-                    new THREE.BoxGeometry(2.4, 1.2, 0.1),
-                    new THREE.MeshStandardMaterial({ color: 0x1a1020, roughness: 0.7 })
-                );
-                board.position.y = 2.8; board.castShadow = true; g.add(board);
-                // canvas text
-                const cv = document.createElement('canvas');
-                cv.width = 128; cv.height = 64;
-                const cx = cv.getContext('2d');
-                cx.fillStyle = '#1a1020'; cx.fillRect(0,0,128,64);
-                cx.fillStyle = '#ff2244'; cx.fillRect(4,4,120,56);
-                cx.fillStyle = '#1a1020'; cx.fillRect(7,7,114,50);
-                cx.fillStyle = '#ffdd44'; cx.font = 'bold 14px Arial';
-                cx.textAlign = 'center'; cx.textBaseline = 'middle';
-                cx.fillText(text, 64, 32);
-                const tex = new THREE.CanvasTexture(cv);
-                if (window.optimizeTexture) window.optimizeTexture(tex, { mipmaps: false, nearest: false, anisotropy: 1 });
-                const sign = new THREE.Mesh(
-                    new THREE.PlaneGeometry(2.2, 1.05),
-                    new THREE.MeshBasicMaterial({ map: tex })
-                );
-                sign.position.set(0, 2.8, 0.06); g.add(sign);
-                g.position.set(x, 0, z);
-                g.rotation.y = (x > 0 ? -0.3 : 0.3);
-                scene.add(g);
-            }
-            const bannerCount = (weatherMode === 'night') ? 0 : (quality === 'low' ? 8 : 14);
+            const bannerCount = (INF || weatherMode === 'night') ? 0 : (quality === 'low' ? 8 : 14);
             for (let i = 0; i < bannerCount; i++) {
                 const z = -TRACK_LENGTH/2 + 50 + Math.random() * (TRACK_LENGTH - 100);
                 const side = i % 2 === 0 ? 1 : -1;
@@ -5977,85 +5744,6 @@ function startGaragePreview(carId) {
 
 
 
-            function createCrateStack(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const wood = new THREE.MeshStandardMaterial({ color: 0x8a6a40, roughness: 0.85 });
-                for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
-                    const c = new THREE.Mesh(new THREE.BoxGeometry(0.5*scale, 0.4*scale, 0.5*scale), wood);
-                    c.position.set((Math.random()-0.5)*0.3, 0.2*scale + i*0.42*scale, (Math.random()-0.5)*0.2);
-                    c.rotation.y = Math.random() * 0.4;
-                    c.castShadow = true;
-                    group.add(c);
-                }
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
-            function createFence(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const mat = new THREE.MeshStandardMaterial({ color: 0x5a5a55, metalness: 0.4, roughness: 0.6 });
-                for (let i = 0; i < 4; i++) {
-                    const post = new THREE.Mesh(new THREE.BoxGeometry(0.08*scale, 0.9*scale, 0.08*scale), mat);
-                    post.position.set(0, 0.45*scale, (i-1.5)*0.55*scale);
-                    group.add(post);
-                }
-                const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06*scale, 0.06*scale, 2.2*scale), mat);
-                rail.position.set(0, 0.55*scale, 0);
-                group.add(rail);
-                group.position.set(x, 0, z);
-                group.rotation.y = Math.random() * Math.PI;
-                scene.add(group);
-            }
-            function createBush(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const mat = new THREE.MeshStandardMaterial({ color: 0x4a6a30, roughness: 0.95 });
-                for (let i = 0; i < 3; i++) {
-                    const b = new THREE.Mesh(new THREE.SphereGeometry(0.35*scale, 8, 6), mat);
-                    b.position.set((Math.random()-0.5)*0.4, 0.25*scale, (Math.random()-0.5)*0.4);
-                    b.scale.set(1, 0.7 + Math.random()*0.3, 1);
-                    group.add(b);
-                }
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
-            function createTireStack(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const rubber = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
-                for (let i = 0; i < 3; i++) {
-                    const t = new THREE.Mesh(new THREE.TorusGeometry(0.28*scale, 0.1*scale, 6, 12), rubber);
-                    t.rotation.x = Math.PI / 2;
-                    t.position.y = 0.12*scale + i * 0.2*scale;
-                    group.add(t);
-                }
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
-            function createRoadBarrier(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const conc = new THREE.MeshStandardMaterial({ color: 0x8a8880, roughness: 0.9 });
-                const stripe = new THREE.MeshStandardMaterial({ color: 0xc04020, roughness: 0.7 });
-                const body = new THREE.Mesh(new THREE.BoxGeometry(1.2*scale, 0.55*scale, 0.4*scale), conc);
-                body.position.y = 0.28*scale;
-                group.add(body);
-                const s = new THREE.Mesh(new THREE.BoxGeometry(1.15*scale, 0.12*scale, 0.42*scale), stripe);
-                s.position.y = 0.4*scale;
-                group.add(s);
-                group.position.set(x, 0, z);
-                group.rotation.y = (Math.random()-0.5)*0.3;
-                scene.add(group);
-            }
-            function createSatelliteDish(x, z, scale = 1) {
-                const group = new THREE.Group();
-                const mat = new THREE.MeshStandardMaterial({ color: 0x9a9aa0, metalness: 0.6, roughness: 0.4 });
-                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.05*scale, 0.08*scale, 0.8*scale, 6), mat);
-                stand.position.y = 0.4*scale;
-                group.add(stand);
-                const dish = new THREE.Mesh(new THREE.SphereGeometry(0.35*scale, 10, 8, 0, Math.PI), mat);
-                dish.position.set(0, 0.85*scale, 0.1*scale);
-                dish.rotation.x = -0.6;
-                group.add(dish);
-                group.position.set(x, 0, z);
-                scene.add(group);
-            }
 
             for (let i = 0; i < envCount; i++) {
                 const z = -TRACK_LENGTH / 2 + 30 + Math.random() * (TRACK_LENGTH - 60);
@@ -6129,7 +5817,7 @@ function startGaragePreview(carId) {
 
             // тайга стеной (src/biomes.js): сотни деревьев — несколько инстанс-мешей
             try {
-                createForestInstanced(scene, forestTrees(mapId, function(pr) { return START_Z - pr * (START_Z - FINISH_Z); }, TRACK_WIDTH, window.__isMobile ? 240 : 480), mergeGeometries);
+                if (!INF) createForestInstanced(scene, forestTrees(mapId, function(pr) { return START_Z - pr * (START_Z - FINISH_Z); }, TRACK_WIDTH, window.__isMobile ? 240 : 480), mergeGeometries);
             } catch (eF) { console.warn('forest', eF); }
 
 // Придорожный мусор / баррикады
@@ -6385,7 +6073,7 @@ function startGaragePreview(carId) {
                 const sil = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.5), horizonMat);
                 const side = i % 2 === 0 ? -1 : 1;
                 sil.position.set(side * (25 + Math.random() * 30), h * 0.45, -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH);
-                scene.add(sil);
+                roadRig.add(sil);
             }
 
             const carStyle = carId === 'kirpich' ? 'jeep' : (carId === 'turbo' ? 'racer' : 'sedan');
@@ -6402,7 +6090,7 @@ function startGaragePreview(carId) {
                     new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.8 })
                 );
                 lamp.position.set(side*(TRACK_WIDTH/2+4+Math.random()*6), 1.5+Math.random()*2, z);
-                scene.add(lamp);
+                roadRig.add(lamp);
                 envAnim.push({ mesh: lamp, type: 'blink', phase: Math.random()*Math.PI*2, speed: 2+Math.random()*3 });
             }
             // Летающий мусор
@@ -6412,7 +6100,7 @@ function startGaragePreview(carId) {
                     new THREE.MeshBasicMaterial({ color: 0xccccaa, side: THREE.DoubleSide, transparent: true, opacity: 0.7 })
                 );
                 paper.position.set((Math.random()-0.5)*20, 1+Math.random()*3, -TRACK_LENGTH/2+Math.random()*TRACK_LENGTH);
-                scene.add(paper);
+                roadRig.add(paper);
                 envAnim.push({ mesh: paper, type: 'float', phase: Math.random()*Math.PI*2, speed: 0.8+Math.random(), baseY: paper.position.y });
             }
 
@@ -6578,7 +6266,7 @@ function startGaragePreview(carId) {
             let ghostCar = null;
             let ghostDeltaAt = null;
             window.__ghostSaved = false;
-            if (!isEndlessMode() && _settings.ghost !== false) {
+            if (!isEndlessMode() && !INF && _settings.ghost !== false) {
                 try { ghostData = JSON.parse(localStorage.getItem(ghostStoreKey) || 'null'); } catch (e) { ghostData = null; }
                 if (isValidGhost(ghostData)) {
                     try {
@@ -6770,7 +6458,7 @@ function startGaragePreview(carId) {
                 if (tm !== 1) maxCars = Math.max(4, Math.min(28, Math.round(maxCars * tm)));
             } catch (e) {}
             for (let i = 0; i < maxCars; i++) {
-                const z = -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
+                const z = INF ? START_Z - 70 - Math.random() * 300 : -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
                 cars.push(createOpponentCar(z, lane));
             }
@@ -6866,7 +6554,7 @@ function startGaragePreview(carId) {
             } else if (mapId === 'svalka') {
                 slideType = Math.random() < 0.6 ? 'tar' : 'oil';
             }
-            for (let i = 0; i < maxObstacles; i++) {
+            for (let i = 0; i < (INF ? 0 : maxObstacles); i++) {
                 const z = -TRACK_LENGTH / 2 + 30 + Math.random() * (TRACK_LENGTH - 80);
                 const r = Math.random();
                 let type;
@@ -7138,8 +6826,8 @@ function startGaragePreview(carId) {
             }
 
             // Расставляем коллекты
-            const nitroCount = difficulty === 'hard' ? 5 : difficulty === 'medium' ? 4 : 3;
-            const gumCount = difficulty === 'hard' ? 3 : 2;
+            const nitroCount = INF ? 0 : difficulty === 'hard' ? 5 : difficulty === 'medium' ? 4 : 3;
+            const gumCount = INF ? 0 : difficulty === 'hard' ? 3 : 2;
             for (let i = 0; i < nitroCount; i++) {
                 const z = -TRACK_LENGTH / 2 + 80 + Math.random() * (TRACK_LENGTH - 160);
                 collectibles.push(createCollectible(z, 'nitro'));
@@ -7207,25 +6895,19 @@ function startGaragePreview(carId) {
             let pipeDrop = null; // промзона: падающая труба (src/mapevents.js)
             const setEvents = []; // трактор, ПАЗик, кран, магнит, бульдозер — по карте, случайно (src/landmarks.js)
             let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
-            const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
-            const _starGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, depthWrite: false });
+            // бывшая «звезда» за нитро-прыжок — большая золотая «Е» (src/echip.js), даёт 5 «Е»
             function createStar(x, z) {
                 const g = new THREE.Group();
-                const sh = new THREE.Shape();
-                for (let i = 0; i < 10; i++) {
-                    const r = i % 2 ? 0.2 : 0.46;
-                    const a = Math.PI / 2 + i * Math.PI / 5;
-                    if (i === 0) sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); else sh.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-                }
-                sh.closePath();
-                const star = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.12, bevelEnabled: false }), _starMat);
-                star.position.z = -0.06;
-                g.add(star);
-                const glow = new THREE.Mesh(new THREE.SphereGeometry(0.62, 12, 8), _starGlowMat);
-                g.add(glow);
+                g.add(createEChip(true));
                 g.position.set(x, 1.4, z);
                 scene.add(g);
                 return { mesh: g, x: x, z: z, type: 'star', active: true, bob: 0, radius: 1.05, airOnly: true, minY: 1.05, baseY: 1.4 };
+            }
+            function createEChipItem(x, y, z) {
+                const m = createEChip(false);
+                m.position.set(x, y, z);
+                scene.add(m);
+                return { mesh: m, x: x, z: z, type: 'echip', active: true, bob: Math.random() * 6, radius: 0.6, baseY: y, airOnly: y > 1.05, minY: y - 0.7 };
             }
             let nearMissCount = 0;
             let _nmCooldown = 0;
@@ -7248,13 +6930,16 @@ function startGaragePreview(carId) {
                 } catch (e) {}
             }
             const _trackSpan = START_Z - FINISH_Z;
-            const _zAt = function(frac) { return START_Z - _trackSpan * frac; };
+            let _lapZ0 = START_Z, _lapK = 0; // круг расстановки: в бесконечной трассе — следующий за следующим
+            const _zAt = function(frac) { return _lapZ0 - _trackSpan * frac; };
+            const infBusy = [], infRoots = [], _infBox = new THREE.Box3();
             const _gapStyle = gapStyle(mapId, isSnowTrack);
             const GAP_LEN = 5.5;
             const _rampLaneXs = [-TRACK_WIDTH * 0.25, 0, TRACK_WIDTH * 0.25];
             // убрать всё, что стоит в зоне участка (кроме трамплинов разлома) — участок читается чисто
             function clearZone(zHi, zLo) {
                 const inZone = function(z) { return z <= zHi && z >= zLo; };
+                if (INF) infBusy.push([zLo, zHi]);
                 for (let i = obstacles.length - 1; i >= 0; i--) {
                     if (obstacles[i] && inZone(obstacles[i].z)) { try { scene.remove(obstacles[i].mesh); } catch (e) {} obstacles.splice(i, 1); }
                 }
@@ -7265,6 +6950,8 @@ function startGaragePreview(carId) {
                     if (ramps[i] && !ramps[i].gapRamp && inZone(ramps[i].z)) { try { scene.remove(ramps[i].mesh); } catch (e) {} ramps.splice(i, 1); }
                 }
             }
+            // генератор: в бесконечной трассе круг строится по участку за кадр (yield), в обычной — целиком
+            function* populateLap(mapId) {
             try {
                 // раскладка участков — из данных (src/tracks/layouts.json): карта → глава кампании
                 const _layout = (isEndlessMode() && window.__layoutOverride) || resolveLayout(null, { mapId: mapId, difficulty: difficulty, campaignId: window.__campaignTrackId || null });
@@ -7292,6 +6979,8 @@ function startGaragePreview(carId) {
                         }
                         // звезда высоко за разломом: обычный прыжок до неё не достаёт (~0.6), нитро-прыжок — да (~1.4)
                         collectibles.push(createStar(_rampLaneXs[li], zNear + 0.8 - 12));
+                        // бесконечная трасса: дуга «Е» над разломом — берётся в прыжке с трамплина
+                        if (INF) for (let ai = 0; ai < 5; ai++) collectibles.push(createEChipItem(_rampLaneXs[li], 0.55 + Math.sin(ai / 4 * Math.PI) * 0.45, zNear + 1 - ai * 1.7));
                     });
                     const mesh = createGapMesh(TRACK_WIDTH, zNear, GAP_LEN, _gapStyle);
                     scene.add(mesh);
@@ -7303,6 +6992,7 @@ function startGaragePreview(carId) {
                     (coneGroup.userData.cones || []).forEach(function(cn) { gapCones.push(cn); });
                     gaps.push({ zNear: zNear, zFar: zNear - GAP_LEN, mesh: mesh, lanes: lanes, used: false });
                 });
+                yield;
                 // «Звериная тропа»: трамплин в средней полосе, сразу за ним зверь — перелети или объедь.
                 // Только в главах с заданием «Перелететь зверя» — там оно всегда выполнимо
                 if (chapterHasTask(window.__campaignIdx != null ? window.__campaignIdx : -1, 'jumpAnimal')) {
@@ -7317,6 +7007,7 @@ function startGaragePreview(carId) {
                     scene.add(createRoadSign(['🐾 ЗВЕРИНАЯ ТРОПА', 'ПРЫГАЙ'], -TRACK_WIDTH / 2 - 1.8, zr + 50, {}));
                     window.__trailZ = zr - 7;
                 } else window.__trailZ = null;
+                yield;
                 // промзона: секция трубы рушится с эстакады поперёк двух полос — свободна одна
                 let pipeFrac = null;
                 if (mapId === 'promzona') {
@@ -7328,9 +7019,11 @@ function startGaragePreview(carId) {
                         clearZone(pz + 30, pz - 12);
                         pipeDrop = createPipeDrop(TRACK_WIDTH, pz, _rampLaneXs, Math.random() < 0.5 ? 0 : 2);
                         scene.add(pipeDrop.group);
+                        if (INF) { pipeDrop.infZ = pz; setEvents.push(pipeDrop); pipeDrop = null; } // на трассе их несколько
                         scene.add(createRoadSign(['ОСТОРОЖНО', 'ТРУБЫ НАД ДОРОГОЙ'], TRACK_WIDTH / 2 + 1.8, pz + 55, { big: true }));
                     }
                 }
+                yield;
                 // узнаваемые детали: 1–2 события в полосах и 2 приметы у обочины — каждый заезд свои
                 const setFracs = [];
                 {
@@ -7347,7 +7040,7 @@ function startGaragePreview(carId) {
                         const ev = createSetpieceEvent(kind, TRACK_WIDTH, ez, _rampLaneXs);
                         if (!ev) return;
                         scene.add(ev.group);
-                        setEvents.push(ev);
+                        setEvents.push(ev); ev.infZ = ez;
                         setFracs.push(fr[i]);
                         scene.add(createRoadSign(EVENT_SIGNS[kind], TRACK_WIDTH / 2 + 1.8, ez + 55, { big: true }));
                     });
@@ -7357,6 +7050,7 @@ function startGaragePreview(carId) {
                         scene.add(createLandmark(kind, side * (TRACK_WIDTH / 2 + 7 + Math.random() * 3), lz));
                     });
                 }
+                yield;
                 // рекламные щиты 90-х прямо в полосах: снёс — не авария, а стиль и фишка
                 {
                     const busy = [].concat(_layout.gaps, _layout.debris, (_layout.segments || []).map(function(sg) { return sg.at; }));
@@ -7371,6 +7065,7 @@ function startGaragePreview(carId) {
                         smashBoards.push(b);
                     });
                 }
+                yield;
                 const srcKind = isSnowTrack ? 'snow' : (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
                 const dropsN = difficulty === 'easy' ? 1 : 2;
                 _layout.debris.forEach(function(frac) {
@@ -7389,14 +7084,17 @@ function startGaragePreview(carId) {
                     riskGum.risk = 'arch';
                     collectibles.push(riskGum);
                 });
+                yield;
                 // сцена карты
                 const evKind = (mapId === 'promzona' || mapId === 'svalka') ? mapId : 'arsenev';
                 const evZ = _zAt(_layout.event);
                 clearZone(evZ + 30, evZ - 45);
                 mapEvent = createMapEvent(evKind, TRACK_WIDTH, evZ, _rampLaneXs);
                 scene.add(mapEvent.group);
+                if (INF) { mapEvent.infZ = evZ; setEvents.push(mapEvent); mapEvent = null; }
                 const evSign = evKind === 'promzona' ? ['ОСТОРОЖНО', 'ВЫБРОС ПАРА'] : evKind === 'svalka' ? ['ОСТОРОЖНО', 'ГОРЯЩИЕ ШИНЫ'] : ['⚠ Ж/Д ПЕРЕЕЗД', 'ОСТОРОЖНО, ПОЕЗД'];
                 scene.add(createRoadSign(evSign, -TRACK_WIDTH / 2 - 1.8, evZ + 60, { big: true }));
+                yield;
                 // новые участки: ремонт, развилка, тоннель
                 (_layout.segments || []).forEach(function(sg, si) {
                     const len = SEGMENT_LEN[sg.type] || 60;
@@ -7439,6 +7137,76 @@ function startGaragePreview(carId) {
                     }
                 });
             } catch (eSet) { console.warn('setpieces', eSet); }
+            }
+            const _infM0 = scene.children.length;
+            for (const _st of populateLap(mapId)) { /* обычный заезд — сразу целиком */ }
+            // бесконечная трасса: «Е», препятствия, нитро и жвачки круга k — из плана (src/infinite.js), мимо постановочных участков
+            function infPlanLap(k) {
+                const LX = [-2, 0, 2], d0 = k * _trackSpan;
+                planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity }).items.forEach(function(it) {
+                    const z = START_Z - it.d;
+                    if (infBusy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; })) return;
+                    let c = null;
+                    if (it.kind === 'echip') { collectibles.push(createEChipItem(LX[it.lane], it.y, z)); return; }
+                    if (it.kind === 'obstacle') { c = createObstacle(z, it.type === 'slide' ? themeAt(it.d).theme.slide : it.type); obstacles.push(c); }
+                    else { c = createCollectible(z, it.kind); collectibles.push(c); }
+                    c.x = LX[it.lane]; c.mesh.position.x = c.x;
+                });
+            }
+            function infTrack(list) {
+                list.forEach(function(o) { _infBox.setFromObject(o); if (!_infBox.isEmpty()) infRoots.push([o, _infBox.min.z]); });
+            }
+            if (INF) { infPlanLap(0); infTrack(scene.children.slice(_infM0)); }
+            // позади машины: объекты кругов — из сцены и из списков игры
+            function infPrune(zb) {
+                for (let i = infRoots.length - 1; i >= 0; i--) {
+                    if (infRoots[i][1] <= zb) continue;
+                    const o = infRoots[i][0];
+                    scene.remove(o); disposeTree(o);
+                    infRoots.splice(i, 1);
+                }
+                const cut = function(a, key) { for (let i = a.length - 1; i >= 0; i--) if (a[i][key] > zb) a.splice(i, 1); };
+                cut(obstacles, 'z'); cut(collectibles, 'z'); cut(ramps, 'z'); cut(gapCones, 'z'); cut(smashBoards, 'z');
+                cut(gaps, 'zFar'); cut(debrisZones, 'z'); cut(roadSegments, 'z1'); cut(setEvents, 'infZ');
+                if (chunkCull) chunkCull.prune(zb);
+            }
+            let _infN = 0, _infStage = 0, _infNew = [], _infGen = null;
+            // шаг стройки круга: что он добавил в сцену — в список нового (удаления в этом же кадре индексы не сбивают)
+            function infStep(fn) {
+                const had = new Set(scene.children);
+                const r = fn();
+                scene.children.forEach(function(o) { if (!had.has(o)) _infNew.push(o); });
+                return r;
+            }
+            function infTick() {
+                const t = infWorld.tick(zPos), d = infWorld.dist;
+                if (t.theme !== infTheme) {
+                    infTheme = t.theme;
+                    animalSpawner.animalPool = t.theme.animals;
+                    weatherMode = window.weatherMode = t.theme.night ? 'night' : t.theme.rain ? 'rain' : 'day';
+                    if (snowfall) snowfall.points.visible = !!t.theme.snow;
+                    if (d > 50) { try { showStory('🗺 ' + t.theme.name); } catch (e) {} }
+                }
+                infSpeedK = rampAt(d).speed;
+                // следующий круг расстановки — за 450 ед. до его начала (дальше тумана)
+                const k = Math.floor((d + 450) / _trackSpan);
+                // по шагу за кадр (участки расстановки → план → разбивка по участкам): стройка круга не даёт рывка
+                if (_infGen) {
+                    if (infStep(function() { return _infGen.next().done; })) { _infGen = null; _infStage = 1; }
+                } else if (_infStage === 1) {
+                    infStep(function() { infPlanLap(_lapK); });
+                    _infStage = 2;
+                } else if (_infStage === 2) {
+                    const list = _infNew.filter(function(o) { return o.parent === scene; });
+                    infTrack(list);
+                    if (chunkCull) chunkCull.adopt(list);
+                    _infNew = []; _infStage = 0;
+                } else if (k > _lapK) {
+                    _lapK = k; _lapZ0 = START_Z - k * _trackSpan;
+                    _infGen = populateLap(['arsenev', 'promzona', 'svalka'][k % 3]);
+                }
+                if (++_infN % 60 === 0) infPrune(zPos + 70);
+            }
 
             // ============================================================
             // БОСС — МЕДВЕДЬ «АРСЕНЬЕВСКИХ ЗНАЮ»
@@ -8357,12 +8125,13 @@ function startGaragePreview(carId) {
             }
             // ритм заезда: разгон → слалом → босс → финал; на ремонте и развилке реже (src/rhythm.js)
             animalSpawner.densityFn = function(z) { return densityAt((START_Z - z) / (START_Z - FINISH_Z), window.__trackLayout); };
+            if (INF) { animalSpawner.finishZ = -Infinity; animalSpawner.densityFn = function() { return rampAt(infWorld ? infWorld.dist : 0).animals; }; }
             // Только в тестовой сборке: состояние заезда для автопилота в тестах. На сайт не попадает.
             if (import.meta.env.MODE === 'test') {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get chunks() { return chunkCull; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, buildCar: buildShowroomCar, smashBoards: smashBoards, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get chunks() { return chunkCull; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, get inf() { return infWorld; }, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8449,7 +8218,7 @@ function startGaragePreview(carId) {
             headlight2.target = new THREE.Object3D();
             scene.add(headlight2.target);
 
-            prebuildBoss();
+            if (!INF) prebuildBoss(); // в бесконечной трассе босса нет
 
             // ============================================================
             // ИГРОВОЙ ЦИКЛ
@@ -8463,7 +8232,7 @@ function startGaragePreview(carId) {
                     || (typeof window !== 'undefined' && window.weatherMode === 'rain');
                 
                 raceTime += deltaTime;
-                const progress = Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z)));
+                const progress = INF ? 0 : Math.min(1, ((START_Z - zPos) / (START_Z - FINISH_Z))); // бесконечная: без сюжетных отметок, босса и сужения
                 ghostClock += deltaTime;
                 ghostRec.update(deltaTime, xPos, zPos, carYOffset);
                 {
@@ -8526,6 +8295,7 @@ function startGaragePreview(carId) {
                 
                 // Комбо
                 comboTime += deltaTime; riskTick(risk, deltaTime); renderRiskHud(risk);
+                if (INF && infWorld) infTick();
                 if (chunkCull) { chunkCull.update(zPos, Math.min(camera.far, scene.fog ? scene.fog.far + 25 : camera.far), 30); if (++_cullN % 30 === 0) chunkCull.sweep(); }
                 if (comboTime > comboMax) comboMax = comboTime;
                 if (radioCooldown > 0) radioCooldown -= deltaTime;
@@ -8564,7 +8334,7 @@ function startGaragePreview(carId) {
                 
                 // Радио: мало времени
                 const remaining = TIME_LIMIT - raceTime;
-                if (remaining < 20 && remaining > 19.5) {
+                if (!INF && remaining < 20 && remaining > 19.5) {
                     radioSay(RADIO_LINES.lowTime[Math.floor(Math.random()*RADIO_LINES.lowTime.length)]);
                 }
                 // Комбо-похвала
@@ -8659,7 +8429,7 @@ function startGaragePreview(carId) {
                     camera.updateProjectionMatrix();
                 }
 
-                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? NITRO_SPEED : 1.0);
+                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? NITRO_SPEED : 1.0) * infSpeedK; // бесконечная трасса: быстрее с каждым км
                 const effectiveAccel = ACCELERATION * (nitroTimer > 0 ? NITRO_ACCEL : 1.0);
 
                 // константы разгона/тормоза подобраны «за кадр при 60 fps» — масштабируем по времени кадра,
@@ -9183,8 +8953,8 @@ function startGaragePreview(carId) {
                         handleObstacleHit({ penalty: 0.3, timePenalty: pen, cause: 'car:' + (car.kind || 'car') });
                     }
                     
-                    if (car.z < -TRACK_LENGTH / 2 - 10) {
-                        car.z = TRACK_LENGTH / 2 + 10 + Math.random() * 20;
+                    if (INF ? (car.z > zPos + 45 || car.z < zPos - 420) : car.z < -TRACK_LENGTH / 2 - 10) {
+                        car.z = INF ? zPos - 170 - Math.random() * 220 : TRACK_LENGTH / 2 + 10 + Math.random() * 20;
                         car.lane = Math.floor(Math.random() * 3);
                         car.targetLane = car.lane;
                         car.x = -TRACK_WIDTH / 2 + 0.5 + car.lane * 2;
@@ -9413,7 +9183,7 @@ function startGaragePreview(carId) {
                 }
 
                 // ---- Снегопад ----
-                if (snowfall) {
+                if (snowfall && snowfall.points.visible) {
                     snowfall.t += deltaTime;
                     const pos = snowfall.pos;
                     for (let si = 0; si < snowfall.count; si++) {
@@ -9437,6 +9207,10 @@ function startGaragePreview(carId) {
                         c.bob += deltaTime * 3;
                         c.mesh.position.y = (c.baseY || 0) + Math.sin(c.bob) * 0.08; // было без baseY: жвачка над разломом лежала на земле
                         c.mesh.rotation.y += deltaTime * 2;
+                    } else if (c.type === 'echip') {
+                        c.bob += deltaTime * 3;
+                        c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.07;
+                        c.mesh.rotation.y += deltaTime * 3.2;
                     } else if (c.type === 'star') {
                         c.bob += deltaTime * 2.5;
                         c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.12;
@@ -9458,14 +9232,18 @@ function startGaragePreview(carId) {
                     if (Math.abs(dx) < hitR && Math.abs(dz) < hitR * (c.type === 'nitro' ? 1.4 : 1)) {
                         c.active = false;
                         c.mesh.visible = false;
-                        if (c.type === 'star') {
+                        if (c.type === 'echip') {
+                            stats.eChips = (stats.eChips || 0) + 1;
+                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 0.55); } catch (e) {}
+                        } else if (c.type === 'star') {
                             raceTime = Math.max(0, raceTime - 3);
                             stats.starsPicked = (stats.starsPicked || 0) + 1;
-                            showTimePenaltyPopup(0, '⭐ −3 с');
+                            stats.eChips = (stats.eChips || 0) + 5;
+                            showTimePenaltyPopup(0, 'Е +5 · −3 с');
                             try {
                                 const el = document.createElement('div');
                                 el.className = 'animal-shout';
-                                el.textContent = '⭐ Звезда за нитро-прыжок! −3 с';
+                                el.textContent = '🏅 Золотая «Е» за нитро-прыжок! +5 Е · −3 с';
                                 el.style.color = '#ffd84a';
                                 el.style.borderColor = '#ffd84a';
                                 postShout(el, 1500);
@@ -10484,10 +10262,10 @@ function startGaragePreview(carId) {
                 }
 
                 // Победа / Поражение
-                if (gameState === 'racing' && zPos <= FINISH_Z - 15) {
+                if (!INF && gameState === 'racing' && zPos <= FINISH_Z - 15) {
                     endGame('win');
                 }
-                if (gameState === 'racing' && raceTime >= TIME_LIMIT) {
+                if (!INF && gameState === 'racing' && raceTime >= TIME_LIMIT) {
                     endGame('timeout');
                 }
 
@@ -10925,7 +10703,12 @@ function startGaragePreview(carId) {
                     });
                 } catch (e) { console.warn('freezeStatic', e); }
             })();
-            let chunkCull = null, _cullN = 0; try { chunkCull = buildChunks(scene); } catch (e) { console.warn('chunks', e); } // участки трассы: дальнее не обходится (src/chunk-cull.js)
+            let chunkCull = null, _cullN = 0; try { chunkCull = buildChunks(scene); } catch (e) { console.warn('chunks', e); }
+            if (INF) {
+                infWorld = createInfWorld({ scene: scene, startZ: START_Z, trackWidth: TRACK_WIDTH, rig: roadRig, ground: ground, hills: infHills,
+                    lights: { ambient: ambient, hemi: hemi, sun: sunLight }, lite: isMobile || quality === 'low' });
+                infWorld.tick(zPos, true);
+            } // участки трассы: дальнее не обходится (src/chunk-cull.js)
 
             console.log('🏁 Игра запущена!');
             window.__inRace = true;
@@ -11505,6 +11288,8 @@ function showLoreScreen(quality, difficulty) {
                             return;
                         }
                         startEndlessRun();
+                    } else if (m === 'infinite') {
+                        startInfiniteRun();
                     } else if (m === 'race' && typeof beginRaceFlow === 'function') {
                         if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
                         else {

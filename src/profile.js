@@ -241,6 +241,20 @@ export function applyRaceResult(profile, state, meta, ctx) {
     }
     // фишки за «чистые отрезки» (src/clean-run.js) — за любой исход заезда
     chips += Math.max(0, Math.min(20, m.bonusChips || 0));
+    // собранные на трассе фишки «Е» (src/echip.js) — без потолка: в бесконечной трассе их сотни
+    chips += Math.max(0, Math.floor(m.eChips || 0));
+    // бесконечная трасса: опыт за дальность (1 XP за 20 м) и рекорд
+    let infBest = null;
+    if (m.distance > 0) {
+        const dist = Math.round(m.distance);
+        xp += Math.round(dist / 20);
+        const inf = profile.infinite = Object.assign({ best: 0, bestScore: 0, runs: 0 }, profile.infinite);
+        inf.runs++;
+        infBest = { prev: inf.best, isNew: dist > inf.best };
+        inf.best = Math.max(inf.best, dist);
+        inf.bestScore = Math.max(inf.bestScore, Math.round(m.infScore || 0));
+        infBest.best = inf.best;
+    }
     if (st.totalRaces >= 10) tryAch('races10');
     if (st.wins >= 5) tryAch('wins5');
 
@@ -278,7 +292,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
         achievements: achievements, trophies: trophies,
         contractDone: contractDone, contractTitle: contractDone ? k.title : '',
         newBest: newBest, unlockedMaps: unlockedMaps,
-        riskXp: riskXp, missions: missions
+        riskXp: riskXp, missions: missions, infBest: infBest
     };
 }
 

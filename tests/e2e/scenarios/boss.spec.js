@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login, startFreeRace, watchProblems, waitRacing, skipLoreIfShown } from '../helpers.js';
+import { openFreeRace, login, startFreeRace, watchProblems, waitRacing, skipLoreIfShown } from '../helpers.js';
 
 // Держать босса вплотную к машине несколько кадров — таран. Ставим чуть ПОЗАДИ машины: за кадр он сам
 // смещается вперёд и попадает в касание (если поставить впереди, на медленном CI за кадр он успевает отойти)
@@ -113,7 +113,7 @@ test('отбитый на нитро снаряд ранит босса скво
 test('снежная трасса: босс стреляет льдом — попадание делает руль скользким', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.43');
-    await page.locator('.menu-card[data-menu="race"]').click();
+    await openFreeRace(page);
     const shop = page.locator('#shop-action');
     if (await shop.isVisible()) await shop.click();
     await page.locator('.difficulty-btn[data-diff="easy"]').click();

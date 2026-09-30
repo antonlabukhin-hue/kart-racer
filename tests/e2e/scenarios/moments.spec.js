@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login, startFreeRace, watchProblems, waitRacing, skipLoreIfShown } from '../helpers.js';
+import { openFreeRace, login, startFreeRace, watchProblems, waitRacing, skipLoreIfShown } from '../helpers.js';
 
 const noAnimals = (page) => page.evaluate(() => setInterval(() => {
     const d = window.__raceDebug;
@@ -39,7 +39,7 @@ test('промзона: труба рушится с эстакады попер
     await page.reload();
     await page.locator('#splash-screen').click();
     await page.locator('#profile-list').getByText('Тестер').click();
-    await page.locator('.menu-card[data-menu="race"]').click();
+    await openFreeRace(page);
     await page.locator('.difficulty-btn[data-diff="easy"]').click();
     await skipLoreIfShown(page);
     await page.locator('.map-card[data-map="promzona"]').click();
@@ -70,7 +70,7 @@ for (const map of ['arsenev', 'promzona', 'svalka']) {
         await page.reload();
         await page.locator('#splash-screen').click();
         await page.locator('#profile-list').getByText('Тестер').click();
-        await page.locator('.menu-card[data-menu="race"]').click();
+        await openFreeRace(page);
         await page.locator('.difficulty-btn[data-diff="easy"]').click();
         await skipLoreIfShown(page);
         await page.locator('.map-card[data-map="' + map + '"]').click();
