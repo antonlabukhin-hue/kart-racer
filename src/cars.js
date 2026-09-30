@@ -463,28 +463,38 @@ export function buildShowroomCar(carId) {
 
     // === «МЕЧТА» (mechta): салон — светлые кресла и задний диван, руль, хромовая дуга, двухцветные фонари ===
     if (isCabrio) {
+        // салон стоит на полу (тёмный ковёр поверх кузова): кресла, диван, приборная панель с рулём, дуга — концами в кузов
         const cream = new THREE_REF.MeshStandardMaterial({ color: 0xefe2c4, roughness: 0.7 });
         const dark = new THREE_REF.MeshStandardMaterial({ color: 0x2a2020, roughness: 0.8 });
-        const floorY = bodyY + bodyH * 0.5 - 0.04;
-        const floor = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.84, 0.03, cabinLen * 0.96), dark);
-        floor.position.set(0, floorY + 0.02, cabinZ); group.add(floor);
+        const top = bodyY + bodyH * 0.5;
+        const floor = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(bodyW * 0.84, 0.012, cabinLen * 0.98), dark);
+        floor.position.set(0, top + 0.006, cabinZ); group.add(floor);
         [-1, 1].forEach(function(sx) {
             const seat = new THREE_REF.Mesh(new RoundedBoxGeometry(0.34, 0.1, 0.32, 2, 0.04), cream);
-            seat.position.set(sx * 0.22, floorY + 0.1, cabinZ - 0.14); group.add(seat);
+            seat.position.set(sx * 0.22, top + 0.06, cabinZ - 0.1); group.add(seat);
             const back = new THREE_REF.Mesh(new RoundedBoxGeometry(0.34, 0.3, 0.08, 2, 0.04), cream);
-            back.position.set(sx * 0.22, floorY + 0.28, cabinZ + 0.04); back.rotation.x = -0.18; group.add(back);
+            back.position.set(sx * 0.22, top + 0.24, cabinZ + 0.08); back.rotation.x = -0.18; group.add(back);
             const tl = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.26, 0.1, 0.04), tailMat.clone());
             tl.position.set(sx * bodyW * 0.3, 0.5, bodyL * 0.5 + 0.004); tl.userData.isLight = true; group.add(tl);
+            // борт салона — окантовка цвета кузова по верху дверей
+            const rim = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.05, 0.05, cabinLen * 0.98), bodyMat2.clone());
+            rim.position.set(sx * bodyW * 0.44, top + 0.025, cabinZ); rim.userData.bodyPaint = true; group.add(rim);
         });
-        const bench = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.8, 0.1, 0.3, 2, 0.04), cream);
-        bench.position.set(0, floorY + 0.1, cabinZ + 0.34); group.add(bench);
+        const bench = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.8, 0.1, 0.28, 2, 0.04), cream);
+        bench.position.set(0, top + 0.06, cabinZ + 0.36); group.add(bench);
         const benchB = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.8, 0.26, 0.08, 2, 0.04), cream);
-        benchB.position.set(0, floorY + 0.25, cabinZ + 0.5); benchB.rotation.x = -0.15; group.add(benchB);
+        benchB.position.set(0, top + 0.2, cabinZ + 0.48); benchB.rotation.x = -0.15; group.add(benchB);
+        // приборная панель у лобового и руль на колонке
+        const dashZ = cabinZ - cabinLen * 0.5 + 0.08;
+        const dash = new THREE_REF.Mesh(new RoundedBoxGeometry(bodyW * 0.84, 0.12, 0.16, 2, 0.03), dark);
+        dash.position.set(0, top + 0.06, dashZ); group.add(dash);
+        const col = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.018, 0.018, 0.14, 8), dark);
+        col.rotation.x = Math.PI / 2 - 0.5; col.position.set(-0.22, top + 0.13, dashZ + 0.12); group.add(col);
         const wheel = new THREE_REF.Mesh(new THREE_REF.TorusGeometry(0.1, 0.018, 8, 20), dark);
-        wheel.position.set(-0.22, floorY + 0.3, cabinZ - 0.36); wheel.rotation.x = -0.9; group.add(wheel);
-        // хромовая дуга за передними креслами
+        wheel.position.set(-0.22, top + 0.17, dashZ + 0.19); wheel.rotation.x = -0.5; group.add(wheel);
+        // хромовая дуга за передними креслами — концами в кузов
         const hoop = new THREE_REF.Mesh(new THREE_REF.TorusGeometry(bodyW * 0.4, 0.03, 8, 24, Math.PI), chromeMat.clone());
-        hoop.position.set(0, floorY + 0.16, cabinZ + 0.16); group.add(hoop);
+        hoop.position.set(0, top - 0.02, cabinZ + 0.18); group.add(hoop);
     }
 
     // === «ГАЗЕЛЬ» (gazel): кузов с деревянными бортами под синим тентом, кабина белая ===
