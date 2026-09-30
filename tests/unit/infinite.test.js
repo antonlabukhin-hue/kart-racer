@@ -20,10 +20,11 @@ describe('бесконечная трасса: пейзажи', () => {
 
 describe('рост сложности и счёт', () => {
     it('скорость, звери и препятствия растут и упираются в потолок', () => {
-        // старт на 30% легче: зверей и препятствий меньше, скорость ниже
-        expect(rampAt(0)).toMatchObject({ speed: 0.9, animals: 0.7, density: 0.35 });
-        expect(rampAt(3000).speed).toBeGreaterThan(1.2);
-        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.35, animals: 1.8 });
+        // старт лёгкий, первый километр почти не усложняется, потолок — к 8 км
+        expect(rampAt(0)).toMatchObject({ speed: 0.85, animals: 0.55, density: 0.3, maxAnimals: 6 });
+        expect(rampAt(1000).speed).toBeLessThan(0.9);
+        expect(rampAt(4000).speed).toBeCloseTo(1.075, 3);
+        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.3, animals: 2.2, maxAnimals: 14 });
     });
     it('очки и опыт', () => {
         expect(runScore(1234.4, 7, 150)).toBe(1234 + 70 + 150);
