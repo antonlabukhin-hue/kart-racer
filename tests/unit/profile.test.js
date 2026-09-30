@@ -270,3 +270,11 @@ describe('коллекция кампании', () => {
         expect(grantChapterReward(p, 'c02', 'cheburashka')).toBeNull();
     });
 });
+
+describe('фишки «Е» с трассы', () => {
+    it('идут в кошелёк без потолка бонусов', () => {
+        const p = fresh();
+        const r = applyRaceResult(p, 'crash', { time: 30, strikes: 5, difficulty: 'easy', eChips: 137, bonusChips: 50 }, { trophies: TROPHIES, now: 1 });
+        expect(r.chips).toBe(1 + 20 + 137);
+    });
+});

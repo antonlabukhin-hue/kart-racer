@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip } from './echip.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -4837,7 +4837,7 @@ function startGaragePreview(carId) {
                             difficulty: (typeof difficulty !== 'undefined' ? difficulty : 'medium'),
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
-                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS,
+                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS, eChips: stats.eChips || 0,
                             // для контрактов дня на механики
                             cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
                             nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, riskPoints: risk.points, animalsJumped: stats.animalsJumped || 0,
@@ -6857,25 +6857,19 @@ function startGaragePreview(carId) {
             let pipeDrop = null; // промзона: падающая труба (src/mapevents.js)
             const setEvents = []; // трактор, ПАЗик, кран, магнит, бульдозер — по карте, случайно (src/landmarks.js)
             let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
-            const _starMat = new THREE.MeshBasicMaterial({ color: 0xffd84a });
-            const _starGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, depthWrite: false });
+            // бывшая «звезда» за нитро-прыжок — большая золотая «Е» (src/echip.js), даёт 5 «Е»
             function createStar(x, z) {
                 const g = new THREE.Group();
-                const sh = new THREE.Shape();
-                for (let i = 0; i < 10; i++) {
-                    const r = i % 2 ? 0.2 : 0.46;
-                    const a = Math.PI / 2 + i * Math.PI / 5;
-                    if (i === 0) sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); else sh.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-                }
-                sh.closePath();
-                const star = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.12, bevelEnabled: false }), _starMat);
-                star.position.z = -0.06;
-                g.add(star);
-                const glow = new THREE.Mesh(new THREE.SphereGeometry(0.62, 12, 8), _starGlowMat);
-                g.add(glow);
+                g.add(createEChip(true));
                 g.position.set(x, 1.4, z);
                 scene.add(g);
                 return { mesh: g, x: x, z: z, type: 'star', active: true, bob: 0, radius: 1.05, airOnly: true, minY: 1.05, baseY: 1.4 };
+            }
+            function createEChipItem(x, y, z) {
+                const m = createEChip(false);
+                m.position.set(x, y, z);
+                scene.add(m);
+                return { mesh: m, x: x, z: z, type: 'echip', active: true, bob: Math.random() * 6, radius: 0.6, baseY: y, airOnly: y > 1.05, minY: y - 0.7 };
             }
             let nearMissCount = 0;
             let _nmCooldown = 0;
@@ -9087,6 +9081,10 @@ function startGaragePreview(carId) {
                         c.bob += deltaTime * 3;
                         c.mesh.position.y = (c.baseY || 0) + Math.sin(c.bob) * 0.08; // было без baseY: жвачка над разломом лежала на земле
                         c.mesh.rotation.y += deltaTime * 2;
+                    } else if (c.type === 'echip') {
+                        c.bob += deltaTime * 3;
+                        c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.07;
+                        c.mesh.rotation.y += deltaTime * 3.2;
                     } else if (c.type === 'star') {
                         c.bob += deltaTime * 2.5;
                         c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.12;
@@ -9108,14 +9106,18 @@ function startGaragePreview(carId) {
                     if (Math.abs(dx) < hitR && Math.abs(dz) < hitR * (c.type === 'nitro' ? 1.4 : 1)) {
                         c.active = false;
                         c.mesh.visible = false;
-                        if (c.type === 'star') {
+                        if (c.type === 'echip') {
+                            stats.eChips = (stats.eChips || 0) + 1;
+                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 0.55); } catch (e) {}
+                        } else if (c.type === 'star') {
                             raceTime = Math.max(0, raceTime - 3);
                             stats.starsPicked = (stats.starsPicked || 0) + 1;
-                            showTimePenaltyPopup(0, '⭐ −3 с');
+                            stats.eChips = (stats.eChips || 0) + 5;
+                            showTimePenaltyPopup(0, 'Е +5 · −3 с');
                             try {
                                 const el = document.createElement('div');
                                 el.className = 'animal-shout';
-                                el.textContent = '⭐ Звезда за нитро-прыжок! −3 с';
+                                el.textContent = '🏅 Золотая «Е» за нитро-прыжок! +5 Е · −3 с';
                                 el.style.color = '#ffd84a';
                                 el.style.borderColor = '#ffd84a';
                                 postShout(el, 1500);

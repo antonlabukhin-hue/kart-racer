@@ -241,6 +241,8 @@ export function applyRaceResult(profile, state, meta, ctx) {
     }
     // фишки за «чистые отрезки» (src/clean-run.js) — за любой исход заезда
     chips += Math.max(0, Math.min(20, m.bonusChips || 0));
+    // собранные на трассе фишки «Е» (src/echip.js) — без потолка: в бесконечной трассе их сотни
+    chips += Math.max(0, Math.floor(m.eChips || 0));
     if (st.totalRaces >= 10) tryAch('races10');
     if (st.wins >= 5) tryAch('wins5');
 
