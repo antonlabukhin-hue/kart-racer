@@ -22,22 +22,31 @@ export const LANDMARK_POOL = {
     svalka: ['planeWreck', 'tireMountain', 'waterTower', 'busStop']
 };
 
-/** Что поставить в этот заезд: { events: [...], landmarks: [...] } без повторов */
-export function pickSetpieces(mapId, rnd) {
+/**
+ * Что поставить в этот заезд: { events: [...], landmarks: [...] } без повторов.
+ * mapId 'all' — бесконечная трасса: события и приметы всех карт, событий — n (иначе 1–2), примет — 3.
+ */
+export function pickSetpieces(mapId, rnd, n) {
     const r = rnd || Math.random;
     const shuffle = function(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
-    const ev = shuffle(EVENT_POOL[mapId] || EVENT_POOL.arsenev);
-    const lm = shuffle(LANDMARK_POOL[mapId] || LANDMARK_POOL.arsenev);
-    return { events: ev.slice(0, ev.length > 1 && r() < 0.6 ? 2 : 1), landmarks: lm.slice(0, 2) };
+    const all = function(pool) { const out = []; Object.keys(pool).forEach(function(k) { pool[k].forEach(function(x) { if (out.indexOf(x) < 0) out.push(x); }); }); return out; };
+    const ev = shuffle(mapId === 'all' ? all(EVENT_POOL) : (EVENT_POOL[mapId] || EVENT_POOL.arsenev));
+    const lm = shuffle(mapId === 'all' ? all(LANDMARK_POOL) : (LANDMARK_POOL[mapId] || LANDMARK_POOL.arsenev));
+    const cnt = n != null ? Math.min(n, ev.length) : ev.length > 1 && r() < 0.6 ? 2 : 1;
+    return { events: ev.slice(0, cnt), landmarks: lm.slice(0, mapId === 'all' ? 3 : 2) };
 }
 
 /** Доли трассы для n событий: вне арены босса, подальше от занятого (busy) и друг от друга */
-export function placeFracs(n, busy, rnd) {
+export function placeFracs(n, busy, rnd, lo, hi) {
     const r = rnd || Math.random;
     const cands = [];
     // целые шаги по 0.01: без накопления ошибки округления (0.12 + 13·0.02 ≠ 0.38)
-    for (let k = 11; k <= 40; k++) cands.push(k / 100);
-    for (let k = 84; k <= 94; k++) cands.push(k / 100);
+    // lo/hi (доли ×100) — весь круг бесконечной трассы (там нет босса); иначе — вне арены босса
+    if (lo != null) for (let k = lo; k <= hi; k++) cands.push(k / 100);
+    else {
+        for (let k = 11; k <= 40; k++) cands.push(k / 100);
+        for (let k = 84; k <= 94; k++) cands.push(k / 100);
+    }
     const taken = (busy || []).slice();
     const out = [];
     while (out.length < n && cands.length) {

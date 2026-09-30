@@ -54,7 +54,7 @@ export function createInfWorld(o) {
     const scene = o.scene, W = o.trackWidth;
     const base = { amb: o.lights.ambient.intensity, hemi: o.lights.hemi.intensity, sun: o.lights.sun.intensity };
     const stretches = new Map();
-    const envN = o.lite ? 2 : 3, treeN = o.lite ? 12 : 22;
+    const envN = o.lite ? 4 : 6, treeN = o.lite ? 12 : 22;
 
     function build(i) {
         const th = stretchTheme(i);
@@ -89,6 +89,14 @@ export function createInfWorld(o) {
             for (let n = 0; n < treeN; n++) {
                 const side = r() < 0.5 ? -1 : 1;
                 trees.push({ x: side * (W / 2 + 3.2 + r() * 22), z: zr(), s: 0.8 + r() * 0.8, kind: r() < 0.62 ? 'pine' : 'birch', rot: r() * Math.PI * 2 });
+            }
+            createForestInstanced(g, trees, mergeGeometries);
+        } else if (th.style !== 'junk') {
+            // и у города, и у промзоны — живые деревья подальше от дороги: берёзы и сосны группами
+            const trees = [], n = Math.round(treeN * (th.style === 'industrial' ? 0.25 : 0.55));
+            for (let t = 0; t < n; t++) {
+                const side = r() < 0.5 ? -1 : 1;
+                trees.push({ x: side * (W / 2 + 7 + r() * 24), z: zr(), s: 0.8 + r() * 0.7, kind: r() < 0.55 ? 'birch' : 'pine', rot: r() * Math.PI * 2 });
             }
             createForestInstanced(g, trees, mergeGeometries);
         }

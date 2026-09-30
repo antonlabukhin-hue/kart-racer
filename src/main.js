@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); installHudLayout(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart } from './infinite.js'; installTouchScale(); installHudLayout(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -719,6 +719,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             if (!direct) { openShopScreen('infinite'); return; } // перед каждым заездом — витрина машин; «Поехали» — сразу в путь
             clearCampaignGlobals();
             pendingMode = 'infinite';
+            // каждый заезд — со своего пейзажа (ночь, снег, дождь…); самый первый — днём, пока учишься
+            setThemeStart((currentPlayer.infinite && currentPlayer.infinite.runs) ? Math.floor(Math.random() * 7) : 0);
             try { hideMainMenu(); } catch (e) {}
             const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
             initGame((typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium', 'easy', car, 'arsenev', 'day'); // база — «лёгкая», сложность растёт с километрами (src/infinite.js)
@@ -6617,7 +6619,7 @@ function startGaragePreview(carId) {
                 const tm = window.__campaignTrafficMul || 1;
                 if (tm !== 1) maxCars = Math.max(4, Math.min(28, Math.round(maxCars * tm)));
             } catch (e) {}
-            if (INF) { maxCars = Math.max(3, Math.round(maxCars * 0.7)); infCarsBase = maxCars; } // бесконечная трасса: попуток на 30% меньше, дальше — больше
+            if (INF) { maxCars = Math.max(6, maxCars); infCarsBase = maxCars; } // бесконечная трасса: попуток как в обычном заезде, дальше — больше
             for (let i = 0; i < maxCars; i++) {
                 const z = INF ? START_Z - 70 - Math.random() * 300 : -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
                 const lane = Math.floor(Math.random() * 3);
@@ -7067,6 +7069,8 @@ function startGaragePreview(carId) {
                 // раскладка участков — из данных (src/tracks/layouts.json): карта → глава кампании
                 const _layout = (isEndlessMode() && window.__layoutOverride) || resolveLayout(null, { mapId: mapId, difficulty: difficulty, campaignId: window.__campaignTrackId || null });
                 window.__trackLayout = _layout;
+                // бесконечная трасса: ещё две арки с грузом на круг — меньше пустой прямой
+                if (INF) _layout.debris = _layout.debris.concat(placeFracs(2, [].concat(_layout.gaps, _layout.debris, [_layout.event], (_layout.segments || []).map(function(sg) { return sg.at; }), (_layout.segments || []).map(function(sg) { return sg.at + 0.07; })), null, 8, 95));
                 let prevLane = -1;
                 _layout.gaps.forEach(function(frac, gi) {
                     const zNear = _zAt(frac);
@@ -7139,11 +7143,12 @@ function startGaragePreview(carId) {
                 const setFracs = [];
                 {
                     // тестовая сборка: window.__forceSetpieces = { events, landmarks } — для проверок и скриншотов
-                    const pick = (import.meta.env.MODE === 'test' && window.__forceSetpieces) || pickSetpieces(mapId);
+                    // бесконечная трасса: события всех карт, 2 → 4 на круг (дальше — больше)
+                    const pick = (import.meta.env.MODE === 'test' && window.__forceSetpieces) || (INF ? pickSetpieces('all', null, 2 + Math.min(2, Math.floor(_lapK / 2))) : pickSetpieces(mapId));
                     const busyE = [].concat(_layout.gaps, _layout.debris, [_layout.event], (_layout.segments || []).map(function(sg) { return sg.at; }));
                     if (window.__trailZ != null) busyE.push((START_Z - window.__trailZ) / _trackSpan);
                     if (pipeFrac != null) busyE.push(pipeFrac);
-                    const fr = placeFracs(pick.events.length, busyE);
+                    const fr = INF ? placeFracs(pick.events.length, busyE, null, 6, 97) : placeFracs(pick.events.length, busyE);
                     pick.events.forEach(function(kind, i) {
                         if (fr[i] == null) return;
                         const ez = _zAt(fr[i]);

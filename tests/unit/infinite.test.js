@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { THEMES, THEME_LEN, BLEND_LEN, themeAt, mixHex, rampAt, runScore, runXp, planStretch, GAP_EVERY, VHS_EVERY, CRATE_EVERY, SPIKES_FROM } from '../../src/infinite.js';
+import { setThemeStart, THEMES, THEME_LEN, BLEND_LEN, themeAt, mixHex, rampAt, runScore, runXp, planStretch, GAP_EVERY, VHS_EVERY, CRATE_EVERY, SPIKES_FROM } from '../../src/infinite.js';
 
 const seq = (seed) => { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; };
 
@@ -18,6 +18,18 @@ describe('бесконечная трасса: пейзажи', () => {
     });
 });
 
+describe('стартовый пейзаж', () => {
+    it('каждый заезд может начаться с любого пейзажа, дальше — по кругу', () => {
+        setThemeStart(3);
+        expect(themeAt(0).theme.id).toBe(THEMES[3].id);
+        expect(themeAt(THEME_LEN + 1).theme.id).toBe(THEMES[4].id);
+        setThemeStart(THEMES.length + 1);
+        expect(themeAt(0).theme.id).toBe(THEMES[1].id);
+        setThemeStart(0);
+        expect(themeAt(0).theme.id).toBe(THEMES[0].id);
+    });
+});
+
 describe('рост сложности и счёт', () => {
     it('скорость, звери и препятствия растут и упираются в потолок', () => {
         // старт лёгкий; звери и попутки первые 1000 м как на старте, дальше плавно; потолок — к 8 км
@@ -26,7 +38,7 @@ describe('рост сложности и счёт', () => {
         expect(rampAt(1000).speed).toBeGreaterThan(0.85);
         expect(rampAt(4000).speed).toBeCloseTo(1.1, 3);
         expect(rampAt(4000).animals).toBeGreaterThan(1);
-        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.35, maxAnimals: 16, animalSpeed: 1.6, traffic: 5, trafficSpeed: 1.5 });
+        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.35, maxAnimals: 16, animalSpeed: 1.6, traffic: 8, trafficSpeed: 1.5 });
         expect(rampAt(1e6).animals).toBeCloseTo(2.6, 6);
     });
     it('очки и опыт', () => {
