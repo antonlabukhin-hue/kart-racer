@@ -274,11 +274,13 @@ test('бусты: «Разгон» и «Запаска» покупаются в
     await expect(page.locator('#shop-boosts')).toBeVisible();
     await page.locator('#shop-boosts .bb-item[data-b="headstart"]').click();
     await page.locator('#shop-boosts .bb-item[data-b="spare"]').click();
+    // плашку «Разгон» может сразу сменить другая — запоминаем сам факт появления
+    await page.evaluate(() => { window.__sawHead = false; new MutationObserver(() => { const p = document.querySelector('.big-plaque'); if (p && p.textContent.includes('РАЗГОН')) window.__sawHead = true; }).observe(document.body, { childList: true, subtree: true }); });
     await page.locator('#shop-action').click();
     await waitRacing(page);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].season.chips)).toBe(550);
     await page.keyboard.down('w');
-    await expect(page.locator('.big-plaque')).toContainText('РАЗГОН');
+    await expect.poll(() => page.evaluate(() => window.__sawHead), { timeout: 10_000 }).toBe(true);
     // попутка в машину во время «Разгона» — аварии нет
     const strikes = await page.evaluate(async () => {
         const g = window.__raceDebug;
