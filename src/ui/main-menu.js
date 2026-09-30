@@ -5,6 +5,7 @@
  * Зависимости передаются явно (без window.*).
  */
 import { seasonBadge, unclaimedRewards, affordableUpgrades, badgeText } from './menu-badges.js';
+import { rankLabel, rankOf } from '../ranks.js';
 import { CHESTS } from '../streak.js';
 
 let chestAutoShown = null; // сундук дня предлагаем сам один раз за день
@@ -33,7 +34,7 @@ export function refreshMainMenu(d) {
     if (!p) return;
     const se = p.season || {};
     setText('mm-name', p.name);
-    setText('mm-level', 'ур. ' + (se.level || 1));
+    setText('mm-level', rankLabel(p.totalXp)); // уровень и звание игрока (src/ranks.js); уровень сезона — в «Сезоне»
     setText('mm-chips', String(se.chips || 0));
     setText('mm-gum', String(se.gum || 0));
     setText('mm-vhs', String(se.vhs || 0));
@@ -48,7 +49,8 @@ export function refreshMainMenu(d) {
     setBadge('.sb-events', p.daily && p.daily.done ? 0 : 1);
     const st = p.stats || {};
     setText('mm-pop-name', p.name);
-    setText('mm-pop-stats', 'Сезон 1, ур. ' + (se.level || 1) + ' · побед ' + (st.wins || 0) + ' из ' + (st.totalRaces || 0) + ' · машина: ' + d.carName);
+    const rk = rankOf(p.totalXp);
+    setText('mm-pop-stats', 'Звание: ' + rk.rank.icon + ' ' + rk.rank.name + (rk.next ? ' · до «' + rk.next.name + '» ' + Math.max(0, rk.next.xp - (p.totalXp || 0)) + ' XP' : '') + ' · сезон 1, ур. ' + (se.level || 1) + ' · побед ' + (st.wins || 0) + ' из ' + (st.totalRaces || 0) + ' · машина: ' + d.carName);
     renderMissions(d.missions);
     // серия дней: огонёк с числом; сундук дня не забран — «!» и предложение при первом заходе за день
     const sb = document.getElementById('mm-streak');
@@ -69,9 +71,9 @@ export function refreshMainMenu(d) {
 function renderMissions(rows) {
     const box = document.getElementById('mm-missions');
     if (!box || !rows) return;
-    box.innerHTML = '<div class="mmm-head">📋 Задания <small>выполнил — фишки и новое</small></div>' + rows.map(function(r) {
+    box.innerHTML = '<div class="mmm-head">📋 Задания <small>выполнил — «Е» и новое</small></div>' + rows.map(function(r) {
         const pct = Math.round(r.progress / r.target * 100);
-        return '<div class="mmm-row"><span class="mmm-text"></span><b>' + r.progress + '/' + r.target + '</b><em>+' + r.reward + ' 🪙</em>'
+        return '<div class="mmm-row"><span class="mmm-text"></span><b>' + r.progress + '/' + r.target + '</b><em>+' + r.reward + ' Е</em>'
             + '<i class="mmm-bar"><u style="width:' + pct + '%"></u></i></div>';
     }).join('');
     box.querySelectorAll('.mmm-text').forEach(function(el, i) { el.textContent = rows[i].text; });
@@ -93,7 +95,7 @@ export function showChest(p, c) {
         + '<div class="ch-days">' + CHESTS.map(function(x, i) {
             const n = i + 1;
             return '<div class="ch-day' + (n < day ? ' past' : n === day ? ' today' + (claimed ? ' opened' : '') : '') + '"><small>день ' + n + '</small><i>' + (n === 7 ? '🎁' : '📦') + '</i>'
-                + '<span>🪙' + x.chips + '<br>🍬' + x.gum + (x.vhs ? '<br>📼' + x.vhs : '') + '</span></div>';
+                + '<span>Е ' + x.chips + '<br>🍬' + x.gum + (x.vhs ? '<br>📼' + x.vhs : '') + '</span></div>';
         }).join('') + '</div>'
         + (claimed ? '<div class="ch-got">Сегодня уже забран — приходи завтра</div>' : '<button type="button" class="ch-claim">Забрать сундук</button>')
         + '<button type="button" class="ch-later">' + (claimed ? 'Понятно' : 'Позже') + '</button></div>';
@@ -105,7 +107,7 @@ export function showChest(p, c) {
     if (cl) cl.onclick = function() {
         const got = c.claim();
         if (!got) { close(); return; }
-        cl.outerHTML = '<div class="ch-got">+' + got.chips + ' 🪙 · +' + got.gum + ' 🍬' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>';
+        cl.outerHTML = '<div class="ch-got">+' + got.chips + ' Е · +' + got.gum + ' 🍬' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>';
         m.querySelector('.ch-later').textContent = 'Отлично!';
         m.querySelector('.ch-day.today').classList.add('opened');
     };
