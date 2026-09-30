@@ -141,3 +141,75 @@ test('бесконечная трасса: рекорд — салют, пото
     await expect(page.locator('#finish-screen')).toContainText('ЗАЕЗД ОКОНЧЕН');
     expect(problems).toEqual([]);
 });
+
+// ящик «?» — случайный исход, не авария; шипы (после 600 м) — не авария, но скорость падает
+test('бесконечная трасса: ящик «?» разбивается с исходом, шипы тормозят без аварии', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    const crate = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        const c = g.collectibles.filter(c => c.type === 'crate' && c.active && c.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
+        if (!c) return null;
+        g.setX(c.x); g.setZ(c.z + 0.3);
+        await new Promise(r => setTimeout(r, 300));
+        return { crates: g.stats.crates || 0, strikes: g.strikes };
+    });
+    expect(crate).toEqual({ crates: 1, strikes: 0 });
+    await expect(page.locator('.big-plaque')).toBeVisible();
+    // вперёд за 600 м — там уже шипы
+    await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 700); });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.obstacles.some(o => o.type === 'spikes' && o.active)), { timeout: 15_000 }).toBe(true);
+    await page.waitForTimeout(1500); // разогнаться
+    const hit = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        (g.animals || []).forEach(an => { an.hit = true; });
+        const o = g.obstacles.filter(o => o.type === 'spikes' && o.active && o.z < g.z - 3).sort((a, b) => b.z - a.z)[0];
+        // ставим на шипы, пока не сработают (под нагрузкой кадр может запоздать)
+        let before = 0;
+        for (let i = 0; i < 20 && !(g.stats.spikes > 0); i++) {
+            g.setStrikes(0); before = g.speed; g.setX(o.x); g.setZ(o.z + 0.2);
+            await new Promise(r => setTimeout(r, 50));
+        }
+        return { spikes: g.stats.spikes || 0, strikes: g.strikes, slower: g.speed < before * 0.8 };
+    });
+    expect(hit).toEqual({ spikes: 1, strikes: 0, slower: true });
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// первый заезд: перед новым на дороге — пауза и плашка «что это», «Продолжить» — едем дальше; второй раз то же не показывается
+test('первое знакомство: пауза с плашкой перед новым, «Продолжить» — дальше', async ({ page }) => {
+    const problems = watchProblems(page);
+    await page.addInitScript(() => sessionStorage.setItem('keep_meet', '1'));
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    const card = page.locator('.meet-overlay .meet-card');
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expect(card.locator('.meet-go')).toContainText('Продолжить');
+    const title = await card.locator('.meet-title').textContent();
+    // пока плашка открыта — заезд стоит
+    const z1 = await page.evaluate(() => window.__raceDebug.z);
+    await page.waitForTimeout(600);
+    expect(await page.evaluate(() => window.__raceDebug.z)).toBe(z1);
+    await card.locator('.meet-go').click();
+    await expect(page.locator('.meet-overlay')).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.z), { timeout: 5_000 }).toBeLessThan(z1);
+    // знакомое запомнено
+    const seen = await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_met_v1') || '[]'));
+    expect(seen.length).toBeGreaterThanOrEqual(1);
+    // «Больше не подсказывать» — все знакомства отмечены
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    expect(await card.locator('.meet-title').textContent()).not.toBe(title);
+    await card.locator('.meet-off').click();
+    await expect(page.locator('.meet-overlay')).toHaveCount(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_met_v1')).length)).toBe(15);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});

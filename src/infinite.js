@@ -69,7 +69,8 @@ export function runXp(dist) {
 
 /**
  * План участка трассы [d0, d1) (расстояния от старта): что где поставить. rnd — генератор [0,1).
- * Возвращает список { kind, d, lane, ... } — kind: 'obstacle' (type), 'echip' (lane, y), 'nitro', 'gum', 'vhs', 'power' (type), 'gap' (rampLane).
+ * Возвращает список { kind, d, lane, ... } — kind: 'obstacle' (type), 'echip' (lane, y), 'nitro', 'gum', 'vhs', 'power' (type), 'gap' (rampLane),
+ * 'crate' — ящик «?» (src/hazards.js), 'spikes' — шипы поперёк полосы (с SPIKES_FROM м, чаще с ростом сложности).
  * Разлом — не чаще раза в GAP_EVERY, вокруг него чисто; «Е» — цепочками по полосам, змейкой и дугой над разломом.
  */
 export const LANES = 3;
@@ -77,6 +78,8 @@ export const GAP_EVERY = [380, 560];
 export const VHS_EVERY = 1700;
 export const POWER_EVERY = [450, 750];
 export const POWER_KINDS = ['magnet', 'x2', 'shield']; // src/powerups.js
+export const CRATE_EVERY = [260, 420];
+export const SPIKES_FROM = 600;
 export function planStretch(d0, d1, rnd, opts) {
     const o = opts || {};
     const r = rnd || Math.random;
@@ -141,6 +144,15 @@ export function planStretch(d0, d1, rnd, opts) {
                 out.push({ kind: 'echip', d: dd2, x: 3.5, y: 0.6, side: true });
             }
         }
+    }
+    // ящики «?» — раз в 260–420 м, тоже в стороне от «Е»
+    for (let dd = Math.max(d0, 120) + r() * 120; dd < d1; dd += CRATE_EVERY[0] + r() * (CRATE_EVERY[1] - CRATE_EVERY[0])) {
+        const at = spot(dd);
+        if (at != null) out.push({ kind: 'crate', d: at, lane: lane() });
+    }
+    // шипы — после SPIKES_FROM м; чем дальше, тем чаще (шаг 380 → 190 м)
+    for (let dd = Math.max(d0, SPIKES_FROM) + r() * 150; dd < d1; dd += (380 - 190 * ramp.t) * (0.8 + r() * 0.4)) {
+        if (!nearGap(dd)) out.push({ kind: 'spikes', d: dd, lane: lane() });
     }
     // видеокассета — редкость: ~1 на 1.7 км (иногда 2), за длинный заезд 1–3
     const vhsN = Math.floor((d1 - d0) / VHS_EVERY * (o.vhsMul || 1) + r()); // vhsMul — «Мечта»-везунчик: вдвое чаще

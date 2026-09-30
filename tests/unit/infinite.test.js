@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { THEMES, THEME_LEN, BLEND_LEN, themeAt, mixHex, rampAt, runScore, runXp, planStretch, GAP_EVERY, VHS_EVERY } from '../../src/infinite.js';
+import { THEMES, THEME_LEN, BLEND_LEN, themeAt, mixHex, rampAt, runScore, runXp, planStretch, GAP_EVERY, VHS_EVERY, CRATE_EVERY, SPIKES_FROM } from '../../src/infinite.js';
 
 const seq = (seed) => { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; };
 
@@ -85,5 +85,21 @@ describe('план участка', () => {
         const pw = planStretch(0, 20000, seq(9)).items.filter(i => i.kind === 'power');
         expect(pw.length).toBeGreaterThan(20);
         expect(new Set(pw.map(i => i.type))).toEqual(new Set(['magnet', 'x2', 'shield']));
+    });
+    it('ящики «?» — раз в 260–420 м; шипы — только после SPIKES_FROM и чем дальше, тем чаще', () => {
+        const p = planStretch(0, 20000, seq(13)).items;
+        const cr = p.filter(i => i.kind === 'crate');
+        expect(cr.length).toBeGreaterThan(20000 / CRATE_EVERY[1] * 0.7);
+        expect(cr.length).toBeLessThan(20000 / CRATE_EVERY[0] * 1.2);
+        const es = p.filter(i => i.kind === 'echip' && !i.side).map(i => i.d);
+        cr.forEach(c => expect(es.every(e => Math.abs(e - c.d) > 18)).toBe(true));
+        expect(planStretch(0, SPIKES_FROM, seq(3)).items.some(i => i.kind === 'spikes')).toBe(false);
+        let early = 0, late = 0;
+        for (let k = 0; k < 10; k++) {
+            early += planStretch(600, 2600, seq(40 + k)).items.filter(i => i.kind === 'spikes').length;
+            late += planStretch(8000, 10000, seq(40 + k)).items.filter(i => i.kind === 'spikes').length;
+        }
+        expect(early).toBeGreaterThan(20);
+        expect(late).toBeGreaterThan(early * 1.4);
     });
 });
