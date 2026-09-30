@@ -5278,3 +5278,10 @@ body.splash-fallback #splash-screen .splash-title { display: none; }
 @media (max-width: 700px), (max-height: 560px) {
     body #shop-screen .menu-pane #shop-action { position: sticky; bottom: 4px; z-index: 5; box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.55), 0 4px 0 #a86a00; }
 }
+
+/* «Трофеи» из меню — отдельным экраном: без превью машины, вкладок и кнопок гаража */
+#garage-screen.gar-trophies :is(#garage-canvas-wrap, #garage-player-name, #garage-stats, .season-bar-bg, #garage-cars, .garage-tabs, #garage-panel-parts, #garage-panel-upgrades, #garage-panel-achs) { display: none !important; }
+#garage-screen.gar-trophies #garage-panel-trophies { display: block !important; }
+#garage-screen.gar-trophies > .content > h1 { font-size: 0 !important; }
+#garage-screen.gar-trophies > .content > h1::after { content: '🏆 ТРОФЕИ 90-х'; font-size: 24px; }
+@media (orientation: portrait) and (max-width: 700px) { body #garage-screen.gar-trophies .menu-pane { zoom: var(--menu-z); } }

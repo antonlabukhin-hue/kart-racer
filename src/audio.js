@@ -777,6 +777,19 @@ class SoundEngine {
     }
 
 
+    /** Приложение свёрнуто или закрыто: всё на паузу (помнит, что играло) */
+    suspendAll() {
+        this._resume = [];
+        [this.menuAudio, this.raceAudio].forEach((a) => { if (a && !a.paused) { this._resume.push(a); try { a.pause(); } catch (e) {} } });
+        try { if (this.audioCtx && this.audioCtx.state === 'running') this.audioCtx.suspend(); } catch (e) {}
+    }
+    /** Вернулись в приложение: продолжить то, что играло */
+    resumeAll() {
+        try { if (this.audioCtx && this.audioCtx.state === 'suspended') this.audioCtx.resume(); } catch (e) {}
+        (this._resume || []).forEach((a) => { try { const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} });
+        this._resume = [];
+    }
+
     playSfx(type, volScale) {
         if (!this.enabled) return;
         try {

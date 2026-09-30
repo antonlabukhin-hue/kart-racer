@@ -148,7 +148,12 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             // заезд — только горизонтально (машина крупно), меню — только вертикально (всё крупно, одной рукой)
             const racing = !!(window.__waitingLandscape || window.__inRace);
             const needLand = !!(window.__isMobile && isPortrait() && racing);
-            const needPort = !!(window.__isMobile && !isPortrait() && !racing && Math.min(window.innerWidth, window.innerHeight) < 600); // на планшете меню можно и горизонтально
+            // «поверни вертикально» — только над настоящими экранами меню (не над переходом между главами и не на планшете)
+            const menuOpen = ['splash-screen', 'profile-screen', 'main-menu-screen', 'garage-screen', 'shop-screen', 'campaign-screen', 'rewards-screen', 'events-screen', 'difficulty-screen', 'map-select-screen'].some(function(id) {
+                const e = document.getElementById(id);
+                return e && getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0;
+            });
+            const needPort = !!(window.__isMobile && !isPortrait() && !racing && menuOpen && Math.min(window.innerWidth, window.innerHeight) < 600);
             el.classList.toggle('show', needLand || needPort);
             el.classList.toggle('need-portrait', needPort);
             const h = el.querySelector('h2'), t = el.querySelector('p'), sub = el.querySelector('.hint-sub');
@@ -225,6 +230,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         }
 
         window.addEventListener('resize', updateRotateLock);
+        setInterval(updateRotateLock, 800); // экраны меню открываются и закрываются без resize — проверять и так
         window.addEventListener('orientationchange', () => setTimeout(updateRotateLock, 50));
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', updateRotateLock);
@@ -1798,6 +1804,7 @@ function createProfile(name) { return Profile.createProfile(name); }
 
         function openGarage() {
             window.__forcePBR = true;
+            try { document.getElementById('garage-screen').classList.remove('gar-trophies'); } catch (e) {}
             if (!currentPlayer) return;
             ensureProfileFields(currentPlayer);
             // Нива — убрать багажник на крышу из лоадаута
@@ -11369,6 +11376,11 @@ function showLoreScreen(quality, difficulty) {
         // ============================================================
         // UI BOOTSTRAP — заставка, профиль, меню (критично!)
         // ============================================================
+        // свернули или закрыли приложение — музыка и звук на паузу, вернулись — дальше (src/audio.js)
+        document.addEventListener('visibilitychange', function() {
+            try { if (window.soundEngine) { if (document.hidden) window.soundEngine.suspendAll(); else window.soundEngine.resumeAll(); } } catch (e) {}
+        });
+        window.addEventListener('pagehide', function() { try { if (window.soundEngine) window.soundEngine.suspendAll(); } catch (e) {} });
         (function uiBootstrap() {
             // заставка — 3D «кино»: машина последнего игрока крупно едет по трассе (src/menu-bg.js, intro)
             try {
@@ -11472,7 +11484,9 @@ function showLoreScreen(quality, difficulty) {
                     } else if (m === 'season') {
                         openRewardsScreen(); // «Награды» и «События» — вкладки одного раздела
                     } else if (m === 'trophies') {
-                        openGarage(); const tt = document.querySelector('.garage-tab[data-gtab="trophies"]'); if (tt) tt.click();
+                        // трофеи — отдельным экраном: без машины и вкладок гаража
+                        openGarage(); const gs = document.getElementById('garage-screen'); if (gs) gs.classList.add('gar-trophies');
+                        const tt = document.querySelector('.garage-tab[data-gtab="trophies"]'); if (tt) tt.click();
                     }
                 });
             });
