@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch } from './infinite.js'; installTouchScale(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -5013,7 +5013,7 @@ function startGaragePreview(carId) {
                             difficulty: (typeof difficulty !== 'undefined' ? difficulty : 'medium'),
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
-                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS, eChips: Math.round((stats.eChips || 0) * (ABILITY === 'trade' ? 1.25 : 1)), // «Газель» — челнок
+                            bonusChips: cleanRun.chips, eChips: Math.round((stats.eChips || 0) * (ABILITY === 'trade' ? 1.25 : 1)), // «Газель» — челнок
                             // для контрактов дня на механики
                             cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
                             nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, riskPoints: risk.points, animalsJumped: stats.animalsJumped || 0,
@@ -7049,6 +7049,7 @@ function startGaragePreview(carId) {
             const gapCones = []; // сбиваемые конусы перед разломами
             // сносимые рекламные щиты 90-х (src/smash.js)
             const smashBoards = [];
+            let boardHintDone = false;
             const smashParts = [];
             let pipeDrop = null; // промзона: падающая труба (src/mapevents.js)
             const setEvents = []; // трактор, ПАЗик, кран, магнит, бульдозер — по карте, случайно (src/landmarks.js)
@@ -8879,15 +8880,20 @@ function startGaragePreview(carId) {
                         const b = smashBoards[si];
                         if (b.smashed || Math.abs(zPos - b.z) > 0.9 || Math.abs(xPos - b.x) > 1.25 || carYOffset > 1.1) continue;
                         smashBoard(b, scene, Math.abs(speed) * 60).forEach(function(pt) { smashParts.push(pt); });
-                        stats.billboards = (stats.billboards || 0) + 1; riskEvent(risk, 'billboard');
+                        stats.billboards = (stats.billboards || 0) + 1; riskEvent(risk, 'billboard'); stats.eChips = (stats.eChips || 0) + SMASH_CHIPS; // сразу в счётчик «Е»
                         speed *= 0.9;
                         shakeTime = Math.max(shakeTime, 0.12);
                         fovPunch = Math.max(fovPunch || 0, 6);
-                        try { showTimePenaltyPopup(0, '💥 Реклама снесена! +' + SMASH_CHIPS + ' Е'); } catch (e) {}
+                        try { showBigPlaque('💥 РЕКЛАМА СНЕСЕНА!' + (stats.billboards > 1 ? ' ×' + stats.billboards : ''), '+' + SMASH_CHIPS + ' Е и очки стиля', 'smash'); } catch (e) {}
                         try { if (window.soundEngine) { window.soundEngine.playSfx('bump', 1.2); window.soundEngine.playSfx('explode', 0.35); } } catch (e) {}
                     }
                 }
                 if (smashParts.length) stepSmashParts(smashParts, deltaTime, scene);
+                // щит впереди — в первых заездах подсказка, что его можно снести (раз за заезд, 3 заезда)
+                if (gameState === 'racing' && !boardHintDone && smashBoards.some(function(b) { const d = zPos - b.z; return !b.smashed && d > 12 && d < 45; })) {
+                    boardHintDone = true;
+                    if (hintOnce('road_racing_hint_board', 3)) showInfoPop('💥', 'Рекламу можно сносить!', 'Тарань щит — не авария: +' + SMASH_CHIPS + ' Е и очки стиля');
+                }
                 for (let evi = 0; evi < 2 + setEvents.length; evi++) {
                     const ev = evi === 0 ? mapEvent : evi === 1 ? pipeDrop : setEvents[evi - 2];
                     if (!ev || gameState !== 'racing') continue;
