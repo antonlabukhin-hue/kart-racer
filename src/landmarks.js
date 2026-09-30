@@ -1,7 +1,8 @@
 /**
  * Узнаваемые детали трасс — чтобы заезды не повторялись.
  * События в полосах (как поезд и труба): с предупреждением заранее и всегда со свободной полосой.
- *   arsenev  — трактор с прицепом переползает дорогу; ПАЗик отъезжает от остановки в правую полосу.
+ *   arsenev  — трактор с прицепом переползает дорогу; ПАЗик отъезжает от остановки в правую полосу;
+ *              «встречка» — грузовик на обгоне летит навстречу по одной полосе, мигая фарами: уйди в соседнюю.
  *   promzona — башенный кран качает бетонный блок поперёк дороги.
  *   svalka   — магнитный кран роняет кузов машины в полосу; бульдозер сдвигает кучу хлама в полосу.
  * Приметы у обочины (без игровой роли): водонапорная башня, стела, АЗС, остановка с киоском,
@@ -12,7 +13,7 @@
 import * as THREE from 'three';
 
 export const EVENT_POOL = {
-    arsenev: ['tractor', 'bus'],
+    arsenev: ['tractor', 'bus', 'oncoming'],
     promzona: ['crane'],
     svalka: ['magnet', 'dozer']
 };
@@ -322,6 +323,47 @@ function createDozer(trackWidth, z0) {
     };
 }
 
+// ---------------------------------------------------------------- встречка (Арсеньев): грузовик на обгоне
+function createOncoming(trackWidth, z0, laneXs) {
+    const lanes = laneXs || [-1.5, 0, 1.5];
+    const lane = Math.floor(Math.random() * lanes.length), lx = lanes[lane];
+    const g = new THREE.Group();
+    const truck = new THREE.Group();
+    box(truck, 0xc8321e, 0, 1.25, -1.9, 2.1, 1.9, 1.6);          // кабина (перёд модели к −z)
+    box(truck, 0x2a3a4a, 0, 1.6, -2.71, 1.8, 0.7, 0.02);          // лобовое
+    box(truck, 0x5a6a3a, 0, 1.5, 0.9, 2.2, 2.2, 3.9);             // тент кузова
+    box(truck, 0x333333, 0, 0.42, 0, 2.0, 0.3, 5.6);              // рама
+    [[-0.95, -1.9], [0.95, -1.9], [-0.95, 1.0], [0.95, 1.0], [-0.95, 2.1], [0.95, 2.1]].forEach(function(q) { cyl(truck, 0x151515, 0.45, 0.45, 0.32, q[0], 0.45, q[1], 0, Math.PI / 2); });
+    const lights = [];
+    [-0.7, 0.7].forEach(function(x) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.22, 0.05), new THREE.MeshBasicMaterial({ color: 0xfff4c0 }));
+        m.position.set(x, 0.85, -2.72); truck.add(m); lights.push(m);
+    });
+    truck.rotation.y = Math.PI;                                      // едет к игроку (+z)
+    truck.position.set(lx, 0, z0);
+    g.add(truck);
+    const st = { state: 'wait', z: z0, t: 0, hitCd: 0 };
+    return {
+        kind: 'oncoming', group: g, z: z0, lane: lane, debug: st,
+        update: function(ctx) {
+            st.t += ctx.dt; st.hitCd -= ctx.dt;
+            const flash = Math.floor(st.t * 5) % 2 === 0;               // моргает дальним — «уйди с полосы!»
+            lights.forEach(function(l) { l.visible = st.state !== 'go' || flash; });
+            if (st.state === 'wait' && ctx.z - st.z < ctx.ups * 3 + 25) st.state = 'go';
+            if (st.state === 'go') {
+                st.z += 18 * ctx.dt;
+                truck.position.z = st.z;
+                if (st.z > ctx.z + 25) { st.state = 'gone'; truck.visible = false; }
+            }
+            if (st.state === 'go' && st.hitCd <= 0 && ctx.y < 1.8 && Math.abs(ctx.z - st.z) < 3 && Math.abs(ctx.x - lx) < 1.3) {
+                st.hitCd = 3;
+                return strike('oncoming', '🚛 Лобовое!', st.z - 3);
+            }
+            return null;
+        }
+    };
+}
+
 /** Событие по виду; laneXs — центры полос */
 export function createSetpieceEvent(kind, trackWidth, z0, laneXs) {
     if (kind === 'tractor') return createTractor(trackWidth, z0);
@@ -329,6 +371,7 @@ export function createSetpieceEvent(kind, trackWidth, z0, laneXs) {
     if (kind === 'crane') return createCraneSwing(trackWidth, z0);
     if (kind === 'magnet') return createMagnetDrop(trackWidth, z0, laneXs);
     if (kind === 'dozer') return createDozer(trackWidth, z0);
+    if (kind === 'oncoming') return createOncoming(trackWidth, z0, laneXs);
     return null;
 }
 
@@ -338,7 +381,8 @@ export const EVENT_SIGNS = {
     bus: ['ОСТАНОВКА', 'АВТОБУС ВЫЕЗЖАЕТ'],
     crane: ['ОСТОРОЖНО', 'РАБОТАЕТ КРАН'],
     magnet: ['ОСТОРОЖНО', 'ГРУЗ НАД ДОРОГОЙ'],
-    dozer: ['ОСТОРОЖНО', 'ТЕХНИКА НА ДОРОГЕ']
+    dozer: ['ОСТОРОЖНО', 'ТЕХНИКА НА ДОРОГЕ'],
+    oncoming: ['ОСТОРОЖНО', 'ВСТРЕЧКА — ОБГОН!']
 };
 
 // ---------------------------------------------------------------- приметы у обочины
