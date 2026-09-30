@@ -5,8 +5,8 @@
 export const SETTINGS_KEY = 'road_racing_settings_v1';
 
 export const DEFAULT_SETTINGS = {
-    music: 0.55,      // громкость музыки 0..1
-    engine: 0.6,      // громкость двигателя 0..1
+    music: 0.35,      // громкость музыки 0..1 — тише: «Е», аварии и прыжки слышно всегда
+    engine: 0.35,     // громкость двигателя 0..1
     sfx: 1.0,         // громкость эффектов 0..1
     quality: 'medium',// low | medium | high
     camera: 0,        // 0 сзади, 1 капот, 2 салон, 3 сбоку
@@ -14,7 +14,8 @@ export const DEFAULT_SETTINGS = {
     vibrate: true,    // вибрация телефона при аварии
     ghost: true,      // призрак лучшего заезда
     lang: 'auto',     // auto (по языку браузера) | ru | en
-    curve: true       // «кривой мир»: повороты и холмы
+    curve: true,      // «кривой мир»: повороты и холмы
+    v: 2              // версия настроек (v2 — тише музыка и двигатель по умолчанию)
 };
 
 const clamp01 = function(v, d) { const n = Number(v); return isFinite(n) ? Math.max(0, Math.min(1, n)) : d; };
@@ -32,13 +33,19 @@ export function normalizeSettings(raw) {
         vibrate: r.vibrate == null ? d.vibrate : !!r.vibrate,
         ghost: r.ghost == null ? d.ghost : !!r.ghost,
         lang: ['auto', 'ru', 'en'].indexOf(r.lang) >= 0 ? r.lang : d.lang,
-        curve: r.curve == null ? d.curve : !!r.curve
+        curve: r.curve == null ? d.curve : !!r.curve,
+        v: 2
     };
 }
 
 export function loadSettings(storage) {
     const st = storage || (typeof localStorage !== 'undefined' ? localStorage : null);
-    try { return normalizeSettings(st ? JSON.parse(st.getItem(SETTINGS_KEY) || 'null') : null); }
+    try {
+        const raw = st ? JSON.parse(st.getItem(SETTINGS_KEY) || 'null') : null;
+        // v2: музыка и двигатель по умолчанию тише — кто не трогал ползунки (прежние 55% и 60%), получает новые
+        if (raw && raw.v !== 2) { if (raw.music === 0.55) raw.music = DEFAULT_SETTINGS.music; if (raw.engine === 0.6) raw.engine = DEFAULT_SETTINGS.engine; }
+        return normalizeSettings(raw);
+    }
     catch (e) { return normalizeSettings(null); }
 }
 

@@ -50,6 +50,7 @@
     <div id="splash-screen">
         <img src="images/splash.jpg" alt="Дорожный прорыв" loading="eager" decoding="async"
              onerror="this.onerror=null;this.src='images/splash.jpg';">
+        <div class="splash-title">ДОРОЖНЫЙ ПРОРЫВ<small>Дорога из Арсеньева · 2037</small></div>
         <div class="hint">Нажми, чтобы продолжить</div>
     </div>
 
@@ -180,6 +181,7 @@
             <div class="mm-missions" id="mm-missions"></div>
             <!-- нижняя панель: разделы со счётчиками «есть что забрать / на что потратить» -->
             <nav class="mm-dock" aria-label="Разделы">
+                <button type="button" class="mm-tab" data-menu="cars"><i aria-hidden="true">🚗</i><span>Машины</span></button>
                 <button type="button" class="mm-tab" data-menu="garage"><i aria-hidden="true">🔧</i><span>Гараж</span><em class="mm-badge" id="mm-badge-garage" hidden></em></button>
                 <button type="button" class="mm-tab" data-menu="season"><i aria-hidden="true">🎁</i><span>Сезон</span><em class="mm-badge" id="mm-badge-season" hidden></em></button>
                 <button type="button" class="mm-tab" data-menu="trophies"><i aria-hidden="true">🏆</i><span>Трофеи</span></button>
@@ -222,11 +224,19 @@
         <div class="content">
             <h1 style="color:#ffdd00;">🚗 МАШИНЫ</h1>
             <div class="sub" id="shop-currency" style="color:#ffaa44;">Е: 0 · 🍬 Жвачки: 0</div>
-            <div id="shop-canvas-wrap"></div>
+            <div class="shop-stage" id="shop-stage">
+                <div id="shop-canvas-wrap"></div>
+                <button type="button" class="shop-arrow prev" id="shop-prev" aria-label="Предыдущая машина">‹</button>
+                <button type="button" class="shop-arrow next" id="shop-next" aria-label="Следующая машина">›</button>
+                <div class="shop-plate" id="shop-plate"></div>
+            </div>
+            <!-- всё под превью — своя прокрутка: машина на телефоне всегда на месте (на компьютере панель не видна как блок) -->
+            <div class="menu-pane">
             <div class="shop-cars" id="shop-cars"></div>
             <div id="shop-desc" class="car-stats" style="font-size:12px;color:#aaa;margin:8px 0;"></div>
             <button class="garage-btn" id="shop-action">ВЫБРАТЬ ЭТУ МАШИНУ</button>
             <button class="garage-btn secondary" id="shop-close">← Назад</button>
+            </div>
         </div>
     </div>
 
@@ -248,6 +258,7 @@
             <h1>🔧 ГАРАЖ</h1>
             <div class="sub" id="garage-player-name">—</div>
             <div id="garage-canvas-wrap"></div>
+            <div class="menu-pane">
             <div class="sub" style="font-size:11px;">HQ-превью · крути мышью/пальцем · наведи на деталь — примерка</div>
             <div class="garage-stats" id="garage-stats"></div>
             <div class="season-bar-bg"><div class="season-bar-fill" id="garage-season-fill"></div></div>
@@ -271,6 +282,7 @@
                 <div class="ach-grid" id="garage-achs"></div>
             </div>
             <button class="garage-btn secondary" id="garage-close-btn">← В меню</button>
+            </div>
         </div>
     </div>
 

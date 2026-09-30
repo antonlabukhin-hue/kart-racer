@@ -978,6 +978,24 @@ class SoundEngine {
                     }
                     break;
                 }
+                case 'ring': {
+                    // «колечко» как в 16-битных платформерах: два быстрых звонких тона (ми → до), второй тянется и гаснет
+                    const note = (wave, freq, at, dur, peak) => {
+                        const o = this.audioCtx.createOscillator(), g = this.audioCtx.createGain();
+                        o.type = wave; o.frequency.setValueAtTime(freq, t0 + at);
+                        g.gain.setValueAtTime(0.0001, t0);
+                        g.gain.setValueAtTime(Math.max(0.001, peak * vs), t0 + at);
+                        g.gain.exponentialRampToValueAtTime(0.001, t0 + at + dur);
+                        o.connect(g); g.connect(this.audioCtx.destination);
+                        o.start(t0 + at); o.stop(t0 + at + dur + 0.02);
+                    };
+                    note('square', 1318.5, 0, 0.06, 0.07);
+                    note('triangle', 1318.5, 0, 0.06, 0.09);
+                    note('square', 2093, 0.055, 0.32, 0.06);
+                    note('triangle', 2093, 0.055, 0.36, 0.1);
+                    note('sine', 4186, 0.055, 0.12, 0.03);
+                    break;
+                }
                 case 'pickup':
                     mk('sine', 660, 0.08, 0.1, 990);
                     mk('square', 440, 0.06, 0.05, 660);

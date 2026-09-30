@@ -14,7 +14,7 @@ describe('настройки', () => {
     it('сохраняются и читаются', () => {
         const st = memStorage();
         saveSettings({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en', curve: false }, st);
-        expect(loadSettings(st)).toEqual({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en', curve: false });
+        expect(loadSettings(st)).toEqual({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en', curve: false, v: 2 });
     });
 
     it('кривые значения приводятся к допустимым', () => {
@@ -30,5 +30,16 @@ describe('настройки', () => {
         const st = memStorage();
         st.setItem(SETTINGS_KEY, '{oops');
         expect(loadSettings(st)).toEqual(DEFAULT_SETTINGS);
+    });
+});
+
+describe('громкость по умолчанию (v2)', () => {
+    it('музыка и двигатель тише; кто не трогал старые 55%/60% — получает новые, свои значения не трогаем', () => {
+        const mem = { d: {}, getItem(k) { return this.d[k] || null; }, setItem(k, v) { this.d[k] = v; } };
+        expect(DEFAULT_SETTINGS).toMatchObject({ music: 0.35, engine: 0.35, sfx: 1 });
+        mem.setItem(SETTINGS_KEY, JSON.stringify({ music: 0.55, engine: 0.6 }));
+        expect(loadSettings(mem)).toMatchObject({ music: 0.35, engine: 0.35 });
+        mem.setItem(SETTINGS_KEY, JSON.stringify({ music: 0.8, engine: 0.2 }));
+        expect(loadSettings(mem)).toMatchObject({ music: 0.8, engine: 0.2 });
     });
 });

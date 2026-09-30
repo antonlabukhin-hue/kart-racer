@@ -145,12 +145,18 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         function updateRotateLock() {
             const el = document.getElementById('rotate-lock');
             if (!el) return;
-            // Оверлей только когда ждём поворота к гонке или уже в гонке «встали» вертикально
-            const blocking = !!(window.__waitingLandscape || window.__inRace);
-            const need = !!(window.__isMobile && isPortrait() && blocking);
-            if (need) el.classList.add('show');
-            else el.classList.remove('show');
-            return need;
+            // заезд — только горизонтально (машина крупно), меню — только вертикально (всё крупно, одной рукой)
+            const racing = !!(window.__waitingLandscape || window.__inRace);
+            const needLand = !!(window.__isMobile && isPortrait() && racing);
+            const needPort = !!(window.__isMobile && !isPortrait() && !racing && Math.min(window.innerWidth, window.innerHeight) < 600); // на планшете меню можно и горизонтально
+            el.classList.toggle('show', needLand || needPort);
+            el.classList.toggle('need-portrait', needPort);
+            const h = el.querySelector('h2'), t = el.querySelector('p'), sub = el.querySelector('.hint-sub');
+            if (h) h.textContent = 'Поверни телефон';
+            if (t) t.innerHTML = needPort ? 'Меню — в <b>вертикальном</b> положении экрана, заезд — в горизонтальном. Поверни устройство вертикально.'
+                : 'Играть можно только в <b>горизонтальном</b> положении экрана. Поверни устройство набок — и заезд продолжится.';
+            if (sub) sub.textContent = needPort ? 'Книжная ориентация · Portrait' : 'Альбомная ориентация · Landscape';
+            return needLand;
         }
 
         async function lockLandscape() {
@@ -701,6 +707,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         /** «Бесконечная трасса» — вместо свободного заезда: сразу в путь на своей машине */
         function startInfiniteRun() {
             if (!currentPlayer) return;
+            // первый раз — витрина машин: одна бесплатная, остальные видно с ценами (как выбор персонажа в Subway Surfers)
+            if (!currentPlayer.infCarPicked) { currentPlayer.infCarPicked = true; saveCurrentPlayer(); openShopScreen('infinite'); return; }
             clearCampaignGlobals();
             pendingMode = 'infinite';
             try { hideMainMenu(); } catch (e) {}
@@ -1520,6 +1528,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         let shopBackToGarage = false, quickRestart = false; // магазин открыт из гаража — туда и вернуться; «Повторить» — короткий отсчёт
         function openShopScreen(fromFirstRace) {
             if (!currentPlayer) return;
+            const forInf = fromFirstRace === 'infinite'; // первый заезд бесконечной трассы: выбрал — и сразу в путь
             ensureProfileFields(currentPlayer);
             hideMainMenu();
             const sc = document.getElementById('shop-screen');
@@ -1542,10 +1551,18 @@ function createProfile(name) { return Profile.createProfile(name); }
                     desc.innerHTML = carStatsHtml(statBars(preset, getUpgradeLevels(shopSelectedCar)), { ability: preset.ability, compare: cmp ? statBars(CAR_PRESETS[cur], getUpgradeLevels(cur)) : null,
                         compareName: cmp ? CAR_PRESETS[cur].name : '', note: owned ? (preset.name + ' — в гараже.') : vhsPrice ? ('Только за видеокассеты: ' + vhsPrice + ' 📼. Кассеты — на бесконечной трассе и в сундуке дня.') : ('Стоимость: ' + price + ' Е. Железные «Е» собирают на трассе, дают за финиши и награды сезона.') });
                 }
+                const plate = document.getElementById('shop-plate');
+                if (plate) {
+                    const vp = preset.priceVhs || 0, i = CAR_SHOP_ORDER.indexOf(shopSelectedCar);
+                    plate.innerHTML = '<b>' + escapeHtml(preset.name) + '</b>'
+                        + (preset.ability ? '<span>★ ' + escapeHtml(preset.ability.name) + '</span>' : '')
+                        + '<em class="' + (owned ? 'own' : vp ? 'vhs' : 'e') + '">' + (owned ? '✓ Твоя' : vp ? vp + ' 📼' : price + ' Е') + '</em>'
+                        + '<i class="dots">' + CAR_SHOP_ORDER.map(function(id, k) { return '<u class="' + (k === i ? 'on' : '') + '"></u>'; }).join('') + '</i>';
+                }
                 const act = document.getElementById('shop-action');
                 if (act) {
                     if (owned) {
-                        act.textContent = 'ВЫБРАТЬ ЭТУ МАШИНУ';
+                        act.textContent = forInf ? '▶ ПОЕХАЛИ НА «' + preset.name.toUpperCase() + '»' : 'ВЫБРАТЬ ЭТУ МАШИНУ';
                         act.onclick = function() {
                             currentPlayer.preferredCar = shopSelectedCar;
                             currentPlayer.hasSeenShop = true;
@@ -1553,7 +1570,8 @@ function createProfile(name) { return Profile.createProfile(name); }
                             saveCurrentPlayer();
                             stopShopPreview();
                             sc.classList.remove('active'); sc.style.display = 'none';
-                            if (fromFirstRace) beginRaceFlow();
+                            if (forInf) startInfiniteRun();
+                            else if (fromFirstRace) beginRaceFlow();
                             else showMainMenu();
                         };
                     } else {
@@ -1595,6 +1613,28 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const price = owned ? (p.priceChips || p.priceVhs ? 'Куплено' : 'Стартовый') : p.priceVhs ? p.priceVhs + ' 📼' : (p.priceChips + ' Е');
                 return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
             }).join('');
+            // листать как персонажей в Subway Surfers: стрелки и свайп по подиуму
+            const flip = function(dir) {
+                const n = CAR_SHOP_ORDER.length, i = CAR_SHOP_ORDER.indexOf(shopSelectedCar);
+                shopSelectedCar = CAR_SHOP_ORDER[(i + dir + n) % n];
+                refreshShopSelection();
+                try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.5); } catch (e) {}
+                const b = box.querySelector('.shop-car-btn[data-car="' + shopSelectedCar + '"]');
+                if (b && b.scrollIntoView) b.scrollIntoView({ inline: 'center', block: 'nearest' });
+            };
+            document.getElementById('shop-prev').onclick = function() { flip(-1); };
+            document.getElementById('shop-next').onclick = function() { flip(1); };
+            const stage = document.getElementById('shop-stage');
+            if (stage && !stage.dataset.swipe) {
+                stage.dataset.swipe = '1';
+                let sx = null;
+                stage.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; }, { passive: true });
+                stage.addEventListener('touchend', function(e) {
+                    if (sx == null) return;
+                    const dx = e.changedTouches[0].clientX - sx; sx = null;
+                    if (Math.abs(dx) > 40) document.getElementById(dx < 0 ? 'shop-next' : 'shop-prev').click();
+                }, { passive: true });
+            }
             // Делегирование + прямые listeners (на remote/touch иногда делегирование ломается)
             box.onclick = function(ev) {
                 let t = ev.target;
@@ -1658,10 +1698,18 @@ function createProfile(name) { return Profile.createProfile(name); }
                     try {
                         const { w, h } = _ensurePreviewSize(wrap, 220);
                         const scene = new THREE_REF.Scene();
-                        scene.background = new THREE_REF.Color(0x161220);
-                        const camera = new THREE_REF.PerspectiveCamera(40, w / h, 0.1, 40);
-                        camera.position.set(2.6, 1.4, 3.5);
-                        camera.lookAt(0, 0.4, 0);
+                        scene.background = new THREE_REF.Color(0x2a1640);
+                        const camera = new THREE_REF.PerspectiveCamera(36, w / h, 0.1, 40);
+                        const far = (w / h) < 1.1 ? 1.5 : 1; // телефон вертикально — отъехать, машина целиком
+                        camera.position.set(2.3 * far, 1.15 + (far - 1) * 0.6, 3.0 * far);
+                        camera.lookAt(0, 0.45, 0);
+                        // подиум: светящийся круг и мягкий луч сверху — как витрина персонажей
+                        const podium = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(1.75, 1.85, 0.12, 48), new THREE_REF.MeshStandardMaterial({ color: 0x3a2458, metalness: 0.3, roughness: 0.4, emissive: 0x2a1040, emissiveIntensity: 0.6 }));
+                        podium.position.y = -0.06; scene.add(podium);
+                        const rim = new THREE_REF.Mesh(new THREE_REF.TorusGeometry(1.8, 0.035, 8, 64), new THREE_REF.MeshBasicMaterial({ color: 0xffd23c }));
+                        rim.rotation.x = Math.PI / 2; rim.position.y = 0.01; scene.add(rim);
+                        const spot = new THREE_REF.SpotLight(0xfff0d0, 3.2, 12, 0.6, 0.5, 1);
+                        spot.position.set(0, 5, 1.5); spot.target.position.set(0, 0, 0); scene.add(spot, spot.target);
                         const renderer = new THREE_REF.WebGLRenderer({ antialias: true });
                         renderer.setSize(w, h, false);
                         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -4105,6 +4153,8 @@ function startGaragePreview(carId) {
             // «Бесконечная трасса» (src/infinite.js, src/inf-world.js): вместо финиша — круги расстановки один за другим
             const INF = typeof pendingMode !== 'undefined' && pendingMode === 'infinite';
             let infWorld = null, infTheme = null, infSpeedK = 1, infHills = [], continues = 0;
+            // попутки в бесконечной трассе: первые ~700 м не перестраиваются, дальше — постепенно (к ~3.2 км как обычно)
+            let infLaneK = INF ? 0 : 1;
             const powers = createPowers(currentPlayer && currentPlayer.powerLv); // усиления бесконечной трассы с прокачкой (src/powerups.js)
             const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
@@ -7261,6 +7311,7 @@ function startGaragePreview(carId) {
                     if (snowfall) snowfall.points.visible = !!t.theme.snow;
                     if (d > 50) { try { showStory('🗺 ' + t.theme.name); } catch (e) {} }
                 }
+                infLaneK = Math.max(0, Math.min(1, (d - 700) / 2500));
                 const rp = rampAt(d);
                 infSpeedK = rp.speed;
                 animalSpawner.maxAnimals = rp.maxAnimals;
@@ -8984,7 +9035,7 @@ function startGaragePreview(carId) {
                             // Машина относительно близко — чаще лезет в полосу игрока
                             const playerLaneApprox = Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2);
                             const clampedLane = Math.max(0, Math.min(2, playerLaneApprox));
-                            if (car.lane !== clampedLane && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1)) {
+                            if (car.lane !== clampedLane && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK) {
                                 car.targetLane = clampedLane;
                                 car.isChangingLane = true;
                                 car.laneChangeProgress = 0;
@@ -8994,7 +9045,7 @@ function startGaragePreview(carId) {
                         }
                         
                         if (!shouldCut && car.laneChangeTimer <= 0) {
-                            const chance = 0.035 * (1 + progress * 0.8) * (window.__laneChangeMul || 1);
+                            const chance = 0.035 * (1 + progress * 0.8) * (window.__laneChangeMul || 1) * infLaneK;
                             if (Math.random() < chance) {
                                 // С шансом целимся в игрока, иначе случайная полоса
                                 let newLane;
@@ -9320,7 +9371,7 @@ function startGaragePreview(carId) {
                         c.mesh.visible = false;
                         if (c.type === 'echip') {
                             stats.eChips = (stats.eChips || 0) + eValue(powers); // ×2 — каждая «Е» за две
-                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 0.55); } catch (e) {}
+                            try { if (window.soundEngine) window.soundEngine.playSfx('ring', 1); } catch (e) {} // «колечко», как в 16-битных играх
                         } else if (c.type === 'power') {
                             activatePower(powers, c.power);
                             stats.powers = (stats.powers || 0) + 1;
@@ -9344,7 +9395,7 @@ function startGaragePreview(carId) {
                                 el.style.color = '#ffd84a';
                                 el.style.borderColor = '#ffd84a';
                                 postShout(el, 1500);
-                                if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.3);
+                                if (window.soundEngine) { window.soundEngine.playSfx('ring', 1.3); setTimeout(function() { try { window.soundEngine.playSfx('ring', 1); } catch (e) {} }, 120); } // золотая «Е» — двойной звон
                             } catch (e) {}
                             try { particleSystem.emit(_v.p1.set(c.x, carYOffset + 0.6, c.z), _v.vel.set(0, 1.5, 0), 16, 0.2); } catch (e) {}
                             updateHUD();
@@ -11316,6 +11367,16 @@ function showLoreScreen(quality, difficulty) {
         // UI BOOTSTRAP — заставка, профиль, меню (критично!)
         // ============================================================
         (function uiBootstrap() {
+            // заставка — 3D «кино»: машина последнего игрока крупно едет по трассе (src/menu-bg.js, intro)
+            try {
+                const sp0 = document.getElementById('splash-screen');
+                if (sp0 && getComputedStyle(sp0).display !== 'none') {
+                    let car0 = 'cheburashka';
+                    try { const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1') || '[]'); if (l[0] && l[0].preferredCar) car0 = l[0].preferredCar; } catch (e) {}
+                    const reduce0 = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                    startMenuBg({ carId: car0, intro: true, still: reduce0, lowPower: !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) });
+                }
+            } catch (e) { console.warn('intro', e); }
             function hideSplashShowProfile() {
                 const sp = document.getElementById('splash-screen');
                 if (sp) {
@@ -11389,6 +11450,8 @@ function showLoreScreen(quality, difficulty) {
                         startEndlessRun();
                     } else if (m === 'infinite') {
                         startInfiniteRun();
+                    } else if (m === 'cars') {
+                        shopBackToGarage = false; openShopScreen(false);
                     } else if (m === 'race' && typeof beginRaceFlow === 'function') {
                         if (typeof clearCampaignGlobals === 'function') clearCampaignGlobals();
                         else {

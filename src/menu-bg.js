@@ -4,6 +4,7 @@
  * Сцена — общая диорама (art-scene.js): тот же стиль, что у всех картинок игры.
  * Работает только пока открыто меню (stopMenuBg — всё освобождает). На «низком» качестве
  * и при «уменьшении движения» — один неподвижный кадр.
+ * intro: заставка — «кино»: камера меняет крупные планы едущей машины (спереди низко, сбоку, сзади с нитро, облёт).
  */
 import * as THREE from 'three';
 import { createDiorama, ROAD_W } from './art-scene.js';
@@ -27,10 +28,10 @@ function carPaint(profile, carId) {
     } catch (e) { return null; }
 }
 
-/** Запустить фон (idempotent). opts: { carId, profile, still, lowPower } */
+/** Запустить фон (idempotent). opts: { carId, profile, still, lowPower, intro } */
 export function startMenuBg(opts) {
     const o = opts || {};
-    if (st) { if (o.carId && o.carId !== st.carId) { stopMenuBg(); } else return; }
+    if (st) { if (o.carId && o.carId !== st.carId) { stopMenuBg(); } else { st.intro = !!o.intro; st.shotT = 0; return; } }
     let renderer;
     try {
         renderer = new THREE.WebGLRenderer({ antialias: !o.lowPower, alpha: false, powerPreference: 'low-power' });
@@ -52,7 +53,7 @@ export function startMenuBg(opts) {
     d.apply(renderer);
     st = {
         renderer: renderer, d: d, scene: d.scene, camera: d.camera, carId: carId, raf: 0, t: 0, last: performance.now(),
-        still: !!o.still, critters: [], nextCritter: 1.5,
+        still: !!o.still, critters: [], nextCritter: 1.5, intro: !!o.intro, shotT: 0,
         car: d.cars[0] ? d.cars[0].group : null, wheels: d.cars[0] ? d.cars[0].wheels : []
     };
     try { if (st.car) st.flames = addNitroFlames(st.car); } catch (e) { st.flames = null; }
@@ -106,7 +107,7 @@ function step(dt) {
         st.car.rotation.y = Math.PI - Math.cos(t * 0.35) * 0.04;
         st.wheels.forEach(function(w) { if (w.hub) w.hub.rotation.x += move / 0.24; });
         // иногда — рывок на нитро
-        if (st.flames) st.flames.update(t, (t % 7) > 5.6);
+        if (st.flames) st.flames.update(t, st.intro ? introNitro(t) : (t % 7) > 5.6);
     }
     // зверь иногда перебегает дорогу вдали
     st.nextCritter -= dt;
@@ -125,9 +126,37 @@ function step(dt) {
         }
     }
     const cam = st.camera;
+    if (st.intro && st.car) { introCamera(cam, st.car.position, t); return; }
     cam.position.set(2.4 + Math.sin(t * 0.21) * 0.4, 1.35 + Math.sin(t * 0.33) * 0.08, -5.2);
     // широкий экран: меню справа — машина слева от центра кадра (камера смотрит к +z: +x на экране слева)
     cam.lookAt(cam.aspect > 1.3 ? -2.6 : 0.6, 0.8, 6);
+}
+
+/**
+ * Заставка: 4 плана по 4 с — машина крупно. Перёд машины — к +z (едет «от» мира к камере спереди).
+ * Каждый план медленно «наезжает», чтобы кадр жил.
+ */
+const SHOT = 4;
+function introCamera(cam, car, t) {
+    const i = Math.floor(t / SHOT) % 4, k = (t % SHOT) / SHOT;
+    const narrow = cam.aspect < 0.9; // телефон вертикально — отъехать, чтобы машина целиком влезла
+    const far = narrow ? 1.5 : 1;
+    let px, py, pz, lx = car.x, ly = 0.45, lz = car.z;
+    if (i === 0) {        // спереди низко, 3/4 — машина «наезжает» на зрителя
+        px = car.x + 1.6 * far; py = 0.45; pz = car.z + (3.6 - k * 0.8) * far; lz = car.z + 0.2;
+    } else if (i === 1) { // сбоку, проводка вдоль машины
+        px = car.x + 3.2 * far; py = 0.75; pz = car.z + (1.6 - k * 3.0) * far; ly = 0.5;
+    } else if (i === 2) { // сзади низко — рывок на нитро
+        px = car.x - 0.7 * far; py = 0.7; pz = car.z - (3.2 + k * 0.6) * far; lz = car.z + 3;
+    } else {              // облёт сверху
+        const a = 0.6 + k * 1.6;
+        px = car.x + Math.sin(a) * 4.4 * far; py = 2.2 + k * 0.6; pz = car.z + Math.cos(a) * 4.4 * far;
+    }
+    cam.position.set(px, py, pz);
+    cam.lookAt(lx, ly, lz);
+}
+function introNitro(t) {
+    return Math.floor(t / SHOT) % 4 === 2 && (t % SHOT) > 1.2;
 }
 
 function loop() {
