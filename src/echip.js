@@ -22,6 +22,7 @@ export function eGeometry() {
         box(W, B, 0, -H / 2 + B / 2)               // низ
     ]);
     GEO.computeBoundingSphere();
+    GEO.userData.keep = true; // одна на все фишки — src/inf-world.js disposeTree её не трогает
     return GEO;
 }
 
