@@ -20,6 +20,10 @@ test('рекламный щит в полосе: снёс — не авария,
         const d = window.__raceDebug;
         const b = d.smashBoards.filter(x => !x.smashed && x.z < d.z).sort((a, c) => c.z - a.z)[0];
         if (b) d.setX(b.x);
+        // проверяем только щит: попутки, ямы и падающий груз с пути убраны (тест изредка падал от случайной ямы/грузовика)
+        (d.cars || []).forEach(c => { if (c.mesh) { c.x = 99; c.mesh.position.x = 99; } });
+        (d.obstacles || []).forEach(o => { o.active = false; });
+        if (window.__fallingDebris) window.__fallingDebris.length = 0;
     }, 30));
     await page.keyboard.down('w');
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.billboards || 0), { timeout: 30_000 }).toBeGreaterThanOrEqual(1);
