@@ -17,12 +17,15 @@ function modal(html) {
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-/** o: { me, list, now, carName(id) } */
+/** o: { me, list, now, carName(id), fetchOnline(scope) → Promise<заезды | null> — мировая таблица (src/online-board.js) } */
 export function showBoard(o) {
     const m = modal('<div class="bd-title">🏆 Рекорды дальности</div><div class="bd-tabs"><button type="button" data-s="week" class="on">Неделя</button><button type="button" data-s="all">Всё время</button></div><ol class="bd-list"></ol>'
-        + '<div class="bd-note">Пока — рекорды этого устройства и соперники с трассы. Онлайн-таблица — скоро.</div>');
+        + '<div class="bd-note"></div>');
+    let shown = 'week', online = {};
+    const note = function(t) { m.querySelector('.bd-note').textContent = t; };
     const render = function(scope) {
-        const rows = topRuns(o.list, scope, o.now, o.me);
+        shown = scope;
+        const rows = topRuns((online[scope] || []).concat(o.list), scope, o.now, o.me);
         const my = rankOf(rows, o.me);
         let show = rows.slice(0, BOARD_SIZE);
         if (my > BOARD_SIZE) show = show.concat([rows[my - 1]]);
@@ -33,8 +36,22 @@ export function showBoard(o) {
         }).join('') || '<li><span>Пока пусто — прокатись!</span></li>';
         m.querySelectorAll('.bd-tabs button').forEach(function(b) { b.classList.toggle('on', b.dataset.s === scope); });
     };
-    m.querySelectorAll('.bd-tabs button').forEach(function(b) { b.onclick = function() { render(b.dataset.s); }; });
-    render('week');
+    // сразу — рекорды устройства, следом — мировая таблица с сервера (без сети остаётся локальная)
+    const load = function(scope) {
+        render(scope);
+        if (!o.fetchOnline) { note('Рекорды этого устройства и соперники с трассы.'); return; }
+        if (online[scope]) { note('🌍 Мировая таблица: игроки со всего мира'); return; }
+        note('Загружаю мировую таблицу…');
+        o.fetchOnline(scope).then(function(list) {
+            if (!m.isConnected) return;
+            if (list) online[scope] = list;
+            if (shown !== scope) return;
+            render(scope);
+            note(list ? '🌍 Мировая таблица: игроки со всего мира' : 'Нет сети — показаны рекорды этого устройства.');
+        });
+    };
+    m.querySelectorAll('.bd-tabs button').forEach(function(b) { b.onclick = function() { load(b.dataset.s); }; });
+    load('week');
     return m;
 }
 

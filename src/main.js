@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart } from './infinite.js'; installTouchScale(); installHudLayout(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart } from './infinite.js'; installTouchScale(); installHudLayout(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -1808,7 +1808,8 @@ function createProfile(name) { return Profile.createProfile(name); }
             }
         }
 
-        function saveBoardRun(dist) { const bl = addRun(loadBoard(), { name: currentPlayer.name, dist: dist, car: currentPlayer.preferredCar }); saveBoard(bl); return bl; }
+        const ONLINE_BOARD = import.meta.env.MODE !== 'test' && !navigator.webdriver; // автотесты (тестовая сборка, Playwright) не пишут в мировую таблицу
+        function saveBoardRun(dist) { const run = { name: currentPlayer.name, dist: dist, car: currentPlayer.preferredCar }, bl = addRun(loadBoard(), run); saveBoard(bl); if (ONLINE_BOARD) submitRun(run); return bl; }
         function openGarage() {
             window.__forcePBR = true;
             try { document.getElementById('garage-screen').classList.remove('gar-trophies'); } catch (e) {}
@@ -8767,6 +8768,8 @@ function startGaragePreview(carId) {
                 } catch (e) {}
                 const moveAmount = speed * 60 * deltaTime;
                 const zPosBeforeMove = zPos; // для проверки трамплина отрезком, а не точкой (см. ниже)
+                // попадание по z — отрезком, пройденным за кадр: при низком FPS машина иначе «перепрыгивает» шипы, ямы и «Е»
+                const sweptZ = function(z, r) { return z <= Math.max(zPosBeforeMove, zPos) + r && z >= Math.min(zPosBeforeMove, zPos) - r; };
                 zPos -= moveAmount;
 
                 if (Math.abs(speed) > 0.05) {
@@ -8841,7 +8844,7 @@ function startGaragePreview(carId) {
                 if (gameState === 'racing') {
                     for (let si = 0; si < smashBoards.length; si++) {
                         const b = smashBoards[si];
-                        if (b.smashed || Math.abs(zPos - b.z) > 0.9 || Math.abs(xPos - b.x) > 1.25 || carYOffset > 1.1) continue;
+                        if (b.smashed || !sweptZ(b.z, 0.9) || Math.abs(xPos - b.x) > 1.25 || carYOffset > 1.1) continue;
                         smashBoard(b, scene, Math.abs(speed) * 60).forEach(function(pt) { smashParts.push(pt); });
                         stats.billboards = (stats.billboards || 0) + 1; riskEvent(risk, 'billboard'); stats.eChips = (stats.eChips || 0) + SMASH_CHIPS; // сразу в счётчик «Е»
                         speed *= 0.9;
@@ -9162,7 +9165,7 @@ function startGaragePreview(carId) {
                     const dz = zPos - obs.z;
                     const hitR = (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') ? 0.55 : 0.42;
                     
-                    if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && Math.abs(dz) < hitR) {
+                    if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && sweptZ(obs.z, hitR)) {
                         if (carAirborne || carYOffset > 0.45) {
                             // в прыжке ямы/кочки/масло не срабатывают
                         } else if (obs.type === 'spikes') {
@@ -9428,7 +9431,7 @@ function startGaragePreview(carId) {
                     if (c.airOnly && carYOffset < (c.minY || 0.6)) return; // висит в воздухе — берётся только в прыжке
                     if (c.type === 'crate' && carYOffset > 0.95) return; // ящик перепрыгнул
                     const hitR = c.type === 'nitro' ? 0.85 : (c.radius || 0.55);
-                    if (Math.abs(dx) < hitR && Math.abs(dz) < hitR * (c.type === 'nitro' ? 1.4 : 1)) {
+                    if (Math.abs(dx) < hitR && sweptZ(c.z, hitR * (c.type === 'nitro' ? 1.4 : 1))) {
                         c.active = false;
                         c.mesh.visible = false;
                         if (c.type === 'echip') {
@@ -11607,7 +11610,7 @@ function showLoreScreen(quality, difficulty) {
             wireMainMenu({ openRewards: openRewardsScreen, openEvents: openEventsScreen, chest: chestDeps, player: function() { return currentPlayer; } });
             const mmWord = document.getElementById('mm-word'), mmBoard = document.getElementById('mm-board'); // «Слово дня» и «Рекорды» (src/ui/board.js)
             if (mmWord) mmWord.onclick = function() { if (currentPlayer) showWordInfo(wordState(currentPlayer, dayKey(new Date()))); };
-            if (mmBoard) mmBoard.onclick = function() { if (currentPlayer) showBoard({ me: currentPlayer.name, list: loadBoard(), now: Date.now(), carName: function(id) { return (CAR_PRESETS[id] || {}).name || id; } }); };
+            if (mmBoard) mmBoard.onclick = function() { if (currentPlayer) showBoard({ me: currentPlayer.name, list: loadBoard(), now: Date.now(), carName: function(id) { return (CAR_PRESETS[id] || {}).name || id; }, fetchOnline: ONLINE_BOARD ? function(scope) { return fetchTop(scope); } : null }); };
             registerSW(import.meta.env.MODE === 'test'); wireInstall(document.getElementById('mm-install'), function(t, x) { Notify.info(t, x, 9000); }); // игра как приложение (src/ui/install.js)
             const eventsClose = document.getElementById('events-close');
             if (eventsClose) eventsClose.addEventListener('click', function() {

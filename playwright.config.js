@@ -8,7 +8,8 @@ export default defineConfig({
     workers: 1,
     retries: process.env.CI ? 1 : 0,
     timeout: 90_000,
-    reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+    // github — упавшие тесты видны в аннотациях запуска (их можно прочитать без входа в GitHub)
+    reporter: process.env.CI ? [['list'], ['github'], ['html', { open: 'never' }]] : 'list',
     use: {
         viewport: { width: 1000, height: 650 },
         // язык «авто» берётся из браузера — тесты проверяют русский интерфейс (английский — tests/e2e/scenarios/i18n.spec.js)
