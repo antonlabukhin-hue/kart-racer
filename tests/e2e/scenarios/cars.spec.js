@@ -16,6 +16,7 @@ for (const id of CAR_SHOP_ORDER) {
         await page.locator('#splash-screen').click();
         await page.locator('#profile-list').getByText('Тестер').click();
         await page.locator('.menu-card[data-menu="infinite"]').click();
+        await page.locator('#shop-action').click(); // витрина перед заездом: на выбранной — «Поехали»
         await waitRacing(page);
         expect(await page.evaluate(() => window.__raceDebug.car.userData.carId)).toBe(id);
         const z0 = await page.evaluate(() => window.__raceDebug.z);

@@ -711,10 +711,10 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         }
         window.startEndlessRun = startEndlessRun;
         /** «Бесконечная трасса» — вместо свободного заезда: сразу в путь на своей машине */
-        function startInfiniteRun() {
+        function startInfiniteRun(direct) {
             if (!currentPlayer) return;
-            // первый раз — витрина машин: одна бесплатная, остальные видно с ценами (как выбор персонажа в Subway Surfers)
-            if (!currentPlayer.infCarPicked) { currentPlayer.infCarPicked = true; saveCurrentPlayer(); openShopScreen('infinite'); return; }
+            // витрина машин (как выбор персонажа в Subway Surfers): одна бесплатная, остальные видно с ценами
+            if (!direct) { openShopScreen('infinite'); return; } // перед каждым заездом — витрина машин; «Поехали» — сразу в путь
             clearCampaignGlobals();
             pendingMode = 'infinite';
             try { hideMainMenu(); } catch (e) {}
@@ -1576,7 +1576,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                             saveCurrentPlayer();
                             stopShopPreview();
                             sc.classList.remove('active'); sc.style.display = 'none';
-                            if (forInf) startInfiniteRun();
+                            if (forInf) startInfiniteRun(true);
                             else if (fromFirstRace) beginRaceFlow();
                             else showMainMenu();
                         };
@@ -4145,7 +4145,7 @@ function startGaragePreview(carId) {
             } catch (e) {}
             const _cont = document.getElementById('game-container');
             if (_cont) { while (_cont.firstChild) _cont.removeChild(_cont.firstChild); }
-            document.querySelectorAll('#finish-screen,#game-hud,#hud-menu-btn,#power-hud,.chance-modal').forEach(el => { try { el.remove(); } catch(e){} });
+            document.querySelectorAll('#finish-screen,#game-hud,#hud-menu-btn,#power-hud,.chance-modal,#e-counter').forEach(el => { try { el.remove(); } catch(e){} });
             const _settings = loadSettings();
             window.__camMode = _settings.camera; // камера по умолчанию — из «Настроек»
             let weatherMode = weatherId || 'day'; // в бесконечной трассе меняется с пейзажем
@@ -4336,6 +4336,11 @@ function startGaragePreview(carId) {
                     <div style="font-size:10px;color:#666;margin-top:4px;">${INF ? '🛣 Бесконечная' : config.label} · ${quality === 'high' ? '🔥' : quality === 'medium' ? '⚡' : '🚀'}</div>
                 `;
                 document.body.appendChild(hud);
+                // счётчик железных «Е» — крупно, в любом заезде
+                document.querySelectorAll('#e-counter').forEach(function(n) { n.remove(); });
+                const ec = document.createElement('div');
+                ec.id = 'e-counter'; ec.innerHTML = '<i>Е</i><b>0</b>';
+                document.body.appendChild(ec);
                 // спидометр-циферблат: дуга 270°, стрелка, цифры, передача и нитро
                 document.querySelectorAll('#hud-speedo').forEach(function(n) { n.remove(); });
                 const sp = document.createElement('div');
@@ -4482,6 +4487,10 @@ function startGaragePreview(carId) {
                 if (nitroBar && typeof nitroTimer !== 'undefined') {
                     nitroBar.style.width = Math.max(0, Math.min(100, (nitroTimer / 3.2) * 100)) + '%';
                 }
+                try {
+                    const eb = document.querySelector('#e-counter b'), ev = String(stats.eChips || 0);
+                    if (eb && eb.textContent !== ev) { eb.textContent = ev; const ecEl = eb.parentNode; ecEl.classList.remove('pop'); void ecEl.offsetWidth; ecEl.classList.add('pop'); }
+                } catch (e) {}
                 if (weatherEl) {
                     let wtxt = '☀ ДЕНЬ', wcol = '#88ccff';
                     if (typeof weatherMode !== 'undefined') {
@@ -4809,8 +4818,10 @@ function startGaragePreview(carId) {
                         setTimeout(startEndlessRun, 60);
                         return;
                     }
-                    // свободный заезд: те же настройки заново, без перезагрузки и повторного входа
+                    // бесконечная трасса: «Повторить» — снова витрина машин (выбрал — и в путь), не главное меню
                     try { cleanupRaceKeepProfile(); } catch (e) {}
+                    if (INF) { setTimeout(function() { openShopScreen('infinite'); }, 60); return; }
+                    // свободный заезд: те же настройки заново, без перезагрузки и повторного входа
                     setTimeout(function() { initGame(quality, difficulty, carId, mapId, weatherId); }, 60);
                 };
 
@@ -4947,7 +4958,7 @@ function startGaragePreview(carId) {
                 try { const ct = document.getElementById('coach-tip'); if (ct) ct.remove(); } catch (e) {}
                 const cheb = document.getElementById('cheburashkaWarn');
                 if (cheb) cheb.remove();
-                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque, #power-hud').forEach(el => el.remove());
+                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque, #power-hud, #e-counter').forEach(el => el.remove());
                 const timeTaken = raceTime;
                 const smul = scoreMult(currentPlayer); // множитель очков за задания (src/missions.js)
                 const infRun = INF && infWorld ? { dist: Math.round(infWorld.dist), e: stats.eChips || 0, mult: smul, score: runScore(infWorld.dist, stats.eChips || 0, risk.points) * smul,
@@ -7054,7 +7065,7 @@ function startGaragePreview(carId) {
             const _trackSpan = START_Z - FINISH_Z;
             let _lapZ0 = START_Z, _lapK = 0; // круг расстановки: в бесконечной трассе — следующий за следующим
             const _zAt = function(frac) { return _lapZ0 - _trackSpan * frac; };
-            const infBusy = [], infRoots = [], _infBox = new THREE.Box3();
+            const infBusy = [], infRoots = [], _infBox = new THREE.Box3(), infArch = []; // infArch — арки с падающим грузом (нитро — подальше)
             const _gapStyle = gapStyle(mapId, isSnowTrack);
             const GAP_LEN = 5.5;
             const _rampLaneXs = [-TRACK_WIDTH * 0.25, 0, TRACK_WIDTH * 0.25];
@@ -7205,6 +7216,11 @@ function startGaragePreview(carId) {
                     riskGum.mesh.position.x = riskGum.x;
                     riskGum.risk = 'arch';
                     collectibles.push(riskGum);
+                    // перед аркой с бонусом под ней — нитро в той же полосе: проскочить под грузом на рывке
+                    const archN = createCollectible(z + 30, 'nitro');
+                    archN.x = riskGum.x; archN.mesh.position.x = archN.x; archN.archNitro = true;
+                    collectibles.push(archN);
+                    if (INF) infArch.push(z);
                 });
                 yield;
                 // сцена карты
@@ -7270,11 +7286,15 @@ function startGaragePreview(carId) {
                     const z = START_Z - it.d;
                     if (infBusy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; })) return;
                     let c = null;
-                    if (it.kind === 'echip') { collectibles.push(createEChipItem(LX[it.lane], it.y, z)); return; }
+                    if (it.kind === 'echip') { collectibles.push(createEChipItem(it.x != null ? it.x : LX[it.lane], it.y, z)); return; }
                     if (it.kind === 'vhs') { collectibles.push(createVhsItem(LX[it.lane], 0.75, z)); return; }
                     if (it.kind === 'power') { collectibles.push(createPowerItem(LX[it.lane], z, it.type)); return; }
                     if (it.kind === 'obstacle') { c = createObstacle(z, it.type === 'slide' ? themeAt(it.d).theme.slide : it.type); obstacles.push(c); }
-                    else { c = createCollectible(z, it.kind); collectibles.push(c); }
+                    else {
+                        // случайное нитро — не ближе 45 ед. к арке с падающим грузом
+                        if (it.kind === 'nitro' && infArch.some(function(az) { return Math.abs(az - z) < 45; })) return;
+                        c = createCollectible(z, it.kind); collectibles.push(c);
+                    }
                     c.x = LX[it.lane]; c.mesh.position.x = c.x;
                 });
             }
@@ -7282,6 +7302,12 @@ function startGaragePreview(carId) {
                 list.forEach(function(o) { _infBox.setFromObject(o); if (!_infBox.isEmpty()) infRoots.push([o, _infBox.min.z]); });
             }
             if (INF) { infPlanLap(0); infTrack(scene.children.slice(_infM0)); }
+            // обычные трассы: случайное нитро — не ближе 45 ед. к арке с падающим грузом (кроме нитро «под бонус»)
+            collectibles.forEach(function(c) {
+                if (c.type !== 'nitro' || c.archNitro) return;
+                const dz = debrisZones.find(function(dzn) { return Math.abs(dzn.z - c.z) < 45; });
+                if (dz) { c.z = dz.z + (c.z > dz.z ? 60 : -60); c.mesh.position.z = c.z; }
+            });
             // обычные трассы: видеокассета изредка (~30% заездов), не у разлома
             if (!INF && Math.random() < 0.3) {
                 const fr = [0.3, 0.45, 0.6, 0.72].filter(function(v) { return gaps.every(function(g) { return Math.abs(g.zNear - _zAt(v)) > 70; }); });

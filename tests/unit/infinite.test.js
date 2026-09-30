@@ -70,6 +70,14 @@ describe('план участка', () => {
         const es = p.filter(i => i.kind === 'echip').map(i => i.d);
         p.filter(i => i.kind === 'vhs' || i.kind === 'power').forEach(v => expect(es.every(e => Math.abs(e - v.d) > 18)).toBe(true));
     });
+    it('после магнита — «Е» вдоль обеих обочин', () => {
+        const p = planStretch(0, 20000, seq(9)).items;
+        const mag = p.find(i => i.kind === 'power' && i.type === 'magnet');
+        const side = p.filter(i => i.side && i.d > mag.d && i.d < mag.d + 200);
+        expect(side.some(i => i.x < -3)).toBe(true);
+        expect(side.some(i => i.x > 3)).toBe(true);
+        expect(side.length).toBeGreaterThan(40);
+    });
     it('усиления — раз в 450–750 м, всех трёх видов', () => {
         const pw = planStretch(0, 20000, seq(9)).items.filter(i => i.kind === 'power');
         expect(pw.length).toBeGreaterThan(20);

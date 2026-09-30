@@ -124,7 +124,18 @@ export function planStretch(d0, d1, rnd, opts) {
     // усиления: магнит, ×2, броня — раз в 450–750 м
     for (let dd = d0 + 150 + r() * 250; dd < d1; dd += POWER_EVERY[0] + r() * (POWER_EVERY[1] - POWER_EVERY[0])) {
         const at = spot(dd);
-        if (at != null) out.push({ kind: 'power', d: at, lane: lane(), type: POWER_KINDS[Math.floor(r() * POWER_KINDS.length)] });
+        if (at == null) continue;
+        const type = POWER_KINDS[Math.floor(r() * POWER_KINDS.length)];
+        out.push({ kind: 'power', d: at, lane: lane(), type: type });
+        // после магнита — «Е» вдоль обеих обочин: без магнита не взять, с ним — собираешь всё (как в Subway Surfers)
+        if (type === 'magnet') {
+            for (let k = 0; k < 44; k++) {
+                const dd2 = at + 24 + k * 3.6;
+                if (dd2 >= d1 || nearGap(dd2)) continue;
+                out.push({ kind: 'echip', d: dd2, x: -3.5, y: 0.6, side: true });
+                out.push({ kind: 'echip', d: dd2, x: 3.5, y: 0.6, side: true });
+            }
+        }
     }
     // видеокассета — редкость: ~1 на 1.7 км (иногда 2), за длинный заезд 1–3
     const vhsN = Math.floor((d1 - d0) / VHS_EVERY * (o.vhsMul || 1) + r()); // vhsMul — «Мечта»-везунчик: вдвое чаще
