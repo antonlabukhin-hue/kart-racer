@@ -5132,3 +5132,9 @@ html.touch-ui.touch-land body.race-mode .crash-tag { top: calc(env(safe-area-ins
 @media (min-height: 561px) and (min-width: 701px) {
     body #shop-screen .content { grid-template-rows: none !important; grid-auto-rows: min-content !important; overflow-y: auto !important; max-height: calc(100dvh - 24px) !important; }
 }
+/* прокачка усилений бесконечной трассы — в «Прокачке» гаража */
+.up-power-head { margin-top: 12px; color: #ffd23c; }
+.up-power-head small { display: block; font-weight: 500; color: #aaa; font-size: 11px; }
+.up-power .up-pips b { width: 10px; }
+/* множитель очков за задания — рядом с заголовком заданий */
+.mmm-head .mmm-mult { float: right; color: #ffd23c; font-weight: 900; font-size: 15px; background: rgba(255, 210, 60, 0.12); border: 1px solid rgba(255, 210, 60, 0.5); border-radius: 8px; padding: 0 6px; }

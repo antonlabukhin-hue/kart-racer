@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, continueCost, MAX_CONTINUES, POWERS } from '../../src/powerups.js';
+import { createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, continueCost, MAX_CONTINUES, POWERS, powerTime, nextPowerCost, buyPowerLevel, POWER_UP_COST } from '../../src/powerups.js';
 
 describe('усиления бесконечной трассы', () => {
     it('магнит и ×2 действуют своё время, повторный подбор обновляет до полного', () => {
@@ -29,5 +29,19 @@ describe('усиления бесконечной трассы', () => {
         expect(continueCost(0)).toBe(100);
         expect(continueCost(1)).toBe(200);
         expect(MAX_CONTINUES).toBe(2);
+    });
+    it('прокачка усилений за «Е»: +2 с за уровень, 5 уровней, цена растёт', () => {
+        expect(powerTime('magnet', 0)).toBe(10);
+        expect(powerTime('magnet', 5)).toBe(20);
+        const p = { season: { chips: 500 } };
+        expect(buyPowerLevel(p, 'magnet')).toMatchObject({ ok: true, cost: 150, level: 1 });
+        expect(buyPowerLevel(p, 'magnet')).toMatchObject({ ok: true, cost: 300, level: 2 });
+        expect(buyPowerLevel(p, 'magnet')).toMatchObject({ ok: false, reason: 'no_chips', cost: 600 });
+        expect(p.season.chips).toBe(50);
+        expect(nextPowerCost(5)).toBe(null);
+        expect(POWER_UP_COST).toHaveLength(5);
+        const st = createPowers({ magnet: 2 });
+        activatePower(st, 'magnet');
+        expect(st.magnet).toBe(14);
     });
 });

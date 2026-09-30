@@ -7,6 +7,7 @@
 import { seasonBadge, unclaimedRewards, affordableUpgrades, badgeText } from './menu-badges.js';
 import { rankLabel, rankOf } from '../ranks.js';
 import { CHESTS } from '../streak.js';
+import { scoreMult } from '../missions.js';
 
 let chestAutoShown = null; // сундук дня предлагаем сам один раз за день
 
@@ -51,7 +52,7 @@ export function refreshMainMenu(d) {
     setText('mm-pop-name', p.name);
     const rk = rankOf(p.totalXp);
     setText('mm-pop-stats', 'Звание: ' + rk.rank.icon + ' ' + rk.rank.name + (rk.next ? ' · до «' + rk.next.name + '» ' + Math.max(0, rk.next.xp - (p.totalXp || 0)) + ' XP' : '') + ' · сезон 1, ур. ' + (se.level || 1) + ' · побед ' + (st.wins || 0) + ' из ' + (st.totalRaces || 0) + ' · машина: ' + d.carName);
-    renderMissions(d.missions);
+    renderMissions(d.missions, scoreMult(p));
     // серия дней: огонёк с числом; сундук дня не забран — «!» и предложение при первом заходе за день
     const sb = document.getElementById('mm-streak');
     if (sb && p.streak) {
@@ -68,10 +69,10 @@ export function refreshMainMenu(d) {
 }
 
 /** Три задания — всегда на виду в меню: текст, прогресс «2/4», полоска и награда */
-function renderMissions(rows) {
+function renderMissions(rows, mult) {
     const box = document.getElementById('mm-missions');
     if (!box || !rows) return;
-    box.innerHTML = '<div class="mmm-head">📋 Задания <small>выполнил — «Е» и новое</small></div>' + rows.map(function(r) {
+    box.innerHTML = '<div class="mmm-head">📋 Задания <small>3 задания = +1 к множителю очков</small><b class="mmm-mult" title="Множитель очков бесконечной трассы">×' + (mult || 1) + '</b></div>' + rows.map(function(r) {
         const pct = Math.round(r.progress / r.target * 100);
         return '<div class="mmm-row"><span class="mmm-text"></span><b>' + r.progress + '/' + r.target + '</b><em>+' + r.reward + ' Е</em>'
             + '<i class="mmm-bar"><u style="width:' + pct + '%"></u></i></div>';

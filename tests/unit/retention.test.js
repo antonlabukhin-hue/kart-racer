@@ -21,8 +21,8 @@ describe('задания: три на виду', () => {
         expect(p.missions.active.find(a => a.id === 'jump').progress).toBe(1);
         r = applyMissionProgress(p, { state: 'win', animalsJumped: 3, strikes: 1 }, seq(0.5));
         expect(r.completed.map(c => c.text)).toContain('Перепрыгни зверей');
-        expect(r.chips).toBe(3);
-        expect(p.season.chips).toBe(3);
+        expect(r.chips).toBe(30);
+        expect(p.season.chips).toBe(30);
         expect(p.missions.active).toHaveLength(3);
         expect(p.missions.active.some(a => a.id === 'jump')).toBe(false);
         expect(p.missions.done).toBe(1);
@@ -78,11 +78,25 @@ describe('ежедневная серия', () => {
         const p = prof();
         touchStreak(p, '2026-09-01');
         expect(canClaimChest(p, '2026-09-01')).toBe(true);
-        expect(claimChest(p, '2026-09-01', () => 0.5)).toEqual({ chips: 2, gum: 5, vhs: 0, day: 1 });
+        expect(claimChest(p, '2026-09-01', () => 0.5)).toEqual({ chips: 20, gum: 5, vhs: 0, day: 1 });
         expect(CHESTS[6].vhs).toBe(1); // 7-й день — кассета всегда
         expect(claimChest(p, '2026-09-01')).toBe(null);
-        expect(p.season.chips).toBe(2);
+        expect(p.season.chips).toBe(20);
         expect(chestFor(7)).toEqual(CHESTS[6]);
         expect(chestFor(8)).toEqual(CHESTS[0]);
+    });
+});
+
+import { scoreMult } from '../../src/missions.js';
+describe('множитель очков за задания', () => {
+    it('каждые 3 выполненных задания — +1, до ×30; «проедь за заезд» — лучший заезд, не сумма', () => {
+        expect(scoreMult({ missions: { done: 0 } })).toBe(1);
+        expect(scoreMult({ missions: { done: 7 } })).toBe(3);
+        expect(scoreMult({ missions: { done: 999 } })).toBe(30);
+        const p = { season: { chips: 0 }, missions: { active: [{ id: 'dist', target: 1000, progress: 0, tier: 0 }, { id: 'echips', target: 40, progress: 0, tier: 0 }, { id: 'powers', target: 2, progress: 0, tier: 0 }], done: 0 } };
+        applyMissionProgress(p, { state: 'crash', distance: 600, eChips: 30, powers: 1 }, () => 0.5);
+        applyMissionProgress(p, { state: 'crash', distance: 700, eChips: 15, powers: 1 }, () => 0.5);
+        expect(p.missions.done).toBe(2); // «Е» 30+15 ≥ 40 и усиления 1+1 — выполнены; дистанция — нет (лучший заезд 700 < 1000)
+        expect(p.missions.active.find(a => a.id === 'dist').progress).toBe(700);
     });
 });
