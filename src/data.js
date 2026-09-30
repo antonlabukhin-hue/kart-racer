@@ -176,6 +176,8 @@ export const CAR_PRESETS = {
         ability: { id: 'cargo', name: 'Грузовой', desc: 'усиление «×2 Е» действует вдвое дольше' } },
     saray:       { name: 'Сарай',      color: 0xe8e0c8, maxSpeed: 0.408, accel: 0.021, durability: 1.1, oilGrip: 1.05, priceChips: 900,
         ability: { id: 'dacha', name: 'Дачник', desc: 'жвачка-сердечко лечит две аварии, а не одну' } },
+    gazel:       { name: 'Газель',     color: 0xf2f2ee, maxSpeed: 0.42, accel: 0.021, durability: 1.2, oilGrip: 1.05, priceChips: 1200,
+        ability: { id: 'trade', name: 'Челнок', desc: '+25% «Е» на итогах заезда' } },
     rafik:       { name: 'Рафик',      color: 0xefefe8, maxSpeed: 0.405, accel: 0.0198, durability: 1.1, oilGrip: 1.0, priceChips: 700,
         ability: { id: 'medic', name: 'Скорая', desc: 'шесть жизней вместо пяти' } },
     buhanka:     { name: 'Буханка',    color: 0x5e7040, maxSpeed: 0.39, accel: 0.0192, durability: 1.35, oilGrip: 1.1, priceChips: 600,

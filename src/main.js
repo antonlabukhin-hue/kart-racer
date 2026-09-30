@@ -4970,7 +4970,7 @@ function startGaragePreview(carId) {
                             difficulty: (typeof difficulty !== 'undefined' ? difficulty : 'medium'),
                             mapId: (typeof mapId !== 'undefined' ? mapId : 'arsenev'),
                             maxSpeed: (typeof stats !== 'undefined' && stats.maxSpeedReached) || 0,
-                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS, eChips: stats.eChips || 0,
+                            bonusChips: cleanRun.chips + (stats.billboards || 0) * SMASH_CHIPS, eChips: Math.round((stats.eChips || 0) * (ABILITY === 'trade' ? 1.25 : 1)), // «Газель» — челнок
                             // для контрактов дня на механики
                             cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
                             nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, riskPoints: risk.points, animalsJumped: stats.animalsJumped || 0,
