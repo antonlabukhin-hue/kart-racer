@@ -1959,7 +1959,13 @@ function renderGaragePartsPanel() {
             const equipped = currentPlayer.carLoadout.parts || [];
             const ownedParts = currentPlayer.carLoadout.ownedParts || [];
             const ownedPaints = currentPlayer.carLoadout.ownedPaints || [];
-            let html = '<div style="font-size:11px;color:#888;margin-bottom:6px;">Наведи — примерка · клик — купить/снять · у тебя Е: ' + Number(currentPlayer.season.chips || 0) + '</div>';
+            let html = '<div style="font-size:11px;color:#888;margin-bottom:6px;">Нажми — примерка, покупка — после подтверждения · у тебя Е: ' + Number(currentPlayer.season.chips || 0) + '</div>';
+            // примеряемое — плашка «Купить / Отмена» (ничего не списывается без подтверждения)
+            if (garageTry) {
+                const it = garageTry.kind === 'paint' ? CAR_PAINTS.find(function(x) { return x.id === garageTry.id; }) : CAR_PARTS.find(function(x) { return x.id === garageTry.id; });
+                if (it) html += '<div class="try-bar"><span>' + (garageTry.kind === 'paint' ? '🎨 Краска' : '🛠 Деталь') + ' «' + escapeHtml(it.name) + '» — <b>' + it.price + ' Е</b></span>'
+                    + '<button type="button" class="try-buy">Купить</button><button type="button" class="try-cancel">Отмена</button></div>';
+            }
             html += '<div class="color-swatches">';
             CAR_PAINTS.forEach(p => {
                 const col = p.color != null ? p.color : (CAR_PRESETS[currentPlayer.preferredCar]||{}).color || 0xff2200;
@@ -1981,18 +1987,35 @@ function renderGaragePartsPanel() {
                     '<span class="part-price">' + priceLabel + '</span></div>';
             });
             box.innerHTML = html;
+            const restore = () => { if (garageTry) showGarageTry(); else applyGarageLoadoutVisual(); };
             box.querySelectorAll('.color-swatch').forEach(sw => {
                 sw.addEventListener('mouseenter', () => previewGaragePaint(sw.dataset.paint));
-                sw.addEventListener('mouseleave', () => applyGarageLoadoutVisual());
-                sw.addEventListener('click', () => buyGaragePaint(sw.dataset.paint));
+                sw.addEventListener('mouseleave', restore);
+                sw.addEventListener('click', () => {
+                    const p = CAR_PAINTS.find(x => x.id === sw.dataset.paint);
+                    if (p && p.price && !ownedPaints.includes(p.id)) { garageTry = { kind: 'paint', id: p.id }; renderGaragePartsPanel(); showGarageTry(); return; }
+                    garageTry = null; buyGaragePaint(sw.dataset.paint);
+                });
             });
             box.querySelectorAll('.part-row').forEach(row => {
                 row.addEventListener('mouseenter', () => previewGaragePart(row.dataset.part, true));
-                row.addEventListener('mouseleave', () => applyGarageLoadoutVisual());
-                row.addEventListener('click', () => buyOrToggleGaragePart(row.dataset.part));
+                row.addEventListener('mouseleave', restore);
+                row.addEventListener('click', () => {
+                    const id = row.dataset.part, part = CAR_PARTS.find(x => x.id === id);
+                    if (part && part.price && !ownedParts.includes(id) && !equipped.includes(id)) { garageTry = { kind: 'part', id: id }; renderGaragePartsPanel(); showGarageTry(); return; }
+                    garageTry = null; buyOrToggleGaragePart(id);
+                });
             });
+            const tb = box.querySelector('.try-buy'), tc = box.querySelector('.try-cancel');
+            if (tb) tb.onclick = () => { const t = garageTry; garageTry = null; if (t.kind === 'paint') buyGaragePaint(t.id); else buyOrToggleGaragePart(t.id); };
+            if (tc) tc.onclick = () => { garageTry = null; renderGaragePartsPanel(); applyGarageLoadoutVisual(); };
         }
 
+        let garageTry = null; // примеряемая краска или деталь — до «Купить»
+        function showGarageTry() {
+            if (!garageTry) return;
+            if (garageTry.kind === 'paint') previewGaragePaint(garageTry.id); else previewGaragePart(garageTry.id, true);
+        }
         function buyGaragePaint(paintId) {
             const p = CAR_PAINTS.find(x => x.id === paintId);
             if (!p || !currentPlayer) return;

@@ -163,23 +163,23 @@ describe('гараж', () => {
         const p = fresh();
         const red = CAR_PAINTS.find(c => c.id === 'red');
         expect(buyPaint(p, 'cheburashka', red)).toMatchObject({ ok: false, reason: 'no_chips' });
-        p.season.chips = 200;
+        p.season.chips = 2000;
         expect(buyPaint(p, 'cheburashka', red)).toMatchObject({ ok: true, paid: red.price });
         expect(buyPaint(p, 'cheburashka', red)).toMatchObject({ ok: false, reason: 'same' });
         p.carLoadout.paintByCar.turbo = 'stock'; // своя краска у Волги — заводская
         expect(buyPaint(p, 'turbo', red)).toMatchObject({ ok: true, paid: 0 }); // уже куплена — на другую машину бесплатно
-        expect(p.season.chips).toBe(200 - red.price);
+        expect(p.season.chips).toBe(2000 - red.price);
         expect(p.carLoadout.paintByCar).toMatchObject({ cheburashka: 'red', turbo: 'red' });
     });
 
     it('детали: покупка, снятие без потери покупки, замена в том же слоте', () => {
         const p = fresh();
-        p.season.chips = 100;
+        p.season.chips = 1000;
         const spoiler = CAR_PARTS.find(x => x.id === 'spoiler');
         expect(toggleCarPart(p, spoiler, CAR_PARTS)).toMatchObject({ ok: true, action: 'installed', paid: spoiler.price });
         expect(toggleCarPart(p, spoiler, CAR_PARTS)).toMatchObject({ ok: true, action: 'removed' });
         expect(toggleCarPart(p, spoiler, CAR_PARTS)).toMatchObject({ ok: true, action: 'installed', paid: 0 });
-        expect(p.season.chips).toBe(100 - spoiler.price);
+        expect(p.season.chips).toBe(1000 - spoiler.price);
         // две детали одного слота не ставятся одновременно
         const fake = { id: 'spoiler2', slot: 'spoiler', price: 1 };
         toggleCarPart(p, fake, CAR_PARTS.concat([fake]));

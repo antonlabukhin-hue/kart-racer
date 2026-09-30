@@ -6,11 +6,11 @@
 export const MAX_UPGRADE_LEVEL = 3;
 
 export const UPGRADES = [
-    { id: 'engine', name: 'Двигатель', icon: '🔥', desc: 'макс. скорость', perLevel: '+4% скорости', cost: [60, 100, 150] },
-    { id: 'gearbox', name: 'Коробка', icon: '⚙', desc: 'разгон', perLevel: '+9% разгона', cost: [50, 90, 140] },
-    { id: 'tires', name: 'Шины', icon: '🛞', desc: 'управление и масло', perLevel: '+8% руля, лучше на масле', cost: [50, 90, 140] },
-    { id: 'armor', name: 'Броня', icon: '🛡', desc: 'штраф за аварию', perLevel: '−8% штрафа времени', cost: [60, 100, 150] },
-    { id: 'nitro', name: 'Нитро', icon: '💨', desc: 'длительность нитро', perLevel: '+0.5 с нитро', cost: [50, 90, 140] }
+    { id: 'engine', name: 'Двигатель', icon: '🔥', desc: 'макс. скорость', perLevel: '+4% скорости', cost: [600, 1000, 1500] },
+    { id: 'gearbox', name: 'Коробка', icon: '⚙', desc: 'разгон', perLevel: '+9% разгона', cost: [500, 900, 1400] },
+    { id: 'tires', name: 'Шины', icon: '🛞', desc: 'управление и масло', perLevel: '+8% руля, лучше на масле', cost: [500, 900, 1400] },
+    { id: 'armor', name: 'Броня', icon: '🛡', desc: 'штраф за аварию', perLevel: '−8% штрафа времени', cost: [600, 1000, 1500] },
+    { id: 'nitro', name: 'Нитро', icon: '💨', desc: 'длительность нитро', perLevel: '+0.5 с нитро', cost: [500, 900, 1400] }
 ];
 
 export function emptyLevels() {

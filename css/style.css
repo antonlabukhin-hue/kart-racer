@@ -5300,3 +5300,11 @@ body.splash-fallback #splash-screen .splash-title { display: none; }
 
 /* в заезде плашка профиля не нужна — сверху счётчик «Е» */
 body:has(#game-hud) #player-bar { display: none !important; }
+
+/* гараж: примерка краски или детали — плашка «Купить / Отмена» */
+.try-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 210, 60, 0.12); border: 1.5px solid #ffd23c; color: #fff; font-size: 14px; }
+.try-bar span { flex: 1 1 160px; }
+.try-bar b { color: #ffd23c; }
+.try-bar button { border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 800; font-size: 15px; cursor: pointer; }
+.try-bar .try-buy { background: linear-gradient(180deg, #ffe066, #ffb000); color: #1a1000; }
+.try-bar .try-cancel { background: rgba(255, 255, 255, 0.12); color: #ddd; }
