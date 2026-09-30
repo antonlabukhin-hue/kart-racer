@@ -169,12 +169,13 @@ test('бесконечная трасса: ящик «?» разбивается
         (g.animals || []).forEach(an => { an.hit = true; });
         const o = g.obstacles.filter(o => o.type === 'spikes' && o.active && o.z < g.z - 3).sort((a, b) => b.z - a.z)[0];
         // ставим на шипы, пока не сработают (под нагрузкой кадр может запоздать)
-        let before = 0;
         for (let i = 0; i < 20 && !(g.stats.spikes > 0); i++) {
-            g.setStrikes(0); before = g.speed; g.setX(o.x); g.setZ(o.z + 0.2);
+            g.setStrikes(0); g.setX(o.x); g.setZ(o.z + 0.2);
             await new Promise(r => setTimeout(r, 50));
         }
-        return { spikes: g.stats.spikes || 0, strikes: g.strikes, slower: g.speed < before * 0.8 };
+        // скорость в момент удара запоминает сама игра: машина ехала и потеряла половину
+        const ls = g.stats.lastSpike || {};
+        return { spikes: g.stats.spikes || 0, strikes: g.strikes, slower: ls.before > 0 && ls.after < ls.before * 0.8 };
     });
     expect(hit).toEqual({ spikes: 1, strikes: 0, slower: true });
     await page.keyboard.up('w');
@@ -211,5 +212,17 @@ test('первое знакомство: пауза с плашкой перед
     await expect(page.locator('.meet-overlay')).toHaveCount(0);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_met_v1')).length)).toBe(15);
     await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// витрина перед бесконечным заездом: «назад» — в главное меню, а не к старому выбору качества
+test('бесконечная трасса: «назад» из витрины машин — в главное меню', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await expect(page.locator('#shop-screen')).toBeVisible();
+    await page.locator('#shop-close').click();
+    await expect(page.locator('#main-menu-screen')).toBeVisible();
+    for (const id of ['#difficulty-screen', '#shop-screen']) await expect(page.locator(id)).toBeHidden();
     expect(problems).toEqual([]);
 });

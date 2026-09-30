@@ -1682,7 +1682,8 @@ function createProfile(name) { return Profile.createProfile(name); }
                 saveCurrentPlayer();
                 stopShopPreview();
                 sc.classList.remove('active'); sc.style.display = 'none';
-                if (fromFirstRace) beginRaceFlow();
+                if (forInf) showMainMenu(); // витрина перед бесконечным заездом: «назад» — в меню, а не к старому выбору качества
+                else if (fromFirstRace) beginRaceFlow();
                 else if (shopBackToGarage) { shopBackToGarage = false; openGarage(); } else showMainMenu();
             };
         }
@@ -9131,7 +9132,7 @@ function startGaragePreview(carId) {
                             // в прыжке ямы/кочки/масло не срабатывают
                         } else if (obs.type === 'spikes') {
                             // шипы: не авария, но скорость резко падает; шипы приминаются
-                            speed *= 0.5; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3;
+                            stats.lastSpike = { before: speed, after: speed * 0.5 }; speed *= 0.5; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3;
                             stats.spikes = (stats.spikes || 0) + 1;
                             try { showBigPlaque('⚠ ШИПЫ!', 'Скорость упала — перепрыгни или объезжай', 'crate-bad'); if (window.soundEngine) window.soundEngine.playSfx('bump', 1.3); } catch (e) {}
                         } else if (ABILITY === 'offroad' && obs.type !== 'oil' && obs.type !== 'acid') {
