@@ -1526,7 +1526,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             sc.classList.add('active'); sc.style.display = 'flex';
             shopSelectedCar = currentPlayer.preferredCar || 'cheburashka';
             document.getElementById('shop-currency').textContent =
-                'Е: ' + currentPlayer.season.chips + ' · 🍬 Жвачки: ' + currentPlayer.season.gum;
+                'Е: ' + currentPlayer.season.chips + ' · 🍬 Жвачки: ' + currentPlayer.season.gum + ' · 📼 ' + (currentPlayer.season.vhs || 0);
             const box = document.getElementById('shop-cars');
             function refreshShopSelection() {
                 if (!currentPlayer || !shopSelectedCar) return;
@@ -1535,12 +1535,12 @@ function createProfile(name) { return Profile.createProfile(name); }
                 });
                 const owned = (currentPlayer.unlockedCars || []).includes(shopSelectedCar);
                 const preset = CAR_PRESETS[shopSelectedCar] || CAR_PRESETS.cheburashka;
-                const price = preset.priceChips || 0;
+                const price = preset.priceChips || 0, vhsPrice = preset.priceVhs || 0; // «Зубило» — только за кассеты
                 const desc = document.getElementById('shop-desc');
                 if (desc) {
                     const cur = currentPlayer.preferredCar || 'cheburashka', cmp = cur !== shopSelectedCar && CAR_PRESETS[cur]; // одинаковые шкалы + разница с текущей (src/ui/car-stats.js)
                     desc.innerHTML = carStatsHtml(statBars(preset, getUpgradeLevels(shopSelectedCar)), { ability: preset.ability, compare: cmp ? statBars(CAR_PRESETS[cur], getUpgradeLevels(cur)) : null,
-                        compareName: cmp ? CAR_PRESETS[cur].name : '', note: owned ? (preset.name + ' — в гараже.') : ('Стоимость: ' + price + ' Е. Железные «Е» собирают на трассе, дают за финиши и награды сезона.') });
+                        compareName: cmp ? CAR_PRESETS[cur].name : '', note: owned ? (preset.name + ' — в гараже.') : vhsPrice ? ('Только за видеокассеты: ' + vhsPrice + ' 📼. Кассеты — на бесконечной трассе и в сундуке дня.') : ('Стоимость: ' + price + ' Е. Железные «Е» собирают на трассе, дают за финиши и награды сезона.') });
                 }
                 const act = document.getElementById('shop-action');
                 if (act) {
@@ -1557,13 +1557,13 @@ function createProfile(name) { return Profile.createProfile(name); }
                             else showMainMenu();
                         };
                     } else {
-                        act.textContent = 'КУПИТЬ ЗА ' + price + ' Е';
+                        act.textContent = vhsPrice ? 'КУПИТЬ ЗА ' + vhsPrice + ' 📼' : 'КУПИТЬ ЗА ' + price + ' Е';
                         act.onclick = function() {
-                            if ((currentPlayer.season.chips || 0) < price) {
-                                alert('Не хватает «Е». Собирай их на трассе, финишируй рейсы и забирай награды сезона.');
+                            if (vhsPrice ? (currentPlayer.season.vhs || 0) < vhsPrice : (currentPlayer.season.chips || 0) < price) {
+                                alert(vhsPrice ? 'Не хватает видеокассет: нужно ' + vhsPrice + ' 📼. Ищи их на бесконечной трассе и в сундуке дня.' : 'Не хватает «Е». Собирай их на трассе, финишируй рейсы и забирай награды сезона.');
                                 return;
                             }
-                            currentPlayer.season.chips -= price;
+                            if (vhsPrice) currentPlayer.season.vhs -= vhsPrice; else currentPlayer.season.chips -= price;
                             trackEvent('buy', { item: 'car', id: shopSelectedCar, price: price });
                             try { if (window.soundEngine) window.soundEngine.playSfx('coins', 1.15); } catch (e) {}
                             try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.7); } catch (e) {}
@@ -1575,13 +1575,13 @@ function createProfile(name) { return Profile.createProfile(name); }
                             pendingCar = shopSelectedCar;
                             saveCurrentPlayer();
                             document.getElementById('shop-currency').textContent =
-                                'Е: ' + currentPlayer.season.chips + ' · 🍬 Жвачки: ' + currentPlayer.season.gum;
+                                'Е: ' + currentPlayer.season.chips + ' · 🍬 Жвачки: ' + currentPlayer.season.gum + ' · 📼 ' + (currentPlayer.season.vhs || 0);
                             box.querySelectorAll('.shop-car-btn').forEach(function(btn) {
                                 const id = btn.getAttribute('data-car');
                                 const p = CAR_PRESETS[id];
                                 const own = currentPlayer.unlockedCars.includes(id);
                                 const pr = btn.querySelector('.price');
-                                if (pr) pr.textContent = p.priceChips === 0 ? 'Стартовый' : (own ? 'Куплено' : (p.priceChips + ' Е'));
+                                if (pr) pr.textContent = own ? (p.priceChips || p.priceVhs ? 'Куплено' : 'Стартовый') : p.priceVhs ? p.priceVhs + ' 📼' : (p.priceChips + ' Е');
                             });
                             refreshShopSelection();
                         };
@@ -1592,7 +1592,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             box.innerHTML = CAR_SHOP_ORDER.map(function(id) {
                 const p = CAR_PRESETS[id];
                 const owned = (currentPlayer.unlockedCars || []).includes(id);
-                const price = p.priceChips === 0 ? 'Стартовый' : (owned ? 'Куплено' : (p.priceChips + ' Е'));
+                const price = owned ? (p.priceChips || p.priceVhs ? 'Куплено' : 'Стартовый') : p.priceVhs ? p.priceVhs + ' 📼' : (p.priceChips + ' Е');
                 return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
             }).join('');
             // Делегирование + прямые listeners (на remote/touch иногда делегирование ломается)
@@ -7887,6 +7887,7 @@ function startGaragePreview(carId) {
             const MAX_X_SPEED = 0.55;
             const DRY_DAMPING = 0.82;
             const ABILITY = (carPreset.ability && carPreset.ability.id) || null;
+            const ALWAYS_MAGNET = { magnet: 1 }; // способность «Зубила»
             const DRY_STEER = 3.2 * carStats.steerMul * (ABILITY === 'nimble' ? 1.15 : 1);
             const NITRO_SPEED = ABILITY === 'turbo' ? 1.6 : 1.45;
             const NITRO_ACCEL = ABILITY === 'turbo' ? 1.8 : 1.6;
@@ -9283,7 +9284,7 @@ function startGaragePreview(carId) {
                     }
 
                     // магнит: «Е» впереди летят к машине
-                    if (c.type === 'echip' && !c.airOnly && magnetPull(powers, c, xPos, zPos, deltaTime)) c.mesh.position.set(c.x, c.mesh.position.y, c.z);
+                    if (c.type === 'echip' && !c.airOnly && (magnetPull(powers, c, xPos, zPos, deltaTime) || (ABILITY === 'magnet' && magnetPull(ALWAYS_MAGNET, c, xPos, zPos, deltaTime, 0.5)))) c.mesh.position.set(c.x, c.mesh.position.y, c.z);
                     const dx = xPos - c.x;
                     const dz = zPos - c.z;
                     if (c.airOnly && carYOffset < (c.minY || 0.6)) return; // висит в воздухе — берётся только в прыжке

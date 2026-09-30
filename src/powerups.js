@@ -40,10 +40,11 @@ export function eValue(st) {
 }
 
 /** Магнит: «Е» впереди (до 14 ед.) и сбоку (до 4.5 ед.) подтягивается к машине. Мутирует chip {x, z}; true — тянется */
-export function magnetPull(st, chip, carX, carZ, dt) {
+export function magnetPull(st, chip, carX, carZ, dt, reach) {
     if (!st || st.magnet <= 0) return false;
+    const r = reach || 1; // 1 — усиление, 0.5 — способность «Зубила» (всегда, но ближе)
     const ahead = carZ - chip.z;
-    if (ahead < -1.5 || ahead > 14 || Math.abs(chip.x - carX) > 4.5) return false;
+    if (ahead < -1.5 || ahead > 14 * r || Math.abs(chip.x - carX) > 4.5 * r) return false;
     const k = Math.min(1, (dt || 0) * 9);
     chip.x += (carX - chip.x) * k;
     chip.z += (carZ - chip.z) * k;
