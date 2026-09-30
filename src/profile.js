@@ -5,6 +5,7 @@
  * параметром (в тестах — объект в памяти), поэтому всё покрыто tests/unit/profile.test.js.
  */
 import { applyMissionProgress, ensureMissions } from './missions.js';
+import { rankOf, totalFromSeason, RANKS } from './ranks.js';
 import { riskToXp } from './risk-combo.js';
 
 export const PROFILES_KEY = 'road_racing_profiles_v1';
@@ -72,6 +73,8 @@ export function ensureProfileFields(p, balanceVersion) {
     }
     if (!p.bestTimes) p.bestTimes = { easy: null, medium: null, hard: null };
     if (p.season.chips == null) p.season.chips = 0;
+    // весь опыт за всё время (уровень и звание игрока, src/ranks.js): у старых профилей — из прогресса сезона
+    if (p.totalXp == null) p.totalXp = totalFromSeason(p.season, seasonXpToNext);
     if (p.season.gum == null) p.season.gum = 0;
     if (!p.carLoadout) p.carLoadout = { parts: [], ownedParts: [], paint: 'stock', paintByCar: {} };
     if (!p.carLoadout.parts) p.carLoadout.parts = [];
@@ -280,6 +283,10 @@ export function applyRaceResult(profile, state, meta, ctx) {
     profile.season.chips = (profile.season.chips || 0) + chips;
     profile.season.gum = (profile.season.gum || 0) + gum;
     const lv = addSeasonXp(profile.season, xp);
+    // уровень и звание игрока — от всего опыта
+    const rankBefore = rankOf(profile.totalXp || 0).index;
+    profile.totalXp = (profile.totalXp || 0) + xp;
+    const rankAfter = rankOf(profile.totalXp).index;
     if (lv.reached.indexOf(5) >= 0) tryAch('season5');
 
     profile.history = profile.history || [];
@@ -295,7 +302,8 @@ export function applyRaceResult(profile, state, meta, ctx) {
         achievements: achievements, trophies: trophies,
         contractDone: contractDone, contractTitle: contractDone ? k.title : '',
         newBest: newBest, unlockedMaps: unlockedMaps,
-        riskXp: riskXp, missions: missions, infBest: infBest
+        riskXp: riskXp, missions: missions, infBest: infBest,
+        totalXp: profile.totalXp, rankUp: rankAfter > rankBefore ? RANKS[rankAfter] : null
     };
 }
 
