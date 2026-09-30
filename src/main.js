@@ -135,6 +135,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
 
         function isPortrait() {
             try {
+                // по реальному окну: screen.orientation бывает устаревшим (после поворота, в эмуляторе)
+                if (window.matchMedia) return window.matchMedia('(orientation: portrait)').matches;
                 if (window.screen && window.screen.orientation && window.screen.orientation.type) {
                     return String(window.screen.orientation.type).indexOf('portrait') >= 0;
                 }
