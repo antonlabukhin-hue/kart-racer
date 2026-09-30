@@ -8750,7 +8750,7 @@ function startGaragePreview(carId) {
                         speed = rs.speed;
                         carAirborne = true;
                         airTime = 0; strikesAtLaunch = strikes;
-                        carAirVel = rs.airVel;
+                        carAirVel = rs.airVel * (ABILITY === 'hop' ? 1.3 : 1); // «Горбатый» — прыгун
                         carYOffset = rs.y;
                         // на нитро трамплин подбрасывает выше — так достаётся звезда за разломом
                         if (rs.nitroJump) { try { showTimePenaltyPopup(0, '🚀 Нитро-прыжок!'); } catch (e) {} }
