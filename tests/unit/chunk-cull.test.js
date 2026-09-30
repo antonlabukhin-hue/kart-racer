@@ -45,4 +45,18 @@ describe('участки трассы', () => {
         expect(c.parent).toBe(scene);
         expect(b.parent.userData.chunk).toBeTruthy();
     });
+    it('бесконечная трасса: новые объекты — в участки, опустевшие позади участки убираются', () => {
+        const scene = new THREE.Scene();
+        scene.add(box(-10));
+        const r = buildChunks(scene);
+        const far = [box(-2000), box(-2010)];
+        scene.add(...far);
+        r.adopt(far);
+        expect(far[0].parent.userData.chunk).toBeTruthy();
+        expect(r.chunks).toHaveLength(2);
+        far.forEach(o => scene.remove(o));
+        r.prune(-2100);
+        expect(r.chunks).toHaveLength(1);
+        expect(scene.children.filter(o => o.userData.chunk)).toHaveLength(1);
+    });
 });
