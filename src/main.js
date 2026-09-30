@@ -1259,9 +1259,9 @@ function createProfile(name) { return Profile.createProfile(name); }
             return true;
         }
 
-        /** Забрать все доступные награды сезона (уровни ≤ текущего). Возвращает {gum, chips, levels[]} */
+        /** Забрать все доступные награды сезона (уровни ≤ текущего). Возвращает {chips, levels[]} */
         function claimAvailableSeasonRewards() {
-            if (!currentPlayer) return { gum: 0, chips: 0, levels: [] };
+            if (!currentPlayer) return { chips: 0, levels: [] };
             ensureProfileFields(currentPlayer);
             const out = Profile.claimSeasonRewards(currentPlayer, SEASON_REWARDS);
             if (out.levels.length) saveCurrentPlayer();
@@ -1293,7 +1293,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const n = document.getElementById('player-bar-name');
             const s = document.getElementById('player-bar-season');
             if (n) n.textContent = '👤 ' + currentPlayer.name;
-            if (s) s.textContent = 'S1 ур.' + currentPlayer.season.level + ' · Е ' + (currentPlayer.season.chips||0) + ' · 🍬' + (currentPlayer.season.gum||0) + ' · 📼' + (currentPlayer.season.vhs||0);
+            if (s) s.textContent = 'S1 ур.' + currentPlayer.season.level + ' · Е ' + (currentPlayer.season.chips||0) + ' · 📼' + (currentPlayer.season.vhs||0);
         }
 
         function renderProfileList() {
@@ -1385,12 +1385,12 @@ function createProfile(name) { return Profile.createProfile(name); }
             try {
                 const ps = document.getElementById('main-menu-play-sub');
                 if (ps && currentPlayer) {
-                    const ni = Profile.nextChapterIdx(getCampaignProgress(), CAMPAIGN_TRACKS);
-                    // два текстовых узла — чтобы название главы переводилось словарём отдельно от номера
+                    // под кнопкой — бесконечная трасса и рекорд (два узла — чтобы переводились словарём отдельно)
+                    const best = Math.round((currentPlayer.infinite && currentPlayer.infinite.best) || 0);
                     ps.textContent = '';
-                    const a = document.createElement('span'); a.textContent = 'Глава ' + (ni + 1);
-                    const b = document.createElement('span'); b.textContent = CAMPAIGN_TRACKS[ni].name;
-                    ps.append(a, ' · ', b);
+                    const a = document.createElement('span'); a.textContent = 'Бесконечная трасса';
+                    ps.append(a);
+                    if (best > 0) { const b = document.createElement('span'); b.textContent = 'рекорд ' + best + ' м'; ps.append(' · ', b); }
                 }
             } catch (e) {}
             updatePlayerBar();
@@ -1543,7 +1543,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             sc.classList.add('active'); sc.style.display = 'flex';
             shopSelectedCar = currentPlayer.preferredCar || 'cheburashka';
             document.getElementById('shop-currency').textContent =
-                'Е: ' + currentPlayer.season.chips + ' · 🍬 Жвачки: ' + currentPlayer.season.gum + ' · 📼 ' + (currentPlayer.season.vhs || 0);
+                'Е: ' + currentPlayer.season.chips + ' · 📼 ' + (currentPlayer.season.vhs || 0);
             const box = document.getElementById('shop-cars');
             function refreshShopSelection() {
                 if (!currentPlayer || !shopSelectedCar) return;
@@ -1601,7 +1601,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                             pendingCar = shopSelectedCar;
                             saveCurrentPlayer();
                             document.getElementById('shop-currency').textContent =
-                                'Е: ' + currentPlayer.season.chips + ' · 🍬 Жвачки: ' + currentPlayer.season.gum + ' · 📼 ' + (currentPlayer.season.vhs || 0);
+                                'Е: ' + currentPlayer.season.chips + ' · 📼 ' + (currentPlayer.season.vhs || 0);
                             box.querySelectorAll('.shop-car-btn').forEach(function(btn) {
                                 const id = btn.getAttribute('data-car');
                                 const p = CAR_PRESETS[id];
@@ -1781,7 +1781,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         }
 
         function recordRaceResult(state, meta) {
-            const empty = { xp: 0, gum: 0, chips: 0, levelBefore: 1, levelAfter: 1, achievements: [], contractDone: false, contractTitle: '' };
+            const empty = { xp: 0, chips: 0, levelBefore: 1, levelAfter: 1, achievements: [], contractDone: false, contractTitle: '' };
             if (!currentPlayer) return empty;
             try {
                 ensureProfileFields(currentPlayer);
@@ -2286,7 +2286,7 @@ function renderGaragePartsPanel() {
         /** Шапка гаража: имя, фишки и жвачка — после любой покупки */
         function refreshGarageHeader() {
             const el = document.getElementById('garage-player-name');
-            if (el && currentPlayer && currentPlayer.season) el.textContent = currentPlayer.name + ' · Е ' + (currentPlayer.season.chips || 0) + ' · 🍬' + (currentPlayer.season.gum || 0) + ' · 📼' + (currentPlayer.season.vhs || 0);
+            if (el && currentPlayer && currentPlayer.season) el.textContent = currentPlayer.name + ' · Е ' + (currentPlayer.season.chips || 0) + ' · 📼' + (currentPlayer.season.vhs || 0);
         }
         /** Вкладка «Прокачка»: полосы характеристик выбранной машины и покупка уровней */
         function renderGarageUpgrades() {
@@ -4553,7 +4553,7 @@ function startGaragePreview(carId) {
                 }
 
         function showEndScreen(state, timeTaken, rewards) {
-                rewards = rewards || window.__lastRaceRewards || { xp: 0, gum: 0, chips: 0 }; let finStats = null;
+                rewards = rewards || window.__lastRaceRewards || { xp: 0, chips: 0 }; let finStats = null;
                 const screen = document.createElement('div');
                 screen.id = 'finish-screen';
                 screen.style.cssText = `
@@ -4595,9 +4595,9 @@ function startGaragePreview(carId) {
                             message += `\n\n💡 Чтобы открыть «${nextName}» —\nпройди эту карту на СЛОЖНОМ режиме.`;
                         }
                     }
-                    message += '\n\n🍬 Вы победили! Вот ваши жвачки\nи железные «Е» из игрового автомата.';
+                    message += '\n\n🏁 Вы победили! Вот ваши\nжелезные «Е» из игрового автомата.';
                     finStats = [['📊', 'Макс. скорость', stats.maxSpeedReached + ' км/ч'], ['🔥', 'Макс. комбо', comboMax.toFixed(0) + ' с'], ['⛽', 'Нитро', stats.nitroPicked],
-                        ['🍬', 'Жвачки', stats.gumPicked], ['🐾', 'Удары по зверям', stats.animalsHit], ['🛢', 'Масло', stats.oilHits]]; // плитками под наградами
+                        ['❤', 'Сердечки', stats.gumPicked], ['🐾', 'Удары по зверям', stats.animalsHit], ['🛢', 'Масло', stats.oilHits]]; // плитками под наградами
                     let titleExtra = '';
                     if (strikes === 0 && stats.nitroPicked === 0) titleExtra = 'Без нитро и без тормозов';
                     else if (strikes === 0) titleExtra = 'Курьер года Арсеньева';
@@ -4999,7 +4999,7 @@ function startGaragePreview(carId) {
                 } catch (e) {}
 
                 // Начисление фишек / XP / жвачки (раньше recordRaceResult не вызывался!)
-                let raceRewards = { xp: 0, gum: 0, chips: 0, achievements: [] };
+                let raceRewards = { xp: 0, chips: 0, achievements: [] };
                 try {
                     if (typeof recordRaceResult === 'function' && currentPlayer) {
                         raceRewards = recordRaceResult(state, {
@@ -8060,7 +8060,7 @@ function startGaragePreview(carId) {
             const RADIO_LINES = {
                 start: ['Ушастик, поехали. Жвачка не будет ждать.', 'Эфир чист… почти. Не слушай «Яблонек».'],
                 nitro: ['Нитро в жилах! Держи руль!', 'Турбо-режим, как в хорошем клипе 90-х.'],
-                gum: ['Жвачка «Разгон»! Вкус победы.', 'Ещё одна фишка в коллекцию, братишка.'],
+                gum: ['Сердечко! Держись, братишка.', 'Ещё одна жизнь в запас.'],
                 hit: ['Ай! Кузов помнит.', 'Осторожней, курьер. Аванс уже съели.', 'Это было близко к «Золотому Кирпичу».'],
                 boss: ['Медведь на частоте! Он снова про Арсеньевских!', 'Босс на хвосте. Не геройствуй — вези груз.'],
                 combo: ['Чистый эфир! Так держать.', 'Комбо растёт. Мост уже ближе.'],
@@ -9489,16 +9489,16 @@ function startGaragePreview(carId) {
                                 showTimePenaltyPopup(0, '❤️ −1 авария');
                                 const el = document.createElement('div');
                                 el.className = 'animal-shout';
-                                el.textContent = '❤️ Жвачка! −1 авария';
+                                el.textContent = '❤️ Сердечко! −1 авария';
                                 el.style.color = '#ff88cc';
                                 el.style.borderColor = '#ff88cc';
                                 postShout(el, 1600);
                             } else {
                                 raceTime = Math.max(0, raceTime - 5);
-                                showTimePenaltyPopup(0, '🍬 +5 сек');
+                                showTimePenaltyPopup(0, '❤ +5 сек');
                                 const el = document.createElement('div');
                                 el.className = 'animal-shout';
-                                el.textContent = '🍬 Жвачка «Разгон»! +5 сек';
+                                el.textContent = '❤ Сердечко! +5 сек';
                                 el.style.color = '#ff88cc';
                                 el.style.borderColor = '#ff88cc';
                                 postShout(el, 1600);
@@ -11354,13 +11354,12 @@ function showLoreScreen(quality, difficulty) {
                 }
                 // Немного валюты для тестов
                 currentPlayer.season.chips = (currentPlayer.season.chips || 0) + 500;
-                currentPlayer.season.gum = (currentPlayer.season.gum || 0) + 20;
                 if (currentPlayer.season.level < 5) currentPlayer.season.level = 5;
                 try { saveCurrentPlayer(); } catch (e) {}
                 try { if (typeof updatePlayerBar === 'function') updatePlayerBar(); } catch (e) {}
                 try { if (typeof refreshMapSelectUI === 'function') refreshMapSelectUI(); } catch (e) {}
                 try { if (typeof renderGarageTrophies === 'function') renderGarageTrophies(); } catch (e) {}
-                const msg = '🎤 ' + (source || 'ЧИТ') + ': все карты, достижения и трофеи открыты (+500 Е +20🍬)';
+                const msg = '🎤 ' + (source || 'ЧИТ') + ': все карты, достижения и трофеи открыты (+500 Е)';
                 if (window.Notify) Notify.success(msg, 'Медведь доволен');
                 else {
                     const el = document.createElement('div');
@@ -11534,14 +11533,12 @@ function showLoreScreen(quality, difficulty) {
                     }
                 });
             });
-            // «▶ Играть» — сразу в следующую главу кампании
+            // «▶ ПОЕХАЛИ» — сразу в бесконечную трассу на выбранной машине (кампания — своей карточкой)
             const playBtn = document.getElementById('main-menu-play');
             if (playBtn) playBtn.addEventListener('click', function() {
                 if (!currentPlayer) return;
                 ensureProfileFields(currentPlayer);
-                const ni = Profile.nextChapterIdx(getCampaignProgress(), CAMPAIGN_TRACKS);
-                hideMainMenu();
-                startCampaignTrack(ni, { direct: true, fast: true });
+                startInfiniteRun(true);
             });
             const shopBtn = document.getElementById('main-menu-shop');
             if (shopBtn) shopBtn.addEventListener('click', function() {

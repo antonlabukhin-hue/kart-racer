@@ -23,12 +23,13 @@ describe('экран финиша: одна главная кнопка по и�
             expect((finishButtonsHtml(o).match(/fin-btn primary/g) || []).length).toBe(1);
         }
     });
-    it('награды «фишками»: нулевые не показываются, итог — отдельной строкой', () => {
-        const h = rewardChipsHtml({ chips: 3, gum: 0, xp: 40 }, { chips: 15, gum: 7 });
+    it('награды плитками: нулевые не показываются, итог — отдельной строкой', () => {
+        const h = rewardChipsHtml({ chips: 3, vhs: 0, xp: 40 }, { chips: 15, vhs: 2 });
         expect((h.match(/class="fin-chip"/g) || []).length).toBe(2);
         expect(h).toContain('data-to="40"');
-        expect(h).toContain('всего: Е 15 · 🍬 7');
-        expect(rewardChipsHtml({ chips: 0, gum: 0, xp: 0 })).toBe('');
+        expect(h).toContain('всего: Е 15 · 📼 2');
+        expect(h).not.toContain('🍬');
+        expect(rewardChipsHtml({ chips: 0, vhs: 0, xp: 0 })).toBe('');
     });
     it('статистика плитками', () => {
         const h = statTilesHtml([['📊', 'Макс. скорость', '120 км/ч'], ['⛽', 'Нитро', 3]]);

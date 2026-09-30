@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no" />
     <title>🏎️ Дорожный прорыв</title>
     <!-- как приложение: иконка на рабочем столе, запуск на весь экран (public/manifest.webmanifest, public/sw.js) -->
     <link rel="manifest" href="./manifest.webmanifest" />
@@ -133,7 +133,6 @@
                 <button type="button" class="mm-streak" id="mm-streak" hidden title="Серия дней и сундук дня"><i aria-hidden="true">🔥</i><b id="mm-streak-n">1</b><em class="mm-badge" id="mm-badge-chest" hidden></em></button>
                 <div class="mm-wallet">
                     <span title="Железные «Е» — собирай на трассе" class="mm-e"><i aria-hidden="true">Е</i><b id="mm-chips">0</b></span>
-                    <span title="Жвачки"><i aria-hidden="true">🍬</i><b id="mm-gum">0</b></span>
                     <span title="Видеокассеты — редкая валюта"><i aria-hidden="true">📼</i><b id="mm-vhs">0</b></span>
                 </div>
                 <button type="button" class="mm-icon" id="main-menu-settings" aria-label="Настройки" title="Настройки">⚙</button>
@@ -153,7 +152,7 @@
             </div>
             <button type="button" class="play-hero-btn" id="main-menu-play">
                 <b>▶ ПОЕХАЛИ</b>
-                <small id="main-menu-play-sub">Глава 1</small>
+                <small id="main-menu-play-sub">Бесконечная трасса</small>
             </button>
             <div class="menu-grid mm-modes">
                 <button type="button" class="menu-card" data-menu="campaign">
@@ -223,7 +222,7 @@
     <div id="shop-screen">
         <div class="content">
             <h1 style="color:#ffdd00;">🚗 МАШИНЫ</h1>
-            <div class="sub" id="shop-currency" style="color:#ffaa44;">Е: 0 · 🍬 Жвачки: 0</div>
+            <div class="sub" id="shop-currency" style="color:#ffaa44;">Е: 0 · 📼 0</div>
             <div class="shop-stage" id="shop-stage">
                 <div id="shop-canvas-wrap"></div>
                 <button type="button" class="shop-arrow prev" id="shop-prev" aria-label="Предыдущая машина">‹</button>

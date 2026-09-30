@@ -5,10 +5,12 @@ import { UPGRADES } from '../../src/upgrades.js';
 
 describe('экономика «Е»', () => {
     it('накопленное у старого профиля — один раз ×10', () => {
+        // жвачки убраны: накопленные переходят в «Е» 1 к 10
         const p = ensureProfileFields({ season: { level: 2, xp: 5, chips: 7, gum: 3 } });
-        expect(p.season.chips).toBe(70);
+        expect(p.season.chips).toBe(70 + 30);
+        expect(p.season.gum).toBeUndefined();
         ensureProfileFields(p);
-        expect(p.season.chips).toBe(70);
+        expect(p.season.chips).toBe(100);
         expect(ensureProfileFields({}).season.chips).toBe(0);
     });
     it('цены в «Е»: машины — сотни, прокачка — десятки–сотни, «Зубило» — только за кассеты', () => {

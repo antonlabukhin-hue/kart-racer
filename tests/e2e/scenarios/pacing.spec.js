@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { login, waitRacing } from '../helpers.js';
+import { login, waitRacing, startCampaign } from '../helpers.js';
 // Бюджет главы 1 (первые минуты решают всё): трамплин до 20 с, босс до 35 с, финиш до 70 с игрового времени.
 // Автопилот держит полосу трамплина и мгновенно роняет босса — замеряется сама трасса, а не игрок.
 test('глава 1 укладывается в бюджет: трамплин до 20 с, финиш до 70 с', async ({ page }) => {
     test.skip(!!process.env.CI, 'на медленном CI игровое время растягивается из-за ограничения шага');
     await login(page);
-    await page.locator('#main-menu-play').click();
+    await startCampaign(page); // «ПОЕХАЛИ» теперь ведёт в бесконечную трассу — глава 1 из кампании
     await waitRacing(page);
     const gaps = await page.evaluate(() => window.__raceDebug.gaps.map(g => ({ z: g.zNear, lane: g.lanes[0] })));
     await page.keyboard.down('w');

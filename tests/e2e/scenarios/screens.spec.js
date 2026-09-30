@@ -11,7 +11,8 @@ test('награды сезона: «Забрать всё» начисляет 
     await expect(page.locator('#rewards-screen .sb-rewards')).toHaveText('1');
     await page.getByRole('button', { name: /Забрать всё доступное/ }).click();
     await expect(page.locator('#rewards-progress')).not.toContainText('можно забрать');
-    await expect(page.locator('#rewards-progress')).toContainText('🍬10');
+    await expect(page.locator('#rewards-progress')).toContainText('Е 100'); // награда ур.1 — в «Е» (жвачек больше нет)
+    await expect(page.locator('#rewards-progress')).not.toContainText('🍬');
     await expect(page.locator('#rewards-screen .sb-rewards')).toBeHidden();
     // «События» — вкладка того же раздела
     await page.locator('#rewards-screen .season-tab[data-stab="events"]').click();
