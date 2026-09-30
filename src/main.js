@@ -4246,7 +4246,7 @@ function startGaragePreview(carId) {
             const TOTAL_LANES = 3;
             const CAR_WIDTH = 0.8;
             const TIME_LIMIT = config.timeLimit;
-            const MAX_STRIKES = 5;
+            const MAX_STRIKES = 5 + (carPreset.ability && carPreset.ability.id === 'medic' ? 1 : 0); // «Рафик» — шестая жизнь
             let TRIGGER_LOOKAHEAD = config.triggerLookahead;
             const _portrait = window.__isMobile && window.innerHeight > window.innerWidth;
             // мобилка: почти те же значения (без сильного урезания)

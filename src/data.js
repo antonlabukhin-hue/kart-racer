@@ -174,6 +174,8 @@ export const CAR_PRESETS = {
         ability: { id: 'hop', name: 'Прыгун', desc: 'трамплины подбрасывают на 30% выше — золотая «Е» и без нитро' } },
     pirozhok:    { name: 'Пирожок',    color: 0x3f74b0, maxSpeed: 0.4, accel: 0.02, durability: 1.05, oilGrip: 1.0, priceChips: 500,
         ability: { id: 'cargo', name: 'Грузовой', desc: 'усиление «×2 Е» действует вдвое дольше' } },
+    rafik:       { name: 'Рафик',      color: 0xefefe8, maxSpeed: 0.405, accel: 0.0198, durability: 1.1, oilGrip: 1.0, priceChips: 700,
+        ability: { id: 'medic', name: 'Скорая', desc: 'шесть жизней вместо пяти' } },
     buhanka:     { name: 'Буханка',    color: 0x5e7040, maxSpeed: 0.39, accel: 0.0192, durability: 1.35, oilGrip: 1.1, priceChips: 600,
         ability: { id: 'armor', name: 'Броня', desc: 'каждый заезд — с бронёй: первый удар не авария' } },
     // уникальная: только за видеокассеты (📼 — редкая валюта бесконечной трассы и сундуков)
