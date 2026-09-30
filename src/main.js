@@ -9422,7 +9422,7 @@ function startGaragePreview(carId) {
                         } else if (c.type === 'vhs') {
                             stats.vhs = (stats.vhs || 0) + 1;
                             try { showBigPlaque('📼 ВИДЕОКАССЕТА!', 'Редкая валюта — копи на особую машину', 'armor'); } catch (e) {}
-                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.4); } catch (e) {}
+                            try { if (window.soundEngine) window.soundEngine.playSfx('vhs', 1.2); } catch (e) {} // свой, сочный звук кассеты
                         } else if (c.type === 'star') {
                             raceTime = Math.max(0, raceTime - 3);
                             stats.starsPicked = (stats.starsPicked || 0) + 1;

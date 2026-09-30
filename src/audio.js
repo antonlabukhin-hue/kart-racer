@@ -1002,11 +1002,36 @@ class SoundEngine {
                         o.connect(g); g.connect(this.audioCtx.destination);
                         o.start(t0 + at); o.stop(t0 + at + dur + 0.02);
                     };
-                    note('square', 1318.5, 0, 0.06, 0.07);
-                    note('triangle', 1318.5, 0, 0.06, 0.09);
-                    note('square', 2093, 0.055, 0.32, 0.06);
-                    note('triangle', 2093, 0.055, 0.36, 0.1);
-                    note('sine', 4186, 0.055, 0.12, 0.03);
+                    // ярче: громче и с верхней «искрой»
+                    note('square', 1318.5, 0, 0.06, 0.11);
+                    note('triangle', 1318.5, 0, 0.06, 0.14);
+                    note('square', 2093, 0.05, 0.34, 0.1);
+                    note('triangle', 2093, 0.05, 0.38, 0.16);
+                    note('sine', 4186, 0.05, 0.16, 0.06);
+                    note('sine', 3136, 0.1, 0.2, 0.04);
+                    break;
+                }
+                case 'vhs': {
+                    // кассета — сочно и по-другому: щелчок кассеты, удар баса и восходящая фанфара с блеском
+                    const tone = (wave, freq, at, dur, peak, slide) => {
+                        const o = this.audioCtx.createOscillator(), g = this.audioCtx.createGain();
+                        o.type = wave; o.frequency.setValueAtTime(freq, t0 + at);
+                        if (slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + at + dur);
+                        g.gain.setValueAtTime(0.0001, t0);
+                        g.gain.setValueAtTime(Math.max(0.001, peak * vs), t0 + at);
+                        g.gain.exponentialRampToValueAtTime(0.001, t0 + at + dur);
+                        o.connect(g); g.connect(this.audioCtx.destination);
+                        o.start(t0 + at); o.stop(t0 + at + dur + 0.02);
+                    };
+                    if (this.noiseBuffer) {
+                        const n = this.audioCtx.createBufferSource(); n.buffer = this.noiseBuffer;
+                        const hp = this.audioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+                        const ng = this.audioCtx.createGain(); ng.gain.setValueAtTime(0.25 * vs, t0); ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
+                        n.connect(hp); hp.connect(ng); ng.connect(this.audioCtx.destination); n.start(t0); n.stop(t0 + 0.06);
+                    }
+                    tone('sine', 110, 0, 0.3, 0.35, 55);
+                    [523.3, 659.3, 784, 1046.5].forEach((f, i) => { tone('square', f, 0.04 + i * 0.07, 0.16, 0.08); tone('triangle', f, 0.04 + i * 0.07, 0.2, 0.12); });
+                    tone('triangle', 1318.5, 0.32, 0.5, 0.14); tone('sine', 2637, 0.32, 0.4, 0.05);
                     break;
                 }
                 case 'pickup':
