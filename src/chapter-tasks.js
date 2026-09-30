@@ -18,7 +18,7 @@ export const TASK_DEFS = {
     },
     nearMiss: { text: function() { return '«На волоске!» ×5'; }, check: function(m) { return (m.nearMiss || 0) >= 5; } },
     noNitro: { text: function() { return 'Финиш без нитро'; }, check: function(m) { return (m.nitroPicked || 0) === 0; } },
-    gum2: { text: function() { return 'Собрать 2 жвачки'; }, check: function(m) { return (m.gumPicked || 0) >= 2; } },
+    gum2: { text: function() { return 'Собрать 2 сердечка'; }, check: function(m) { return (m.gumPicked || 0) >= 2; } },
     maxOne: { text: function() { return 'Не больше 1 аварии'; }, check: function(m) { return m.strikes <= 1; } },
     jumpAnimal: { text: function() { return 'Перелететь зверя с трамплина'; }, check: function(m) { return (m.animalsJumped || 0) >= 1; } },
     bossRam: { text: function() { return 'Протаранить босса ×2'; }, check: function(m) { return (m.bossRams || 0) >= 2; } },

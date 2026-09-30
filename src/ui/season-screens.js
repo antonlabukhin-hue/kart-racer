@@ -16,7 +16,7 @@ export function openRewardsScreen(d) {
     const claimableCount = d.rewards.filter(r => se.level >= r.level && !currentPlayer.claimedRewards[r.level]).length;
     document.getElementById('rewards-progress').textContent =
         'Уровень ' + se.level + '/30 · XP ' + se.xp + '/' + d.xpToNext(se.level) +
-        ' · Е ' + se.chips + ' · 🍬' + se.gum +
+        ' · Е ' + se.chips + ' · 📼 ' + (se.vhs || 0) +
         (claimableCount ? (' · можно забрать: ' + claimableCount) : '');
     const list = document.getElementById('rewards-list');
     // Отдельный div-обёртка вместо прямых appendChild — один reflow
@@ -30,9 +30,9 @@ export function openRewardsScreen(d) {
         allBtn.addEventListener('click', () => {
             const got = d.claimAll();
             if (got.levels.length && d.notify) {
-                d.notify.success('🎁 Награды получены', '🍬+' + got.gum + ' · Е +' + got.chips + ' · ур. ' + got.levels.join(', '));
+                d.notify.success('🎁 Награды получены', 'Е +' + got.chips + ' · ур. ' + got.levels.join(', '));
             } else if (got.levels.length) {
-                alert('Получено: 🍬' + got.gum + ' · Е ' + got.chips);
+                alert('Получено: Е ' + got.chips);
             }
             openRewardsScreen(d);
         });
@@ -45,7 +45,7 @@ export function openRewardsScreen(d) {
         row.className = 'reward-row' + (!unlocked ? ' locked' : claimed ? ' claimed' : ' claimable');
         const left = document.createElement('div');
         left.innerHTML = '<b>Ур.' + r.level + '</b> — ' + r.text +
-            '<div style="color:#888;font-size:11px;">🍬' + r.gum + ' · Е ' + r.chips + '</div>';
+            '<div style="color:#888;font-size:11px;">Е ' + r.chips + '</div>';
         row.appendChild(left);
         if (unlocked && !claimed) {
             const btn = document.createElement('button');
@@ -54,7 +54,6 @@ export function openRewardsScreen(d) {
             btn.addEventListener('click', () => {
                 if (currentPlayer.claimedRewards[r.level]) return;
                 currentPlayer.claimedRewards[r.level] = Date.now();
-                currentPlayer.season.gum += r.gum;
                 currentPlayer.season.chips += r.chips;
                 d.save();
                 openRewardsScreen(d);
@@ -84,7 +83,7 @@ export function openEventsScreen(d) {
         <div class="event-card">
             <h3>📅 Смена дня${done ? ' ✓' : ''}</h3>
             <p><b>${d.escape(c.title)}</b><br>${d.escape(c.desc)}</p>
-            <p>Награда: <b>+${c.xp} XP</b> сезона · 🍬${c.gum} · Е ${c.chips}</p>
+            <p>Награда: <b>+${c.xp} XP</b> сезона · Е ${c.chips}</p>
             <p style="color:#888;">Один контракт в сутки. Сброс в полночь.</p>
         </div>
         <div class="event-card">

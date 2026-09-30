@@ -56,11 +56,11 @@ test('серия дней: сундук дня', async ({ page }) => {
     await page.locator('#mm-streak').click();
     await expect(page.locator('.chest-modal')).toContainText('Серия: 1 день подряд');
     await page.locator('.ch-claim').click();
-    await expect(page.locator('.chest-modal .ch-got')).toContainText('+20 Е');
+    await expect(page.locator('.chest-modal .ch-got')).toContainText('+70 Е'); // сундук без жвачек: бывшие 🍬 — в «Е»
     await page.locator('.ch-later').click();
     await expect(page.locator('.chest-modal')).toHaveCount(0);
     await expect(page.locator('#mm-badge-chest')).toBeHidden();
-    await expect(page.locator('#mm-chips')).toHaveText('20');
+    await expect(page.locator('#mm-chips')).toHaveText('70');
     // вернулся на следующий день — серия 2 и сундук предлагается сам
     await page.evaluate(() => {
         const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
@@ -74,6 +74,6 @@ test('серия дней: сундук дня', async ({ page }) => {
     await page.locator('#profile-list').getByText('Тестер').click();
     await expect(page.locator('.chest-modal')).toContainText('Серия: 2 дня подряд');
     await page.locator('.ch-claim').click();
-    await expect(page.locator('.chest-modal .ch-got')).toContainText('+30 Е');
+    await expect(page.locator('.chest-modal .ch-got')).toContainText('+110 Е');
     expect(problems).toEqual([]);
 });

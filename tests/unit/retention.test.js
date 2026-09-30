@@ -78,10 +78,10 @@ describe('ежедневная серия', () => {
         const p = prof();
         touchStreak(p, '2026-09-01');
         expect(canClaimChest(p, '2026-09-01')).toBe(true);
-        expect(claimChest(p, '2026-09-01', () => 0.5)).toEqual({ chips: 20, gum: 5, vhs: 0, day: 1 });
+        expect(claimChest(p, '2026-09-01', () => 0.5)).toEqual({ chips: 70, vhs: 0, day: 1 }); // без жвачек: бывшие 5 🍬 — это +50 «Е»
         expect(CHESTS[6].vhs).toBe(1); // 7-й день — кассета всегда
         expect(claimChest(p, '2026-09-01')).toBe(null);
-        expect(p.season.chips).toBe(20);
+        expect(p.season.chips).toBe(70);
         expect(chestFor(7)).toEqual(CHESTS[6]);
         expect(chestFor(8)).toEqual(CHESTS[0]);
     });

@@ -19,7 +19,8 @@ describe('профиль: создание, миграции, хранение',
     it('новый профиль заполнен и проходит миграции без потерь', () => {
         const p = fresh();
         expect(p.name).toBe('Тестер');
-        expect(p.season).toMatchObject({ level: 1, xp: 0, chips: 0, gum: 0 });
+        expect(p.season).toMatchObject({ level: 1, xp: 0, chips: 0 });
+        expect(p.season.gum).toBeUndefined(); // жвачек больше нет
         expect(p.carLoadout.ownedParts).toEqual([]);
         expect(p.campaign).toMatchObject({ unlocked: 1, completed: [], stars: {} });
     });
@@ -52,12 +53,12 @@ describe('профиль: создание, миграции, хранение',
 });
 
 describe('сезон и награды', () => {
-    it('опыт переводит уровни и даёт жвачку, потолок — 30-й уровень', () => {
-        const s = { level: 1, xp: 0, gum: 0 };
+    it('опыт переводит уровни и даёт по 100 «Е» за уровень, потолок — 30-й уровень', () => {
+        const s = { level: 1, xp: 0, chips: 0 };
         const r = addSeasonXp(s, seasonXpToNext(1) + seasonXpToNext(2) + 3);
-        expect(s).toMatchObject({ level: 3, xp: 3, gum: 20 });
+        expect(s).toMatchObject({ level: 3, xp: 3, chips: 200 });
         expect(r.reached).toEqual([2, 3]);
-        const top = { level: MAX_SEASON_LEVEL, xp: 0, gum: 0 };
+        const top = { level: MAX_SEASON_LEVEL, xp: 0, chips: 0 };
         addSeasonXp(top, 99999);
         expect(top).toMatchObject({ level: MAX_SEASON_LEVEL, xp: 0 });
     });
@@ -67,7 +68,8 @@ describe('сезон и награды', () => {
         p.season.level = 2;
         const a = claimSeasonRewards(p, SEASON_REWARDS, 1);
         expect(a.levels).toEqual([1, 2]);
-        expect(p.season.gum).toBe(SEASON_REWARDS[0].gum + SEASON_REWARDS[1].gum);
+        expect(p.season.chips).toBe(SEASON_REWARDS[0].chips + SEASON_REWARDS[1].chips);
+        expect(a.chips).toBe(SEASON_REWARDS[0].chips + SEASON_REWARDS[1].chips);
         expect(claimSeasonRewards(p, SEASON_REWARDS, 2).levels).toEqual([]);
     });
 
@@ -81,14 +83,14 @@ describe('сезон и награды', () => {
 });
 
 describe('итог заезда', () => {
-    it('победа: фишки, жвачка, опыт, ачивки, рекорд, история', () => {
+    it('победа: «Е» (с бонусом за сердечки), опыт, ачивки, рекорд, история', () => {
         const p = fresh();
         const r = applyRaceResult(p, 'win', win({ strikes: 0, gumPicked: 2, nitroPicked: 0 }), { trophies: TROPHIES, now: 1 });
-        expect(r.chips).toBe(30 + 20 + 10);
-        expect(r.gum).toBe(5 + 2 * 3);
+        expect(r.chips).toBe(30 + 20 + 10 + (5 + 2 * 3) * 10);
+        expect(r.gum).toBeUndefined();
         expect(r.xp).toBe(25 + 60 + 40);
         // фишки за выполненные задания (src/missions.js) идут отдельной строкой — задания случайные
-        expect(p.season.chips).toBe(60 + r.missions.chips);
+        expect(p.season.chips).toBe(r.chips + r.missions.chips + 100 * (r.levelAfter - r.levelBefore)); // +100 «Е» за уровень сезона
         expect(r.missions.progressed.length).toBeGreaterThanOrEqual(0);
         expect(r.achievements.sort()).toEqual(['first_win', 'gum_2', 'no_nitro', 'perfect'].sort());
         expect(r.newBest).toBe(true);
@@ -103,7 +105,7 @@ describe('итог заезда', () => {
 
     it('авария и время вышло: утешительная фишка и опыт, без рекорда', () => {
         const p = fresh();
-        expect(applyRaceResult(p, 'crash', win(), {})).toMatchObject({ chips: 10, xp: 35, gum: 0, newBest: false });
+        expect(applyRaceResult(p, 'crash', win(), {})).toMatchObject({ chips: 10, xp: 35, newBest: false });
         expect(applyRaceResult(p, 'timeout', win(), {})).toMatchObject({ chips: 10, xp: 35 });
         expect(p.stats).toMatchObject({ crashes: 1, timeouts: 1, wins: 0 });
     });

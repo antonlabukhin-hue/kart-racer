@@ -19,7 +19,7 @@ export function campaignBackupKey(p) {
 }
 
 export function defaultSeason() {
-    return { level: 1, xp: 0, gum: 0, chips: 0, contractsDone: 0, titles: [] };
+    return { level: 1, xp: 0, chips: 0, contractsDone: 0, titles: [] };
 }
 
 export function defaultStats() {
@@ -77,7 +77,8 @@ export function ensureProfileFields(p, balanceVersion) {
     if (p.econVer !== 2) { p.season.chips = (p.season.chips || 0) * 10; p.econVer = 2; }
     // весь опыт за всё время (уровень и звание игрока, src/ranks.js): у старых профилей — из прогресса сезона
     if (p.totalXp == null) p.totalXp = totalFromSeason(p.season, seasonXpToNext);
-    if (p.season.gum == null) p.season.gum = 0;
+    // жвачки убраны (ни на что не тратились): накопленные — в «Е», 1 к 10, один раз
+    if (p.season.gum != null) { p.season.chips = (p.season.chips || 0) + Math.max(0, p.season.gum || 0) * 10; delete p.season.gum; }
     if (!p.carLoadout) p.carLoadout = { parts: [], ownedParts: [], paint: 'stock', paintByCar: {} };
     if (!p.carLoadout.parts) p.carLoadout.parts = [];
     // раньше один список parts означал и «куплено», и «установлено» — снятие стирало покупку
@@ -128,7 +129,7 @@ export function seasonXpToNext(level) {
     return 80 + (level - 1) * 25;
 }
 
-/** Начислить опыт сезона; за каждый уровень +10 жвачки. Возвращает { levelsGained, reached } */
+/** Начислить опыт сезона; за каждый уровень +100 «Е». Возвращает { levelsGained, reached } */
 export function addSeasonXp(season, amount) {
     const before = season.level;
     season.xp += amount;
@@ -136,7 +137,7 @@ export function addSeasonXp(season, amount) {
     while (season.xp >= seasonXpToNext(season.level) && season.level < MAX_SEASON_LEVEL && guard < 40) {
         season.xp -= seasonXpToNext(season.level);
         season.level += 1;
-        season.gum += 10;
+        season.chips = (season.chips || 0) + 100;
         guard++;
     }
     if (season.level >= MAX_SEASON_LEVEL) season.xp = 0;
@@ -160,16 +161,14 @@ export function grantAchievement(profile, id, trophies, now) {
     return { isNew: true, trophies: got };
 }
 
-/** Забрать доступные награды сезона (уровни ≤ текущего). Возвращает { gum, chips, levels } */
+/** Забрать доступные награды сезона (уровни ≤ текущего). Возвращает { chips, levels } */
 export function claimSeasonRewards(profile, rewards, now) {
-    const out = { gum: 0, chips: 0, levels: [] };
+    const out = { chips: 0, levels: [] };
     const lv = profile.season.level;
     (rewards || []).forEach(function(r) {
         if (r.level <= lv && !profile.claimedRewards[r.level]) {
             profile.claimedRewards[r.level] = now != null ? now : Date.now();
-            profile.season.gum += r.gum;
             profile.season.chips += r.chips;
-            out.gum += r.gum;
             out.chips += r.chips;
             out.levels.push(r.level);
         }
@@ -204,7 +203,6 @@ export function applyRaceResult(profile, state, meta, ctx) {
     st.gumPicked = (st.gumPicked || 0) + (m.gumPicked || 0);
 
     let xp = 25;
-    let gum = 0;
     let chips = state === 'win' ? 30 : 10; // базовые «Е» за любой заезд
     let newBest = false;
     const unlockedMaps = [];
@@ -222,7 +220,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
         if ((m.nitroPicked || 0) === 0) tryAch('no_nitro');
         if ((m.oilHits || 0) >= 5) tryAch('oil_lover');
         if ((m.animalsHit || 0) >= 5) tryAch('bear_friend');
-        gum += 5 + (m.gumPicked || 0) * 3;
+        chips += (5 + (m.gumPicked || 0) * 3) * 10; // бонус за победу и сердечки (раньше — жвачки)
 
         const d = m.difficulty;
         if (d && (profile.bestTimes[d] == null || m.time < profile.bestTimes[d])) {
@@ -272,7 +270,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
     if (c.contractMode && k && profile.daily && !profile.daily.done && typeof k.check === 'function' &&
         k.check(Object.assign({}, m, { state: state }))) {
         profile.daily.done = true;
-        xp += k.xp; gum += k.gum; chips += k.chips;
+        xp += k.xp; chips += k.chips;
         profile.season.contractsDone = (profile.season.contractsDone || 0) + 1;
         contractDone = true;
     }
@@ -283,7 +281,6 @@ export function applyRaceResult(profile, state, meta, ctx) {
     const missions = applyMissionProgress(profile, Object.assign({}, m, { state: state }), c.rnd);
 
     profile.season.chips = (profile.season.chips || 0) + chips;
-    profile.season.gum = (profile.season.gum || 0) + gum;
     const lv = addSeasonXp(profile.season, xp);
     // уровень и звание игрока — от всего опыта
     const rankBefore = rankOf(profile.totalXp || 0).index;
@@ -299,7 +296,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
     if (profile.history.length > HISTORY_LIMIT) profile.history.length = HISTORY_LIMIT;
 
     return {
-        xp: xp, gum: gum, chips: chips, vhs: vhs,
+        xp: xp, chips: chips, vhs: vhs,
         levelBefore: levelBefore, levelAfter: profile.season.level,
         achievements: achievements, trophies: trophies,
         contractDone: contractDone, contractTitle: contractDone ? k.title : '',

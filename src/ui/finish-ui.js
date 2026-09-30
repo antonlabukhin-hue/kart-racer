@@ -41,15 +41,15 @@ export function statTilesHtml(list) {
     }).join('') + '</div>';
 }
 
-/** Награды «фишками»: число набегает от 0 (animateRewardChips). totals — { chips, gum } после заезда */
+/** Награды плитками: число набегает от 0 (animateRewardChips). totals — { chips, vhs } после заезда */
 export function rewardChipsHtml(r, totals) {
     if (!r) return '';
-    const items = [['Е', r.chips, 'железные «Е»'], ['🍬', r.gum, 'жвачки'], ['📼', r.vhs, 'видеокассеты'], ['XP', r.xp, 'опыт']].filter(function(x) { return (x[1] || 0) > 0; });
+    const items = [['Е', r.chips, 'железные «Е»'], ['📼', r.vhs, 'видеокассеты'], ['XP', r.xp, 'опыт']].filter(function(x) { return (x[1] || 0) > 0; });
     if (!items.length) return '';
     return '<div class="fin-rewards">' + items.map(function(x, i) {
         return '<span class="fin-chip" style="animation-delay:' + (0.15 + i * 0.12) + 's" title="' + x[2] + '"><i>' + x[0] + '</i> +<b data-to="' + x[1] + '">' + x[1] + '</b></span>';
     }).join('') + '</div>'
-        + (totals ? '<div class="fin-total">всего: Е ' + (totals.chips || 0) + ' · 🍬 ' + (totals.gum || 0) + '</div>' : '');
+        + (totals ? '<div class="fin-total">всего: Е ' + (totals.chips || 0) + (totals.vhs ? ' · 📼 ' + totals.vhs : '') + '</div>' : '');
 }
 
 /** Набегающие числа в наградах (0 → итог за ~0.8 с); без анимации, если пользователь её отключил */

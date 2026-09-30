@@ -37,7 +37,6 @@ export function refreshMainMenu(d) {
     setText('mm-name', p.name);
     setText('mm-level', rankLabel(p.totalXp)); // уровень и звание игрока (src/ranks.js); уровень сезона — в «Сезоне»
     setText('mm-chips', String(se.chips || 0));
-    setText('mm-gum', String(se.gum || 0));
     setText('mm-vhs', String(se.vhs || 0));
     setText('mm-note-campaign', d.campaignDone + ' из ' + d.campaignTotal);
     const ups = affordableUpgrades(d.upgradeLevels, se.chips, d.upgrades, d.costOf, d.maxLevel);
@@ -82,7 +81,7 @@ function renderMissions(rows, mult) {
 
 /**
  * Сундук дня: семь дней серии, сегодняшний подсвечен; «Забрать» начисляет награду.
- * c: { claim() → { chips, gum, day } | null, after() — обновить меню }
+ * c: { claim() → { chips, vhs, day } | null, after() — обновить меню }
  */
 export function showChest(p, c) {
     document.querySelectorAll('.chest-modal').forEach(function(n) { n.remove(); });
@@ -96,7 +95,7 @@ export function showChest(p, c) {
         + '<div class="ch-days">' + CHESTS.map(function(x, i) {
             const n = i + 1;
             return '<div class="ch-day' + (n < day ? ' past' : n === day ? ' today' + (claimed ? ' opened' : '') : '') + '"><small>день ' + n + '</small><i>' + (n === 7 ? '🎁' : '📦') + '</i>'
-                + '<span>Е ' + x.chips + '<br>🍬' + x.gum + (x.vhs ? '<br>📼' + x.vhs : '') + '</span></div>';
+                + '<span>Е ' + x.chips + (x.vhs ? '<br>📼' + x.vhs : '') + '</span></div>';
         }).join('') + '</div>'
         + (claimed ? '<div class="ch-got">Сегодня уже забран — приходи завтра</div>' : '<button type="button" class="ch-claim">Забрать сундук</button>')
         + '<button type="button" class="ch-later">' + (claimed ? 'Понятно' : 'Позже') + '</button></div>';
@@ -108,7 +107,7 @@ export function showChest(p, c) {
     if (cl) cl.onclick = function() {
         const got = c.claim();
         if (!got) { close(); return; }
-        cl.outerHTML = '<div class="ch-got">+' + got.chips + ' Е · +' + got.gum + ' 🍬' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>';
+        cl.outerHTML = '<div class="ch-got">+' + got.chips + ' Е' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>';
         m.querySelector('.ch-later').textContent = 'Отлично!';
         m.querySelector('.ch-day.today').classList.add('opened');
     };

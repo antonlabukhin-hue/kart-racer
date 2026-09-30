@@ -5220,9 +5220,11 @@ html.touch-ui.touch-land body.race-mode .crash-tag { top: calc(env(safe-area-ins
 /* до 3D — тёмный экран с названием (без мелькания старой картинки); картинка — только если 3D не запустилось */
 #splash-screen img { display: none; }
 body.splash-fallback #splash-screen img { display: block; }
-#splash-screen { transition: background 0.8s ease; }
+/* без затемнения: пока 3D грузится — закатное небо в цвет сцены, потом сразу «кино» (без растворения из чёрного) */
+#splash-screen { background: linear-gradient(180deg, #2a1428 0%, #b8402a 45%, #f0a050 62%, #3a2a2a 63%, #1c1a20 100%) !important; }
 #splash-screen { justify-content: flex-end !important; padding-bottom: max(40px, env(safe-area-inset-bottom)); }
-body.menu-live #splash-screen { background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.7) 100%); }
+body.menu-live #splash-screen { background: linear-gradient(180deg, rgba(0,0,0,0) 70%, rgba(0,0,0,0.35) 100%) !important; }
+body.splash-fallback #splash-screen { background: #050508 !important; }
 body.splash-fallback #splash-screen { justify-content: center !important; }
 body.splash-fallback #splash-screen .splash-title { display: none; }
 #splash-screen .splash-title {
@@ -5406,3 +5408,12 @@ body:has(.reward-reveal) :is(#hud-speedo, #hud-menu-btn, #hud-pause-btn, #volume
     .meet-off { margin-top: 4px; }
 }
 body:has(.meet-overlay) #pause-overlay { display: none !important; }
+/* «Бесконечная трасса» — главный режим: яркое золотое свечение, пульсирует и притягивает взгляд */
+#main-menu-screen .mm-modes .menu-card.menu-infinite { border: 2px solid #ffd23c !important; animation: infGlow 1.8s ease-in-out infinite; position: relative; z-index: 1; }
+#main-menu-screen .mm-modes .menu-card.menu-infinite::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(115deg, transparent 30%, rgba(255, 240, 170, 0.45) 45%, transparent 60%) no-repeat; background-size: 250% 100%; animation: infShine 3.2s ease-in-out infinite; }
+#main-menu-screen .mm-modes .menu-card.menu-infinite .mm-cap { background: linear-gradient(180deg, color-mix(in srgb, #ffd23c 40%, #2a1a08), #1a1206 85%) !important; }
+#main-menu-screen .mm-modes .menu-card.menu-infinite .mm-title { color: #ffe066; text-shadow: 0 0 10px rgba(255, 200, 40, 0.8), 0 1px 0 #000; }
+@keyframes infGlow { 0%, 100% { box-shadow: 0 0 12px 2px rgba(255, 200, 40, 0.55), 0 0 0 0 rgba(255, 210, 60, 0.4); } 50% { box-shadow: 0 0 28px 8px rgba(255, 200, 40, 0.9), 0 0 0 4px rgba(255, 210, 60, 0.25); } }
+@keyframes infShine { 0%, 55% { background-position: 150% 0; } 100% { background-position: -60% 0; } }
+@media (prefers-reduced-motion: reduce) { #main-menu-screen .mm-modes .menu-card.menu-infinite, #main-menu-screen .mm-modes .menu-card.menu-infinite::after { animation: none; } #main-menu-screen .mm-modes .menu-card.menu-infinite { box-shadow: 0 0 22px 6px rgba(255, 200, 40, 0.8); } }
