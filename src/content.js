@@ -52,7 +52,7 @@ export const ACHIEVEMENTS = [
     { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/trophy_wins5.png' }
 ];
 
-export const CAR_SHOP_ORDER = ['cheburashka', 'kirpich', 'gorbaty', 'turbo', 'buhanka', 'zubilo'];
+export const CAR_SHOP_ORDER = ['cheburashka', 'kirpich', 'gorbaty', 'turbo', 'pirozhok', 'buhanka', 'zubilo'];
 
 export const CAR_PARTS = [
     { id: 'spoiler', name: 'Спойлер «Кирпич»', price: 80, slot: 'spoiler' },

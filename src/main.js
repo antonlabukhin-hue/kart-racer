@@ -9375,6 +9375,7 @@ function startGaragePreview(carId) {
                             try { if (window.soundEngine) window.soundEngine.playSfx('ring', 1); } catch (e) {} // «колечко», как в 16-битных играх
                         } else if (c.type === 'power') {
                             activatePower(powers, c.power);
+                            if (ABILITY === 'cargo' && c.power === 'x2') powers.x2 *= 2; // «Пирожок» — ×2 вдвое дольше
                             stats.powers = (stats.powers || 0) + 1;
                             if (c.power === 'shield') { cleanRun.grantShield(); setShieldVisible(true); }
                             const pw = POWERS[c.power];

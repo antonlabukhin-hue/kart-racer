@@ -172,6 +172,8 @@ export const CAR_PRESETS = {
         ability: { id: 'turbo', name: 'Турбо', desc: 'нитро разгоняет сильнее (×1.6 вместо ×1.45)' } },
     gorbaty:     { name: 'Горбатый',   color: 0x7fb6d9, maxSpeed: 0.384, accel: 0.0228, durability: 0.85, oilGrip: 1.0, priceChips: 300,
         ability: { id: 'hop', name: 'Прыгун', desc: 'трамплины подбрасывают на 30% выше — золотая «Е» и без нитро' } },
+    pirozhok:    { name: 'Пирожок',    color: 0x3f74b0, maxSpeed: 0.4, accel: 0.02, durability: 1.05, oilGrip: 1.0, priceChips: 500,
+        ability: { id: 'cargo', name: 'Грузовой', desc: 'усиление «×2 Е» действует вдвое дольше' } },
     buhanka:     { name: 'Буханка',    color: 0x5e7040, maxSpeed: 0.39, accel: 0.0192, durability: 1.35, oilGrip: 1.1, priceChips: 600,
         ability: { id: 'armor', name: 'Броня', desc: 'каждый заезд — с бронёй: первый удар не авария' } },
     // уникальная: только за видеокассеты (📼 — редкая валюта бесконечной трассы и сундуков)
