@@ -5128,3 +5128,7 @@ html.touch-ui.touch-land body.race-mode .crash-tag { top: calc(env(safe-area-ins
 /* валюта — железная «Е»: золотая буква вместо монеты */
 .mm-wallet .mm-e i { font-style: normal; font-weight: 900; color: #ffd23c; font-family: Georgia, 'Times New Roman', serif; text-shadow: 0 0 6px rgba(255, 170, 0, 0.6); }
 .fin-chip[title="железные «Е»"] i { font-style: normal; font-weight: 900; color: #ffd23c; font-family: Georgia, 'Times New Roman', serif; }
+/* «Машины» на компьютере: строки по содержимому — превью не наезжает на ряд машин (с «Зубилом» их четыре) */
+@media (min-height: 561px) and (min-width: 701px) {
+    body #shop-screen .content { grid-template-rows: none !important; grid-auto-rows: min-content !important; overflow-y: auto !important; max-height: calc(100dvh - 24px) !important; }
+}
