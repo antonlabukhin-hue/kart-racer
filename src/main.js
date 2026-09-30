@@ -7976,7 +7976,7 @@ function startGaragePreview(carId) {
             let comboTime = 0;
             let comboMax = 0;
             // «Чистый отрезок» (src/clean-run.js): 10 с без ударов — щит, потом фишки
-            const cleanRun = createCleanRun(); const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
+            const cleanRun = createCleanRun(); if (ABILITY === 'armor') cleanRun.grantShield(); /* «Буханка»: старт с бронёй */ let _armorShown = false; const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
             let shieldMesh = null;
             /** Крупная выскакивающая плашка по центру (броня и т. п.) — один слот */
             function showBigPlaque(title, sub, cls) {
@@ -8364,6 +8364,7 @@ function startGaragePreview(carId) {
                 ghostClock += deltaTime;
                 ghostRec.update(deltaTime, xPos, zPos, carYOffset);
                 {
+                    if (!_armorShown && ABILITY === 'armor') { _armorShown = true; setShieldVisible(true); }
                     const cleanGot = cleanRun.tick(deltaTime, speed > MAX_SPEED * 0.3);
                     if (cleanGot === 'shield') {
                         setShieldVisible(true);

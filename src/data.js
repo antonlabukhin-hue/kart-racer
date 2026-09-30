@@ -170,6 +170,8 @@ export const CAR_PRESETS = {
         ability: { id: 'offroad', name: 'Внедорожник', desc: 'ямы, кочки, лёд и смола не тормозят' } },
     turbo:       { name: 'Волга',      color: 0xc0a060, maxSpeed: 0.492, accel: 0.0288, durability: 1.15, oilGrip: 0.72, priceChips: 450,
         ability: { id: 'turbo', name: 'Турбо', desc: 'нитро разгоняет сильнее (×1.6 вместо ×1.45)' } },
+    buhanka:     { name: 'Буханка',    color: 0x5e7040, maxSpeed: 0.39, accel: 0.0192, durability: 1.35, oilGrip: 1.1, priceChips: 600,
+        ability: { id: 'armor', name: 'Броня', desc: 'каждый заезд — с бронёй: первый удар не авария' } },
     // уникальная: только за видеокассеты (📼 — редкая валюта бесконечной трассы и сундуков)
     zubilo:      { name: 'Зубило',     color: 0x9a1428, maxSpeed: 0.456, accel: 0.0264, durability: 0.9, oilGrip: 0.95, priceChips: 0, priceVhs: 5,
         ability: { id: 'magnet', name: 'Магнит', desc: '«Е» рядом сами летят в машину — без усиления' } }
