@@ -27,7 +27,7 @@ describe('экран финиша: одна главная кнопка по и�
         const h = rewardChipsHtml({ chips: 3, gum: 0, xp: 40 }, { chips: 15, gum: 7 });
         expect((h.match(/class="fin-chip"/g) || []).length).toBe(2);
         expect(h).toContain('data-to="40"');
-        expect(h).toContain('всего: 🪙 15 · 🍬 7');
+        expect(h).toContain('всего: Е 15 · 🍬 7');
         expect(rewardChipsHtml({ chips: 0, gum: 0, xp: 0 })).toBe('');
     });
     it('статистика плитками', () => {

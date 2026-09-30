@@ -56,7 +56,7 @@ test('серия дней: сундук дня', async ({ page }) => {
     await page.locator('#mm-streak').click();
     await expect(page.locator('.chest-modal')).toContainText('Серия: 1 день подряд');
     await page.locator('.ch-claim').click();
-    await expect(page.locator('.chest-modal .ch-got')).toContainText('+2 🪙');
+    await expect(page.locator('.chest-modal .ch-got')).toContainText('+2 Е');
     await page.locator('.ch-later').click();
     await expect(page.locator('.chest-modal')).toHaveCount(0);
     await expect(page.locator('#mm-badge-chest')).toBeHidden();
@@ -74,6 +74,6 @@ test('серия дней: сундук дня', async ({ page }) => {
     await page.locator('#profile-list').getByText('Тестер').click();
     await expect(page.locator('.chest-modal')).toContainText('Серия: 2 дня подряд');
     await page.locator('.ch-claim').click();
-    await expect(page.locator('.chest-modal .ch-got')).toContainText('+3 🪙');
+    await expect(page.locator('.chest-modal .ch-got')).toContainText('+3 Е');
     expect(problems).toEqual([]);
 });

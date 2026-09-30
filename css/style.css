@@ -5124,3 +5124,7 @@ html.touch-ui.touch-land body.race-mode .crash-tag { top: calc(env(safe-area-ins
 .chance-card button:disabled { opacity: 0.35; cursor: default; }
 .chance-card .cc-no { background: transparent; color: #aaa; font-weight: 600; font-size: 14px; }
 @media (max-height: 420px) { .chance-card { padding: 8px 12px; } .chance-card .cc-ring { width: 40px; height: 40px; font-size: 18px; margin-bottom: 4px; } .chance-card button { padding: 7px; font-size: 14px; margin-top: 5px; } }
+
+/* валюта — железная «Е»: золотая буква вместо монеты */
+.mm-wallet .mm-e i { font-style: normal; font-weight: 900; color: #ffd23c; font-family: Georgia, 'Times New Roman', serif; text-shadow: 0 0 6px rgba(255, 170, 0, 0.6); }
+.fin-chip[title="железные «Е»"] i { font-style: normal; font-weight: 900; color: #ffd23c; font-family: Georgia, 'Times New Roman', serif; }
