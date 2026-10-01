@@ -1144,3 +1144,13 @@ export function addNitroFlames(car) {
         }
     };
 }
+
+/** Превью витрины: уменьшить высокие и длинные модели, чтобы при вращении они целиком оставались в кадре */
+export function fitShowroom(group) {
+    const box = new THREE.Box3().setFromObject(group), size = new THREE.Vector3();
+    box.getSize(size);
+    const diag = Math.hypot(size.x, size.z);
+    const k = Math.min(1, 2.75 / Math.max(0.01, diag), 1.5 / Math.max(0.01, size.y));
+    group.scale.setScalar(k);
+    return k;
+}

@@ -31,7 +31,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
-        import { buildShowroomCar, applyUpgradeVisuals, addNitroFlames } from './cars.js';
+        import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames } from './cars.js';
         import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
@@ -1756,7 +1756,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                                 o.material.color.setHex(presetCol);
                             }
                         });
-                        scene.add(built.group);
+                        fitShowroom(built.group); scene.add(built.group); // крупные модели — меньше, чтобы не уходили за край
                         let rot = 0.5;
                         const tick = () => {
                             shopRaf = requestAnimationFrame(tick);
