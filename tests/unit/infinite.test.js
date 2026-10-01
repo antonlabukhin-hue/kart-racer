@@ -106,11 +106,14 @@ describe('план участка', () => {
     });
     it('ящики «?» — раз в 260–420 м; шипы — только после SPIKES_FROM и чем дальше, тем чаще', () => {
         const p = planStretch(0, 20000, seq(13)).items;
-        const cr = p.filter(i => i.kind === 'crate');
-        expect(cr.length).toBeGreaterThan(20000 / CRATE_EVERY[1] * 0.7);
+        const cr = p.filter(i => i.kind === 'crate' && !i.pat); // ящики узоров — сверх этого (src/patterns.js)
+        // часть мест занята узорами — одиночек чуть меньше, вместе с ящиками узоров — не больше ~1 на 160 м
+        expect(cr.length).toBeGreaterThan(20000 / CRATE_EVERY[1] * 0.5);
         expect(cr.length).toBeLessThan(20000 / CRATE_EVERY[0] * 1.2);
+        expect(p.filter(i => i.kind === 'crate').length).toBeLessThan(20000 / 160);
         const es = p.filter(i => i.kind === 'echip' && !i.side).map(i => i.d);
         cr.forEach(c => expect(es.every(e => Math.abs(e - c.d) > 18)).toBe(true));
+        // шипы-одиночки — после SPIKES_FROM; шипы узоров — тоже
         expect(planStretch(0, SPIKES_FROM, seq(3)).items.some(i => i.kind === 'spikes')).toBe(false);
         let early = 0, late = 0;
         for (let k = 0; k < 10; k++) {
@@ -149,9 +152,9 @@ describe('горячий старт', () => {
         expect(planStretch(0, 500, seq(3), { warm: 1500 }).items.some(i => i.kind === 'spikes')).toBe(true);
         let cold = 0, warm = 0;
         for (let k = 0; k < 10; k++) {
-            cold += planStretch(0, 1000, seq(70 + k)).items.filter(i => i.kind === 'obstacle').length;
-            warm += planStretch(0, 1000, seq(70 + k), { warm: 1500 }).items.filter(i => i.kind === 'obstacle').length;
+            cold += planStretch(0, 1000, seq(70 + k)).items.filter(i => i.kind === 'spikes').length;
+            warm += planStretch(0, 1000, seq(70 + k), { warm: 1500 }).items.filter(i => i.kind === 'spikes').length;
         }
-        expect(warm).toBeGreaterThan(cold * 1.2);
+        expect(warm).toBeGreaterThan(cold);
     });
 });

@@ -119,3 +119,23 @@ export function createSpikesMesh() {
     });
     return grp;
 }
+
+let _coneMats = null;
+/** Дорожный конус (только вид, без удара): им узоры (src/patterns.js) отмечают закрытую полосу — тёмную яму на асфальте издалека не видно */
+export function createLaneCone() {
+    if (!_coneMats) _coneMats = {
+        cone: new THREE.MeshStandardMaterial({ color: 0xff6a10, roughness: 0.55, emissive: 0x551800, emissiveIntensity: 0.5 }),
+        band: new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: 0.4, emissive: 0x333333, emissiveIntensity: 0.4 }),
+        base: new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.8 })
+    };
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 0.42), _coneMats.base);
+    base.position.y = 0.025;
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.62, 10), _coneMats.cone);
+    cone.position.y = 0.36;
+    cone.castShadow = true;
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.125, 0.1, 10), _coneMats.band);
+    band.position.y = 0.42;
+    g.add(base, cone, band);
+    return g;
+}
