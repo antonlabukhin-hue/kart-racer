@@ -14,7 +14,7 @@ export function finishActions(o) {
     const menu = { id: 'finish-menu-btn', label: '🏠 В меню', kind: 'ghost' };
     const list = [];
     if (o.camp && win) {
-        list.push({ id: 'finish-next-btn', label: o.hasNext ? '⏭ Дальше: следующая глава' : '📖 К списку глав', kind: 'primary' });
+        list.push({ id: 'finish-next-btn', label: o.hasNext ? '⏭ Следующая глава' : '📖 К списку глав', kind: 'primary' });
         list.push(retry, garage);
     } else {
         list.push(Object.assign({}, retry, { kind: 'primary' }));

@@ -1494,7 +1494,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                     if (isCamp) {
                         if (note) {
                             note.style.display = 'block';
-                            note.textContent = '📖 Кампания: сложность главы — ' + (window.__forceDifficulty || 'easy') + '. Выбери только качество графики.';
+                            note.textContent = '📖 Сложность главы — ' + ({ easy: 'лёгкая', medium: 'средняя', hard: 'сложная' }[window.__forceDifficulty || 'easy'] || 'лёгкая') + '. Выбери качество графики.';
                         }
                         if (campGo) {
                             campGo.style.display = 'block';
