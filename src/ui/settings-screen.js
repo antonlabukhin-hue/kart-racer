@@ -31,6 +31,8 @@ export function openSettingsScreen(deps) {
         '<div class="st-title">⚙ Настройки</div>' +
         '<div class="st-group">Звук</div>' +
         slider('music', '🎵 Музыка') + slider('engine', '🏎 Двигатель') + slider('sfx', '💥 Эффекты') +
+        '<div class="st-group">🎙 Ведущий</div>' +
+        choice('host', [['voice', 'Голос и текст'], ['text', 'Только текст'], ['off', 'Молчит']]) +
         '<div class="st-group">Графика</div>' +
         choice('quality', [['low', '🚀 Низкое'], ['medium', '⚡ Среднее'], ['high', '🔥 Высокое']]) +
         '<div class="st-group">Камера в заезде</div>' +
@@ -50,6 +52,7 @@ export function openSettingsScreen(deps) {
         '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
         '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
         // для разбора вёрстки на телефоне: экран устройства, окно страницы, масштаб интерфейса, режим приложения
+        '<div class="st-copy">© 2026 Антон Лабухин 1989 · Все права защищены</div>' +
         '<div class="st-diag">экран ' + screen.width + '×' + screen.height + ' · окно ' + innerWidth + '×' + innerHeight +
         ' · ×' + (getComputedStyle(document.documentElement).getPropertyValue('--ui-k').trim() || '1') +
         (window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) ? ' · приложение' : '') + '</div>' +

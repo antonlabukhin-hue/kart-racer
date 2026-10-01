@@ -5686,3 +5686,97 @@ body #finish-screen.finish-layout-camp .fin-btn.primary { height: 50px; font-siz
 }
 body #finish-screen.finish-layout-camp .fin-btn.primary { letter-spacing: 0.02em !important; }
 #finish-screen.finish-layout-camp .chapter-gift-go { width: 100% !important; max-width: none !important; box-sizing: border-box; }
+
+/* площадка: реклама за награду, «Касса» (src/platform.js, src/platform-hooks.js) */
+.chance-card .cc-pay-ad { background: linear-gradient(180deg, #4ce08a, #16a05a); color: #04210f; box-shadow: 0 0 16px rgba(76, 224, 138, 0.45); }
+body #finish-screen .fin-btn.ad-btn { background: linear-gradient(180deg, #4ce08a, #16a05a) !important; color: #04210f !important; border: 0 !important; font-weight: 900; box-shadow: 0 4px 0 #0b5a31, 0 0 16px rgba(76, 224, 138, 0.45) !important; }
+body #finish-screen .fin-btn.ad-btn small { font-weight: 800; margin-left: 4px; }
+body #finish-screen .fin-btn.ad-btn.done { background: rgba(76, 224, 138, 0.15) !important; color: #8dffb8 !important; box-shadow: none !important; }
+.ad-mock { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: #000; color: #fff; font: 900 22px system-ui, sans-serif; text-align: center; padding: 20px; }
+.shop-pay { margin: 8px 0; }
+.shop-pay .pay-title { font-size: 13px; font-weight: 900; color: #ffd23c; text-align: left; margin-bottom: 6px; }
+.shop-pay .pay-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.shop-pay .pay-item { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 8px 10px; border-radius: 12px; cursor: pointer;
+    border: 1px solid rgba(255, 210, 60, 0.35); background: rgba(255, 255, 255, 0.06); color: #fff; font: inherit; }
+.shop-pay .pay-item.hot { border-color: #ffd23c; box-shadow: 0 0 12px rgba(255, 210, 60, 0.35); }
+.shop-pay .pay-item i { grid-row: 1 / 3; font-style: normal; font-size: 22px; font-weight: 900; color: #ffd23c; }
+.shop-pay .pay-item span { font-size: 12px; font-weight: 700; line-height: 1.2; }
+.shop-pay .pay-item b { font-size: 15px; color: #8dffb8; display: flex; align-items: center; gap: 4px; }
+.shop-pay .pay-item b img { width: 16px; height: 16px; }
+
+/* ведущий-комментатор (src/announcer.js): рамка как в диалогах 16-битных приставок — вверху по центру, над горизонтом:
+   дорога и машина открыты; крупная плашка в это время опускается ниже, чтобы не наложиться */
+.announcer { position: fixed; left: 50%; top: calc(56px + env(safe-area-inset-top, 0px)); z-index: 9700; display: flex; align-items: center; gap: 8px; max-width: min(520px, 56vw);
+    padding: 5px 12px 5px 5px; transform: translate(-50%, -12px); opacity: 0; pointer-events: none;
+    background: linear-gradient(180deg, #1b2a6b, #0d1440); border: 3px solid #fff; border-radius: 6px;
+    box-shadow: 0 0 0 3px #0d1440, 0 0 0 5px #6fa0ff, 0 8px 24px rgba(0, 0, 0, 0.5); }
+.announcer i { flex: 0 0 auto; width: 32px; height: 32px; display: grid; place-items: center; font-style: normal; font-size: 19px;
+    background: #ffd23c; border: 2px solid #fff; border-radius: 4px; box-shadow: inset 0 -3px 0 #c88a00; }
+.announcer span { font: 900 16px/1.2 system-ui, 'Segoe UI', sans-serif; color: #ffe066; text-transform: uppercase; letter-spacing: 0.02em; text-shadow: 2px 2px 0 #000; }
+.announcer.in { animation: annIn .22s steps(4) forwards; }
+.announcer.out { animation: annOut .25s steps(3) forwards; }
+@keyframes annIn { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes annOut { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -8px); } }
+body:has(.announcer.in) .big-plaque { top: calc(19% + 52px); }
+@media (max-height: 460px) { .announcer { top: calc(44px + env(safe-area-inset-top, 0px)); max-width: 48vw; padding: 3px 9px 3px 3px; border-width: 2px; }
+    .announcer i { width: 24px; height: 24px; font-size: 14px; } .announcer span { font-size: 12px; }
+    body:has(.announcer.in) .big-plaque { top: calc(24% + 34px); } }
+@media (max-width: 600px) and (min-height: 461px) { .announcer { max-width: 86vw; } .announcer span { font-size: 13px; } }
+/* на экране итогов — в правом нижнем углу, под кнопками: заголовок и награды открыты */
+body:has(#finish-screen) .announcer { top: auto; left: auto; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); max-width: min(420px, 46vw); }
+body:has(#finish-screen) .announcer.in { animation: annInR .22s steps(4) forwards; }
+body:has(#finish-screen) .announcer.out { animation: annOutR .25s steps(3) forwards; }
+@keyframes annInR { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes annOutR { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px); } }
+@media (max-width: 600px) { body:has(#finish-screen) .announcer { max-width: 80vw; } }
+
+/* VHS-заставка при запуске (src/ui/vhs-intro.js) */
+.vhs-intro { --vhs-k: 1; position: fixed; inset: 0; z-index: 100000; overflow: hidden; cursor: pointer; background: rgba(8, 8, 16, var(--vhs-k)); transition: opacity .35s; }
+.vhs-intro canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; mix-blend-mode: screen; }
+.vhs-intro::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0 1px, transparent 1px 3px); }
+.vhs-band { position: absolute; left: 0; right: 0; height: 12%; top: -15%; background: linear-gradient(180deg, transparent, rgba(255,255,255,0.22) 40%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.22) 60%, transparent);
+    filter: blur(1px); animation: vhsBand 1.1s linear infinite; }
+@keyframes vhsBand { to { top: 110%; } }
+.vhs-osd { position: absolute; font: 700 clamp(20px, 5vw, 40px)/1 'Courier New', ui-monospace, monospace; color: #f4f4f4; letter-spacing: 0.08em;
+    text-shadow: 2px 0 0 rgba(255, 40, 80, 0.6), -2px 0 0 rgba(40, 200, 255, 0.6), 0 0 8px rgba(255,255,255,0.5); opacity: 0; }
+.vhs-play { top: calc(6% + env(safe-area-inset-top, 0px)); left: 6%; }
+.vhs-sp { top: calc(6% + env(safe-area-inset-top, 0px)); right: 6%; }
+.vhs-ctr { bottom: calc(7% + env(safe-area-inset-bottom, 0px)); left: 6%; font-size: clamp(16px, 4vw, 30px); }
+.vhs-play-on .vhs-osd { opacity: 1; }
+.vhs-play-on .vhs-play { animation: vhsBlink 0.5s steps(1) 2; }
+@keyframes vhsBlink { 50% { opacity: 0; } }
+.vhs-skip { position: absolute; bottom: calc(7% + env(safe-area-inset-bottom, 0px)); right: 6%; font: 600 12px system-ui, sans-serif; color: rgba(255,255,255,0.55); }
+.vhs-intro.vhs-out { opacity: 0; }
+body.vhs-reveal #splash-screen { animation: vhsJit .16s steps(2) infinite; filter: saturate(1.4) contrast(1.15); }
+@keyframes vhsJit { 0% { transform: translate(0, 0); } 50% { transform: translate(-3px, 1px); } 100% { transform: translate(2px, -1px); } }
+
+/* Интерфейс «картридж с приставки» (вариант Б, согласован 2026-10-01): шрифт Russo One (OFL, npm @fontsource/russo-one),
+   хромированные заголовки, объёмные панели с фаской и чёрной «тенью-подставкой» */
+:root { --sg: 'Russo One', system-ui, sans-serif; }
+#main-menu-screen h1, .play-hero-btn b, .mm-title, #shop-screen h1, .finish-inner h1, .fin-btn, #shop-action, .garage-btn, .mm-extra b, .mm-wallet b, #mm-name, .play-hero-btn small {
+    font-family: var(--sg) !important; font-weight: 400 !important; letter-spacing: 0.02em; }
+#main-menu-screen h1, #shop-screen h1, .finish-inner h1 { font-style: italic; text-transform: uppercase;
+    background: linear-gradient(180deg, #fff 0%, #ffe9a0 30%, #ff9a1a 52%, #b8300c 54%, #ffd23c 80%, #fff6c8 100%); -webkit-background-clip: text; background-clip: text;
+    color: transparent !important; -webkit-text-stroke: 1px #2a0a00; filter: drop-shadow(3px 3px 0 #000); }
+#main-menu-screen h1 { font-size: 30px !important; margin: 8px 0 !important; }
+.play-hero-btn { border-radius: 6px !important; border: 3px solid #000 !important; background: linear-gradient(180deg, #ffe680, #ffb300 55%, #d97800) !important;
+    box-shadow: inset 3px 3px 0 rgba(255,255,255,0.7), inset -3px -3px 0 rgba(120,50,0,0.6), 0 6px 0 #000 !important; transform: skewX(-6deg); }
+.play-hero-btn b { font-size: 26px !important; font-style: italic; color: #1a0a00 !important; text-shadow: 1px 1px 0 #fff2b0 !important; }
+.menu-card { border-radius: 6px !important; border: 3px solid #000 !important; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), 0 5px 0 #000 !important; }
+.menu-card .mm-cap { background: linear-gradient(180deg, #e01e1e, #8a0a0a) !important; border-top: 3px solid #000 !important;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.4) !important; }
+.menu-card .mm-title { font-style: italic; color: #fff !important; text-shadow: 2px 2px 0 #000 !important; text-transform: uppercase; }
+.menu-card.menu-infinite { border-color: #ffd23c !important; }
+.mm-extra, .mm-top > button, .mm-wallet > span { border-radius: 6px !important; border: 2px solid #000 !important;
+    background: linear-gradient(180deg, #4a4a58, #1c1c24) !important; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.25), 0 4px 0 #000 !important; }
+#shop-screen h1 { font-size: 28px !important; }
+.shop-stage { border: 3px solid #000 !important; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3), 0 6px 0 #000 !important; }
+#shop-action, .garage-btn { border-radius: 6px !important; font-style: italic; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.5), 0 5px 0 #000 !important; }
+.finish-inner { border-radius: 8px !important; border: 3px solid #000 !important; background: linear-gradient(180deg, #2b2b36, #101016) !important;
+    box-shadow: inset 0 0 0 3px #c9c9d6, inset 0 0 0 5px #000, 0 10px 0 #000 !important; }
+.finish-inner h1 { font-size: 26px !important; }
+body #finish-screen .fin-btn { border-radius: 6px !important; font-style: italic; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.35), 0 4px 0 #000 !important; border: 2px solid #000 !important; }
+
+/* авторские права: заставка и низ настроек */
+#splash-screen .copyright { position: absolute; left: 0; right: 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 3; text-align: center; font: 600 11px system-ui, sans-serif; color: rgba(255, 255, 255, 0.6); text-shadow: 0 1px 2px #000; pointer-events: none; }
+.st-copy { margin-top: 12px; text-align: center; font-size: 11px; color: #9a92a8; }

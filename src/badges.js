@@ -5,8 +5,8 @@
  */
 export const BADGES = [
     { id: 'tech', icon: '🔧', name: 'Юный техник' },
-    { id: 'turbo', icon: '🏎', name: 'Вкладыш «Турбо»' },
-    { id: 'tama', icon: '🥚', name: 'Тамагочи' },
+    { id: 'turbo', icon: '🏎', name: 'Вкладыш от жвачки' },
+    { id: 'tama', icon: '🥚', name: 'Электронный питомец' },
     { id: 'pager', icon: '📟', name: 'Пейджер' },
     { id: 'cart', icon: '🕹', name: 'Картридж 9999 в 1' },
     { id: 'tape', icon: '📼', name: 'Кассета «Сборник»' },

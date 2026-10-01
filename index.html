@@ -6,6 +6,8 @@
     <title>🏎️ Дорожный прорыв</title>
     <!-- как приложение: иконка на рабочем столе, запуск на весь экран (public/manifest.webmanifest, public/sw.js) -->
     <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="author" content="© 2026 Антон Лабухин 1989" />
+    <meta name="copyright" content="© 2026 Антон Лабухин 1989. Все права защищены." />
     <meta name="theme-color" content="#1a1210" />
     <link rel="icon" type="image/png" href="./icons/favicon-64.png" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
@@ -52,6 +54,7 @@
              onerror="this.onerror=null;this.src='images/splash.jpg';">
         <div class="splash-title">ДОРОЖНЫЙ ПРОРЫВ<small>Дорога из Арсеньева · 2037</small></div>
         <div class="hint">Нажми, чтобы продолжить</div>
+        <div class="copyright">© 2026 Антон Лабухин 1989 · Все права защищены</div>
     </div>
 
     <script>
@@ -240,6 +243,7 @@
             <div class="shop-cars" id="shop-cars"></div>
             <div id="shop-desc" class="car-stats" style="font-size:12px;color:#aaa;margin:8px 0;"></div>
             <div id="shop-boosts" class="boost-bar" hidden></div>
+            <div id="shop-pay" class="shop-pay" hidden></div>
             <button class="garage-btn" id="shop-action">ВЫБРАТЬ ЭТУ МАШИНУ</button>
             <button class="garage-btn secondary" id="shop-close">← Назад</button>
             </div>

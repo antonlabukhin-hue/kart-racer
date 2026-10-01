@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = {
     ghost: true,      // призрак лучшего заезда
     lang: 'auto',     // auto (по языку браузера) | ru | en
     curve: true,      // «кривой мир»: повороты и холмы
+    host: 'voice',    // ведущий-комментатор: voice — голос и текст | text — только текст | off
     v: 2              // версия настроек (v2 — тише музыка и двигатель по умолчанию)
 };
 
@@ -34,6 +35,7 @@ export function normalizeSettings(raw) {
         ghost: r.ghost == null ? d.ghost : !!r.ghost,
         lang: ['auto', 'ru', 'en'].indexOf(r.lang) >= 0 ? r.lang : d.lang,
         curve: r.curve == null ? d.curve : !!r.curve,
+        host: ['voice', 'text', 'off'].indexOf(r.host) >= 0 ? r.host : d.host,
         v: 2
     };
 }
