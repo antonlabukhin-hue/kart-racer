@@ -111,7 +111,7 @@ export function showChest(p, c) {
         const got = c.claim();
         if (!got) { close(); return; }
         cl.outerHTML = '<div class="ch-got">+' + got.chips + ' Е' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>';
-        m.querySelector('.ch-later').textContent = 'Отлично!';
+        const ok = m.querySelector('.ch-later'); ok.textContent = 'Отлично!'; ok.classList.add('ch-ok');
         m.querySelector('.ch-day.today').classList.add('opened');
     };
 }
