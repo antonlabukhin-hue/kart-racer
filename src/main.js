@@ -11611,7 +11611,7 @@ function showLoreScreen(quality, difficulty) {
             });
             const settingsBtn = document.getElementById('main-menu-settings');
             if (settingsBtn) settingsBtn.addEventListener('click', function() { openSettingsScreen(); });
-            wireMainMenu({ openRewards: openRewardsScreen, openEvents: openEventsScreen, chest: chestDeps, player: function() { return currentPlayer; } });
+            wireMainMenu({ openRewards: openRewardsScreen, openEvents: openEventsScreen, chest: chestDeps, player: function() { return currentPlayer; }, save: saveCurrentPlayer, carTotal: CAR_SHOP_ORDER.length, cloud: onlineBoard() });
             const mmWord = document.getElementById('mm-word'), mmBoard = document.getElementById('mm-board'); // «Слово дня» и «Рекорды» (src/ui/board.js)
             if (mmWord) mmWord.onclick = function() { if (currentPlayer) showWordInfo(wordState(currentPlayer, dayKey(new Date()))); };
             if (mmBoard) mmBoard.onclick = function() { if (currentPlayer) showBoard({ me: currentPlayer.name, list: loadBoard(), now: Date.now(), carName: function(id) { return (CAR_PRESETS[id] || {}).name || id; }, fetchOnline: onlineBoard() ? function(scope) { return fetchTop(scope); } : null }); };

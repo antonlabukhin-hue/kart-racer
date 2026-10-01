@@ -9,6 +9,7 @@ import { rankLabel, rankOf } from '../ranks.js';
 import { CHESTS } from '../streak.js';
 import { scoreMult } from '../missions.js';
 import { weekTheme } from '../infinite.js';
+import { renderAvatars, openProfileScreen } from './profile-screen.js';
 
 let chestAutoShown = null; // сундук дня предлагаем сам один раз за день
 
@@ -39,6 +40,7 @@ export function refreshMainMenu(d) {
     setText('mm-level', rankLabel(p.totalXp)); // уровень и звание игрока (src/ranks.js); уровень сезона — в «Сезоне»
     setText('mm-chips', String(se.chips || 0));
     setText('mm-vhs', String(se.vhs || 0));
+    renderAvatars(p); // аватарка в кружке у настроек и в плашке профиля
     // событие недели — на карточке бесконечной трассы (src/infinite.js weekTheme)
     { const n = document.querySelector('.menu-infinite .mm-note'); if (n) n.textContent = '×2 Е · ' + weekTheme().short; }
     setText('mm-note-campaign', d.campaignDone + ' из ' + d.campaignTotal);
@@ -126,6 +128,9 @@ function dayWord(n) {
  * Карточка профиля открывается по имени в верхней строке и закрывается кликом мимо.
  */
 export function wireMainMenu(d) {
+    // кружок с аватаркой рядом с настройками — экран профиля (src/ui/profile-screen.js)
+    const av = document.getElementById('mm-avatar-btn');
+    if (av) av.addEventListener('click', function() { openProfileScreen({ player: d.player(), save: d.save, carTotal: d.carTotal || 0, cloud: !!d.cloud }); });
     const btn = document.getElementById('mm-profile');
     const pop = document.getElementById('mm-profile-pop');
     if (btn && pop) {
