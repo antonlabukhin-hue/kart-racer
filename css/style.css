@@ -5782,3 +5782,34 @@ body #finish-screen .fin-btn { border-radius: 6px !important; font-style: italic
 /* авторские права: заставка и низ настроек */
 #splash-screen .copyright { position: absolute; left: 0; right: 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 3; text-align: center; font: 600 11px system-ui, sans-serif; color: rgba(255, 255, 255, 0.6); text-shadow: 0 1px 2px #000; pointer-events: none; }
 .st-copy { margin-top: 12px; text-align: center; font-size: 11px; color: #9a92a8; }
+
+/* ===== Один стиль «картриджа» (2026-10-02): профиль, карточки режимов, «©» на заставке ===== */
+/* «©» — под «Нажми, чтобы продолжить», в общем столбике заставки, а не поверх */
+#splash-screen .copyright { position: static !important; margin-top: 14px; }
+/* профиль: плашка уровня с квадратными углами, длинное звание сокращается, имя не пропадает */
+#main-menu-screen .mm-profile small { border-radius: 4px !important; flex: 0 0 auto; white-space: nowrap; font-weight: 800; } /* «ур. N» видно всегда */
+#main-menu-screen .mm-profile b { flex: 1 1 auto; min-width: 0; } /* сокращается имя, а не уровень */
+#main-menu-screen .mm-profile .mm-ava { border-radius: 6px; }
+@media (max-width: 520px) { #main-menu-screen .mm-profile .mm-rk { display: none; } }
+@media (max-width: 430px) { #main-menu-screen .mm-profile small { display: inline-block !important; font-size: 11px; padding: 3px 6px; } #main-menu-screen .mm-profile b { display: none; } #main-menu-screen .mm-profile { justify-content: flex-start; flex: 0 1 auto !important; padding-right: 6px !important; } }
+@media (max-width: 390px) { #main-menu-screen .mm-top { gap: 4px !important; } #main-menu-screen .mm-top .mm-icon { flex-basis: 32px; width: 32px; height: 32px; } #main-menu-screen .mm-wallet > span, #main-menu-screen .mm-streak { padding-left: 6px !important; padding-right: 6px !important; } #main-menu-screen .mm-profile .mm-ava { width: 26px; height: 26px; flex-basis: 26px; } }
+/* карточки режимов: одна подложка, белый наклонный заголовок, одинаковые прямоугольные «таблетки», значок в квадрате */
+#main-menu-screen .mm-modes .menu-card { --mc: #ffd23c !important; }
+#main-menu-screen .mm-modes .menu-card span.mm-cap, #main-menu-screen .mm-modes .menu-card.menu-infinite span.mm-cap {
+    background: linear-gradient(180deg, #e01e1e, #8a0a0a) !important; border-top: 3px solid #000 !important; box-shadow: inset 0 2px 0 rgba(255,255,255,0.35) !important; }
+#main-menu-screen .mm-modes .menu-card .mm-title, #main-menu-screen .mm-modes .menu-card.menu-infinite .mm-title {
+    color: #fff !important; font-style: italic; text-shadow: 2px 2px 0 #000 !important; }
+#main-menu-screen .mm-modes .mm-cap .mm-note { border-radius: 4px !important; color: #fff !important; font-weight: 700 !important;
+    background: rgba(0, 0, 0, 0.4) !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; }
+#main-menu-screen .mm-modes .mm-cap .mm-ico { border-radius: 6px !important; border: 2px solid #000 !important; background: linear-gradient(180deg, #3a3a46, #15151c) !important;
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3), 0 2px 0 #000 !important; }
+#main-menu-screen .mm-modes .menu-card .endless-best { border-radius: 4px; }
+/* «Бесконечная трасса» мигает золотом: рамка и свечение — по квадратной карточке */
+#main-menu-screen .mm-modes .menu-card.menu-infinite { border: 3px solid #ffd23c !important; border-radius: 6px !important; animation: infBlink 1.1s ease-in-out infinite !important; }
+#main-menu-screen .mm-modes .menu-card.menu-infinite::after { border-radius: 4px; }
+/* свечение — через outline и filter: у карточек box-shadow задан с !important, а такое правило сильнее анимации */
+@keyframes infBlink {
+    0%, 100% { outline: 3px solid #ffe066; outline-offset: 1px; filter: drop-shadow(0 0 10px rgba(255, 205, 40, 0.95)) drop-shadow(0 0 4px rgba(255, 230, 120, 0.9)); }
+    50% { outline: 3px solid #6a4a08; outline-offset: 1px; filter: drop-shadow(0 0 0 rgba(255, 205, 40, 0)); }
+}
+@media (prefers-reduced-motion: reduce) { #main-menu-screen .mm-modes .menu-card.menu-infinite { animation: none !important; box-shadow: 0 0 0 2px #000, 0 0 18px 5px rgba(255, 205, 40, 0.8) !important; } }

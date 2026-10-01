@@ -37,7 +37,11 @@ export function refreshMainMenu(d) {
     if (!p) return;
     const se = p.season || {};
     setText('mm-name', p.name);
-    setText('mm-level', rankLabel(p.totalXp)); // уровень и звание игрока (src/ranks.js); уровень сезона — в «Сезоне»
+    { // уровень и звание игрока (src/ranks.js); уровень сезона — в «Сезоне». Звание — отдельным кусочком: на узком экране прячется
+        const lvEl = document.getElementById('mm-level'), lab = String(rankLabel(p.totalXp)), cut = lab.indexOf(' · ');
+        if (lvEl) { lvEl.textContent = ''; const a = document.createElement('span'); a.textContent = cut > 0 ? lab.slice(0, cut) : lab; lvEl.appendChild(a);
+            if (cut > 0) { const b = document.createElement('span'); b.className = 'mm-rk'; b.textContent = lab.slice(cut); lvEl.appendChild(b); } }
+    }
     setText('mm-chips', String(se.chips || 0));
     setText('mm-vhs', String(se.vhs || 0));
     renderAvatars(p); // аватарка в кружке у настроек и в плашке профиля
