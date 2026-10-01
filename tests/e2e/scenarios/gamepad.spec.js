@@ -44,7 +44,7 @@ test('геймпад: крестовина водит фокус по меню, 
     await press(13); // вниз — первая кнопка меню в фокусе
     await expect(page.locator('body')).toHaveClass(/pad-nav/);
     let guard = 0;
-    while (guard++ < 20 && !(await page.evaluate(() => document.activeElement && document.activeElement.dataset.menu === 'garage'))) await press(13);
+    while (guard++ < 40 && !(await page.evaluate(() => document.activeElement && document.activeElement.dataset.menu === 'garage'))) await press(13); // в меню много кнопок — до «Гаража» далеко
     await press(0); // A — открыть гараж
     await expect(page.locator('#garage-screen')).toBeVisible({ timeout: 5_000 });
     expect(problems).toEqual([]);
