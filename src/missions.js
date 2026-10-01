@@ -3,6 +3,8 @@
  * Прогресс копится между заездами; выполнил — фишки и сразу новое задание (чуть сложнее).
  * profile.missions = { active: [{ id, target, progress, tier }], done: число выполненных }
  * Только логика — без DOM; показывают меню, финиш и пауза.
+ * Каждое задание выполнимо в ЛЮБОМ режиме (кампания, бесконечная трасса, «Звериный час»): где нет финиша или босса —
+ * засчитывается равноценное (1 км в бесконечной, побег от ГАИ), метры и «Е» считаются во всех заездах.
  */
 
 /** stat — какое поле итога заезда копится (см. raceStat) */
@@ -11,27 +13,32 @@ export const MISSION_POOL = [
     { id: 'near', text: 'Проскочи «на волоске»', stat: 'nearMiss', targets: [4, 7, 12] },
     { id: 'land', text: 'Чистые посадки после трамплина', stat: 'cleanLandings', targets: [2, 4, 6] },
     { id: 'boards', text: 'Снеси рекламные щиты', stat: 'billboards', targets: [2, 4, 7] },
-    { id: 'wins', text: 'Доедь до финиша', stat: 'wins', targets: [2, 3, 5] },
-    { id: 'clean', text: 'Финиш без единой аварии', stat: 'cleanWins', targets: [1, 2, 3] },
-    { id: 'boss', text: 'Победи босса', stat: 'bossDefeated', targets: [1, 2, 3] },
+    { id: 'wins', text: 'Финишируй (в бесконечной — проедь 1 км)', stat: 'wins', targets: [2, 3, 5] },
+    { id: 'clean', text: 'Без аварий: финиш или первые 500 м', stat: 'cleanWins', targets: [1, 2, 3] },
+    { id: 'boss', text: 'Победи босса или уйди от погони ГАИ', stat: 'bossDefeated', targets: [1, 2, 3] },
     { id: 'gum', text: 'Собери сердечки', stat: 'gumPicked', targets: [3, 6, 10] },
     { id: 'nitro', text: 'Подбери нитро', stat: 'nitroPicked', targets: [3, 6, 10] },
     { id: 'risk', text: 'Набери очков риска', stat: 'riskPoints', targets: [800, 2000, 4000] },
-    // бесконечная трасса
-    { id: 'dist', text: 'Проедь за заезд на бесконечной трассе, м', stat: 'distance', targets: [1000, 2500, 5000], best: true },
-    { id: 'echips', text: 'Собери железные «Е»', stat: 'eChips', targets: [40, 120, 250] },
-    { id: 'powers', text: 'Подбери усиления', stat: 'powers', targets: [2, 4, 7] }
+    { id: 'dist', text: 'Проедь за один заезд, м', stat: 'distance', targets: [1000, 2500, 5000], best: true },
+    { id: 'echips', text: 'Заработай железные «Е»', stat: 'eChips', targets: [40, 120, 250] },
+    { id: 'powers', text: 'Подбери усиления или нитро', stat: 'powers', targets: [2, 4, 7] }
 ];
 
 export const MISSION_REWARD = [30, 50, 80]; // «Е» за задание по сложности
 
 /** Сколько «очков задания» дал заезд: meta из итога заезда + state */
+export const INF_FINISH_M = 1000; // «финиш» бесконечной трассы
+export const CLEAN_START_M = 500; // «без аварий» бесконечной трассы — первые N м
+const num = function(v) { return Math.max(0, Math.floor(Number(v) || 0)); };
 export function raceStat(stat, m) {
     const win = m.state === 'win';
-    if (stat === 'wins') return win ? 1 : 0;
-    if (stat === 'cleanWins') return win && !(m.strikes > 0) ? 1 : 0;
-    if (stat === 'bossDefeated') return m.bossDefeated ? 1 : 0;
-    return Math.max(0, Math.floor(Number(m[stat]) || 0));
+    if (stat === 'wins') return win || num(m.distance) >= INF_FINISH_M ? 1 : 0;
+    if (stat === 'cleanWins') return (win && !(m.strikes > 0)) || num(m.cleanDist) >= CLEAN_START_M ? 1 : 0;
+    if (stat === 'bossDefeated') return m.bossDefeated || num(m.escapes) > 0 ? 1 : 0;
+    if (stat === 'distance') return num(m.runDist != null ? m.runDist : m.distance); // метры любого заезда
+    if (stat === 'eChips') return Math.max(num(m.eChips), num(m.earnedE)); // в кампании «Е» — за заезд целиком
+    if (stat === 'powers') return num(m.powers) + num(m.nitroPicked);
+    return num(m[stat]);
 }
 
 /**

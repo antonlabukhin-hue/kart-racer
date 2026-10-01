@@ -100,3 +100,24 @@ describe('множитель очков за задания', () => {
         expect(p.missions.active.find(a => a.id === 'dist').progress).toBe(700);
     });
 });
+
+describe('задания выполнимы в любом режиме', () => {
+    it('финиш, без аварий, босс — в бесконечной трассе засчитывается равноценное', () => {
+        expect(raceStat('wins', { state: 'crash', distance: 1200 })).toBe(1);
+        expect(raceStat('wins', { state: 'crash', distance: 600 })).toBe(0);
+        expect(raceStat('cleanWins', { state: 'crash', cleanDist: 650 })).toBe(1);
+        expect(raceStat('cleanWins', { state: 'crash', cleanDist: 120 })).toBe(0);
+        expect(raceStat('bossDefeated', { state: 'crash', escapes: 1 })).toBe(1);
+    });
+    it('метры, «Е» и усиления — и в кампании', () => {
+        expect(raceStat('distance', { state: 'win', distance: 0, runDist: 1800 })).toBe(1800);
+        expect(raceStat('eChips', { state: 'win', eChips: 0, earnedE: 140 })).toBe(140);
+        expect(raceStat('powers', { state: 'win', powers: 0, nitroPicked: 3 })).toBe(3);
+    });
+    it('итог заезда кампании двигает «проедь» и «заработай «Е»»', () => {
+        const p = { season: { chips: 0 }, missions: { active: [{ id: 'dist', target: 1000, progress: 0, tier: 0 }, { id: 'echips', target: 40, progress: 0, tier: 0 }, { id: 'wins', target: 2, progress: 0, tier: 0 }], done: 0 } };
+        const r = applyMissionProgress(p, { state: 'win', distance: 0, runDist: 1500, earnedE: 60, strikes: 2 }, () => 0.5);
+        expect(r.completed.map(c => c.text)).toEqual(['Проедь за один заезд, м', 'Заработай железные «Е»']);
+        expect(p.missions.active.find(a => a.id === 'wins').progress).toBe(1);
+    });
+});

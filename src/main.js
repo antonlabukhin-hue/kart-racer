@@ -5084,7 +5084,7 @@ function startGaragePreview(carId) {
                             // для контрактов дня на механики
                             cleanLandings: stats.cleanLandings || 0, bossDefeated: !!stats.bossDefeated, billboards: stats.billboards || 0,
                             nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, riskPoints: risk.points, animalsJumped: stats.animalsJumped || 0,
-                            cleanSegments: cleanRun.segments, vhs: stats.vhs || 0, powers: stats.powers || 0, distance: infRun ? infRun.dist : 0, infScore: infRun ? infRun.score : 0
+                            cleanSegments: cleanRun.segments, vhs: stats.vhs || 0, powers: stats.powers || 0, distance: infRun ? infRun.dist : 0, infScore: infRun ? infRun.score : 0, runDist: infRun ? infRun.dist : Math.max(0, Math.round(START_Z - zPos)), cleanDist: stats.cleanDist != null ? stats.cleanDist : (infRun ? infRun.dist : 0), escapes: stats.escapes || 0
                         }) || raceRewards;
                         try { updatePlayerBar(); } catch (e) {}
                         console.log('Награды заезда:', raceRewards);
@@ -7267,7 +7267,7 @@ function startGaragePreview(carId) {
             // цели «До соперника N м»: таблица устройства и соперники сразу, мировая — когда придёт с сервера
             const chaseMe = currentPlayer ? currentPlayer.name : '', chaseBest = currentPlayer && currentPlayer.infinite ? currentPlayer.infinite.best || 0 : 0;
             const patEnds = [], patHit = new Set(); /* узоры: где кончаются и какие задеты */ const infWarm = INF ? warmStart(chaseBest) : 0; /* «горячий старт»: сложность — от рекорда (src/infinite.js) */ const weekTh = INF ? weekTheme().theme : null; // событие недели: в этом пейзаже «Е» за две
-            const police = INF ? createPolice(scene, function() { announcer.say('police'); }) : null; // погоня ГАИ после аварии (src/police-chase.js)
+            const police = INF ? createPolice(scene, function() { announcer.say('police'); }, function() { stats.escapes = (stats.escapes || 0) + 1; }) : null; // погоня ГАИ после аварии (src/police-chase.js)
             const chase = INF && currentPlayer ? { targets: chaseTargets(topRuns(loadBoard(), 'all', Date.now(), chaseMe), chaseMe, chaseBest), passed: new Set() } : null;
             if (chase && onlineBoard()) fetchTop('all').then(function(list) { if (list) chase.targets = chaseTargets(topRuns(list.concat(loadBoard()), 'all', Date.now(), chaseMe), chaseMe, chaseBest); });
             function infPlanLap(k) {
@@ -8224,7 +8224,7 @@ function startGaragePreview(carId) {
             // журнал аварий заезда (причина, доля трассы) — для баланса, читается тестами через __raceDebug
             const hitLog = [];
             const logHit = function(cause) {
-                cleanRun.reset();
+                cleanRun.reset(); if (stats.cleanDist == null) stats.cleanDist = INF && infWorld ? Math.round(infWorld.dist) : 0; /* задание «без аварий»: сколько проехал до первой */
                 hitLog.push({ cause: cause, at: Math.round((START_Z - zPos) / (START_Z - FINISH_Z) * 100) });
                 trackEvent('crash', { cause: cause, at: hitLog[hitLog.length - 1].at, map: mapId, chapter: window.__campaignTrackId || null });
             };

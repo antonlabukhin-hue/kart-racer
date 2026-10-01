@@ -278,7 +278,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
     // очки риска (src/risk-combo.js) → опыт; задания (src/missions.js) — фишки начисляет сама applyMissionProgress
     const riskXp = riskToXp(m.riskPoints);
     xp += riskXp;
-    const missions = applyMissionProgress(profile, Object.assign({}, m, { state: state }), c.rnd);
+    const missions = applyMissionProgress(profile, Object.assign({}, m, { state: state, earnedE: chips }), c.rnd);
 
     profile.season.chips = (profile.season.chips || 0) + chips;
     const lv = addSeasonXp(profile.season, xp);

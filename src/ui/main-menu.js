@@ -76,7 +76,7 @@ export function refreshMainMenu(d) {
 function renderMissions(rows, mult) {
     const box = document.getElementById('mm-missions');
     if (!box || !rows) return;
-    box.innerHTML = '<div class="mmm-head">📋 Задания <small>3 задания = +1 к множителю очков</small><b class="mmm-mult" title="Множитель очков бесконечной трассы">×' + (mult || 1) + '</b></div>' + rows.map(function(r) {
+    box.innerHTML = '<div class="mmm-head">📋 Задания <small>в любом режиме, считаются после заезда · 3 = +1 к множителю</small><b class="mmm-mult" title="Множитель очков бесконечной трассы">×' + (mult || 1) + '</b></div>' + rows.map(function(r) {
         const pct = Math.round(r.progress / r.target * 100);
         return '<div class="mmm-row"><span class="mmm-text"></span><b>' + r.progress + '/' + r.target + '</b><em>+' + r.reward + ' Е</em>'
             + '<i class="mmm-bar"><u style="width:' + pct + '%"></u></i></div>';
