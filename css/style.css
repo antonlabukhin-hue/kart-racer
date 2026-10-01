@@ -5580,13 +5580,9 @@ body.arrest-cine :is(#risk-hud, #power-hud, #hud-speedo, #hud-menu-btn, #hud-pau
 /* низкий экран (телефон лёжа): внизу — машина и кнопки, надпись — наверх, под плашку */
 @media (max-height: 560px) { #fever-fx b { font-size: 20px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 92px); } #fever-fx i { width: 150px; margin-left: -75px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 116px); } }
 
-/* линии скорости (src/juice.js): тонкие белые лучи от центра, видны только по краям */
-#speed-lines { position: fixed; inset: -10%; pointer-events: none; z-index: 104; opacity: 0;
-    background: repeating-conic-gradient(from 0deg at 50% 46%, rgba(255,255,255,0.0) 0deg 3.2deg, rgba(255,255,255,0.55) 3.4deg 3.6deg, rgba(255,255,255,0.0) 3.8deg 7deg);
-    -webkit-mask-image: radial-gradient(ellipse 46% 42% at 50% 46%, transparent 55%, #000 100%);
-    mask-image: radial-gradient(ellipse 46% 42% at 50% 46%, transparent 55%, #000 100%);
-    animation: speedLines .22s linear infinite; transition: opacity .25s; }
-#speed-lines[hidden] { display: none; }
+/* линии скорости (src/juice.js): холст, нарисованный один раз; меняются только прозрачность и трансформ (без перерисовки) */
+#speed-lines { position: fixed; left: -10%; top: -10%; width: 120%; height: 120%; pointer-events: none; z-index: 104; opacity: 0;
+    will-change: opacity, transform; transition: opacity .25s; animation: speedLines .22s linear infinite; }
 @keyframes speedLines { from { transform: scale(1) rotate(0deg); } to { transform: scale(1.06) rotate(1.2deg); } }
 
 /* Кнопки на плашках — одной формы: «второстепенные» («В меню», «Понятно», «Позже», «Нет, хватит») больше не бледный текст,
