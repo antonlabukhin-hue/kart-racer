@@ -320,6 +320,7 @@ export default {
         'лучше,': 'better,',
         'хуже': 'worse',
         '⏭ Дальше: следующая глава': '⏭ Next chapter',
+        '⏭ Следующая глава': '⏭ Next chapter',
         'Дальше: следующая глава →': 'Next chapter →',
         'К списку глав →': 'To chapter list →',
         '🔄 Заново': '🔄 Retry',

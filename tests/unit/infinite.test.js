@@ -33,12 +33,12 @@ describe('стартовый пейзаж', () => {
 describe('рост сложности и счёт', () => {
     it('скорость, звери и препятствия растут и упираются в потолок', () => {
         // старт лёгкий; звери и попутки первые 1000 м как на старте, дальше плавно; потолок — к 8 км
-        expect(rampAt(0)).toMatchObject({ speed: 0.85, animals: 0.55, density: 0.3, maxAnimals: 6, animalSpeed: 1, traffic: 0 });
+        expect(rampAt(0)).toMatchObject({ speed: 0.765, animals: 0.55, density: 0.3, maxAnimals: 6, animalSpeed: 1, traffic: 0 });
         expect(rampAt(1000)).toMatchObject({ animals: 0.55, animalSpeed: 1, traffic: 0 });
-        expect(rampAt(1000).speed).toBeGreaterThan(0.85);
-        expect(rampAt(4000).speed).toBeCloseTo(1.1, 3);
+        expect(rampAt(1000).speed).toBeGreaterThan(0.765);
+        expect(rampAt(4000).speed).toBeCloseTo((0.765 + 1.3) / 2, 3);
         expect(rampAt(4000).animals).toBeGreaterThan(1);
-        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.35, maxAnimals: 16, animalSpeed: 1.6, traffic: 8, trafficSpeed: 1.5 });
+        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.3, maxAnimals: 16, animalSpeed: 1.6, traffic: 8, trafficSpeed: 1.5 });
         expect(rampAt(1e6).animals).toBeCloseTo(2.6, 6);
     });
     it('очки и опыт', () => {

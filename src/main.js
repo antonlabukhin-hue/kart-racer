@@ -1494,7 +1494,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                     if (isCamp) {
                         if (note) {
                             note.style.display = 'block';
-                            note.textContent = '📖 Кампания: сложность главы — ' + (window.__forceDifficulty || 'easy') + '. Выбери только качество графики.';
+                            note.textContent = '📖 Сложность главы — ' + ({ easy: 'лёгкая', medium: 'средняя', hard: 'сложная' }[window.__forceDifficulty || 'easy'] || 'лёгкая') + '. Выбери качество графики.';
                         }
                         if (campGo) {
                             campGo.style.display = 'block';
@@ -1768,7 +1768,13 @@ function createProfile(name) { return Profile.createProfile(name); }
                         const d = new THREE_REF.DirectionalLight(0xffe0b0, 1.3);
                         d.position.set(3, 5, 2); scene.add(d);
                         const built = _buildShowroomCar(carId || 'cheburashka');
-                        dressCar(built, carId || 'cheburashka'); // витрина: та же покраска и прокачка, что в гараже и на трассе
+                        // витрина: купленная машина — с покраской, деталями и прокачкой из гаража (как на трассе); некупленная — в заводском цвете, без тюнинга
+                        if (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(carId) >= 0) dressCar(built, carId);
+                        else {
+                            Object.keys(built.parts || {}).forEach(function(id) { if (built.parts[id]) built.parts[id].visible = false; });
+                            const presetCol = (CAR_PRESETS[carId] && CAR_PRESETS[carId].color) || 0xff2200;
+                            built.group.traverse(function(o) { if (o.isMesh && o.userData && o.userData.bodyPaint && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.setHex(presetCol); } });
+                        }
                         fitShowroom(built.group); scene.add(built.group); // крупные модели — меньше, чтобы не уходили за край
                         let rot = 0.5;
                         const tick = () => {
@@ -1969,7 +1975,8 @@ function createProfile(name) { return Profile.createProfile(name); }
             const lo = currentPlayer.carLoadout;
             const id = carId || currentPlayer.preferredCar || 'cheburashka';
             if (lo.paintByCar && lo.paintByCar[id]) return lo.paintByCar[id];
-            return lo.paint || 'stock';
+            // цвет — у каждой машины свой: некрашеная — заводская; общий lo.paint — только у старых сохранений без покраски по машинам
+            return (lo.paintByCar && Object.keys(lo.paintByCar).length) ? 'stock' : (lo.paint || 'stock');
         }
         function setPaintForCar(carId, paintId) {
             if (!currentPlayer) return;
@@ -8000,8 +8007,8 @@ function startGaragePreview(carId) {
             const ABILITY = (carPreset.ability && carPreset.ability.id) || null;
             const ALWAYS_MAGNET = { magnet: 1 }; // способность «Зубила»
             const DRY_STEER = 3.2 * carStats.steerMul * (ABILITY === 'nimble' ? 1.15 : 1);
-            const NITRO_SPEED = ABILITY === 'turbo' ? 1.6 : 1.45;
-            const NITRO_ACCEL = ABILITY === 'turbo' ? 1.8 : 1.6;
+            const NITRO_SPEED = (ABILITY === 'turbo' ? 1.6 : 1.45) * (INF ? 0.9 : 1); // бесконечная трасса: нитро на 10% мягче — успеваешь реагировать
+            const NITRO_ACCEL = (ABILITY === 'turbo' ? 1.8 : 1.6) * (INF ? 0.9 : 1);
             const OIL_GRIP = carStats.oilGrip;
             const DURABILITY = carStats.durability; // множитель штрафа времени (меньше = танк); броня его снижает
             const NITRO_TIME = carStats.nitroTime * ((carPreset.ability && carPreset.ability.id === 'rocket') ? 1.5 : 1); // «Ракета» — форсаж
