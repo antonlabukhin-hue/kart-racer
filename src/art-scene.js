@@ -310,7 +310,8 @@ export function createDiorama(spec) {
     [].concat(s.car ? [s.car] : [], s.cars || []).forEach(function(c) {
         const built = buildShowroomCar(c.id || 'cheburashka');
         const hex = c.paint ? paintHex(c.paint) : null;
-        if (hex != null && built.bodyMat) built.bodyMat.color.setHex(hex);
+        if (c.dress) c.dress(built); // одеть по профилю игрока: покраска, детали, прокачка (main.js dressCar)
+        else if (hex != null && built.bodyMat) built.bodyMat.color.setHex(hex);
         const g = built.group;
         g.scale.setScalar(c.scale || 1);
         g.position.set(c.x || 0, c.y || 0, c.z || 0);

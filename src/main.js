@@ -1411,7 +1411,8 @@ function createProfile(name) { return Profile.createProfile(name); }
             try {
                 const car = (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0) ? currentPlayer.preferredCar : 'cheburashka';
                 const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                startMenuBg({ carId: car, profile: currentPlayer, still: reduce || loadSettings().quality === 'low', lowPower: !!window.__isMobile });
+                const look = currentPlayer ? [getPaintForCar(car), ((currentPlayer.carLoadout || {}).parts || []).join(','), JSON.stringify(getUpgradeLevels(car))].join('|') : ''; // перекрасил или прокачал — фон перестроится
+                startMenuBg({ carId: car, profile: currentPlayer, still: reduce || loadSettings().quality === 'low', lowPower: !!window.__isMobile, dress: currentPlayer ? function(b) { dressCar(b, car); } : null, look: look });
             } catch (e) { console.warn('menu bg', e); }
         }
 
@@ -1742,20 +1743,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                         const d = new THREE_REF.DirectionalLight(0xffe0b0, 1.3);
                         d.position.set(3, 5, 2); scene.add(d);
                         const built = _buildShowroomCar(carId || 'cheburashka');
-                        // Магазин: только база, без тюнинга (тюнинг — в гараже)
-                        if (built.parts) {
-                            Object.keys(built.parts).forEach(function(id) {
-                                if (built.parts[id]) built.parts[id].visible = false;
-                            });
-                        }
-                        // Заводской цвет пресета, без покраски игрока
-                        const presetCol = (CAR_PRESETS[carId] && CAR_PRESETS[carId].color) || 0xff2200;
-                        built.group.traverse(function(o) {
-                            if (o.isMesh && o.userData && o.userData.bodyPaint && o.material && o.material.color) {
-                                o.material = o.material.clone();
-                                o.material.color.setHex(presetCol);
-                            }
-                        });
+                        dressCar(built, carId || 'cheburashka'); // витрина: та же покраска и прокачка, что в гараже и на трассе
                         fitShowroom(built.group); scene.add(built.group); // крупные модели — меньше, чтобы не уходили за край
                         let rot = 0.5;
                         const tick = () => {
@@ -1964,6 +1952,29 @@ function createProfile(name) { return Profile.createProfile(name); }
             if (!currentPlayer.carLoadout.paintByCar) currentPlayer.carLoadout.paintByCar = {};
             currentPlayer.carLoadout.paintByCar[id] = paintId;
             currentPlayer.carLoadout.paint = paintId; // совместимость
+        }
+        /** Одеть модель машины (src/cars.js buildShowroomCar) по профилю: покраска этой машины, детали тюнинга, прокачка. Возвращает купленные детали */
+        function dressCar(built, carId) {
+            const ld = (currentPlayer && currentPlayer.carLoadout) || { parts: [] };
+            const paint = CAR_PAINTS.find(function(x) { return x.id === getPaintForCar(carId); }) || CAR_PAINTS[0] || { id: 'stock', color: null };
+            const col = paint.color != null ? paint.color : ((CAR_PRESETS[carId] || {}).color || 0xff2200);
+            const owned = ld.parts || [];
+            built.group.traverse(function(o) {
+                if (!o.isMesh || !o.material) return;
+                if (o.userData && o.userData.bodyPaint && o.material.color) {
+                    o.material = o.material.clone();
+                    o.material.color.setHex(col);
+                    o.material.metalness = paint.id === 'chrome' ? 0.85 : Math.min(o.material.metalness || 0.4, 0.55);
+                    o.material.roughness = paint.id === 'chrome' ? 0.2 : Math.max(o.material.roughness || 0.35, 0.32);
+                }
+                if (owned.indexOf('xenon') >= 0 && o.userData && o.userData.isLight && o.material.emissive) { o.material.emissive.setHex(0xaaccff); o.material.emissiveIntensity = Math.max(o.material.emissiveIntensity || 0.8, 1.5); } // ксенон — ярче фары
+            });
+            Object.keys(built.parts || {}).forEach(function(id) {
+                const mesh = built.parts[id];
+                if (mesh) mesh.visible = id !== 'xenon' && !(carId === 'kirpich' && id === 'roof_rack') && owned.indexOf(id) >= 0;
+            });
+            applyUpgradeVisuals(built.upgrades, getUpgradeLevels(carId));
+            return owned;
         }
 
 function renderGaragePartsPanel() {
@@ -6306,50 +6317,7 @@ function startGaragePreview(carId) {
                         o.receiveShadow = true;
                     }
                 });
-                // Покраска + тюнинг как в гараже (цвет — у каждой машины свой)
-                const ld = (currentPlayer && currentPlayer.carLoadout) ? currentPlayer.carLoadout : { parts: [], paint: 'stock', paintByCar: {} };
-                const paints = (typeof CAR_PAINTS !== 'undefined') ? CAR_PAINTS : [];
-                let paintId = 'stock';
-                try {
-                    if (typeof getPaintForCar === 'function') paintId = getPaintForCar(carId || 'cheburashka');
-                    else if (ld.paintByCar && ld.paintByCar[carId]) paintId = ld.paintByCar[carId];
-                    else if (ld.paint) paintId = ld.paint;
-                } catch (e) { paintId = ld.paint || 'stock'; }
-                const paint = paints.find(function(x){ return x.id === paintId; }) || paints[0] || { id: 'stock', color: null };
-                const baseCol = (carPreset && carPreset.color) || 0xff2200;
-                const col = (paint && paint.color != null) ? paint.color : baseCol;
-                playerCar.traverse(function(o) {
-                    if (o.isMesh && o.userData && o.userData.bodyPaint && o.material && o.material.color) {
-                        o.material = o.material.clone();
-                        o.material.color.setHex(col);
-                        if (paint && paint.id === 'chrome') {
-                            o.material.metalness = 0.85;
-                            o.material.roughness = 0.2;
-                        } else {
-                            o.material.metalness = Math.min(o.material.metalness || 0.4, 0.55);
-                            o.material.roughness = Math.max(o.material.roughness || 0.35, 0.32);
-                        }
-                    }
-                });
-                const owned = ld.parts || [];
-                Object.keys(raceCarParts).forEach(function(id) {
-                    const mesh = raceCarParts[id];
-                    if (!mesh) return;
-                    if (id === 'xenon') { mesh.visible = false; return; }
-                    if ((carId === 'kirpich') && id === 'roof_rack') { mesh.visible = false; return; }
-                    mesh.visible = owned.indexOf(id) >= 0;
-                });
-                // Ксенон — ярче линзы фар
-                if (owned.indexOf('xenon') >= 0) {
-                    playerCar.traverse(function(o) {
-                        if (o.isMesh && o.userData && o.userData.isLight && o.material && o.material.emissive) {
-                            try {
-                                o.material.emissive.setHex(0xaaccff);
-                                o.material.emissiveIntensity = Math.max(o.material.emissiveIntensity || 0.8, 1.5);
-                            } catch (e) {}
-                        }
-                    });
-                }
+                const owned = dressCar(built, carId || 'cheburashka'); // покраска, детали и прокачка — как в гараже и витрине
                 // Стопы всегда чуть ярче на трассе (день/ночь)
                 playerCar.traverse(function(o) {
                     if (o.isMesh && o.userData && o.userData.isLight && o.material && o.material.emissive) {
@@ -6359,7 +6327,6 @@ function startGaragePreview(carId) {
                         }
                     }
                 });
-                applyUpgradeVisuals(built.upgrades, getUpgradeLevels(carId || 'cheburashka'));
                 try { carMerge = mergeCarParts(playerCar); } catch (e) { console.warn('merge car', e); } // ~107 → ~45 вызовов отрисовки (src/merge-static.js)
                 console.log('Race car: showroom model', carId, 'parts', owned);
             } catch (e) {
