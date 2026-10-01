@@ -50,7 +50,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
@@ -5448,7 +5448,7 @@ function startGaragePreview(carId) {
             } catch (e) { console.warn('noise landscape', e); }
 
             // === Снегопад — только на snow-теме, раньше с неба вообще ничего не падало ===
-            let snowfall = null;
+            let snowfall = null; const rain = createRain(scene, { count: quality === 'low' ? 260 : quality === 'high' ? 700 : 480, width: TRACK_WIDTH + 22 }); /* дождь: косые струи вокруг машины (src/rain.js) */
             if (INF || window.__trackThemeActive === 'snow') {
                 try {
                     const snowCount = quality === 'low' ? 140 : (window.__isMobile ? 200 : 360);
@@ -5467,10 +5467,10 @@ function startGaragePreview(carId) {
                     const snowGeo = new THREE.BufferGeometry();
                     snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
                     const snowMat = new THREE.PointsMaterial({
-                        color: 0xffffff, size: 0.12, transparent: true, opacity: 0.85,
+                        color: 0xffffff, size: 0.2, transparent: true, opacity: 0.9,
                         depthWrite: false, sizeAttenuation: true
                     });
-                    const snowPoints = new THREE.Points(snowGeo, snowMat);
+                    const snowPoints = new THREE.Points(snowGeo, snowMat); snowPoints.userData.dynamic = true; snowPoints.frustumCulled = false; /* не в чанки трассы — иначе снег пропадает после старта */
                     scene.add(snowPoints);
                     snowfall = {
                         points: snowPoints, geo: snowGeo, pos: snowPos,
@@ -10447,15 +10447,7 @@ function startGaragePreview(carId) {
                         0.25
                     );
                 }
-                // Дождь (ограниченно, без лагов)
-                if (weatherMode === 'rain' && Math.random() < 0.35) {
-                    particleSystem.emit(
-                        _v.p1.set(xPos + (Math.random()-0.5)*10, 4 + Math.random()*2, zPos - Math.random()*12),
-                        _v.vel.set(0.05, -2.5, 0.15),
-                        1,
-                        0.07
-                    );
-                }
+                rain.visible = weatherMode === 'rain' && tunnelK < 0.5; rain.update(deltaTime, xPos, zPos, Math.abs(speed) / MAX_SPEED); // дождь (src/rain.js); в тоннеле не льёт
 
                 // Животные
                 // mobile: AI/спавн зверей через кадр
