@@ -2,7 +2,9 @@
   "name": "simple-kart-racer",
   "version": "1.0.0",
   "description": "Простая гоночная игра на Three.js",
-  "license": "ISC",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Антон Лабухин 1989",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",

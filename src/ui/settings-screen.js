@@ -52,6 +52,7 @@ export function openSettingsScreen(deps) {
         '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
         '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
         // для разбора вёрстки на телефоне: экран устройства, окно страницы, масштаб интерфейса, режим приложения
+        '<div class="st-copy">© 2026 Антон Лабухин 1989 · Все права защищены</div>' +
         '<div class="st-diag">экран ' + screen.width + '×' + screen.height + ' · окно ' + innerWidth + '×' + innerHeight +
         ' · ×' + (getComputedStyle(document.documentElement).getPropertyValue('--ui-k').trim() || '1') +
         (window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) ? ' · приложение' : '') + '</div>' +
