@@ -78,7 +78,9 @@ export function kit(group) {
 export function pane(k, mat, a, b, w, lift) {
     const dz = b[0] - a[0], dy = b[1] - a[1];
     const len = Math.sqrt(dz * dz + dy * dy);
-    const m = k.box(mat, w, 0.02, len, 0, (a[1] + b[1]) / 2 + (lift || 0.012), (a[0] + b[0]) / 2);
+    // наружу по нормали к стеклу — над скруглением кузова (bevel до 0.05), иначе стекло пряталось внутри
+    const off = lift != null ? lift : 0.056, nz = -dy / len, ny = dz / len;
+    const m = k.box(mat, w, 0.02, len * 0.94, 0, (a[1] + b[1]) / 2 + ny * off, (a[0] + b[0]) / 2 + nz * off);
     m.rotation.x = -Math.atan2(dy, dz);
     return m;
 }
