@@ -44,7 +44,7 @@ describe('задания: три на виду', () => {
 describe('множитель за риск', () => {
     it('цепочка растит ×1 → ×5, очки × множитель', () => {
         const r = createRisk();
-        expect(riskEvent(r, 'nearMiss')).toEqual({ gained: 50, mult: 2 });
+        expect(riskEvent(r, 'nearMiss')).toEqual({ gained: 50, mult: 2, fever: false });
         expect(riskEvent(r, 'jump').gained).toBe(160);
         riskEvent(r, 'landing'); riskEvent(r, 'nearMiss'); riskEvent(r, 'nearMiss');
         expect(r.mult).toBe(MAX_MULT);

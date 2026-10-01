@@ -334,3 +334,30 @@ test('горячий старт: опытному игроку — плашка 
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
+
+// «В УДАРЕ»: множитель ×5 — плашка и пламя по краям, попутка в лоб не авария, а «+5 Е»; через 7 с всё гаснет
+test('«В ударе»: на ×5 неуязвим, попутки сносятся за «Е», потом гаснет', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearMiss'); });
+    await expect(page.locator('#fever-fx')).toBeVisible();
+    await expect(page.locator('.big-plaque')).toContainText('В УДАРЕ');
+    const res = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        const e0 = g.stats.eChips || 0;
+        const c = g.cars[0]; c.hitCooldown = 0;
+        for (let i = 0; i < 6; i++) { c.x = g.x; c.z = g.z; c.mesh.position.set(c.x, 0, c.z); await new Promise(r => setTimeout(r, 50)); if (c.hitCooldown > 0) break; }
+        return { strikes: g.strikes, gained: (g.stats.eChips || 0) - e0, fever: g.risk.fever > 0 };
+    });
+    expect(res.strikes).toBe(0);
+    expect(res.gained).toBeGreaterThanOrEqual(5);
+    expect(res.fever).toBe(true);
+    await expect(page.locator('#fever-fx')).toBeHidden({ timeout: 12_000 });
+    expect(await page.evaluate(() => window.__raceDebug.risk.mult)).toBeLessThan(5); // сброшен (после — может уже начаться новая цепочка)
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
