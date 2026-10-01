@@ -45,3 +45,22 @@ describe('усиления бесконечной трассы', () => {
         expect(st.magnet).toBe(14);
     });
 });
+
+import { shieldHits, shieldBonus, powerLabel, POWER_UPGRADABLE as UPG, buyPowerLevel as buyLv } from '../../src/powerups.js';
+describe('прокачка брони за «Е»', () => {
+    it('броня крепнет: 1 → 4 удара, «Е» за отбитый', () => {
+        expect([0, 1, 2, 3, 4, 5].map(shieldHits)).toEqual([1, 2, 2, 3, 3, 4]);
+        expect(shieldBonus(0)).toBe(0);
+        expect(shieldBonus(3)).toBe(30);
+        expect(powerLabel('shield', 0)).toBe('1 удар');
+        expect(powerLabel('shield', 1)).toBe('2 удара · +10 Е за отбитый');
+        expect(powerLabel('magnet', 0)).toMatch(/ с$/);
+    });
+    it('покупается в гараже как магнит', () => {
+        expect(UPG).toContain('shield');
+        const p = { season: { chips: 200 } };
+        expect(buyLv(p, 'shield')).toMatchObject({ ok: true, cost: 150, level: 1 });
+        expect(p.powerLv.shield).toBe(1);
+        expect(buyLv(p, 'shield')).toMatchObject({ ok: false, reason: 'no_chips' });
+    });
+});

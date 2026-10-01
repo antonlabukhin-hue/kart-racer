@@ -15,12 +15,24 @@ export const POWER_TYPES = Object.keys(POWERS);
 export const POWER_EVERY = [450, 750];
 
 /**
- * Прокачка усилений за «Е» (как в Subway Surfers — главная трата монет): каждый уровень +2 с действия, 5 уровней.
- * profile.powerLv = { magnet, x2 }
+ * Прокачка усилений за «Е» (как в Subway Surfers — главная трата монет): 5 уровней.
+ * Магнит и ×2 — +2 с действия за уровень. Броня — держит больше ударов (1 → 4) и за каждый отбитый удар даёт «Е».
+ * profile.powerLv = { magnet, x2, shield }
  */
 export const POWER_LEVELS = 5;
 export const POWER_UP_COST = [150, 300, 600, 1200, 2400];
-export const POWER_UPGRADABLE = ['magnet', 'x2'];
+export const POWER_UPGRADABLE = ['magnet', 'x2', 'shield'];
+export const SHIELD_HITS = [1, 2, 2, 3, 3, 4]; // сколько ударов держит броня на уровне 0…5
+export function shieldHits(lv) { return SHIELD_HITS[Math.max(0, Math.min(POWER_LEVELS, lv || 0))]; }
+/** «Е» за удар, отбитый бронёй (0 на нулевом уровне) */
+export function shieldBonus(lv) { return 10 * Math.max(0, Math.min(POWER_LEVELS, lv || 0)); }
+function hitsWord(n) { return n + (n === 1 ? ' удар' : ' удара'); }
+/** Подпись уровня для гаража: «12 с» или «2 удара · +10 Е за отбитый» */
+export function powerLabel(type, lv) {
+    if (type !== 'shield') return powerTime(type, lv) + ' с';
+    const b = shieldBonus(lv);
+    return hitsWord(shieldHits(lv)) + (b ? ' · +' + b + ' Е за отбитый' : '');
+}
 export function powerTime(type, lv) {
     return POWERS[type].time + 2 * Math.max(0, Math.min(POWER_LEVELS, lv || 0));
 }
@@ -30,7 +42,7 @@ export function nextPowerCost(lv) {
 /** Купить следующий уровень усиления: списывает «Е». { ok, cost } | { ok: false, reason: 'max' | 'no_chips' } */
 export function buyPowerLevel(profile, type) {
     if (POWER_UPGRADABLE.indexOf(type) < 0) return { ok: false, reason: 'max' };
-    const lv = profile.powerLv = Object.assign({ magnet: 0, x2: 0 }, profile.powerLv);
+    const lv = profile.powerLv = Object.assign({ magnet: 0, x2: 0, shield: 0 }, profile.powerLv);
     const cost = nextPowerCost(lv[type]);
     if (cost == null) return { ok: false, reason: 'max' };
     if ((profile.season.chips || 0) < cost) return { ok: false, reason: 'no_chips', cost: cost };
@@ -41,7 +53,7 @@ export function buyPowerLevel(profile, type) {
 
 /** Состояние усилений заезда: секунды, сколько ещё действует каждое; lv — прокачка из профиля */
 export function createPowers(lv) {
-    return { magnet: 0, x2: 0, picked: 0, lv: Object.assign({ magnet: 0, x2: 0 }, lv) };
+    return { magnet: 0, x2: 0, picked: 0, lv: Object.assign({ magnet: 0, x2: 0, shield: 0 }, lv) };
 }
 
 /** Подобрано усиление: время действия не складывается, а обновляется до полного */
