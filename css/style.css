@@ -5791,7 +5791,7 @@ body #finish-screen .fin-btn { border-radius: 6px !important; font-style: italic
 #main-menu-screen .mm-profile b { flex: 1 1 auto; min-width: 0; } /* сокращается имя, а не уровень */
 #main-menu-screen .mm-profile .mm-ava { border-radius: 6px; }
 @media (max-width: 520px) { #main-menu-screen .mm-profile .mm-rk { display: none; } }
-@media (max-width: 430px) { #main-menu-screen .mm-profile small { display: inline-block !important; font-size: 11px; padding: 3px 6px; } #main-menu-screen .mm-profile b { display: none; } #main-menu-screen .mm-profile { justify-content: flex-start; flex: 0 1 auto !important; padding-right: 6px !important; } }
+@media (max-width: 430px) { #main-menu-screen .mm-profile small { display: inline-block !important; font-size: 11px; padding: 3px 6px; } #main-menu-screen .mm-profile b { display: block; font-size: 13px; } #main-menu-screen .mm-profile { justify-content: flex-start; flex: 1 1 auto !important; padding-right: 6px !important; } }
 @media (max-width: 390px) { #main-menu-screen .mm-top { gap: 4px !important; } #main-menu-screen .mm-top .mm-icon { flex-basis: 32px; width: 32px; height: 32px; } #main-menu-screen .mm-wallet > span, #main-menu-screen .mm-streak { padding-left: 6px !important; padding-right: 6px !important; } #main-menu-screen .mm-profile .mm-ava { width: 26px; height: 26px; flex-basis: 26px; } }
 /* карточки режимов: одна подложка, белый наклонный заголовок, одинаковые прямоугольные «таблетки», значок в квадрате */
 #main-menu-screen .mm-modes .menu-card { --mc: #ffd23c !important; }
@@ -5813,3 +5813,15 @@ body #finish-screen .fin-btn { border-radius: 6px !important; font-style: italic
     50% { outline: 3px solid #6a4a08; outline-offset: 1px; filter: drop-shadow(0 0 0 rgba(255, 205, 40, 0)); }
 }
 @media (prefers-reduced-motion: reduce) { #main-menu-screen .mm-modes .menu-card.menu-infinite { animation: none !important; box-shadow: 0 0 0 2px #000, 0 0 18px 5px rgba(255, 205, 40, 0.8) !important; } }
+
+/* экран профиля: «Установить» и «Сменить профиль» (переехали из выпадашки у имени) */
+.pf-card .pf-btn { display: block; width: 100%; margin-top: 8px; min-height: 42px; border: 2px solid #000; border-radius: 6px; font: inherit; font-weight: 800; cursor: pointer;
+    color: #fff; background: linear-gradient(180deg, #4a4a58, #1c1c24); box-shadow: inset 2px 2px 0 rgba(255,255,255,0.25), 0 4px 0 #000; }
+#main-menu-screen .mm-profile-pop { display: none !important; }
+
+/* одна кнопка профиля: имя + уровень, растягивается на свободное место; окно профиля — в квадратном стиле */
+#main-menu-screen .mm-profile { flex: 1 1 auto !important; }
+.pf-card { border-radius: 8px !important; border-width: 3px !important; box-shadow: 0 0 0 3px #000, 0 10px 0 #000 !important; }
+.pf-card .pf-close { border-radius: 6px !important; border: 2px solid #000 !important; }
+.pf-card .pf-grid span, .pf-card .pf-cloud { border-radius: 6px !important; }
+.pf-card .pf-ava { border-radius: 14px !important; }

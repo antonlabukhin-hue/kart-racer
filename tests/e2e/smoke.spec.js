@@ -131,10 +131,10 @@ test('экраны меню открываются без ошибок', { tag: 
     await page.locator('#shop-close').click();
     await expect(page.locator('#garage-screen')).toBeVisible();
     await page.locator('#garage-close-btn').click();
-    // профиль: карточка по имени, там же смена профиля
+    // профиль: одна кнопка слева → экран профиля, там же смена профиля
     await page.locator('#mm-profile').click();
-    await expect(page.locator('#mm-profile-pop')).toContainText('Сменить профиль');
-    await page.locator('#main-menu-logout').click();
+    await expect(page.locator('.pf-card')).toContainText('Сменить профиль');
+    await page.locator('.pf-logout').click();
     await expect(page.locator('#profile-screen')).toBeVisible();
     expect(problems).toEqual([]);
 });

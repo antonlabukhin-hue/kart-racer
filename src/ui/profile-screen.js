@@ -47,7 +47,7 @@ export function profileStats(p, carTotal) {
     ];
 }
 
-/** d: { player, save(), carTotal, cloud } */
+/** d: { player, save(), carTotal, cloud, logout(), install() } — две последние кнопки показываются, если переданы */
 export function openProfileScreen(d) {
     const p = d.player;
     if (!p || document.querySelector('.pf-modal')) return;
@@ -61,6 +61,8 @@ export function openProfileScreen(d) {
             + '<div class="pf-grid">' + profileStats(p, d.carTotal || 0).map(function(r) { return '<span><i>' + r[0] + '</i><b>' + esc(r[2]) + '</b><small>' + r[1] + '</small></span>'; }).join('') + '</div>'
             + (d.cloud ? '<div class="pf-cloud">☁ Код сохранения: <b>' + getCode() + '</b><small>Вход с другого браузера или телефона: Настройки → «Загрузить» по коду</small></div>' : '')
             + (p.avatar ? '<button type="button" class="pf-del">Убрать аватарку</button>' : '')
+            + (d.install ? '<button type="button" class="pf-btn pf-install">📲 Установить на телефон</button>' : '')
+            + (d.logout ? '<button type="button" class="pf-btn pf-logout">Сменить профиль</button>' : '')
             + '<button type="button" class="pf-close">Закрыть</button>'
             + '<input type="file" accept="image/*" class="pf-file" hidden></div>';
         const file = m.querySelector('.pf-file');
@@ -73,6 +75,9 @@ export function openProfileScreen(d) {
         const del = m.querySelector('.pf-del');
         if (del) del.onclick = function() { delete p.avatar; if (d.save) d.save(); render(); renderAvatars(p); };
         m.querySelector('.pf-close').onclick = function() { m.remove(); };
+        const inst = m.querySelector('.pf-install'), out = m.querySelector('.pf-logout');
+        if (inst) inst.onclick = function() { m.remove(); d.install(); };
+        if (out) out.onclick = function() { m.remove(); d.logout(); };
     };
     render();
     m.addEventListener('click', function(e) { if (e.target === m) m.remove(); });

@@ -133,22 +133,14 @@ function dayWord(n) {
  * Карточка профиля открывается по имени в верхней строке и закрывается кликом мимо.
  */
 export function wireMainMenu(d) {
-    // кружок с аватаркой рядом с настройками — экран профиля (src/ui/profile-screen.js)
-    const av = document.getElementById('mm-avatar-btn');
-    if (av) av.addEventListener('click', function() { openProfileScreen({ player: d.player(), save: d.save, carTotal: d.carTotal || 0, cloud: !!d.cloud }); });
+    // одна кнопка профиля слева (аватарка + уровень) — экран профиля (src/ui/profile-screen.js);
+    // там же «Сменить профиль» и «Установить на телефон» (кнопки из прежней выпадашки — скрыты, но их обработчики живы)
     const btn = document.getElementById('mm-profile');
-    const pop = document.getElementById('mm-profile-pop');
-    if (btn && pop) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            pop.hidden = !pop.hidden;
-            btn.setAttribute('aria-expanded', String(!pop.hidden));
-        });
-        pop.addEventListener('click', function(e) { if (e.target.closest('button')) pop.hidden = true; }); // «Сменить профиль» — и карточка закрыта
-        document.addEventListener('click', function(e) {
-            if (!pop.hidden && !pop.contains(e.target)) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
-        });
-    }
+    if (btn) btn.addEventListener('click', function() {
+        const out = document.getElementById('main-menu-logout'), inst = document.getElementById('mm-install');
+        openProfileScreen({ player: d.player(), save: d.save, carTotal: d.carTotal || 0, cloud: !!d.cloud,
+            logout: out ? function() { out.click(); } : null, install: inst && !inst.hidden ? function() { inst.click(); } : null });
+    });
     // «Сезон» — два экрана под одной вкладкой: переключатель сверху у обоих
     document.querySelectorAll('.season-tab[data-stab]').forEach(function(t) {
         t.addEventListener('click', function() {
