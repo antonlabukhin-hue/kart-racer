@@ -83,3 +83,25 @@ test('кампания: победа на 1-й трассе — «Заново»
     await expect(page.locator('.camp-track[data-idx="0"] .ct-meta')).toContainText('задания');
     expect(problems).toEqual([]);
 });
+
+// подарок за главу: с итогов — «Смотреть в гараже» → гараж с поздравлением, подаренная краска сияет золотом, пока её не тронешь
+test('кампания: подарок за главу ведёт в гараж — поздравление и золотое сияние', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?start=0.99');
+    await startCampaign(page);
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await expect(page.locator('#finish-screen')).toContainText('ГЛАВА 1 ПРОЙДЕНА', { timeout: 150_000 });
+    await page.keyboard.up('w');
+    await page.locator('#finish-gift-btn').click();
+    await expect(page.locator('#garage-screen')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.gift-modal')).toContainText('Такси 90-х');
+    await expect(page.locator('#garage-panel-parts')).toBeVisible();
+    await expect(page.locator('#garage-panel-parts .color-swatch[data-paint="yellow"]')).toHaveClass(/gift-glow/);
+    await page.locator('.gift-modal .gm-ok').click();
+    await expect(page.locator('.gift-modal')).toHaveCount(0);
+    await page.locator('#garage-panel-parts .color-swatch[data-paint="yellow"]').click();
+    await expect(page.locator('#garage-panel-parts .color-swatch[data-paint="yellow"]')).not.toHaveClass(/gift-glow/);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].carLoadout.newGifts)).toEqual([]);
+    expect(problems).toEqual([]);
+});

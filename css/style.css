@@ -5580,11 +5580,55 @@ body.arrest-cine :is(#risk-hud, #power-hud, #hud-speedo, #hud-menu-btn, #hud-pau
 /* низкий экран (телефон лёжа): внизу — машина и кнопки, надпись — наверх, под плашку */
 @media (max-height: 560px) { #fever-fx b { font-size: 20px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 92px); } #fever-fx i { width: 150px; margin-left: -75px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 116px); } }
 
-/* линии скорости (src/juice.js): тонкие белые лучи от центра, видны только по краям */
-#speed-lines { position: fixed; inset: -10%; pointer-events: none; z-index: 104; opacity: 0;
-    background: repeating-conic-gradient(from 0deg at 50% 46%, rgba(255,255,255,0.0) 0deg 3.2deg, rgba(255,255,255,0.55) 3.4deg 3.6deg, rgba(255,255,255,0.0) 3.8deg 7deg);
-    -webkit-mask-image: radial-gradient(ellipse 46% 42% at 50% 46%, transparent 55%, #000 100%);
-    mask-image: radial-gradient(ellipse 46% 42% at 50% 46%, transparent 55%, #000 100%);
-    animation: speedLines .22s linear infinite; transition: opacity .25s; }
-#speed-lines[hidden] { display: none; }
+/* линии скорости (src/juice.js): холст, нарисованный один раз; меняются только прозрачность и трансформ (без перерисовки) */
+#speed-lines { position: fixed; left: -10%; top: -10%; width: 120%; height: 120%; pointer-events: none; z-index: 104; opacity: 0;
+    will-change: opacity, transform; transition: opacity .25s; animation: speedLines .22s linear infinite; }
 @keyframes speedLines { from { transform: scale(1) rotate(0deg); } to { transform: scale(1.06) rotate(1.2deg); } }
+
+/* Кнопки на плашках — одной формы: «второстепенные» («В меню», «Понятно», «Позже», «Нет, хватит») больше не бледный текст,
+   а такая же кнопка с рамкой, как «Гараж»; подсвеченные (золотые, «можно прокачать», «Отлично!») — как были */
+body #finish-screen .fin-btn.ghost, body .chest-card .ch-later:not(.ch-ok), body .chance-card .cc-no, body .nc-later {
+    display: block; width: 100%; min-height: 46px; margin-top: 8px; padding: 10px 14px; box-sizing: border-box;
+    border-radius: 12px !important; border: 1.5px solid rgba(255,255,255,0.22) !important; background: rgba(255,255,255,0.07) !important;
+    color: #f2eee6 !important; font: inherit; font-weight: 800 !important; font-size: 15px !important; text-decoration: none !important;
+    box-shadow: none !important; cursor: pointer; }
+body #finish-screen .fin-btn.ghost:hover, body .chest-card .ch-later:not(.ch-ok):hover, body .chance-card .cc-no:hover, body .nc-later:hover {
+    border-color: rgba(255,255,255,0.45) !important; background: rgba(255,255,255,0.12) !important; }
+
+/* подарок в гараже (src/ui/gift-garage.js): золотое сияние и поздравительная плашка */
+#garage-panel-parts .color-swatch.gift-glow { outline: 3px solid #ffd23c; outline-offset: 2px; animation: giftGlow 1.2s ease-in-out infinite; }
+#garage-panel-parts .part-row.gift-glow { border-color: #ffd23c !important; background: linear-gradient(90deg, rgba(255,210,60,0.28), rgba(255,160,0,0.1)) !important; color: #ffe9a8; animation: giftGlow 1.2s ease-in-out infinite; }
+#garage-panel-parts .part-row.gift-glow::after { content: '🎁 подарок'; margin-left: 8px; font-size: 11px; font-weight: 900; color: #ffd23c; }
+@keyframes giftGlow { 0%, 100% { box-shadow: 0 0 6px 1px rgba(255,210,60,0.55); } 50% { box-shadow: 0 0 20px 6px rgba(255,200,40,0.95); } }
+.gift-modal { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); padding: 16px; }
+.gift-card { width: min(420px, 100%); box-sizing: border-box; padding: 22px 20px 18px; border-radius: 18px; text-align: center; color: #fff;
+    background: linear-gradient(180deg, #2a1d06, #140e04); border: 2px solid #ffd23c; box-shadow: 0 0 40px rgba(255,200,40,0.55); animation: rrPop .45s cubic-bezier(.2,1.6,.4,1) both; }
+.gift-card .gm-title { font: 900 24px/1.1 Impact, "Arial Black", sans-serif; letter-spacing: 1px; color: #ffd23c; text-shadow: 0 0 12px rgba(255,170,0,0.7); }
+.gift-card .gm-item { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 16px 0 8px; font-size: 19px; }
+.gift-card .gm-swatch { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #ffd23c; box-shadow: 0 0 14px rgba(255,210,60,0.9); }
+.gift-card .gm-icon { font-size: 30px; }
+.gift-card .gm-sub { font-size: 14px; color: #e8dcc0; line-height: 1.35; }
+.gift-card .gm-ok { display: block; width: 100%; min-height: 50px; margin-top: 16px; border: 0; border-radius: 14px; cursor: pointer; font: 900 19px system-ui, sans-serif;
+    color: #1a1000; background: linear-gradient(180deg, #ffe066, #ffb000); box-shadow: 0 5px 0 #a86a00, 0 0 22px rgba(255,200,40,0.7); }
+#finish-screen .chapter-gift-go { display: block; width: 100%; margin-top: 8px; padding: 10px 12px; border-radius: 12px; cursor: pointer; font: inherit; font-weight: 800; text-align: left;
+    color: #ffe9a8; background: linear-gradient(90deg, rgba(255,210,60,0.22), rgba(255,160,0,0.08)); border: 1.5px solid #ffd23c; animation: giftGlow 1.4s ease-in-out infinite; }
+#finish-screen .chapter-gift-go .cg-go { display: block; margin-top: 4px; font-weight: 900; color: #ffd23c; }
+/* «Круто!» на плашке достижения — такая же золотая кнопка, как «Отлично!» */
+body .ach-plaque button { display: block; width: 100%; min-height: 46px; margin-top: 12px; padding: 10px 14px; border: 0 !important; border-radius: 12px !important;
+    font: 900 17px system-ui, sans-serif !important; color: #1a1000 !important; background: linear-gradient(180deg, #ffe066, #ffb000) !important;
+    box-shadow: 0 4px 0 #a86a00 !important; cursor: pointer; }
+
+/* машины в подарок (src/ui/gift-car-pop.js) — как плашка новинок */
+.giftcar-modal { position: fixed; inset: 0; z-index: 9450; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.55); }
+.giftcar-card { position: relative; width: min(420px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; padding: 20px 18px 14px; border-radius: 22px; text-align: center; color: #fff;
+    background: linear-gradient(160deg, #3a1f5a, #1a0f2a 60%, #3a2406); border: 2px solid #ffd23c; animation: ncGlow 1.6s ease-in-out infinite; }
+.giftcar-card .gc-list { display: grid; gap: 8px; margin: 14px 0; text-align: left; }
+.giftcar-card .gc-list div { display: grid; grid-template-columns: 34px 1fr; column-gap: 8px; align-items: center; padding: 8px 10px; border-radius: 12px; background: rgba(255,210,60,0.1); border: 1px solid rgba(255,210,60,0.45); }
+.giftcar-card .gc-list i { grid-row: span 2; font-style: normal; font-size: 26px; text-align: center; }
+.giftcar-card .gc-list b { color: #ffe066; font-size: 16px; }
+.giftcar-card .gc-list span { font-size: 13px; color: #f0e6ff; }
+.giftcar-card .gc-car { margin: 12px 0 4px; font: 900 22px/1.2 system-ui, sans-serif; color: #fff; }
+.giftcar-card .nc-sub { margin-bottom: 14px; }
+@media (max-height: 460px) { .giftcar-card { padding: 12px 14px 10px; } .giftcar-card .nc-title { font-size: 20px; } .giftcar-card .gc-list { margin: 8px 0; gap: 5px; } .giftcar-card .gc-list div { padding: 5px 8px; } }
+#shop-plate em.gift { background: linear-gradient(180deg, #ffe066, #ffb000); color: #1a1000; }
+.chest-card .ch-gift { margin: 2px 0 8px; padding: 6px 10px; border-radius: 10px; font-weight: 900; font-size: 14px; color: #ffe066; background: rgba(255,210,60,0.12); border: 1px solid rgba(255,210,60,0.5); }

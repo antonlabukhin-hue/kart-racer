@@ -346,7 +346,8 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
     await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearMiss'); });
     await expect(page.locator('#fever-fx')).toBeVisible();
     await expect(page.locator('.big-plaque')).toContainText('В УДАРЕ');
-    await expect(page.locator('#speed-lines')).toBeVisible(); // «В ударе» — на нитро: линии скорости по краям (src/juice.js)
+    // «В ударе» — на нитро: линии скорости по краям (src/juice.js; слой всегда на месте, видно — по прозрачности)
+    await expect.poll(() => page.evaluate(() => { const el = document.getElementById('speed-lines'); return el ? +getComputedStyle(el).opacity : 0; })).toBeGreaterThan(0);
     const res = await page.evaluate(async () => {
         const g = window.__raceDebug;
         const e0 = g.stats.eChips || 0;
@@ -434,5 +435,25 @@ test('цели на дороге: растяжка рекорда и щиты с
     await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 960); });
     await expect.poll(() => page.evaluate(() => window.__raceDebug.scene.children.some(o => o.isGroup && Math.abs(o.position.z - (window.__raceDebug.startZ - 900)) < 0.5))).toBe(false);
     await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// «Повторить» в бесконечном заезде — сразу новый заезд на той же машине, без витрины и меню
+test('«Повторить» в бесконечном заезде: сразу снова в путь', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    const car0 = await page.evaluate(() => window.__raceDebug.carStats && window.__raceDebug.carStats.name);
+    await page.evaluate(() => { window.__raceDebug.setZ(window.__raceDebug.startZ - 120); window.__raceDebug.end('crash'); });
+    await expect(page.locator('#finish-restart-btn')).toBeVisible({ timeout: 10_000 });
+    await page.locator('#finish-restart-btn').click();
+    // новый заезд: снова у старта (короткий отсчёт «1 → GO!» может уже пройти)
+    await expect.poll(() => page.evaluate(() => { const g = window.__raceDebug; return !!g && (g.state === 'countdown' || g.state === 'racing') && g.startZ - g.z < 50; }), { timeout: 30_000 }).toBe(true);
+    await expect(page.locator('#shop-screen')).toBeHidden();
+    await expect(page.locator('#main-menu-screen')).toBeHidden();
+    await waitRacing(page);
+    expect(await page.evaluate(() => window.__raceDebug.carStats && window.__raceDebug.carStats.name)).toBe(car0);
     expect(problems).toEqual([]);
 });

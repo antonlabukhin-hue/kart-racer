@@ -35,19 +35,41 @@ function policeCar() {
         const w = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.18, 12), M(0x111111));
         w.rotation.z = Math.PI / 2; w.position.set(q[0], 0.24, q[1]); g.add(w);
     });
-    // настоящий свет мигалок — красно-синие отблески на дороге и машинах
-    const lr = new THREE.PointLight(0xff2020, 0, 7), lb = new THREE.PointLight(0x2060ff, 0, 7);
-    lr.position.set(-0.2, 1.3, 0.1); lb.position.set(0.2, 1.3, 0.1); g.add(lr, lb);
+    // отсветы мигалок — красно-синие пятна на асфальте и ореол над крышей. Не настоящий свет: новый источник света
+    // посреди заезда заставляет видеокарту пересобрать все шейдеры — игра замирала на секунду
+    const tex = glowTexture();
+    const spot = function(c, x) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 5.2), new THREE.MeshBasicMaterial({ map: tex, color: c, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+        m.rotation.x = -Math.PI / 2; m.position.set(x, 0.04, 0.1); g.add(m);
+        const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: c, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+        halo.scale.set(1.4, 1.4, 1); halo.position.set(x * 0.16, 1.12, 0.1); g.add(halo);
+        return [m, halo];
+    };
     g.userData.lights = [red, blue];
-    g.userData.glow = [lr, lb];
+    g.userData.glow = [spot(0xff2020, -1.1), spot(0x2060ff, 1.1)];
     g.scale.setScalar(0.85); // на 15% меньше обычной машины
     return g;
 }
 function blink(car, t) {
     const on = Math.floor(t * 6) % 2 === 0;
     car.userData.lights[0].visible = on; car.userData.lights[1].visible = !on;
-    car.userData.glow[0].intensity = on ? 3 : 0; car.userData.glow[1].intensity = on ? 0 : 3;
+    car.userData.glow[0].forEach(function(m, i) { m.material.opacity = on ? (i ? 0.85 : 0.45) : 0; });
+    car.userData.glow[1].forEach(function(m, i) { m.material.opacity = on ? 0 : (i ? 0.85 : 0.45); });
 }
+
+// мягкое круглое пятно света (одна текстура на все отсветы)
+let _glowTex = null;
+function glowTexture() {
+    if (_glowTex) return _glowTex;
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.4, 'rgba(255,255,255,0.45)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+    _glowTex = new THREE.CanvasTexture(c);
+    _glowTex.userData.keep = true;
+    return _glowTex;
+}
+
 
 /**
  * Погоня в сцене: police.crash() на аварии → 'caught' | 'chase'; police.tick(dt, x, z) каждый кадр; police.stop().

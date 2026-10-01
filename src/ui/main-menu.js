@@ -97,6 +97,7 @@ export function showChest(p, c) {
     m.innerHTML = '<div class="chest-card" role="dialog" aria-label="Сундук дня">'
         + '<div class="ch-title">🔥 Серия: ' + p.streak.count + ' ' + dayWord(p.streak.count) + ' подряд</div>'
         + '<div class="ch-sub">Заходи каждый день — сундук богаче, 7-й — большой. Пропуск — серия заново.</div>'
+        + (p.giftCars && p.giftCars.got && p.giftCars.got.trike ? '' : '<div class="ch-gift">🎁 7 дней подряд — машина «Трайк» в подарок!</div>' /* src/gift-cars.js */)
         + '<div class="ch-days">' + CHESTS.map(function(x, i) {
             const n = i + 1;
             return '<div class="ch-day' + (n < day ? ' past' : n === day ? ' today' + (claimed ? ' opened' : '') : '') + '"><small>день ' + n + '</small><i>' + (n === 7 ? '🎁' : '📦') + '</i>'

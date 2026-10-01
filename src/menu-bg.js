@@ -28,10 +28,10 @@ function carPaint(profile, carId) {
     } catch (e) { return null; }
 }
 
-/** Запустить фон (idempotent). opts: { carId, profile, still, lowPower, intro } */
+/** Запустить фон (idempotent). opts: { carId, profile, still, lowPower, intro, dress(built), look } — look: «как одета» машина (сменилась — перестроить) */
 export function startMenuBg(opts) {
     const o = opts || {};
-    if (st) { if (o.carId && o.carId !== st.carId) { stopMenuBg(); } else { st.intro = !!o.intro; st.shotT = 0; return; } }
+    if (st) { if ((o.carId && o.carId !== st.carId) || (o.look != null && o.look !== st.look)) { stopMenuBg(); } else { st.intro = !!o.intro; st.shotT = 0; return; } }
     let renderer;
     try {
         renderer = new THREE.WebGLRenderer({ antialias: !o.lowPower, alpha: false, powerPreference: 'low-power' });
@@ -47,12 +47,12 @@ export function startMenuBg(opts) {
     const d = createDiorama({
         map: 'arsenev', time: 'sunset', seed: 5,
         // машина едет от камеры, в сторону движения (перёд модели — к −z, поэтому разворот на π)
-        car: { id: carId, x: 0.9, rotY: Math.PI, paint: carPaint(o.profile, carId) },
+        car: { id: carId, x: 0.9, rotY: Math.PI, paint: carPaint(o.profile, carId), dress: o.dress },
         boards: [{ x: -(ROAD_W / 2 + 2.6), z: 20, ad: 0 }, { x: ROAD_W / 2 + 2.6, z: 65, ad: 2 }, { x: -(ROAD_W / 2 + 2.6), z: 110, ad: 4 }]
     });
     d.apply(renderer);
     st = {
-        renderer: renderer, d: d, scene: d.scene, camera: d.camera, carId: carId, raf: 0, t: 0, last: performance.now(),
+        renderer: renderer, d: d, scene: d.scene, camera: d.camera, carId: carId, look: o.look, raf: 0, t: 0, last: performance.now(),
         still: !!o.still, critters: [], nextCritter: 1.5, intro: !!o.intro, shotT: 0,
         car: d.cars[0] ? d.cars[0].group : null, wheels: d.cars[0] ? d.cars[0].wheels : []
     };

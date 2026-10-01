@@ -388,6 +388,8 @@ export function grantChapterReward(profile, trackId, carId) {
         if (!Array.isArray(lo.ownedPaints)) lo.ownedPaints = [];
         if (lo.ownedPaints.indexOf(rw.paint) >= 0) return null;
         lo.ownedPaints.push(rw.paint);
+        if (!Array.isArray(lo.newGifts)) lo.newGifts = [];
+        lo.newGifts.push('paint:' + rw.paint); // в гараже сияет золотом, пока не тронешь (src/ui/gift-garage.js)
         if (rw.equip && carId) {
             if (!lo.paintByCar || typeof lo.paintByCar !== 'object') lo.paintByCar = {};
             lo.paintByCar[carId] = rw.paint;
@@ -398,6 +400,8 @@ export function grantChapterReward(profile, trackId, carId) {
     if (!Array.isArray(lo.ownedParts)) lo.ownedParts = [];
     if (lo.ownedParts.indexOf(rw.part) >= 0) return null;
     lo.ownedParts.push(rw.part);
+    if (!Array.isArray(lo.newGifts)) lo.newGifts = [];
+    lo.newGifts.push('part:' + rw.part);
     return { part: rw.part };
 }
 
