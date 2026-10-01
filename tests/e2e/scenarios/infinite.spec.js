@@ -357,6 +357,8 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
     expect(res.strikes).toBe(0);
     expect(res.gained).toBeGreaterThanOrEqual(5);
     expect(res.fever).toBe(true);
+    // на медленных кадрах (CI без видеокарты) игровые 7 с идут дольше — подводим к концу
+    await page.evaluate(() => { window.__raceDebug.risk.fever = 0.4; });
     await expect(page.locator('#fever-fx')).toBeHidden({ timeout: 12_000 });
     expect(await page.evaluate(() => window.__raceDebug.risk.mult)).toBeLessThan(5); // сброшен (после — может уже начаться новая цепочка)
     await page.keyboard.up('w');
