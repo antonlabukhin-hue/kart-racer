@@ -57,7 +57,7 @@ function saveSeen(seen) {
 
 /**
  * Плашка знакомства: заезд на паузе (флаг window.__racePaused, как у кнопки паузы), пока не нажмут «Продолжить». Отмечает знакомым сразу.
- * «Больше не подсказывать» — отметить знакомым всё.
+ * «Пропустить всё обучение» — отметить знакомым всё (дальше подсказок не будет).
  */
 export function showMeet(id, seen, pause) {
     pause = pause || function(on) { window.__racePaused = on; };
@@ -68,7 +68,7 @@ export function showMeet(id, seen, pause) {
     const el = document.createElement('div');
     el.className = 'meet-overlay';
     el.innerHTML = '<div class="meet-card" role="dialog" aria-modal="true"><div class="meet-new">НОВОЕ НА ДОРОГЕ</div><i class="meet-ico"></i><b class="meet-title"></b><p class="meet-text"></p>'
-        + '<button type="button" class="meet-go">Продолжить ▶</button><button type="button" class="meet-off">Больше не подсказывать</button></div>';
+        + '<button type="button" class="meet-go">Продолжить ▶</button><button type="button" class="meet-off">⏭ Пропустить всё обучение</button></div>';
     el.querySelector('.meet-ico').textContent = m.icon;
     el.querySelector('.meet-title').textContent = m.title;
     el.querySelector('.meet-text').textContent = m.text;
