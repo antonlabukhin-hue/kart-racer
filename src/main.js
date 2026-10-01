@@ -9522,7 +9522,7 @@ function startGaragePreview(carId) {
                                 el.style.color = '#ff88cc';
                                 el.style.borderColor = '#ff88cc';
                                 postShout(el, 1600);
-                            } else {
+                            } else if (!INF) { /* бесконечная трасса — без лимита времени: «+5 сек» там ни к чему */
                                 raceTime = Math.max(0, raceTime - 5);
                                 showTimePenaltyPopup(0, '❤ +5 сек');
                                 const el = document.createElement('div');
