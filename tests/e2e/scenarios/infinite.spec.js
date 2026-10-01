@@ -254,6 +254,8 @@ test('погоня ГАИ: вторая авария во время погон�
     await page.waitForTimeout(600);
     expect(await crash()).toBe(5);
     await expect(page.locator('.police-hud')).toHaveCount(0);
+    // ролик поимки (облёт машин с мигалками) и потом — итоги заезда (на «Второй шанс» в тесте нечем платить)
+    await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 15_000 });
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });

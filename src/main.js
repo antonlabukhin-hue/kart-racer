@@ -20,18 +20,18 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { gapStyle, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, createBarricade, createWarnMark, createChargeChevrons } from './setpieces.js';
         import { resolveLayout, SEGMENT_LEN } from './track-layout.js';
         import { createRoadworks, createTunnel, roadworksLane, approach } from './segments.js';
-        import { MAP_ORDER, MAP_NAMES, CAMPAIGN_FINISH_LINES, VILLAIN_INTRO, ACHIEVEMENTS, CAR_SHOP_ORDER, CAR_PARTS, CAR_PAINTS, TROPHIES, SEASON_REWARDS, DAILY_CONTRACTS, ANIMAL_SHOUTS_LIST } from './content.js';
+        import { MAP_ORDER, MAP_NAMES, CAMPAIGN_FINISH_LINES, VILLAIN_INTRO, ACHIEVEMENTS, CAR_SHOP_ORDER, NEW_CARS, NEW_CARS_TAG, shopOrder, CAR_PARTS, CAR_PAINTS, TROPHIES, SEASON_REWARDS, DAILY_CONTRACTS, ANIMAL_SHOUTS_LIST } from './content.js';
         import { DIFFICULTY_CONFIG } from './difficulty.js';
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { chaseTargets, stepChase } from './rival-chase.js'; import { createPolice } from './police-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync } from './cloud-save.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart, weekTheme } from './infinite.js'; installTouchScale(); installHudLayout(); if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { chaseTargets, stepChase } from './rival-chase.js'; import { createPolice } from './police-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart, weekTheme } from './infinite.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
-        import { buildShowroomCar, applyUpgradeVisuals, addNitroFlames } from './cars.js';
+        import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames } from './cars.js';
         import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
@@ -655,7 +655,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
          */
         function cleanupRaceKeepProfile() {
             curvedWorld.setCurve(0, 0);
-            document.querySelectorAll('.police-hud').forEach(function(n) { n.remove(); });
+            document.querySelectorAll('.police-hud').forEach(function(n) { n.remove(); }); document.body.classList.remove('arrest-cine');
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { window.__hudRefs = null; } catch (e) {}
 
@@ -1056,7 +1056,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             if (!Profile.saveProfile(currentPlayer, localStorage) && window.Notify) {
                 Notify.warn('Не удалось сохранить', 'Память браузера переполнена — прогресс этого заезда может не сохраниться');
             }
-            if (onlineBoard()) { saveCurrentPlayer.cloud = saveCurrentPlayer.cloud || createAutoSync(); saveCurrentPlayer.cloud(); } // облачное сохранение (src/cloud-save.js)
+            if (onlineBoard()) { saveCurrentPlayer.cloud = saveCurrentPlayer.cloud || createAutoSync({ onDone: function(ok) { cloudCodeHint(ok, window.Notify); } }); saveCurrentPlayer.cloud(); } // облачное сохранение (src/cloud-save.js)
             updatePlayerBar();
         }
 
@@ -1439,6 +1439,10 @@ function createProfile(name) { return Profile.createProfile(name); }
             refreshMainMenu({ player: currentPlayer, rewards: SEASON_REWARDS, campaignDone: (getCampaignProgress().completed || []).length, campaignTotal: CAMPAIGN_TRACKS.length,
                 upgradeLevels: getUpgradeLevels(car), upgrades: UPGRADES, costOf: nextCost, maxLevel: MAX_UPGRADE_LEVEL, carName: (CAR_PRESETS[car] || {}).name || car,
                 missions: missionRows(currentPlayer), canClaimChest: canClaimChest(currentPlayer, dayKey(new Date())), chest: chestDeps });
+            if (shouldShowNew(NEW_CARS_TAG)) setTimeout(function() { // «Появились новые машины» — раз на выпуск (src/ui/new-cars-pop.js)
+                const mm = document.getElementById('main-menu-screen');
+                if (mm && mm.style.display !== 'none' && mm.getClientRects().length) showNewCarsPop({ tag: NEW_CARS_TAG, names: NEW_CARS.map(function(id) { return (CAR_PRESETS[id] || {}).name || id; }), onOpen: function() { shopBackToGarage = false; openShopScreen(false, NEW_CARS[0]); } });
+            }, 700);
             renderMenuExtras({ word: wordState(currentPlayer, dayKey(new Date())), list: loadBoard(), now: Date.now(), me: currentPlayer.name, fetchOnline: onlineBoard() ? fetchTop : null });
         }
 
@@ -1539,7 +1543,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         }
 
         let shopBackToGarage = false, quickRestart = false; // магазин открыт из гаража — туда и вернуться; «Повторить» — короткий отсчёт
-        function openShopScreen(fromFirstRace) {
+        function openShopScreen(fromFirstRace, focusCar) {
             if (!currentPlayer) return;
             const forInf = fromFirstRace === 'infinite'; // первый заезд бесконечной трассы: выбрал — и сразу в путь
             { const bb = document.getElementById('shop-boosts'); if (bb) { bb.hidden = !forInf; if (forInf) renderBoostBar(bb, currentPlayer, boostSel); } } // бусты (src/ui/boosts.js)
@@ -1547,7 +1551,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             hideMainMenu();
             const sc = document.getElementById('shop-screen');
             sc.classList.add('active'); sc.style.display = 'flex';
-            shopSelectedCar = currentPlayer.preferredCar || 'cheburashka';
+            shopSelectedCar = (focusCar && CAR_PRESETS[focusCar]) ? focusCar : (currentPlayer.preferredCar || 'cheburashka');
             document.getElementById('shop-currency').textContent =
                 'Е: ' + currentPlayer.season.chips + ' · 📼 ' + (currentPlayer.season.vhs || 0);
             const box = document.getElementById('shop-cars');
@@ -1567,11 +1571,11 @@ function createProfile(name) { return Profile.createProfile(name); }
                 }
                 const plate = document.getElementById('shop-plate');
                 if (plate) {
-                    const vp = preset.priceVhs || 0, i = CAR_SHOP_ORDER.indexOf(shopSelectedCar);
-                    plate.innerHTML = '<b>' + escapeHtml(preset.name) + '</b>'
+                    const vp = preset.priceVhs || 0, i = shopOrder().indexOf(shopSelectedCar), isNew = NEW_CARS.indexOf(shopSelectedCar) >= 0;
+                    plate.innerHTML = (isNew ? '<i class="new-tag">НОВИНКА</i>' : '') + '<b' + (isNew ? ' class="is-new"' : '') + '>' + escapeHtml(preset.name) + '</b>'
                         + (preset.ability ? '<span>★ ' + escapeHtml(preset.ability.name) + '</span>' : '')
                         + '<em class="' + (owned ? 'own' : vp ? 'vhs' : 'e') + '">' + (owned ? '✓ Твоя' : vp ? vp + ' 📼' : price + ' Е') + '</em>'
-                        + '<i class="dots">' + CAR_SHOP_ORDER.map(function(id, k) { return '<u class="' + (k === i ? 'on' : '') + '"></u>'; }).join('') + '</i>';
+                        + '<i class="dots">' + shopOrder().map(function(id, k) { return '<u class="' + (k === i ? 'on' : '') + '"></u>'; }).join('') + '</i>';
                 }
                 const act = document.getElementById('shop-action');
                 if (act) {
@@ -1621,16 +1625,16 @@ function createProfile(name) { return Profile.createProfile(name); }
                 }
                 startShopPreview(shopSelectedCar);
             }
-            box.innerHTML = CAR_SHOP_ORDER.map(function(id) {
+            box.innerHTML = shopOrder().map(function(id) { // новинки — первыми
                 const p = CAR_PRESETS[id];
                 const owned = (currentPlayer.unlockedCars || []).includes(id);
                 const price = owned ? (p.priceChips || p.priceVhs ? 'Куплено' : 'Стартовый') : p.priceVhs ? p.priceVhs + ' 📼' : (p.priceChips + ' Е');
-                return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
+                return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + (NEW_CARS.indexOf(id) >= 0 ? ' is-new' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
             }).join('');
             // листать как персонажей в Subway Surfers: стрелки и свайп по подиуму
             const flip = function(dir) {
-                const n = CAR_SHOP_ORDER.length, i = CAR_SHOP_ORDER.indexOf(shopSelectedCar);
-                shopSelectedCar = CAR_SHOP_ORDER[(i + dir + n) % n];
+                const order = shopOrder(), n = order.length, i = order.indexOf(shopSelectedCar);
+                shopSelectedCar = order[(i + dir + n) % n];
                 refreshShopSelection();
                 try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.5); } catch (e) {}
                 const b = box.querySelector('.shop-car-btn[data-car="' + shopSelectedCar + '"]');
@@ -1752,7 +1756,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                                 o.material.color.setHex(presetCol);
                             }
                         });
-                        scene.add(built.group);
+                        fitShowroom(built.group); scene.add(built.group); // крупные модели — меньше, чтобы не уходили за край
                         let rot = 0.5;
                         const tick = () => {
                             shopRaf = requestAnimationFrame(tick);
@@ -8013,7 +8017,7 @@ function startGaragePreview(carId) {
             const cleanRun = createCleanRun(); if (ABILITY === 'armor') cleanRun.grantShield(); /* «Буханка»: старт с бронёй */ let _armorShown = false;
             const boosts = INF ? pendingBoosts : [], headstartTo = boosts.indexOf('headstart') >= 0 ? HEADSTART_M : 0; pendingBoosts = []; // «Разгон» и «Запаска» (src/ui/boosts.js)
             if (boosts.indexOf('spare') >= 0) cleanRun.grantShield();
-            let rewindUsed = false; const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
+            let rewindUsed = false, spikeSlowT = 0; /* spikeSlowT — сколько ещё секунд тормозят пробитые шипами колёса */ const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
             let shieldMesh = null;
             /** Крупная выскакивающая плашка по центру (броня и т. п.) — один слот */
             function grabPower(type) {
@@ -8238,7 +8242,10 @@ function startGaragePreview(carId) {
                 }
                 logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
                 strikes++;
-                if (police && police.crash() === 'caught' && strikes < MAX_STRIKES) { strikes = MAX_STRIKES; try { showBigPlaque('🚨 ГАИ ПОЙМАЛА!', 'Вторая авария во время погони', 'crate-bad'); } catch (e) {} }
+                if (police && police.crash() === 'caught' && strikes < MAX_STRIKES) { // ГАИ поймала: ролик облёта (src/police-chase.js), потом — как обычно «Второй шанс»
+                    strikes = MAX_STRIKES; speed = 0; gameState = 'chance'; cars.forEach(function(c) { if (Math.abs(c.z - zPos) < 16) { c.z = zPos - 90; c.mesh.position.z = c.z; } }); try { showBigPlaque('🚨 ГАИ ПОЙМАЛА!', 'Вторая авария во время погони', 'crate-bad'); } catch (e) {}
+                    police.arrest({ camera: camera, renderer: renderer, x: xPos, z: zPos, onDone: function() { gameState = 'racing'; endGame('crash'); } }); return;
+                }
                 const lostMult = riskCrash(risk); if (lostMult > 1) try { showTimePenaltyPopup(0, '🔥 ×' + lostMult + ' сгорел'); } catch (e) {}
                 try { if (_settings.vibrate && navigator.vibrate) navigator.vibrate(strikes >= MAX_STRIKES ? [80, 60, 160] : 70); } catch (e) {}
                 speed *= obs.penalty || 0.35;
@@ -8608,7 +8615,8 @@ function startGaragePreview(carId) {
                     camera.updateProjectionMatrix();
                 }
 
-                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? NITRO_SPEED : 1.0) * infSpeedK; // бесконечная трасса: быстрее с каждым км
+                if (spikeSlowT > 0) spikeSlowT -= deltaTime;
+                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? NITRO_SPEED : 1.0) * infSpeedK * (spikeSlowT > 0 ? 0.7 : 1); // бесконечная трасса: быстрее с каждым км; после шипов — −30%
                 const effectiveAccel = ACCELERATION * (nitroTimer > 0 ? NITRO_ACCEL : 1.0);
 
                 // константы разгона/тормоза подобраны «за кадр при 60 fps» — масштабируем по времени кадра,
@@ -9160,9 +9168,9 @@ function startGaragePreview(carId) {
                             if (!obs._trikeShown) { obs._trikeShown = true; try { showTimePenaltyPopup(0, '🛞 Трайк держит дорогу'); } catch (e) {} }
                         } else if (obs.type === 'spikes') {
                             // шипы: не авария, но скорость резко падает; шипы приминаются
-                            stats.lastSpike = { before: speed, after: speed * 0.5 }; speed *= 0.5; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3;
+                            stats.lastSpike = { before: speed, after: speed * 0.7 }; speed *= 0.7; spikeSlowT = 2.2; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3; // шипы: −30% на пару секунд
                             stats.spikes = (stats.spikes || 0) + 1;
-                            try { showBigPlaque('⚠ ШИПЫ!', 'Скорость упала — перепрыгни или объезжай', 'crate-bad'); if (window.soundEngine) window.soundEngine.playSfx('bump', 1.3); } catch (e) {}
+                            try { showBigPlaque('⚠ ШИПЫ!', 'Пробил колёса: −30% скорости на пару секунд', 'crate-bad'); if (window.soundEngine) window.soundEngine.playSfx('bump', 1.3); } catch (e) {}
                         } else if (ABILITY === 'offroad' && obs.type !== 'oil' && obs.type !== 'acid') {
                             // Нива-внедорожник: ямы, кочки, лёд и смола — не помеха (масло и кислота — да)
                             if (!obs._offroadShown) {
@@ -11603,7 +11611,7 @@ function showLoreScreen(quality, difficulty) {
             });
             const settingsBtn = document.getElementById('main-menu-settings');
             if (settingsBtn) settingsBtn.addEventListener('click', function() { openSettingsScreen(); });
-            wireMainMenu({ openRewards: openRewardsScreen, openEvents: openEventsScreen, chest: chestDeps, player: function() { return currentPlayer; } });
+            wireMainMenu({ openRewards: openRewardsScreen, openEvents: openEventsScreen, chest: chestDeps, player: function() { return currentPlayer; }, save: saveCurrentPlayer, carTotal: CAR_SHOP_ORDER.length, cloud: onlineBoard() });
             const mmWord = document.getElementById('mm-word'), mmBoard = document.getElementById('mm-board'); // «Слово дня» и «Рекорды» (src/ui/board.js)
             if (mmWord) mmWord.onclick = function() { if (currentPlayer) showWordInfo(wordState(currentPlayer, dayKey(new Date()))); };
             if (mmBoard) mmBoard.onclick = function() { if (currentPlayer) showBoard({ me: currentPlayer.name, list: loadBoard(), now: Date.now(), carName: function(id) { return (CAR_PRESETS[id] || {}).name || id; }, fetchOnline: onlineBoard() ? function(scope) { return fetchTop(scope); } : null }); };

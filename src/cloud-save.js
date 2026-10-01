@@ -79,3 +79,12 @@ export function createAutoSync(opts) {
         }, o.delay != null ? o.delay : 4000);
     };
 }
+
+/** После первой отправки в облако — один раз: «запиши код сохранения» (браузер может стереть данные сайта). notify — Notify игры */
+export function cloudCodeHint(ok, notify, storage) {
+    const st = storage || localStorage;
+    if (!ok || !notify) return false;
+    try { if (st.getItem('road_racing_cloud_hint')) return false; st.setItem('road_racing_cloud_hint', '1'); } catch (e) { return false; }
+    notify.success('☁ Прогресс в облаке. Твой код: ' + getCode(st), 'Запиши его: в другом браузере или на новом телефоне — Настройки → «Загрузить» по коду');
+    return true;
+}
