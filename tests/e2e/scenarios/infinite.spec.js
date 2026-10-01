@@ -457,3 +457,28 @@ test('«Повторить» в бесконечном заезде: сразу 
     expect(await page.evaluate(() => window.__raceDebug.carStats && window.__raceDebug.carStats.name)).toBe(car0);
     expect(problems).toEqual([]);
 });
+
+// разлом — не авария с машиной: ГАИ за это не гонится (погоня — только за столкновение с машинами)
+test('погоня ГАИ: падение в разлом — без погони', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    const res = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        let gp = null;
+        for (let i = 0; i < 12 && !gp; i++) {
+            gp = g.gaps.find(x => !(x.fallT > 0) && x.zFar < g.z - 5);
+            if (!gp) { g.setZ(g.z - 400); await new Promise(r => setTimeout(r, 800)); }
+        }
+        if (!gp) return null;
+        const before = g.strikes;
+        g.setZ((gp.zNear + gp.zFar) / 2);
+        for (let i = 0; i < 40 && g.strikes === before; i++) await new Promise(r => setTimeout(r, 50));
+        return g.strikes - before;
+    });
+    expect(res).toBe(1);
+    await page.waitForTimeout(500);
+    await expect(page.locator('.police-hud')).toHaveCount(0);
+    expect(problems).toEqual([]);
+});

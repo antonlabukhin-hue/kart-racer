@@ -27,12 +27,17 @@ export function installUpdateCheck(o) {
             const el = document.createElement('div');
             el.className = 'update-pop';
             el.innerHTML = '<b>🆕 Вышла новая версия</b><button type="button">Обновить</button>';
-            el.querySelector('button').onclick = function() { location.reload(); };
+            el.onclick = function() { location.reload(); }; // вся плашка — кнопка
             document.body.appendChild(el);
             if (opts.onShow) opts.onShow(el);
         }).catch(function() {});
     };
-    document.addEventListener('visibilitychange', function() { if (!document.hidden) check(); });
+    // вернулся в игру, а новая версия уже найдена и он не в заезде — обновляем сами (кнопку на старых телефонах могли не увидеть)
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) return;
+        if (shown && !document.body.classList.contains('race-mode')) { location.reload(); return; }
+        check();
+    });
     setInterval(check, 10 * 60 * 1000);
     setTimeout(check, 15000);
 }

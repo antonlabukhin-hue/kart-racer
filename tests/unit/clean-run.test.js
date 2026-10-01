@@ -32,3 +32,19 @@ describe('чистый отрезок', () => {
         expect(drive(cr, 6)).toEqual([]);
     });
 });
+
+describe('броня на несколько ударов', () => {
+    it('прокачанная броня держит несколько ударов подряд', () => {
+        const c = createCleanRun();
+        c.grantShield(3);
+        expect(c.shieldHits).toBe(3);
+        expect(c.useShield()).toBe(true);
+        expect(c.useShield()).toBe(true);
+        expect(c.shield).toBe(true);
+        expect(c.useShield()).toBe(true);
+        expect(c.shield).toBe(false);
+        expect(c.useShield()).toBe(false);
+        c.grantShield(); c.grantShield(); // без уровня — один удар, повторная броня не копится сверх
+        expect(c.shieldHits).toBe(1);
+    });
+});

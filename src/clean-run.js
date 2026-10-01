@@ -7,7 +7,7 @@ export const CLEAN_SEGMENT = 10;
 export const CLEAN_CHIPS = 20;
 
 export function createCleanRun() {
-    let t = 0, shield = false, chips = 0, segments = 0;
+    let t = 0, shield = 0, chips = 0, segments = 0; // shield — сколько ударов ещё держит броня
     return {
         /** Кадр езды; moving — машина едет. Возвращает 'shield' | 'chips' | null */
         tick: function(dt, moving) {
@@ -16,7 +16,7 @@ export function createCleanRun() {
             if (t < CLEAN_SEGMENT) return null;
             t -= CLEAN_SEGMENT;
             segments++;
-            if (!shield) { shield = true; return 'shield'; }
+            if (!shield) { shield = 1; return 'shield'; }
             chips += CLEAN_CHIPS;
             return 'chips';
         },
@@ -24,15 +24,16 @@ export function createCleanRun() {
         useShield: function() {
             t = 0;
             if (!shield) return false;
-            shield = false;
+            shield--;
             return true;
         },
-        /** Броня сразу (усиление «Броня», «Второй шанс») */
-        grantShield: function() { shield = true; },
+        /** Броня сразу (усиление «Броня», «Второй шанс»); hits — сколько ударов держит (прокачка), не меньше уже имеющейся */
+        grantShield: function(hits) { shield = Math.max(shield, hits || 1); },
         /** Удар, который броня не спасает (падение в разлом, снаряд босса) */
         reset: function() { t = 0; },
         get progress() { return Math.min(1, t / CLEAN_SEGMENT); },
-        get shield() { return shield; },
+        get shield() { return shield > 0; },
+        get shieldHits() { return shield; },
         get chips() { return chips; },
         get segments() { return segments; }
     };
