@@ -312,3 +312,25 @@ test('значки 90-х: коллекция видна в «Трофеях»', 
     await expect(page.locator('#badge-set .got')).toHaveCount(2);
     expect(problems).toEqual([]);
 });
+
+// «Горячий старт»: при рекорде 5 км заезд сразу плотный — плашка в начале, попутки уже на старте
+test('горячий старт: опытному игроку — плашка и сложность от рекорда', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.infinite = { best: 5000, bestScore: 0, runs: 3 }; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.evaluate(() => { window.__sawWarm = ''; new MutationObserver(() => { const p = document.querySelector('.big-plaque'); if (p && p.textContent.includes('ГОРЯЧИЙ')) window.__sawWarm = p.textContent; }).observe(document.body, { childList: true, subtree: true }); });
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await expect.poll(() => page.evaluate(() => window.__sawWarm), { timeout: 15_000 }).toContain('1500 м');
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});

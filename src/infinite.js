@@ -53,13 +53,25 @@ export function mixHex(a, b, k) {
  * density — плотность препятствий на участке (0.3 → 1.3)
  */
 export const RAMP_LEN = 8000;
-export function rampAt(dist) {
+export function rampAt(dist, warm) {
+    dist = (dist || 0) + (warm || 0); // warm — «горячий старт» (warmStart)
     const t = Math.max(0, Math.min(1, (dist || 0) / RAMP_LEN));
     const e = t * t * (3 - 2 * t); // медленно в начале, быстрее в середине, мягко к потолку
     const a = Math.max(0, Math.min(1, ((dist || 0) - 1000) / (RAMP_LEN - 1000))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1000 м
     return { t: t, speed: 0.85 + 0.5 * e, density: 0.3 + e,
         animals: 0.55 + 2.05 * ea, maxAnimals: Math.round(6 + 10 * ea), animalSpeed: 1 + 0.6 * ea,
         traffic: Math.round(8 * ea), trafficSpeed: 1 + 0.5 * ea };
+}
+
+/**
+ * «Горячий старт»: опытный игрок не тратит первый километр на пустую дорогу — сложность заезда (rampAt, план участков)
+ * начинается с WARM_K его рекорда, но не дальше WARM_MAX м. Новичку (рекорд меньше WARM_FROM м) — как раньше, с нуля.
+ * Пейзажи, счёт и дальность от этого не меняются.
+ */
+export const WARM_FROM = 1000, WARM_K = 0.3, WARM_MAX = 1500;
+export function warmStart(best) {
+    const b = Math.max(0, best || 0);
+    return b < WARM_FROM ? 0 : Math.round(Math.min(WARM_MAX, b * WARM_K));
 }
 
 /** Очки забега: метры + «Е» по 10 + очки риска (множитель за риск уже внутри них) */
@@ -76,7 +88,7 @@ export function runXp(dist) {
  * План участка трассы [d0, d1) (расстояния от старта): что где поставить. rnd — генератор [0,1).
  * Возвращает список { kind, d, lane, ... } — kind: 'obstacle' (type), 'echip' (lane, y), 'nitro', 'gum', 'vhs', 'power' (type), 'gap' (rampLane),
  * 'crate' — ящик «?» (src/hazards.js), 'spikes' — шипы поперёк полосы (с SPIKES_FROM м, чаще с ростом сложности),
- * 'letter' — буква «Слова дня» (только с opts.letters).
+ * 'letter' — буква «Слова дня» (только с opts.letters). opts.warm — «горячий старт» (warmStart): сложность как на warm м дальше.
  * Разлом — не чаще раза в GAP_EVERY, вокруг него чисто; «Е» — цепочками по полосам, змейкой и дугой над разломом.
  */
 export const LANES = 3;
@@ -90,7 +102,8 @@ export const LETTER_EVERY = [260, 420]; // «Слово дня» (src/word-day.j
 export function planStretch(d0, d1, rnd, opts) {
     const o = opts || {};
     const r = rnd || Math.random;
-    const ramp = rampAt(d0);
+    const warm = o.warm || 0;
+    const ramp = rampAt(d0, warm);
     const out = [];
     const lane = function() { return Math.floor(r() * LANES); };
     // разломы
@@ -163,7 +176,7 @@ export function planStretch(d0, d1, rnd, opts) {
         if (at != null) out.push({ kind: 'letter', d: at, lane: lane() });
     }
     // шипы — после SPIKES_FROM м; чем дальше, тем чаще (шаг 380 → 190 м)
-    for (let dd = Math.max(d0, SPIKES_FROM) + r() * 150; dd < d1; dd += (380 - 190 * ramp.t) * (0.8 + r() * 0.4)) {
+    for (let dd = Math.max(d0, SPIKES_FROM - warm) + r() * 150; dd < d1; dd += (380 - 190 * ramp.t) * (0.8 + r() * 0.4)) {
         if (!nearGap(dd)) out.push({ kind: 'spikes', d: dd, lane: lane() });
     }
     // видеокассета — редкость: ~1 на 1.7 км (иногда 2), за длинный заезд 1–3

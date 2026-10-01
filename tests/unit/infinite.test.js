@@ -134,3 +134,24 @@ describe('событие недели', () => {
         expect(weekTheme(mon).short.length).toBeLessThanOrEqual(9);
     });
 });
+
+import { warmStart, WARM_MAX } from '../../src/infinite.js';
+describe('горячий старт', () => {
+    it('новичку — с нуля, опытному — треть рекорда, не дальше потолка', () => {
+        expect(warmStart(0)).toBe(0);
+        expect(warmStart(999)).toBe(0);
+        expect(warmStart(2000)).toBe(600);
+        expect(warmStart(50000)).toBe(WARM_MAX);
+    });
+    it('сложность и план — как на warm м дальше', () => {
+        expect(rampAt(0, 1500)).toEqual(rampAt(1500));
+        expect(planStretch(0, 500, seq(3), { warm: 0 }).items.some(i => i.kind === 'spikes')).toBe(false);
+        expect(planStretch(0, 500, seq(3), { warm: 1500 }).items.some(i => i.kind === 'spikes')).toBe(true);
+        let cold = 0, warm = 0;
+        for (let k = 0; k < 10; k++) {
+            cold += planStretch(0, 1000, seq(70 + k)).items.filter(i => i.kind === 'obstacle').length;
+            warm += planStretch(0, 1000, seq(70 + k), { warm: 1500 }).items.filter(i => i.kind === 'obstacle').length;
+        }
+        expect(warm).toBeGreaterThan(cold * 1.2);
+    });
+});
