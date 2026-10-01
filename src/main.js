@@ -4865,9 +4865,9 @@ function startGaragePreview(carId) {
                         setTimeout(startEndlessRun, 60);
                         return;
                     }
-                    // бесконечная трасса: «Повторить» — снова витрина машин (выбрал — и в путь), не главное меню
+                    // бесконечная трасса: «Повторить» — сразу снова в путь на той же машине (витрина — через «Гараж» и меню)
                     try { cleanupRaceKeepProfile(); } catch (e) {}
-                    if (INF) { setTimeout(function() { openShopScreen('infinite'); }, 60); return; }
+                    if (INF) { setTimeout(function() { startInfiniteRun(true); }, 60); return; }
                     // свободный заезд: те же настройки заново, без перезагрузки и повторного входа
                     setTimeout(function() { initGame(quality, difficulty, carId, mapId, weatherId); }, 60);
                 };

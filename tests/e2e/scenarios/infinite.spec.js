@@ -436,3 +436,23 @@ test('цели на дороге: растяжка рекорда и щиты с
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
+
+// «Повторить» в бесконечном заезде — сразу новый заезд на той же машине, без витрины и меню
+test('«Повторить» в бесконечном заезде: сразу снова в путь', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    const car0 = await page.evaluate(() => window.__raceDebug.carStats && window.__raceDebug.carStats.name);
+    await page.evaluate(() => { window.__raceDebug.setZ(window.__raceDebug.startZ - 120); window.__raceDebug.end('crash'); });
+    await expect(page.locator('#finish-restart-btn')).toBeVisible({ timeout: 10_000 });
+    await page.locator('#finish-restart-btn').click();
+    // новый заезд: снова у старта (короткий отсчёт «1 → GO!» может уже пройти)
+    await expect.poll(() => page.evaluate(() => { const g = window.__raceDebug; return !!g && (g.state === 'countdown' || g.state === 'racing') && g.startZ - g.z < 50; }), { timeout: 30_000 }).toBe(true);
+    await expect(page.locator('#shop-screen')).toBeHidden();
+    await expect(page.locator('#main-menu-screen')).toBeHidden();
+    await waitRacing(page);
+    expect(await page.evaluate(() => window.__raceDebug.carStats && window.__raceDebug.carStats.name)).toBe(car0);
+    expect(problems).toEqual([]);
+});
