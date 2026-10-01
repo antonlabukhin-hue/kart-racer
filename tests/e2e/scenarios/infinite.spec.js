@@ -346,6 +346,7 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
     await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearMiss'); });
     await expect(page.locator('#fever-fx')).toBeVisible();
     await expect(page.locator('.big-plaque')).toContainText('В УДАРЕ');
+    await expect(page.locator('#speed-lines')).toBeVisible(); // «В ударе» — на нитро: линии скорости по краям (src/juice.js)
     const res = await page.evaluate(async () => {
         const g = window.__raceDebug;
         const e0 = g.stats.eChips || 0;
