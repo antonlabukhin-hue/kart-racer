@@ -5588,3 +5588,13 @@ body.arrest-cine :is(#risk-hud, #power-hud, #hud-speedo, #hud-menu-btn, #hud-pau
     animation: speedLines .22s linear infinite; transition: opacity .25s; }
 #speed-lines[hidden] { display: none; }
 @keyframes speedLines { from { transform: scale(1) rotate(0deg); } to { transform: scale(1.06) rotate(1.2deg); } }
+
+/* Кнопки на плашках — одной формы: «второстепенные» («В меню», «Понятно», «Позже», «Нет, хватит») больше не бледный текст,
+   а такая же кнопка с рамкой, как «Гараж»; подсвеченные (золотые, «можно прокачать», «Отлично!») — как были */
+body #finish-screen .fin-btn.ghost, body .chest-card .ch-later:not(.ch-ok), body .chance-card .cc-no, body .nc-later {
+    display: block; width: 100%; min-height: 46px; margin-top: 8px; padding: 10px 14px; box-sizing: border-box;
+    border-radius: 12px !important; border: 1.5px solid rgba(255,255,255,0.22) !important; background: rgba(255,255,255,0.07) !important;
+    color: #f2eee6 !important; font: inherit; font-weight: 800 !important; font-size: 15px !important; text-decoration: none !important;
+    box-shadow: none !important; cursor: pointer; }
+body #finish-screen .fin-btn.ghost:hover, body .chest-card .ch-later:not(.ch-ok):hover, body .chance-card .cc-no:hover, body .nc-later:hover {
+    border-color: rgba(255,255,255,0.45) !important; background: rgba(255,255,255,0.12) !important; }
