@@ -57,3 +57,16 @@ describe('узор целиком или никак', () => {
         expect(dropBusy(items, d => d === 55).map(i => i.d)).toEqual([10, 20, 30, 40]);
     });
 });
+
+describe('конец узора', () => {
+    it('у каждого узора — отметка конца за его последним препятствием, ids — с opts.patId', () => {
+        const items = planStretch(0, 5000, seq(17), { patId: 3000 }).items;
+        const ends = items.filter(i => i.kind === 'patEnd');
+        expect(ends.length).toBeGreaterThan(10);
+        ends.forEach(e => {
+            expect(e.pat).toBeGreaterThan(3000);
+            const own = items.filter(i => i.pat === e.pat && i.kind !== 'patEnd' && i.kind !== 'echip');
+            expect(own.every(i => i.d < e.d)).toBe(true);
+        });
+    });
+});

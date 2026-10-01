@@ -361,3 +361,26 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
+
+// узор пройден, ничего не задев, — «✔ Чисто!» и множитель риска растёт (путь к «В ударе»)
+test('узоры: чистый проход — рисковое действие', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    // узоры отмечены конусами; перескакиваем за первый (ничего не задели)
+    const z = await page.evaluate(() => {
+        const g = window.__raceDebug;
+        const o = g.obstacles.filter(o => o.pat && o.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
+        const last = g.obstacles.filter(x => x.pat === o.pat).sort((a, b) => a.z - b.z)[0];
+        g.setZ(last.z + 2); // перед последним рядом узора — дальше игра едет сама (перескок далеко вперёд «чисто» не даёт)
+        const row = g.obstacles.filter(x => x.pat === o.pat && Math.abs(x.z - last.z) < 1); g.setX([-2, 0, 2].find(lx => row.every(x => Math.abs(x.x - lx) > 1.2))); // в свободную полосу последнего ряда
+        return last.z;
+    });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.patterns || 0), { timeout: 5000 }).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThan(0);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});

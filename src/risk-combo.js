@@ -6,7 +6,7 @@
  * пока горит, цепочка не гаснет, потом множитель — снова ×1 (следующий «В ударе» — заново с нуля).
  */
 export const FEVER_TIME = 7;
-export const RISK_POINTS = { nearMiss: 50, jump: 80, landing: 60, billboard: 40 };
+export const RISK_POINTS = { nearMiss: 50, jump: 80, landing: 60, billboard: 40, pattern: 60 }; // pattern — узор пройден, ничего не задел (src/patterns.js)
 export const MAX_MULT = 5;
 export const CHAIN_WINDOW = 5; // с
 

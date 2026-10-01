@@ -128,13 +128,14 @@ export function planStretch(d0, d1, rnd, opts) {
         const rp = rampAt(dd, warm);
         const pat = pickPattern(rp.t, dd + warm >= SPIKES_FROM, r);
         const sp = patternSpan(pat);
-        if (dd + sp[1] < d1 && !gapNear(dd + sp[0]) && !gapNear(dd + sp[1])) {
+        if (dd + sp[1] + 3 < d1 && !gapNear(dd + sp[0]) && !gapNear(dd + sp[1] + 3)) {
             const id = o.patId = (o.patId || 0) + 1;
             expandPattern(pat, dd, r() < 0.5).forEach(function(it) {
                 if (it.type === 'slide') it.type = slide;
                 it.pat = id;
                 out.push(it);
             });
+            out.push({ kind: 'patEnd', d: dd + pat.len + 3, pat: id, name: pat.id }); // проехал сюда, не задев узор, — «чисто!» (рисковое действие)
             busy.push([dd + sp[0] - 12, dd + sp[1] + 12]);
         }
         dd += sp[1] + patternGap(rp.t) * (0.8 + r() * 0.4);

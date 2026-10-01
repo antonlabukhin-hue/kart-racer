@@ -7266,24 +7266,25 @@ function startGaragePreview(carId) {
             const infWord = INF && currentPlayer ? wordState(currentPlayer, dayKey(new Date())) : {}; // «Слово дня» (src/word-day.js)
             // цели «До соперника N м»: таблица устройства и соперники сразу, мировая — когда придёт с сервера
             const chaseMe = currentPlayer ? currentPlayer.name : '', chaseBest = currentPlayer && currentPlayer.infinite ? currentPlayer.infinite.best || 0 : 0;
-            const infWarm = INF ? warmStart(chaseBest) : 0; /* «горячий старт»: сложность — от рекорда (src/infinite.js) */ const weekTh = INF ? weekTheme().theme : null; // событие недели: в этом пейзаже «Е» за две
+            const patEnds = [], patHit = new Set(); /* узоры: где кончаются и какие задеты */ const infWarm = INF ? warmStart(chaseBest) : 0; /* «горячий старт»: сложность — от рекорда (src/infinite.js) */ const weekTh = INF ? weekTheme().theme : null; // событие недели: в этом пейзаже «Е» за две
             const police = INF ? createPolice(scene) : null; // погоня ГАИ после аварии (src/police-chase.js)
             const chase = INF && currentPlayer ? { targets: chaseTargets(topRuns(loadBoard(), 'all', Date.now(), chaseMe), chaseMe, chaseBest), passed: new Set() } : null;
             if (chase && onlineBoard()) fetchTop('all').then(function(list) { if (list) chase.targets = chaseTargets(topRuns(list.concat(loadBoard()), 'all', Date.now(), chaseMe), chaseMe, chaseBest); });
             function infPlanLap(k) {
                 const LX = [-2, 0, 2], d0 = k * _trackSpan;
                 // vhsMul — от пресета, не ABILITY: план круга 0 строится раньше её объявления (иначе заезд не стартует)
-                const plan = planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity, vhsMul: (carPreset.ability && carPreset.ability.id === 'lucky') ? 2 : 1, letters: !!infWord.next, warm: infWarm }).items;
+                const plan = planStretch(d0 + (k ? 0 : 70), d0 + _trackSpan, Math.random, { slide: 'slide', nextGap: Infinity, vhsMul: (carPreset.ability && carPreset.ability.id === 'lucky') ? 2 : 1, letters: !!infWord.next, warm: infWarm, patId: k * 1000 }).items;
                 dropBusy(plan, function(d) { const z = START_Z - d; return infBusy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; }); }).forEach(function(it) { /* узор — целиком или никак (src/patterns.js) */
                     const z = START_Z - it.d;
                     let c = null;
+                    if (it.kind === 'patEnd') { patEnds.push({ z: z, pat: it.pat }); return; }
                     if (it.kind === 'echip') { collectibles.push(createEChipItem(it.x != null ? it.x : LX[it.lane], it.y, z)); return; }
                     if (it.kind === 'vhs') { collectibles.push(createVhsItem(LX[it.lane], 0.75, z)); return; }
                     if (it.kind === 'power') { collectibles.push(createPowerItem(LX[it.lane], z, it.type)); return; }
                     if (it.kind === 'letter') { const w = wordState(currentPlayer, dayKey(new Date())); if (!w.next) return; const m = createLetterToken(w.next); m.position.set(LX[it.lane], 0.9, z); scene.add(m); collectibles.push({ mesh: m, x: LX[it.lane], z: z, type: 'letter', active: true, bob: 0, radius: 0.8, baseY: 0.9 }); return; }
                     if (it.kind === 'crate' || it.kind === 'spikes') { // ящик «?» и шипы — src/hazards.js
                         const m = it.kind === 'crate' ? createCrateMesh() : createSpikesMesh(); m.position.set(LX[it.lane], 0, z); scene.add(m);
-                        (it.kind === 'crate' ? collectibles : obstacles).push({ mesh: m, x: LX[it.lane], z: z, type: it.kind, active: true, bob: 0, radius: 0.75 }); return;
+                        (it.kind === 'crate' ? collectibles : obstacles).push({ mesh: m, x: LX[it.lane], z: z, type: it.kind, active: true, bob: 0, radius: 0.75, pat: it.pat }); return;
                     }
                     if (it.kind === 'obstacle') { c = createObstacle(z, it.type === 'slide' ? themeAt(it.d).theme.slide : it.type); obstacles.push(c); }
                     else {
@@ -7291,7 +7292,7 @@ function startGaragePreview(carId) {
                         if (it.kind === 'nitro' && infArch.some(function(az) { return Math.abs(az - z) < 45; })) return;
                         c = createCollectible(z, it.kind); collectibles.push(c);
                     }
-                    c.x = it.x != null ? it.x : LX[it.lane]; c.mesh.position.x = c.x; if (it.cone != null) { const cn = createLaneCone(); cn.position.x = it.cone; c.mesh.add(cn); } /* узор: пара ям/пятен перекрывает полосу, конус её отмечает */
+                    c.x = it.x != null ? it.x : LX[it.lane]; c.pat = it.pat; c.mesh.position.x = c.x; if (it.cone != null) { const cn = createLaneCone(); cn.position.x = it.cone; c.mesh.add(cn); } /* узор: пара ям/пятен перекрывает полосу, конус её отмечает */
                 });
             }
             function infTrack(list) {
@@ -7337,7 +7338,7 @@ function startGaragePreview(carId) {
                 renderPowerHud(activePowers(powers));
                 if (police) police.tick(dt, xPos, zPos);
                 if (infWarm && !infWarmShown && !headstartTo && d > 25) { infWarmShown = true; try { showBigPlaque('🔥 ГОРЯЧИЙ СТАРТ', 'Трасса сразу как на ' + infWarm + ' м — ты уже опытный', 'crate-good'); } catch (e) {} }
-                const fv = feverHold(risk, powers); if (fv) nitroTimer = Math.max(nitroTimer, fv); renderFeverFx(risk); if ((risk.fever > 0) !== feverOn) { feverOn = risk.fever > 0; if (feverOn) { stats.fevers = (stats.fevers || 0) + 1; try { showBigPlaque('🔥 В УДАРЕ!', 'Множитель ×5: ' + FEVER_TIME + ' с неуязвим — сноси всё, «Е» сами летят', 'crate-good'); if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.8); } catch (e) {} } }
+                while (patEnds.length && zPos < patEnds[0].z) { const pe = patEnds.shift(); if (!patHit.has(pe.pat) && gameState === 'racing' && zPos > pe.z - 30) { /* перескок вперёд (отладка) — не «чисто» */ stats.patterns = (stats.patterns || 0) + 1; const rv = riskEvent(risk, 'pattern'); try { showTimePenaltyPopup(0, '✔ Чисто! ×' + rv.mult); } catch (e) {} } } const fv = feverHold(risk, powers); if (fv) nitroTimer = Math.max(nitroTimer, fv); renderFeverFx(risk); if ((risk.fever > 0) !== feverOn) { feverOn = risk.fever > 0; if (feverOn) { stats.fevers = (stats.fevers || 0) + 1; try { showBigPlaque('🔥 В УДАРЕ!', 'Множитель ×5: ' + FEVER_TIME + ' с неуязвим — сноси всё, «Е» сами летят', 'crate-good'); if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.8); } catch (e) {} } }
                 if (headstartTo && d < headstartTo) { nitroTimer = Math.max(nitroTimer, 0.25); if (!infHeadShown) { infHeadShown = true; try { showBigPlaque('🚀 РАЗГОН!', HEADSTART_M + ' м на нитро — удары не считаются', 'crate-good'); } catch (e) {} } }
                 if (t.theme !== infTheme) {
                     infTheme = t.theme;
@@ -9164,7 +9165,7 @@ function startGaragePreview(carId) {
                     const hitR = (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') ? 0.55 : 0.42;
                     
                     if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && sweptZ(obs.z, hitR)) {
-                        if (carAirborne || carYOffset > 0.45 || ABILITY === 'fly' || risk.fever > 0) {
+                        if (obs.pat && !(carAirborne || carYOffset > 0.45 || risk.fever > 0)) patHit.add(obs.pat); /* узор задет — «чисто» не будет */ if (carAirborne || carYOffset > 0.45 || ABILITY === 'fly' || risk.fever > 0) {
                             // в прыжке (и на ковре-самолёте) ямы/кочки/масло/шипы не срабатывают
                         } else if (ABILITY === 'trike' && (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar')) {
                             if (!obs._trikeShown) { obs._trikeShown = true; try { showTimePenaltyPopup(0, '🛞 Трайк держит дорогу'); } catch (e) {} }
