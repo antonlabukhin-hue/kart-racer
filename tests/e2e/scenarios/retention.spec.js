@@ -77,3 +77,33 @@ test('серия дней: сундук дня', async ({ page }) => {
     await expect(page.locator('.chest-modal .ch-got')).toContainText('+110 Е');
     expect(problems).toEqual([]);
 });
+
+// машины в подарок: плашка-новинка в меню; в витрине «Трайк» — только в подарок; 7 дней подряд — «Тебе подарок!»
+test('машины в подарок: плашка в меню, витрина и подарок за 7 дней подряд', async ({ page }) => {
+    const problems = watchProblems(page);
+    await page.addInitScript(() => sessionStorage.setItem('keep_giftintro', '1'));
+    await login(page);
+    await expect(page.locator('.giftcar-modal')).toContainText('Машины в подарок', { timeout: 15_000 });
+    await expect(page.locator('.giftcar-modal')).toContainText('Трайк');
+    await expect(page.locator('.giftcar-modal')).toContainText('Призрачный патруль');
+    await page.locator('.giftcar-modal .nc-go').click();
+    await expect(page.locator('#shop-screen')).toBeVisible();
+    await expect(page.locator('#shop-action')).toContainText('ТОЛЬКО В ПОДАРОК');
+    await expect(page.locator('#shop-desc')).toContainText('из 7 дней');
+    // седьмой день подряд (сундук сегодня уже забран — не мешает)
+    await page.evaluate(() => {
+        const d = new Date(), p2 = n => (n < 10 ? '0' : '') + n, today = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.streak = { count: 7, last: today, claimed: today }; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await expect(page.locator('.giftcar-modal')).toContainText('Тебе подарок', { timeout: 15_000 });
+    await expect(page.locator('.giftcar-modal')).toContainText('Трайк');
+    await page.locator('.giftcar-modal .nc-go').click();
+    await expect(page.locator('#shop-action')).toContainText('ВЫБРАТЬ');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].unlockedCars)).toContain('trike');
+    expect(problems).toEqual([]);
+});

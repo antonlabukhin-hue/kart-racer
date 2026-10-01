@@ -42,6 +42,8 @@ export async function login(page, name = 'Тестер', url = './', { briefing 
     await page.addInitScript(() => { if (!sessionStorage.getItem('keep_newcars') && !localStorage.getItem('road_racing_new_cars_seen')) localStorage.setItem('road_racing_new_cars_seen', 'all'); });
     // «первое знакомство» (пауза перед новым на дороге) проверяет свой тест — остальным всё уже знакомо
     await page.addInitScript(() => { if (!sessionStorage.getItem('keep_meet') && !localStorage.getItem('road_racing_met_v1')) localStorage.setItem('road_racing_met_v1', 'all'); });
+    // плашку «Машины в подарок» проверяет свой тест — остальным она не мешает
+    await page.addInitScript(() => { if (!sessionStorage.getItem('keep_giftintro')) localStorage.setItem('road_racing_gift_cars_intro_v1', '1'); });
     await page.goto(url);
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
     await page.locator('#splash-screen').click();

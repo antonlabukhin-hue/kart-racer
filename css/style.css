@@ -5617,3 +5617,18 @@ body #finish-screen .fin-btn.ghost:hover, body .chest-card .ch-later:not(.ch-ok)
 body .ach-plaque button { display: block; width: 100%; min-height: 46px; margin-top: 12px; padding: 10px 14px; border: 0 !important; border-radius: 12px !important;
     font: 900 17px system-ui, sans-serif !important; color: #1a1000 !important; background: linear-gradient(180deg, #ffe066, #ffb000) !important;
     box-shadow: 0 4px 0 #a86a00 !important; cursor: pointer; }
+
+/* машины в подарок (src/ui/gift-car-pop.js) — как плашка новинок */
+.giftcar-modal { position: fixed; inset: 0; z-index: 9450; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.55); }
+.giftcar-card { position: relative; width: min(420px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; padding: 20px 18px 14px; border-radius: 22px; text-align: center; color: #fff;
+    background: linear-gradient(160deg, #3a1f5a, #1a0f2a 60%, #3a2406); border: 2px solid #ffd23c; animation: ncGlow 1.6s ease-in-out infinite; }
+.giftcar-card .gc-list { display: grid; gap: 8px; margin: 14px 0; text-align: left; }
+.giftcar-card .gc-list div { display: grid; grid-template-columns: 34px 1fr; column-gap: 8px; align-items: center; padding: 8px 10px; border-radius: 12px; background: rgba(255,210,60,0.1); border: 1px solid rgba(255,210,60,0.45); }
+.giftcar-card .gc-list i { grid-row: span 2; font-style: normal; font-size: 26px; text-align: center; }
+.giftcar-card .gc-list b { color: #ffe066; font-size: 16px; }
+.giftcar-card .gc-list span { font-size: 13px; color: #f0e6ff; }
+.giftcar-card .gc-car { margin: 12px 0 4px; font: 900 22px/1.2 system-ui, sans-serif; color: #fff; }
+.giftcar-card .nc-sub { margin-bottom: 14px; }
+@media (max-height: 460px) { .giftcar-card { padding: 12px 14px 10px; } .giftcar-card .nc-title { font-size: 20px; } .giftcar-card .gc-list { margin: 8px 0; gap: 5px; } .giftcar-card .gc-list div { padding: 5px 8px; } }
+#shop-plate em.gift { background: linear-gradient(180deg, #ffe066, #ffb000); color: #1a1000; }
+.chest-card .ch-gift { margin: 2px 0 8px; padding: 6px 10px; border-radius: 10px; font-weight: 900; font-size: 14px; color: #ffe066; background: rgba(255,210,60,0.12); border: 1px solid rgba(255,210,60,0.5); }

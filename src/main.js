@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh, createLaneCone } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { chaseTargets, stepChase } from './rival-chase.js'; import { createPolice } from './police-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart, weekTheme, warmStart } from './infinite.js'; import { dropBusy } from './patterns.js'; import { createThemeEvents } from './theme-events.js'; import { createRoadGoals } from './road-goals.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { createRingChain, ringPitch, speedFov, speedLinesK, renderSpeedLines } from './juice.js'; import { feverHold, renderFeverFx, FEVER_RAM_E } from './fever.js'; import { FEVER_TIME } from './risk-combo.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh, createLaneCone } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { chaseTargets, stepChase } from './rival-chase.js'; import { createPolice } from './police-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart, weekTheme, warmStart } from './infinite.js'; import { dropBusy } from './patterns.js'; import { createThemeEvents } from './theme-events.js'; import { createRoadGoals } from './road-goals.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { createRingChain, ringPitch, speedFov, speedLinesK, renderSpeedLines } from './juice.js'; import { feverHold, renderFeverFx, FEVER_RAM_E } from './fever.js'; import { FEVER_TIME } from './risk-combo.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -1445,6 +1445,23 @@ function createProfile(name) { return Profile.createProfile(name); }
                 if (mm && mm.style.display !== 'none' && mm.getClientRects().length) showNewCarsPop({ tag: NEW_CARS_TAG, names: NEW_CARS.map(function(id) { return (CAR_PRESETS[id] || {}).name || id; }), onOpen: function() { shopBackToGarage = false; openShopScreen(false, NEW_CARS[0]); } });
             }, 700);
             renderMenuExtras({ word: wordState(currentPlayer, dayKey(new Date())), list: loadBoard(), now: Date.now(), me: currentPlayer.name, fetchOnline: onlineBoard() ? fetchTop : null });
+            menuGiftCars();
+        }
+        /** Машины в подарок (src/gift-cars.js): проверить серию и прошлую неделю; плашки — по очереди, когда меню свободно */
+        let giftPopWait = null;
+        function menuGiftCars() {
+            if (!currentPlayer || giftPopWait) return;
+            if (checkGiftCars(currentPlayer, { now: Date.now(), board: loadBoard() }).length) saveCurrentPlayer();
+            const nameOf = function(id) { return (CAR_PRESETS[id] || {}).name || id; };
+            const openCar = function(id) { shopBackToGarage = false; hideMainMenu(); openShopScreen(false, id); };
+            const pending = (currentPlayer.giftCars && currentPlayer.giftCars.pending) || [];
+            if (!pending.length && introSeen()) return;
+            giftPopWait = whenMenuFree(function() {
+                giftPopWait = null;
+                const gift = takeGiftPending(currentPlayer);
+                if (gift) { saveCurrentPlayer(); try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.9); } catch (e) {} showGiftCarPop(gift, { name: nameOf(gift.car), onOpen: openCar, onClose: function() { menuGiftCars(); } }); return; }
+                if (!introSeen()) showGiftCarsIntro({ names: { trike: nameOf('trike'), ghostcar: nameOf('ghostcar') }, onOpen: openCar });
+            }, function() { giftPopWait = null; });
         }
 
         function beginRaceFlow() {
@@ -1544,6 +1561,10 @@ function createProfile(name) { return Profile.createProfile(name); }
         }
 
         let shopBackToGarage = false, quickRestart = false; // магазин открыт из гаража — туда и вернуться; «Повторить» — короткий отсчёт
+        function carPriceText(id, owned) {
+            const p = CAR_PRESETS[id];
+            return owned ? (isGiftCar(id) ? '🎁 Твоя' : p.priceChips || p.priceVhs ? 'Куплено' : 'Стартовый') : isGiftCar(id) ? '🎁 Подарок' : p.priceVhs ? p.priceVhs + ' 📼' : (p.priceChips + ' Е');
+        }
         function openShopScreen(fromFirstRace, focusCar) {
             if (!currentPlayer) return;
             const forInf = fromFirstRace === 'infinite'; // первый заезд бесконечной трассы: выбрал — и сразу в путь
@@ -1564,18 +1585,19 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const owned = (currentPlayer.unlockedCars || []).includes(shopSelectedCar);
                 const preset = CAR_PRESETS[shopSelectedCar] || CAR_PRESETS.cheburashka;
                 const price = preset.priceChips || 0, vhsPrice = preset.priceVhs || 0; // «Зубило» — только за кассеты
+                const gift = !owned && isGiftCar(shopSelectedCar) ? giftProgress(currentPlayer, shopSelectedCar, { board: loadBoard(), now: Date.now() }) : null; // только в подарок (src/gift-cars.js)
                 const desc = document.getElementById('shop-desc');
                 if (desc) {
                     const cur = currentPlayer.preferredCar || 'cheburashka', cmp = cur !== shopSelectedCar && CAR_PRESETS[cur]; // одинаковые шкалы + разница с текущей (src/ui/car-stats.js)
                     desc.innerHTML = carStatsHtml(statBars(preset, getUpgradeLevels(shopSelectedCar)), { ability: preset.ability, compare: cmp ? statBars(CAR_PRESETS[cur], getUpgradeLevels(cur)) : null,
-                        compareName: cmp ? CAR_PRESETS[cur].name : '', note: owned ? (preset.name + ' — в гараже.') : vhsPrice ? ('Только за видеокассеты: ' + vhsPrice + ' 📼. Кассеты — на бесконечной трассе и в сундуке дня.') : ('Стоимость: ' + price + ' Е. Железные «Е» собирают на трассе, дают за финиши и награды сезона.') });
+                        compareName: cmp ? CAR_PRESETS[cur].name : '', note: owned ? (preset.name + ' — в гараже.') : gift ? (gift.icon + ' Только в подарок: ' + gift.how.toLowerCase() + '. ' + gift.left + '.') : vhsPrice ? ('Только за видеокассеты: ' + vhsPrice + ' 📼. Кассеты — на бесконечной трассе и в сундуке дня.') : ('Стоимость: ' + price + ' Е. Железные «Е» собирают на трассе, дают за финиши и награды сезона.') });
                 }
                 const plate = document.getElementById('shop-plate');
                 if (plate) {
                     const vp = preset.priceVhs || 0, i = shopOrder().indexOf(shopSelectedCar), isNew = NEW_CARS.indexOf(shopSelectedCar) >= 0;
                     plate.innerHTML = (isNew ? '<i class="new-tag">НОВИНКА</i>' : '') + '<b' + (isNew ? ' class="is-new"' : '') + '>' + escapeHtml(preset.name) + '</b>'
                         + (preset.ability ? '<span>★ ' + escapeHtml(preset.ability.name) + '</span>' : '')
-                        + '<em class="' + (owned ? 'own' : vp ? 'vhs' : 'e') + '">' + (owned ? '✓ Твоя' : vp ? vp + ' 📼' : price + ' Е') + '</em>'
+                        + '<em class="' + (owned ? 'own' : gift ? 'gift' : vp ? 'vhs' : 'e') + '">' + (owned ? '✓ Твоя' : gift ? '🎁 В подарок' : vp ? vp + ' 📼' : price + ' Е') + '</em>'
                         + '<i class="dots">' + shopOrder().map(function(id, k) { return '<u class="' + (k === i ? 'on' : '') + '"></u>'; }).join('') + '</i>';
                 }
                 const act = document.getElementById('shop-action');
@@ -1593,6 +1615,9 @@ function createProfile(name) { return Profile.createProfile(name); }
                             else if (fromFirstRace) beginRaceFlow();
                             else showMainMenu();
                         };
+                    } else if (gift) {
+                        act.textContent = gift.icon + ' ТОЛЬКО В ПОДАРОК';
+                        act.onclick = function() { if (window.Notify) Notify.info(gift.icon + ' ' + gift.title, gift.how + '. ' + gift.left); };
                     } else {
                         act.textContent = vhsPrice ? 'КУПИТЬ ЗА ' + vhsPrice + ' 📼' : 'КУПИТЬ ЗА ' + price + ' Е';
                         act.onclick = function() {
@@ -1618,7 +1643,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                                 const p = CAR_PRESETS[id];
                                 const own = currentPlayer.unlockedCars.includes(id);
                                 const pr = btn.querySelector('.price');
-                                if (pr) pr.textContent = own ? (p.priceChips || p.priceVhs ? 'Куплено' : 'Стартовый') : p.priceVhs ? p.priceVhs + ' 📼' : (p.priceChips + ' Е');
+                                if (pr) pr.textContent = carPriceText(id, own);
                             });
                             refreshShopSelection();
                         };
@@ -1629,7 +1654,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             box.innerHTML = shopOrder().map(function(id) { // новинки — первыми
                 const p = CAR_PRESETS[id];
                 const owned = (currentPlayer.unlockedCars || []).includes(id);
-                const price = owned ? (p.priceChips || p.priceVhs ? 'Куплено' : 'Стартовый') : p.priceVhs ? p.priceVhs + ' 📼' : (p.priceChips + ' Е');
+                const price = carPriceText(id, owned);
                 return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + (NEW_CARS.indexOf(id) >= 0 ? ' is-new' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
             }).join('');
             // листать как персонажей в Subway Surfers: стрелки и свайп по подиуму
