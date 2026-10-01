@@ -35,8 +35,18 @@ function policeCar() {
         const w = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.18, 12), M(0x111111));
         w.rotation.z = Math.PI / 2; w.position.set(q[0], 0.24, q[1]); g.add(w);
     });
+    // настоящий свет мигалок — красно-синие отблески на дороге и машинах
+    const lr = new THREE.PointLight(0xff2020, 0, 7), lb = new THREE.PointLight(0x2060ff, 0, 7);
+    lr.position.set(-0.2, 1.3, 0.1); lb.position.set(0.2, 1.3, 0.1); g.add(lr, lb);
     g.userData.lights = [red, blue];
+    g.userData.glow = [lr, lb];
+    g.scale.setScalar(0.85); // на 15% меньше обычной машины
     return g;
+}
+function blink(car, t) {
+    const on = Math.floor(t * 6) % 2 === 0;
+    car.userData.lights[0].visible = on; car.userData.lights[1].visible = !on;
+    car.userData.glow[0].intensity = on ? 3 : 0; car.userData.glow[1].intensity = on ? 0 : 3;
 }
 
 /**
@@ -71,10 +81,34 @@ export function createPolice(scene) {
                 car.position.x += (tx - car.position.x) * Math.min(1, dt * 2.5);
                 car.position.z = z + (gap || 1.6) + Math.sin(t * 2.2) * 0.5; // то нагоняет, то отстаёт
                 car.position.y = 0;
-                const blink = Math.floor(t * 6) % 2 === 0;
-                car.userData.lights[0].visible = blink; car.userData.lights[1].visible = !blink;
+                blink(car, t);
             }
             if (hud) hud.querySelector('u').style.width = Math.round(st.t / CHASE_TIME * 100) + '%';
+        },
+        /**
+         * «ГАИ поймала»: ролик — машина ГАИ вплотную сбоку, камера облетает обе машины, мигалки (как финиш кампании).
+         * o: { camera, renderer, x, z, dur, onDone }
+         */
+        arrest: function(o) {
+            st.t = 0; show(true);
+            if (hud) { hud.remove(); hud = null; }
+            document.body.classList.add('arrest-cine'); // на время ролика панель заезда прячется (css)
+            const cam = o.camera, dur = o.dur || 2.6, side = o.x > 0.5 ? -1 : 1;
+            car.position.set(o.x + side * 1.35, 0, o.z - 0.5); car.rotation.y = side * 0.18;
+            const cx = (o.x + car.position.x) / 2, cz = o.z - 0.25, R = 5.6;
+            let k = 0, tt = 0, last = performance.now();
+            const step = function(now) {
+                tt += Math.min(0.1, (now - last) / 1000); last = now; k = Math.min(1, tt / dur);
+                const ang = 0.5 + k * Math.PI * 1.35, h = 1.6 + Math.sin(k * Math.PI) * 1.1;
+                const tx = cx + Math.sin(ang) * R, tz = cz + Math.cos(ang) * R * 0.85;
+                if (k < 0.12) cam.position.lerp(new THREE.Vector3(tx, h, tz), 0.25); else cam.position.set(tx, h, tz);
+                cam.lookAt(cx, 0.6, cz);
+                blink(car, tt);
+                o.renderer.render(scene, cam);
+                if (k < 1) requestAnimationFrame(step);
+                else { show(false); document.body.classList.remove('arrest-cine'); if (o.onDone) o.onDone(); }
+            };
+            requestAnimationFrame(step);
         },
         dispose: function() { show(false); if (car) { scene.remove(car); car = null; } }
     };

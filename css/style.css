@@ -5533,3 +5533,6 @@ body:has(.reward-reveal) .police-hud { display: none; }
 body .chest-card .ch-later.ch-ok { display: block; width: 100%; min-height: 52px; margin-top: 10px; border: 0 !important; border-radius: 14px; font: 900 20px system-ui, sans-serif !important;
     color: #1a1000 !important; background: linear-gradient(180deg, #ffe066, #ffb000) !important; box-shadow: 0 5px 0 #a86a00, 0 0 22px rgba(255, 200, 40, 0.75);
     text-decoration: none !important; animation: ncText 1.4s ease-in-out infinite, rrPop .45s cubic-bezier(.2,1.6,.4,1) both; }
+
+/* ролик «ГАИ поймала» (src/police-chase.js): без панели заезда, как на финише */
+body.arrest-cine :is(#risk-hud, #power-hud, #hud-speedo, #hud-menu-btn, #hud-pause-btn, #volume-controls, #player-bar, #mobile-controls, #e-counter, #game-hud, .animal-shout, #coach-tip) { display: none !important; }

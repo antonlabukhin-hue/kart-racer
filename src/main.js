@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { chaseTargets, stepChase } from './rival-chase.js'; import { createPolice } from './police-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, getCode as getCloudCode } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart, weekTheme } from './infinite.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { chaseTargets, stepChase } from './rival-chase.js'; import { createPolice } from './police-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart, weekTheme } from './infinite.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -655,7 +655,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
          */
         function cleanupRaceKeepProfile() {
             curvedWorld.setCurve(0, 0);
-            document.querySelectorAll('.police-hud').forEach(function(n) { n.remove(); });
+            document.querySelectorAll('.police-hud').forEach(function(n) { n.remove(); }); document.body.classList.remove('arrest-cine');
             try { if (typeof window.teardownRaceUI === 'function') window.teardownRaceUI(); } catch (e) {}
             try { window.__hudRefs = null; } catch (e) {}
 
@@ -1051,18 +1051,12 @@ function createProfile(name) { return Profile.createProfile(name); }
 
         function saveAllProfiles(list) { Profile.saveProfiles(list, localStorage); }
 
-        // после первой отправки в облако — один раз: «запиши код сохранения» (браузер может стереть данные сайта)
-        function cloudCodeHint(ok) {
-            if (!ok || !window.Notify) return;
-            try { if (localStorage.getItem('road_racing_cloud_hint')) return; localStorage.setItem('road_racing_cloud_hint', '1'); } catch (e) { return; }
-            Notify.success('☁ Прогресс в облаке. Твой код: ' + getCloudCode(), 'Запиши его: на новом телефоне — Настройки → «Загрузить» по коду');
-        }
         function saveCurrentPlayer() {
             if (!currentPlayer) return;
             if (!Profile.saveProfile(currentPlayer, localStorage) && window.Notify) {
                 Notify.warn('Не удалось сохранить', 'Память браузера переполнена — прогресс этого заезда может не сохраниться');
             }
-            if (onlineBoard()) { saveCurrentPlayer.cloud = saveCurrentPlayer.cloud || createAutoSync({ onDone: cloudCodeHint }); saveCurrentPlayer.cloud(); } // облачное сохранение (src/cloud-save.js)
+            if (onlineBoard()) { saveCurrentPlayer.cloud = saveCurrentPlayer.cloud || createAutoSync({ onDone: function(ok) { cloudCodeHint(ok, window.Notify); } }); saveCurrentPlayer.cloud(); } // облачное сохранение (src/cloud-save.js)
             updatePlayerBar();
         }
 
@@ -8248,7 +8242,10 @@ function startGaragePreview(carId) {
                 }
                 logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
                 strikes++;
-                if (police && police.crash() === 'caught' && strikes < MAX_STRIKES) { strikes = MAX_STRIKES; try { showBigPlaque('🚨 ГАИ ПОЙМАЛА!', 'Вторая авария во время погони', 'crate-bad'); } catch (e) {} }
+                if (police && police.crash() === 'caught' && strikes < MAX_STRIKES) { // ГАИ поймала: ролик облёта (src/police-chase.js), потом — как обычно «Второй шанс»
+                    strikes = MAX_STRIKES; speed = 0; gameState = 'chance'; cars.forEach(function(c) { if (Math.abs(c.z - zPos) < 16) { c.z = zPos - 90; c.mesh.position.z = c.z; } }); try { showBigPlaque('🚨 ГАИ ПОЙМАЛА!', 'Вторая авария во время погони', 'crate-bad'); } catch (e) {}
+                    police.arrest({ camera: camera, renderer: renderer, x: xPos, z: zPos, onDone: function() { gameState = 'racing'; endGame('crash'); } }); return;
+                }
                 const lostMult = riskCrash(risk); if (lostMult > 1) try { showTimePenaltyPopup(0, '🔥 ×' + lostMult + ' сгорел'); } catch (e) {}
                 try { if (_settings.vibrate && navigator.vibrate) navigator.vibrate(strikes >= MAX_STRIKES ? [80, 60, 160] : 70); } catch (e) {}
                 speed *= obs.penalty || 0.35;
