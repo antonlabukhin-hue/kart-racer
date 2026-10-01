@@ -50,9 +50,9 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
-        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; if (onlineBoard()) setSender(installMetrics().event); /* возвращаемость и длина сессий → Supabase (src/metrics.js) */
+        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
@@ -4997,11 +4997,11 @@ function startGaragePreview(carId) {
             function offerContinue() {
                 if (continues >= MAX_CONTINUES || !currentPlayer) return false;
                 const se = currentPlayer.season, cost = (ABILITY === 'thief' && continues === 0) ? 0 : continueCost(continues); // «Угонщик» — первый бесплатно
-                if ((se.chips || 0) < cost && !(se.vhs > 0)) return false;
+                const adOk = !!(platformHooks && platformHooks.chanceAd()); if ((se.chips || 0) < cost && !(se.vhs > 0) && !adOk) return false;
                 gameState = 'chance';
-                showSecondChance({ costE: cost, haveE: se.chips || 0, haveVhs: se.vhs || 0, seconds: 6, dist: infWorld ? infWorld.dist : 0,
+                showSecondChance({ costE: cost, haveE: se.chips || 0, haveVhs: se.vhs || 0, seconds: 6, dist: infWorld ? infWorld.dist : 0, ad: adOk, watchAd: function() { return platformHooks.watchChance(); },
                     onPay: function(kind) {
-                        if (kind === 'vhs') se.vhs--; else se.chips -= cost;
+                        if (kind === 'vhs') se.vhs--; else if (kind !== 'ad') se.chips -= cost;
                         continues++;
                         try { saveCurrentPlayer(); } catch (e) {}
                         strikes = MAX_STRIKES - 2; speed = 0; stunTimer = 0;
@@ -5061,7 +5061,7 @@ function startGaragePreview(carId) {
                         progress: Math.round(Math.max(0, Math.min(1, (START_Z - zPos) / (START_Z - FINISH_Z))) * 100) / 100,
                         mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race', map: mapId, diff: difficulty,
                         chapter: campaignTrackId, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
-                        wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined
+                        wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined, eChips: infRun ? infRun.e : undefined
                     });
                 } catch (e) {}
 
@@ -10604,7 +10604,7 @@ function startGaragePreview(carId) {
                         const _perfMobile = !!(window.__isMobile);
 
             function animate(currentTime) {
-                animationId = requestAnimationFrame(animate);
+                animationId = requestAnimationFrame(animate); platform.gameplay(gameState === 'racing'); /* разметка геймплея для площадки (Яндекс: GameplayAPI) */
                 window.__gameAnimationId = animationId;
                 // «Второй шанс»: сцена ждёт выбора — цикл не останавливаем, иначе после оплаты машина не поедет
                 if (gameState === 'chance') { lastTime = currentTime; renderer.render(scene, camera); return; }
@@ -11618,7 +11618,7 @@ function showLoreScreen(quality, difficulty) {
             const mmWord = document.getElementById('mm-word'), mmBoard = document.getElementById('mm-board'); // «Слово дня» и «Рекорды» (src/ui/board.js)
             if (mmWord) mmWord.onclick = function() { if (currentPlayer) showWordInfo(wordState(currentPlayer, dayKey(new Date()))); };
             if (mmBoard) mmBoard.onclick = function() { if (currentPlayer) showBoard({ me: currentPlayer.name, list: loadBoard(), now: Date.now(), carName: function(id) { return (CAR_PRESETS[id] || {}).name || id; }, fetchOnline: onlineBoard() ? function(scope) { return fetchTop(scope); } : null }); };
-            registerSW(import.meta.env.MODE === 'test'); wireInstall(document.getElementById('mm-install'), function(t, x) { Notify.info(t, x, 9000); }); // игра как приложение (src/ui/install.js)
+            registerSW(import.meta.env.MODE === 'test' || platform.name === 'yandex'); if (platform.name !== 'yandex') wireInstall(document.getElementById('mm-install'), function(t, x) { Notify.info(t, x, 9000); }); platformHooks = wirePlatform({ platform: platform, metrics: onlineBoard() ? installMetrics({ platform: platform.name }) : null, player: function() { return currentPlayer; }, save: saveCurrentPlayer, refresh: refreshMenuUI, notify: Notify }); setSender(platformHooks.onEvent); // игра как приложение (src/ui/install.js)
             const eventsClose = document.getElementById('events-close');
             if (eventsClose) eventsClose.addEventListener('click', function() {
                 if (typeof showMainMenu === 'function') showMainMenu();

@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:test": "vite build --mode test --outDir dist-test",
+    "build:yandex": "vite build --mode yandex --outDir dist-yandex && node scripts/zip-yandex.mjs",
     "preview": "vite preview",
     "test": "vitest run && playwright test",
     "test:unit": "vitest run",
