@@ -50,9 +50,9 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents } from './analytics.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
-        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents };
+        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; if (onlineBoard()) setSender(installMetrics().event); /* возвращаемость и длина сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
@@ -5061,7 +5061,7 @@ function startGaragePreview(carId) {
                         progress: Math.round(Math.max(0, Math.min(1, (START_Z - zPos) / (START_Z - FINISH_Z))) * 100) / 100,
                         mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race', map: mapId, diff: difficulty,
                         chapter: campaignTrackId, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
-                        wave: isEndlessMode() ? window.__endless.wave : undefined
+                        wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined
                     });
                 } catch (e) {}
 
