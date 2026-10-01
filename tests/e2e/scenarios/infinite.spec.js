@@ -312,3 +312,127 @@ test('значки 90-х: коллекция видна в «Трофеях»', 
     await expect(page.locator('#badge-set .got')).toHaveCount(2);
     expect(problems).toEqual([]);
 });
+
+// «Горячий старт»: при рекорде 5 км заезд сразу плотный — плашка в начале, попутки уже на старте
+test('горячий старт: опытному игроку — плашка и сложность от рекорда', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.infinite = { best: 5000, bestScore: 0, runs: 3 }; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.evaluate(() => { window.__sawWarm = ''; new MutationObserver(() => { const p = document.querySelector('.big-plaque'); if (p && p.textContent.includes('ГОРЯЧИЙ')) window.__sawWarm = p.textContent; }).observe(document.body, { childList: true, subtree: true }); });
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await expect.poll(() => page.evaluate(() => window.__sawWarm), { timeout: 15_000 }).toContain('1500 м');
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// «В УДАРЕ»: множитель ×5 — плашка и пламя по краям, попутка в лоб не авария, а «+5 Е»; через 7 с всё гаснет
+test('«В ударе»: на ×5 неуязвим, попутки сносятся за «Е», потом гаснет', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearMiss'); });
+    await expect(page.locator('#fever-fx')).toBeVisible();
+    await expect(page.locator('.big-plaque')).toContainText('В УДАРЕ');
+    await expect(page.locator('#speed-lines')).toBeVisible(); // «В ударе» — на нитро: линии скорости по краям (src/juice.js)
+    const res = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        const e0 = g.stats.eChips || 0;
+        const c = g.cars[0]; c.hitCooldown = 0;
+        for (let i = 0; i < 6; i++) { c.x = g.x; c.z = g.z; c.mesh.position.set(c.x, 0, c.z); await new Promise(r => setTimeout(r, 50)); if (c.hitCooldown > 0) break; }
+        return { strikes: g.strikes, gained: (g.stats.eChips || 0) - e0, fever: g.risk.fever > 0 };
+    });
+    expect(res.strikes).toBe(0);
+    expect(res.gained).toBeGreaterThanOrEqual(5);
+    expect(res.fever).toBe(true);
+    // на медленных кадрах (CI без видеокарты) игровые 7 с идут дольше — подводим к концу
+    await page.evaluate(() => { window.__raceDebug.risk.fever = 0.4; });
+    await expect(page.locator('#fever-fx')).toBeHidden({ timeout: 12_000 });
+    expect(await page.evaluate(() => window.__raceDebug.risk.mult)).toBeLessThan(5); // сброшен (после — может уже начаться новая цепочка)
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// узор пройден, ничего не задев, — «✔ Чисто!» и множитель риска растёт (путь к «В ударе»)
+test('узоры: чистый проход — рисковое действие', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    // узоры отмечены конусами; перескакиваем за первый (ничего не задели)
+    const z = await page.evaluate(() => {
+        const g = window.__raceDebug;
+        const o = g.obstacles.filter(o => o.pat && o.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
+        const last = g.obstacles.filter(x => x.pat === o.pat).sort((a, b) => a.z - b.z)[0];
+        g.setZ(last.z + 2); // перед последним рядом узора — дальше игра едет сама (перескок далеко вперёд «чисто» не даёт)
+        const row = g.obstacles.filter(x => x.pat === o.pat && Math.abs(x.z - last.z) < 1); g.setX([-2, 0, 2].find(lx => row.every(x => Math.abs(x.x - lx) > 1.2))); // в свободную полосу последнего ряда
+        return last.z;
+    });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.patterns || 0), { timeout: 5000 }).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThan(0);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// событие пейзажа: посреди «Арсеньева» — свадебный кортеж (4 машины с шариками в одной полосе); проехал без аварии — «Е»
+test('событие пейзажа: кортеж — плашка, машины кортежа, награда без аварии', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 400); });
+    await expect(page.locator('.big-plaque')).toContainText('СВАДЕБНЫЙ КОРТЕЖ');
+    const convoy = await page.evaluate(() => window.__raceDebug.cars.filter(c => c.convoy).map(c => c.lane));
+    expect(convoy.length).toBe(4);
+    expect(new Set(convoy).size).toBe(1);
+    const e0 = await page.evaluate(() => window.__raceDebug.stats.eChips || 0);
+    await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 640); });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.themeEvents || 0)).toBe(1);
+    expect(await page.evaluate(() => window.__raceDebug.stats.eChips || 0)).toBeGreaterThanOrEqual(e0 + 30);
+    expect(await page.evaluate(() => window.__raceDebug.cars.filter(c => c.convoy).length)).toBe(0);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
+
+// цели на дороге: на дальности рекорда — растяжка «ТВОЙ РЕКОРД», у соперников — щиты; позади — убираются
+test('цели на дороге: растяжка рекорда и щиты соперников', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.infinite = { best: 900, bestScore: 0, runs: 0 }; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 700); });
+    // рекорд (900 м) и соперник «Шурик» (800 м) — в пределах видимости
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.goals)).toBeGreaterThanOrEqual(2);
+    const arch = await page.evaluate(() => window.__raceDebug.scene.children.some(o => o.isGroup && Math.abs(o.position.z - (window.__raceDebug.startZ - 900)) < 0.5));
+    expect(arch).toBe(true);
+    await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 960); });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.scene.children.some(o => o.isGroup && Math.abs(o.position.z - (window.__raceDebug.startZ - 900)) < 0.5))).toBe(false);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});

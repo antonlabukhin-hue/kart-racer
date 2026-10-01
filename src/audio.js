@@ -790,7 +790,7 @@ class SoundEngine {
         this._resume = [];
     }
 
-    playSfx(type, volScale) {
+    playSfx(type, volScale, pitch) { // pitch — множитель частоты (звон «Е» в цепочке, src/juice.js)
         if (!this.enabled) return;
         try {
             if (!this.audioCtx) this.init();
@@ -1003,12 +1003,13 @@ class SoundEngine {
                         o.start(t0 + at); o.stop(t0 + at + dur + 0.02);
                     };
                     // ярче: громче и с верхней «искрой»
-                    note('square', 1318.5, 0, 0.06, 0.11);
-                    note('triangle', 1318.5, 0, 0.06, 0.14);
-                    note('square', 2093, 0.05, 0.34, 0.1);
-                    note('triangle', 2093, 0.05, 0.38, 0.16);
-                    note('sine', 4186, 0.05, 0.16, 0.06);
-                    note('sine', 3136, 0.1, 0.2, 0.04);
+                    const P = pitch || 1;
+                    note('square', 1318.5 * P, 0, 0.06, 0.11);
+                    note('triangle', 1318.5 * P, 0, 0.06, 0.14);
+                    note('square', 2093 * P, 0.05, 0.34, 0.1);
+                    note('triangle', 2093 * P, 0.05, 0.38, 0.16);
+                    note('sine', 4186 * P, 0.05, 0.16, 0.06);
+                    note('sine', 3136 * P, 0.1, 0.2, 0.04);
                     break;
                 }
                 case 'vhs': {

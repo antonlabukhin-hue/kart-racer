@@ -1,3 +1,5 @@
+import { pickPattern, expandPattern, patternSpan, patternGap } from './patterns.js';
+
 /**
  * «Бесконечная трасса» — логика без сцены (с тестами): пейзажи по расстоянию, рост сложности, счёт и план участков.
  * Трасса идёт к −z; dist — сколько проехано от старта (ед.). Сцену строит main.js по этому плану.
@@ -53,13 +55,25 @@ export function mixHex(a, b, k) {
  * density — плотность препятствий на участке (0.3 → 1.3)
  */
 export const RAMP_LEN = 8000;
-export function rampAt(dist) {
+export function rampAt(dist, warm) {
+    dist = (dist || 0) + (warm || 0); // warm — «горячий старт» (warmStart)
     const t = Math.max(0, Math.min(1, (dist || 0) / RAMP_LEN));
     const e = t * t * (3 - 2 * t); // медленно в начале, быстрее в середине, мягко к потолку
     const a = Math.max(0, Math.min(1, ((dist || 0) - 1000) / (RAMP_LEN - 1000))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1000 м
     return { t: t, speed: 0.85 + 0.5 * e, density: 0.3 + e,
         animals: 0.55 + 2.05 * ea, maxAnimals: Math.round(6 + 10 * ea), animalSpeed: 1 + 0.6 * ea,
         traffic: Math.round(8 * ea), trafficSpeed: 1 + 0.5 * ea };
+}
+
+/**
+ * «Горячий старт»: опытный игрок не тратит первый километр на пустую дорогу — сложность заезда (rampAt, план участков)
+ * начинается с WARM_K его рекорда, но не дальше WARM_MAX м. Новичку (рекорд меньше WARM_FROM м) — как раньше, с нуля.
+ * Пейзажи, счёт и дальность от этого не меняются.
+ */
+export const WARM_FROM = 1000, WARM_K = 0.3, WARM_MAX = 1500;
+export function warmStart(best) {
+    const b = Math.max(0, best || 0);
+    return b < WARM_FROM ? 0 : Math.round(Math.min(WARM_MAX, b * WARM_K));
 }
 
 /** Очки забега: метры + «Е» по 10 + очки риска (множитель за риск уже внутри них) */
@@ -76,7 +90,7 @@ export function runXp(dist) {
  * План участка трассы [d0, d1) (расстояния от старта): что где поставить. rnd — генератор [0,1).
  * Возвращает список { kind, d, lane, ... } — kind: 'obstacle' (type), 'echip' (lane, y), 'nitro', 'gum', 'vhs', 'power' (type), 'gap' (rampLane),
  * 'crate' — ящик «?» (src/hazards.js), 'spikes' — шипы поперёк полосы (с SPIKES_FROM м, чаще с ростом сложности),
- * 'letter' — буква «Слова дня» (только с opts.letters).
+ * 'letter' — буква «Слова дня» (только с opts.letters). opts.warm — «горячий старт» (warmStart): сложность как на warm м дальше.
  * Разлом — не чаще раза в GAP_EVERY, вокруг него чисто; «Е» — цепочками по полосам, змейкой и дугой над разломом.
  */
 export const LANES = 3;
@@ -90,7 +104,8 @@ export const LETTER_EVERY = [260, 420]; // «Слово дня» (src/word-day.j
 export function planStretch(d0, d1, rnd, opts) {
     const o = opts || {};
     const r = rnd || Math.random;
-    const ramp = rampAt(d0);
+    const warm = o.warm || 0;
+    const ramp = rampAt(d0, warm);
     const out = [];
     const lane = function() { return Math.floor(r() * LANES); };
     // разломы
@@ -104,10 +119,30 @@ export function planStretch(d0, d1, rnd, opts) {
         for (let i = 0; i < 5; i++) out.push({ kind: 'echip', d: nextGap + 1 + i * 1.6, lane: rl, y: 0.6 + Math.sin(i / 4 * Math.PI) * 1.0 });
         nextGap += GAP_EVERY[0] + r() * (GAP_EVERY[1] - GAP_EVERY[0]);
     }
-    const nearGap = function(d) { return gaps.some(function(g) { return d > g - 50 && d < g + 20; }); };
-    // препятствия
     const slide = o.slide || 'oil';
-    const count = Math.round((d1 - d0) / 60 * ramp.density);
+    // узоры (src/patterns.js): связки препятствий с цепочкой «Е» по свободному пути; вокруг них — 12 м чисто
+    const busy = [];
+    const inBusy = function(d) { return busy.some(function(b) { return d > b[0] && d < b[1]; }); };
+    const gapNear = function(d) { return gaps.some(function(g) { return d > g - 50 && d < g + 20; }); };
+    for (let dd = Math.max(d0, 150) + r() * 60; dd < d1; ) {
+        const rp = rampAt(dd, warm);
+        const pat = pickPattern(rp.t, dd + warm >= SPIKES_FROM, r);
+        const sp = patternSpan(pat);
+        if (dd + sp[1] + 3 < d1 && !gapNear(dd + sp[0]) && !gapNear(dd + sp[1] + 3)) {
+            const id = o.patId = (o.patId || 0) + 1;
+            expandPattern(pat, dd, r() < 0.5).forEach(function(it) {
+                if (it.type === 'slide') it.type = slide;
+                it.pat = id;
+                out.push(it);
+            });
+            out.push({ kind: 'patEnd', d: dd + pat.len + 3, pat: id, name: pat.id }); // проехал сюда, не задев узор, — «чисто!» (рисковое действие)
+            busy.push([dd + sp[0] - 12, dd + sp[1] + 12]);
+        }
+        dd += sp[1] + patternGap(rp.t) * (0.8 + r() * 0.4);
+    }
+    const nearGap = function(d) { return gapNear(d) || inBusy(d); };
+    // препятствия-одиночки — вдвое реже, чем до узоров: основное делают узоры
+    const count = Math.round((d1 - d0) / 120 * ramp.density);
     for (let i = 0; i < count; i++) {
         const d = d0 + r() * (d1 - d0);
         if (nearGap(d)) continue;
@@ -117,8 +152,8 @@ export function planStretch(d0, d1, rnd, opts) {
     // цепочки «Е»: прямая по полосе или змейка через две полосы
     let d = d0 + 20 + r() * 30;
     while (d < d1 - 20) {
-        if (!nearGap(d)) {
-            const n = 5 + Math.floor(r() * 4);
+        const n = 5 + Math.floor(r() * 4);
+        if (!nearGap(d) && !nearGap(d + n * 2.2)) {
             if (r() < 0.35) {
                 let ln = lane();
                 for (let i = 0; i < n; i++) { if (i === Math.floor(n / 2)) ln = (ln + (r() < 0.5 ? 1 : 2)) % LANES; out.push({ kind: 'echip', d: d + i * 2.2, lane: ln, y: 0.6 }); }
@@ -127,7 +162,7 @@ export function planStretch(d0, d1, rnd, opts) {
                 for (let i = 0; i < n; i++) out.push({ kind: 'echip', d: d + i * 2.2, lane: ln, y: 0.6 });
             }
         }
-        d += 55 + r() * 60;
+        d += 200 + r() * 150; // реже, чем до узоров: в каждом узоре — своя цепочка «Е»
     }
     // нитро и сердечки — реже
     for (let dd = d0 + 90 + r() * 80; dd < d1; dd += 180 + r() * 140) if (!nearGap(dd)) out.push({ kind: 'nitro', d: dd, lane: lane() });
@@ -146,7 +181,8 @@ export function planStretch(d0, d1, rnd, opts) {
         if (type === 'magnet') {
             for (let k = 0; k < 44; k++) {
                 const dd2 = at + 24 + k * 3.6;
-                if (dd2 >= d1 || nearGap(dd2)) continue;
+                if (dd2 >= d1 || gapNear(dd2)) continue; // узорам обочины не мешают
+                eDs.push(dd2); // кассеты и буквы — и от этих «Е» в стороне
                 out.push({ kind: 'echip', d: dd2, x: -3.5, y: 0.6, side: true });
                 out.push({ kind: 'echip', d: dd2, x: 3.5, y: 0.6, side: true });
             }
@@ -163,7 +199,7 @@ export function planStretch(d0, d1, rnd, opts) {
         if (at != null) out.push({ kind: 'letter', d: at, lane: lane() });
     }
     // шипы — после SPIKES_FROM м; чем дальше, тем чаще (шаг 380 → 190 м)
-    for (let dd = Math.max(d0, SPIKES_FROM) + r() * 150; dd < d1; dd += (380 - 190 * ramp.t) * (0.8 + r() * 0.4)) {
+    for (let dd = Math.max(d0, SPIKES_FROM - warm) + r() * 150; dd < d1; dd += (380 - 190 * ramp.t) * (0.8 + r() * 0.4)) {
         if (!nearGap(dd)) out.push({ kind: 'spikes', d: dd, lane: lane() });
     }
     // видеокассета — редкость: ~1 на 1.7 км (иногда 2), за длинный заезд 1–3
