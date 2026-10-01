@@ -10,6 +10,7 @@
  * Спереди машины — −Z, сзади — +Z.
  */
 import * as THREE from 'three';
+import { buildTuning } from './cars-tuning.js';
 import { FANTASY_BUILDERS, FANTASY_FINISH, fantasyRim } from './cars-fantasy.js';
 
 export const MOVIE_CARS = ['thief', 'neon', 'bull', 'cyborg', 'avenger', 'trike', 'ghostcar', 'moped', 'chariot', 'timecar', 'carpet']; // вторая шестёрка — src/cars-fantasy.js
@@ -298,5 +299,6 @@ export function buildMovieCar(carId, preset) {
     group.traverse(function(o) { if (o.isMesh) o.castShadow = true; });
     group.userData.carId = carId;
     group.userData.dims = { bodyL: d.L, bodyY: d.Y, bodyW: d.W };
-    return { group: group, parts: {}, bodyMat: m.body, upgrades: { wheels: wheels, wheelR: d.wheels.length ? d.wheels[0][3] : 0.3, byLevel: {} } }; // у ковра-самолёта колёс нет
+    const parts = buildTuning(group, d, carId, m.body); // тюнинг гаража — по смыслу машины (src/cars-tuning.js)
+    return { group: group, parts: parts, bodyMat: m.body, upgrades: { wheels: wheels, wheelR: d.wheels.length ? d.wheels[0][3] : 0.3, byLevel: {} } }; // у ковра-самолёта колёс нет
 }

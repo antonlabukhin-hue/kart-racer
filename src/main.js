@@ -31,7 +31,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
-        import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames } from './cars.js';
+        import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames } from './cars.js'; import { partName } from './cars-tuning.js';
         import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
@@ -2023,7 +2023,7 @@ function renderGaragePartsPanel() {
             // примеряемое — плашка «Купить / Отмена» (ничего не списывается без подтверждения)
             if (garageTry) {
                 const it = garageTry.kind === 'paint' ? CAR_PAINTS.find(function(x) { return x.id === garageTry.id; }) : CAR_PARTS.find(function(x) { return x.id === garageTry.id; });
-                if (it) html += '<div class="try-bar"><span>' + (garageTry.kind === 'paint' ? '🎨 Краска' : '🛠 Деталь') + ' «' + escapeHtml(it.name) + '» — <b>' + it.price + ' Е</b></span>'
+                if (it) html += '<div class="try-bar"><span>' + (garageTry.kind === 'paint' ? '🎨 Краска' : '🛠 Деталь') + ' «' + escapeHtml((garageTry.kind !== 'paint' && partName(currentPlayer.preferredCar, it.id)) || it.name) + '» — <b>' + it.price + ' Е</b></span>'
                     + '<button type="button" class="try-buy">Купить</button><button type="button" class="try-cancel">Отмена</button></div>';
             }
             html += '<div class="color-swatches">';
@@ -2043,7 +2043,7 @@ function renderGaragePartsPanel() {
                 const isOwned = ownedParts.includes(part.id);
                 const priceLabel = isEquipped ? '✓ установлено' : (isOwned ? '✓ куплено' : (part.price + ' Е'));
                 html += '<div class="part-row' + (isEquipped?' owned':'') + '" data-part="' + part.id + '">' +
-                    '<span>' + escapeHtml(part.name) + '</span>' +
+                    '<span>' + escapeHtml(partName(carId, part.id) || part.name) + '</span>' +
                     '<span class="part-price">' + priceLabel + '</span></div>';
             });
             box.innerHTML = html; markGiftGlow(box, currentPlayer.carLoadout); // подарки за главы сияют золотом, пока не тронешь
