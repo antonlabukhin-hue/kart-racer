@@ -5722,6 +5722,13 @@ body:has(.announcer.in) .big-plaque { top: calc(19% + 52px); }
     .announcer i { width: 24px; height: 24px; font-size: 14px; } .announcer span { font-size: 12px; }
     body:has(.announcer.in) .big-plaque { top: calc(24% + 34px); } }
 @media (max-width: 600px) and (min-height: 461px) { .announcer { max-width: 86vw; } .announcer span { font-size: 13px; } }
+/* на экране итогов — в правом нижнем углу, под кнопками: заголовок и награды открыты */
+body:has(#finish-screen) .announcer { top: auto; left: auto; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); max-width: min(420px, 46vw); }
+body:has(#finish-screen) .announcer.in { animation: annInR .22s steps(4) forwards; }
+body:has(#finish-screen) .announcer.out { animation: annOutR .25s steps(3) forwards; }
+@keyframes annInR { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes annOutR { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px); } }
+@media (max-width: 600px) { body:has(#finish-screen) .announcer { max-width: 80vw; } }
 
 /* VHS-заставка при запуске (src/ui/vhs-intro.js) */
 .vhs-intro { --vhs-k: 1; position: fixed; inset: 0; z-index: 100000; overflow: hidden; cursor: pointer; background: rgba(8, 8, 16, var(--vhs-k)); transition: opacity .35s; }
@@ -5742,3 +5749,30 @@ body:has(.announcer.in) .big-plaque { top: calc(19% + 52px); }
 .vhs-intro.vhs-out { opacity: 0; }
 body.vhs-reveal #splash-screen { animation: vhsJit .16s steps(2) infinite; filter: saturate(1.4) contrast(1.15); }
 @keyframes vhsJit { 0% { transform: translate(0, 0); } 50% { transform: translate(-3px, 1px); } 100% { transform: translate(2px, -1px); } }
+
+/* Интерфейс «картридж с приставки» (вариант Б, согласован 2026-10-01): шрифт Russo One (OFL, npm @fontsource/russo-one),
+   хромированные заголовки, объёмные панели с фаской и чёрной «тенью-подставкой» */
+:root { --sg: 'Russo One', system-ui, sans-serif; }
+#main-menu-screen h1, .play-hero-btn b, .mm-title, #shop-screen h1, .finish-inner h1, .fin-btn, #shop-action, .garage-btn, .mm-extra b, .mm-wallet b, #mm-name, .play-hero-btn small {
+    font-family: var(--sg) !important; font-weight: 400 !important; letter-spacing: 0.02em; }
+#main-menu-screen h1, #shop-screen h1, .finish-inner h1 { font-style: italic; text-transform: uppercase;
+    background: linear-gradient(180deg, #fff 0%, #ffe9a0 30%, #ff9a1a 52%, #b8300c 54%, #ffd23c 80%, #fff6c8 100%); -webkit-background-clip: text; background-clip: text;
+    color: transparent !important; -webkit-text-stroke: 1px #2a0a00; filter: drop-shadow(3px 3px 0 #000); }
+#main-menu-screen h1 { font-size: 30px !important; margin: 8px 0 !important; }
+.play-hero-btn { border-radius: 6px !important; border: 3px solid #000 !important; background: linear-gradient(180deg, #ffe680, #ffb300 55%, #d97800) !important;
+    box-shadow: inset 3px 3px 0 rgba(255,255,255,0.7), inset -3px -3px 0 rgba(120,50,0,0.6), 0 6px 0 #000 !important; transform: skewX(-6deg); }
+.play-hero-btn b { font-size: 26px !important; font-style: italic; color: #1a0a00 !important; text-shadow: 1px 1px 0 #fff2b0 !important; }
+.menu-card { border-radius: 6px !important; border: 3px solid #000 !important; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35), 0 5px 0 #000 !important; }
+.menu-card .mm-cap { background: linear-gradient(180deg, #e01e1e, #8a0a0a) !important; border-top: 3px solid #000 !important;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.4) !important; }
+.menu-card .mm-title { font-style: italic; color: #fff !important; text-shadow: 2px 2px 0 #000 !important; text-transform: uppercase; }
+.menu-card.menu-infinite { border-color: #ffd23c !important; }
+.mm-extra, .mm-top > button, .mm-wallet > span { border-radius: 6px !important; border: 2px solid #000 !important;
+    background: linear-gradient(180deg, #4a4a58, #1c1c24) !important; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.25), 0 4px 0 #000 !important; }
+#shop-screen h1 { font-size: 28px !important; }
+.shop-stage { border: 3px solid #000 !important; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3), 0 6px 0 #000 !important; }
+#shop-action, .garage-btn { border-radius: 6px !important; font-style: italic; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.5), 0 5px 0 #000 !important; }
+.finish-inner { border-radius: 8px !important; border: 3px solid #000 !important; background: linear-gradient(180deg, #2b2b36, #101016) !important;
+    box-shadow: inset 0 0 0 3px #c9c9d6, inset 0 0 0 5px #000, 0 10px 0 #000 !important; }
+.finish-inner h1 { font-size: 26px !important; }
+body #finish-screen .fin-btn { border-radius: 6px !important; font-style: italic; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.35), 0 4px 0 #000 !important; border: 2px solid #000 !important; }

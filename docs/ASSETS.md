@@ -12,6 +12,7 @@
 |---|---|---|---|---|
 | music/menu-music.mp3 | музыка меню | не записан | ? | ⚠ |
 | voice/index.json | список записанных реплик ведущего (id файлов voice/*.mp3) | собственный | собственная | ✅ |
+| шрифт Russo One (заголовки и кнопки, npm `@fontsource/russo-one`) | шрифт интерфейса «картридж» | Jovanny Lemonad, Google Fonts | SIL Open Font License 1.1 (можно в коммерческой игре) | ✅ |
 | music/race-music.mp3 | музыка заезда | не записан | ? | ⚠ |
 | images/splash.jpg | заставка | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/menu_main.jpg | меню: шапка | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
