@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh, createLaneCone } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { chaseTargets, stepChase } from './rival-chase.js'; import { createPolice } from './police-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart, weekTheme, warmStart } from './infinite.js'; import { dropBusy } from './patterns.js'; import { createThemeEvents } from './theme-events.js'; import { createRoadGoals } from './road-goals.js'; import { createRingChain, ringPitch, speedFov, speedLinesK, renderSpeedLines } from './juice.js'; import { feverHold, renderFeverFx, FEVER_RAM_E } from './fever.js'; import { FEVER_TIME } from './risk-combo.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, tickPowers, eValue, magnetPull, activePowers, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance, renderPowerHud } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, createCrateMesh, breakCrate, stepCrateParts, createSpikesMesh, createLaneCone } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter, createLetterToken } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { chaseTargets, stepChase } from './rival-chase.js'; import { createPolice } from './police-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { createInfWorld, disposeTree } from './inf-world.js'; import { themeAt, rampAt, runScore, planStretch, setThemeStart, weekTheme, warmStart } from './infinite.js'; import { dropBusy } from './patterns.js'; import { createThemeEvents } from './theme-events.js'; import { createRoadGoals } from './road-goals.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { createRingChain, ringPitch, speedFov, speedLinesK, renderSpeedLines } from './juice.js'; import { feverHold, renderFeverFx, FEVER_RAM_E } from './fever.js'; import { FEVER_TIME } from './risk-combo.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -1880,9 +1880,10 @@ function createProfile(name) { return Profile.createProfile(name); }
             const partsPanel = document.getElementById('garage-panel-parts');
             if (partsTab) partsTab.classList.add('active');
             if (partsPanel) { partsPanel.classList.add('active'); partsPanel.style.display = 'block'; }
-            if (!document.getElementById('garage-up-badge').hidden) setTimeout(function() { document.querySelector('.garage-tab[data-gtab="upgrades"]').click(); }, 0); // есть на что потратить — сразу к прокачке
+            if (!peekPendingGift() && !document.getElementById('garage-up-badge').hidden) setTimeout(function() { document.querySelector('.garage-tab[data-gtab="upgrades"]').click(); }, 0); // есть на что потратить — сразу к прокачке
 
             try { renderGaragePartsPanel(); } catch (e) { console.warn('renderGaragePartsPanel', e); }
+            const g = takePendingGift(); if (g) { const it = g.paint ? CAR_PAINTS.find(function(x) { return x.id === g.paint; }) : CAR_PARTS.find(function(x) { return x.id === g.part; }); showGiftPlaque(g, { name: it ? it.name : '', color: it ? it.color : null }); } // подарок за главу — поздравление (src/ui/gift-garage.js)
             try { renderGarageTrophies(); } catch (e) { console.warn('renderGarageTrophies', e); }
             const achBox = document.getElementById('garage-achs');
             if (achBox && typeof ACHIEVEMENTS !== 'undefined') {
@@ -2013,7 +2014,7 @@ function renderGaragePartsPanel() {
                     '<span>' + escapeHtml(part.name) + '</span>' +
                     '<span class="part-price">' + priceLabel + '</span></div>';
             });
-            box.innerHTML = html;
+            box.innerHTML = html; markGiftGlow(box, currentPlayer.carLoadout); // подарки за главы сияют золотом, пока не тронешь
             const restore = () => { if (garageTry) showGarageTry(); else applyGarageLoadoutVisual(); };
             box.querySelectorAll('.color-swatch').forEach(sw => {
                 sw.addEventListener('mouseenter', () => previewGaragePaint(sw.dataset.paint));
@@ -2021,7 +2022,7 @@ function renderGaragePartsPanel() {
                 sw.addEventListener('click', () => {
                     const p = CAR_PAINTS.find(x => x.id === sw.dataset.paint);
                     if (p && p.price && !ownedPaints.includes(p.id)) { garageTry = { kind: 'paint', id: p.id }; renderGaragePartsPanel(); showGarageTry(); return; }
-                    garageTry = null; buyGaragePaint(sw.dataset.paint);
+                    garageTry = null; if (seenGift(currentPlayer.carLoadout, 'paint', sw.dataset.paint)) { saveCurrentPlayer(); sw.classList.remove('gift-glow'); } buyGaragePaint(sw.dataset.paint);
                 });
             });
             box.querySelectorAll('.part-row').forEach(row => {
@@ -2030,7 +2031,7 @@ function renderGaragePartsPanel() {
                 row.addEventListener('click', () => {
                     const id = row.dataset.part, part = CAR_PARTS.find(x => x.id === id);
                     if (part && part.price && !ownedParts.includes(id) && !equipped.includes(id)) { garageTry = { kind: 'part', id: id }; renderGaragePartsPanel(); showGarageTry(); return; }
-                    garageTry = null; buyOrToggleGaragePart(id);
+                    garageTry = null; if (seenGift(currentPlayer.carLoadout, 'part', id)) { saveCurrentPlayer(); row.classList.remove('gift-glow'); } buyOrToggleGaragePart(id);
                 });
             });
             const tb = box.querySelector('.try-buy'), tc = box.querySelector('.try-cancel');
@@ -4735,7 +4736,7 @@ function startGaragePreview(carId) {
                         }
                         const cr = window.__lastChapterReward;
                         if (cr && cr.trackId === window.__campaignTrackId) {
-                            starsHtml += '<div class="chapter-gift">' + chapterRewardHtml(cr, true) + '</div>';
+                            starsHtml += '<button type="button" id="finish-gift-btn" class="chapter-gift chapter-gift-go" data-gift="' + escapeHtml(JSON.stringify(cr)) + '">' + chapterRewardHtml(cr, true) + '<span class="cg-go">🔧 Смотреть в гараже →</span></button>'; // подарок — в гараж с поздравлением (src/ui/gift-garage.js)
                         }
                     }
                     const head = (state === 'win')
@@ -4895,7 +4896,7 @@ function startGaragePreview(carId) {
                 }
                 bindFinishBtn('finish-restart-btn', goRestart); bindFinishKeys(screen); // Enter — главная кнопка, R — «Повторить»
                 bindFinishBtn('finish-menu-btn', goMenu);
-                bindFinishBtn('finish-garage-btn', goGarage);
+                bindFinishBtn('finish-garage-btn', goGarage); bindFinishBtn('finish-gift-btn', function(ev) { const gb = document.getElementById('finish-gift-btn'); try { setPendingGift(JSON.parse(gb.dataset.gift)); } catch (e) {} goGarage(ev); });
                 // «Вызвать друга»: ссылка с сидом и счётом — через «Поделиться» телефона или в буфер обмена
                 bindFinishBtn('finish-challenge-btn', function() {
                     const run = window.__endless;
