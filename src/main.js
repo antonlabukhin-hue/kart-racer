@@ -50,9 +50,9 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
-        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
+        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
         import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
         import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
@@ -5050,7 +5050,7 @@ function startGaragePreview(carId) {
                 try { const ct = document.getElementById('coach-tip'); if (ct) ct.remove(); } catch (e) {}
                 const cheb = document.getElementById('cheburashkaWarn');
                 if (cheb) cheb.remove();
-                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque, #power-hud, #e-counter').forEach(el => el.remove());
+                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque, #power-hud, #e-counter').forEach(el => el.remove()); announcer.hush();
                 const timeTaken = raceTime;
                 const smul = scoreMult(currentPlayer); // множитель очков за задания (src/missions.js)
                 const infRun = INF && infWorld ? { dist: Math.round(infWorld.dist), e: stats.eChips || 0, mult: smul, score: runScore(infWorld.dist, stats.eChips || 0, risk.points) * smul,
@@ -7048,7 +7048,7 @@ function startGaragePreview(carId) {
             function nearMiss() {
                 if (gameState !== 'racing' || _nmCooldown > 0) return;
                 _nmCooldown = 1.2;
-                nearMissCount++; riskEvent(risk, 'nearMiss');
+                nearMissCount++; riskEvent(risk, 'nearMiss'); announcer.say('nearMiss');
                 if (!INF) nitroTimer = Math.max(nitroTimer, ABILITY === 'nimble' ? 1.4 : 0.9); // бесконечная трасса: ускорение только с нитро-стрелок
                 try {
                     const el = document.createElement('div');
@@ -7267,7 +7267,7 @@ function startGaragePreview(carId) {
             // цели «До соперника N м»: таблица устройства и соперники сразу, мировая — когда придёт с сервера
             const chaseMe = currentPlayer ? currentPlayer.name : '', chaseBest = currentPlayer && currentPlayer.infinite ? currentPlayer.infinite.best || 0 : 0;
             const patEnds = [], patHit = new Set(); /* узоры: где кончаются и какие задеты */ const infWarm = INF ? warmStart(chaseBest) : 0; /* «горячий старт»: сложность — от рекорда (src/infinite.js) */ const weekTh = INF ? weekTheme().theme : null; // событие недели: в этом пейзаже «Е» за две
-            const police = INF ? createPolice(scene) : null; // погоня ГАИ после аварии (src/police-chase.js)
+            const police = INF ? createPolice(scene, function() { announcer.say('police'); }) : null; // погоня ГАИ после аварии (src/police-chase.js)
             const chase = INF && currentPlayer ? { targets: chaseTargets(topRuns(loadBoard(), 'all', Date.now(), chaseMe), chaseMe, chaseBest), passed: new Set() } : null;
             if (chase && onlineBoard()) fetchTop('all').then(function(list) { if (list) chase.targets = chaseTargets(topRuns(list.concat(loadBoard()), 'all', Date.now(), chaseMe), chaseMe, chaseBest); });
             function infPlanLap(k) {
@@ -8033,7 +8033,7 @@ function startGaragePreview(carId) {
                 try { if (window.soundEngine) window.soundEngine.playSfx('pickup_nitro', 1); } catch (e) {}
             }
             function showBigPlaque(title, sub, cls) {
-                document.querySelectorAll('.big-plaque').forEach(function(n) { try { n.remove(); } catch (e) {} });
+                announcer.say(plaqueKind(title)); document.querySelectorAll('.big-plaque').forEach(function(n) { try { n.remove(); } catch (e) {} });
                 const el = document.createElement('div');
                 el.className = 'big-plaque ' + (cls || '');
                 el.innerHTML = '<b></b><small></small>';
@@ -8273,7 +8273,7 @@ function startGaragePreview(carId) {
                 soundEngine.playCrashSound(0.6);
 
                 const lines = RADIO_LINES.hit;
-                radioSay(lines[Math.floor(Math.random() * lines.length)]);
+                if (!announcer.say(strikes === MAX_STRIKES - 1 ? 'lastLife' : 'crash')) radioSay(lines[Math.floor(Math.random() * lines.length)]);
 
                 updateHUD();
 
@@ -9493,7 +9493,7 @@ function startGaragePreview(carId) {
                                 document.body.appendChild(fl);
                                 setTimeout(function(){ fl.style.opacity='0'; setTimeout(function(){ fl.remove(); },400); }, 50);
                             } catch (e) {}
-                            radioSay(RADIO_LINES.nitro[Math.floor(Math.random()*RADIO_LINES.nitro.length)]);
+                            if (!announcer.say('nitro')) radioSay(RADIO_LINES.nitro[Math.floor(Math.random()*RADIO_LINES.nitro.length)]);
                             showTimePenaltyPopup(0, '⛽ НИТРО!');
                             // визуальный текст
                             const el = document.createElement('div');
@@ -9512,7 +9512,7 @@ function startGaragePreview(carId) {
                                 setTimeout(function(){ fl.style.opacity='0'; setTimeout(function(){ fl.remove(); },350); }, 40);
                             } catch (e) {}
                             stats.gumPicked++;
-                            radioSay(RADIO_LINES.gum[Math.floor(Math.random()*RADIO_LINES.gum.length)]);
+                            if (!announcer.say('heart')) radioSay(RADIO_LINES.gum[Math.floor(Math.random()*RADIO_LINES.gum.length)]);
                             if (strikes > 0) {
                                 strikes = Math.max(0, strikes - (ABILITY === 'dacha' ? 2 : 1)); // «Сарай» — дачник
                                 showTimePenaltyPopup(0, '❤️ −1 авария');
@@ -11022,7 +11022,7 @@ function startGaragePreview(carId) {
                 }
             })();
             setTimeout(() => {
-                radioSay(RADIO_LINES.start[Math.floor(Math.random()*RADIO_LINES.start.length)]);
+                if (!announcer.say('start')) radioSay(RADIO_LINES.start[Math.floor(Math.random()*RADIO_LINES.start.length)]);
             }, 800);
         }
 
@@ -11033,7 +11033,7 @@ function startGaragePreview(carId) {
             // Удаляем старые элементы игры
             const container = document.getElementById('game-container');
             if (container) while (container.firstChild) container.removeChild(container.firstChild);
-            document.querySelectorAll('#cheburashkaWarn, .animal-shout, .radio-line, .story-plaque, #finish-screen, #game-hud').forEach(el => el.remove());
+            document.querySelectorAll('#cheburashkaWarn, .animal-shout, .radio-line, .story-plaque, #finish-screen, #game-hud, .announcer').forEach(el => el.remove());
             
             const oldHud = document.getElementById('game-hud');
             if (oldHud) oldHud.remove();
@@ -11618,7 +11618,7 @@ function showLoreScreen(quality, difficulty) {
             const mmWord = document.getElementById('mm-word'), mmBoard = document.getElementById('mm-board'); // «Слово дня» и «Рекорды» (src/ui/board.js)
             if (mmWord) mmWord.onclick = function() { if (currentPlayer) showWordInfo(wordState(currentPlayer, dayKey(new Date()))); };
             if (mmBoard) mmBoard.onclick = function() { if (currentPlayer) showBoard({ me: currentPlayer.name, list: loadBoard(), now: Date.now(), carName: function(id) { return (CAR_PRESETS[id] || {}).name || id; }, fetchOnline: onlineBoard() ? function(scope) { return fetchTop(scope); } : null }); };
-            registerSW(import.meta.env.MODE === 'test' || platform.name === 'yandex'); if (platform.name !== 'yandex') wireInstall(document.getElementById('mm-install'), function(t, x) { Notify.info(t, x, 9000); }); platformHooks = wirePlatform({ platform: platform, metrics: onlineBoard() ? installMetrics({ platform: platform.name }) : null, player: function() { return currentPlayer; }, save: saveCurrentPlayer, refresh: refreshMenuUI, notify: Notify }); setSender(platformHooks.onEvent); // игра как приложение (src/ui/install.js)
+            registerSW(import.meta.env.MODE === 'test' || platform.name === 'yandex'); if (platform.name !== 'yandex') wireInstall(document.getElementById('mm-install'), function(t, x) { Notify.info(t, x, 9000); }); platformHooks = wirePlatform({ platform: platform, metrics: onlineBoard() ? installMetrics({ platform: platform.name }) : null, player: function() { return currentPlayer; }, save: saveCurrentPlayer, refresh: refreshMenuUI, notify: Notify, announcer: announcer }); setSender(platformHooks.onEvent); // игра как приложение (src/ui/install.js)
             const eventsClose = document.getElementById('events-close');
             if (eventsClose) eventsClose.addEventListener('click', function() {
                 if (typeof showMainMenu === 'function') showMainMenu();

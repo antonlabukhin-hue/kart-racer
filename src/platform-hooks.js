@@ -33,6 +33,7 @@ export function wirePlatform(d) {
     const onEvent = function(ev) {
         if (d.metrics) d.metrics.event(ev);
         if (ev.e === 'race_start') { st.chanceAd = false; st.lastRun = null; }
+        if (ev.e === 'race_end' && d.announcer) setTimeout(function() { d.announcer.say('finish'); }, 900);
         if (ev.e === 'race_end') { st.runs++; if (typeof ev.dist === 'number') { const p = d.player(); st.lastRun = ev; st.chips0 = p && p.season ? p.season.chips || 0 : 0; addDoubleBtn(20); } }
     };
 

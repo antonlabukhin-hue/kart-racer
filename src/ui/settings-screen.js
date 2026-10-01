@@ -31,6 +31,8 @@ export function openSettingsScreen(deps) {
         '<div class="st-title">⚙ Настройки</div>' +
         '<div class="st-group">Звук</div>' +
         slider('music', '🎵 Музыка') + slider('engine', '🏎 Двигатель') + slider('sfx', '💥 Эффекты') +
+        '<div class="st-group">🎙 Ведущий</div>' +
+        choice('host', [['voice', 'Голос и текст'], ['text', 'Только текст'], ['off', 'Молчит']]) +
         '<div class="st-group">Графика</div>' +
         choice('quality', [['low', '🚀 Низкое'], ['medium', '⚡ Среднее'], ['high', '🔥 Высокое']]) +
         '<div class="st-group">Камера в заезде</div>' +

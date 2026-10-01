@@ -5703,3 +5703,23 @@ body #finish-screen .fin-btn.ad-btn.done { background: rgba(76, 224, 138, 0.15) 
 .shop-pay .pay-item span { font-size: 12px; font-weight: 700; line-height: 1.2; }
 .shop-pay .pay-item b { font-size: 15px; color: #8dffb8; display: flex; align-items: center; gap: 4px; }
 .shop-pay .pay-item b img { width: 16px; height: 16px; }
+
+/* ведущий-комментатор (src/announcer.js): рамка как в диалогах 16-битных приставок */
+.announcer { position: fixed; left: 50%; bottom: 24%; z-index: 9700; display: flex; align-items: center; gap: 10px; max-width: min(560px, 92vw);
+    padding: 8px 16px 8px 8px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+    background: linear-gradient(180deg, #1b2a6b, #0d1440); border: 3px solid #fff; border-radius: 6px;
+    box-shadow: 0 0 0 3px #0d1440, 0 0 0 5px #6fa0ff, 0 10px 30px rgba(0, 0, 0, 0.6); }
+.announcer i { flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center; font-style: normal; font-size: 26px;
+    background: #ffd23c; border: 2px solid #fff; border-radius: 4px; box-shadow: inset 0 -4px 0 #c88a00; }
+.announcer span { font: 900 19px/1.2 system-ui, 'Segoe UI', sans-serif; color: #ffe066; text-transform: uppercase; letter-spacing: 0.02em; text-shadow: 2px 2px 0 #000; }
+.announcer.in { animation: annIn .22s steps(4) forwards; }
+.announcer.out { animation: annOut .25s steps(3) forwards; }
+@keyframes annIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes annOut { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, 12px); } }
+/* телефон: внизу слева, рядом со спидометром — дорога и машина открыты */
+@media (max-width: 600px) { .announcer { left: 8px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 170px); padding: 6px 10px 6px 6px; gap: 7px; transform: translate(0, 20px); }
+    .announcer.in { animation-name: annInL; } .announcer.out { animation-name: annOutL; }
+    .announcer i { width: 30px; height: 30px; font-size: 18px; } .announcer span { font-size: 13px; } }
+@keyframes annInL { from { opacity: 0; transform: translate(0, 20px); } to { opacity: 1; transform: translate(0, 0); } }
+@keyframes annOutL { from { opacity: 1; transform: translate(0, 0); } to { opacity: 0; transform: translate(0, 12px); } }
+@media (max-height: 460px) { .announcer { bottom: auto; top: 30%; } }

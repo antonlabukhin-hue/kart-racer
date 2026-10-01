@@ -76,7 +76,7 @@ function glowTexture() {
  * Машина держится чуть сзади в соседней полосе (прямо сзади она закрыла бы обзор — стоит между камерой и игроком);
  * плашка «ПОГОНЯ» с отсчётом.
  */
-export function createPolice(scene) {
+export function createPolice(scene, onChase) { // onChase — погоня началась (ведущий: «ГАИ на хвосте!»)
     const st = createChaseState();
     let car = null, hud = null, t = 0;
     const show = function(on) {
@@ -92,7 +92,7 @@ export function createPolice(scene) {
     };
     return {
         state: st,
-        crash: function() { const r = onCrash(st); show(r === 'chase'); return r; },
+        crash: function() { const r = onCrash(st); show(r === 'chase'); if (r === 'chase' && onChase) onChase(); return r; },
         stop: function() { st.t = 0; show(false); },
         tick: function(dt, x, z, gap) {
             if (st.t <= 0) return;
