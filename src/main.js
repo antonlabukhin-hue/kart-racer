@@ -8245,7 +8245,7 @@ function startGaragePreview(carId) {
                 }
                 logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
                 strikes++;
-                if (police && police.crash() === 'caught' && strikes < MAX_STRIKES) { // ГАИ поймала: ролик облёта (src/police-chase.js), потом — как обычно «Второй шанс»
+                if (police && String(obs.cause || '').indexOf('car:') === 0 && police.crash() === 'caught' && strikes < MAX_STRIKES) { /* ГАИ — только за столкновение с машиной: разлом, ямы, звери — не повод для погони */ // ГАИ поймала: ролик облёта (src/police-chase.js), потом — как обычно «Второй шанс»
                     strikes = MAX_STRIKES; speed = 0; gameState = 'chance'; cars.forEach(function(c) { if (Math.abs(c.z - zPos) < 16) { c.z = zPos - 90; c.mesh.position.z = c.z; } }); try { showBigPlaque('🚨 ГАИ ПОЙМАЛА!', 'Вторая авария во время погони', 'crate-bad'); } catch (e) {}
                     police.arrest({ camera: camera, renderer: renderer, x: xPos, z: zPos, onDone: function() { gameState = 'racing'; endGame('crash'); } }); return;
                 }
