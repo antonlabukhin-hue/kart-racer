@@ -1768,7 +1768,13 @@ function createProfile(name) { return Profile.createProfile(name); }
                         const d = new THREE_REF.DirectionalLight(0xffe0b0, 1.3);
                         d.position.set(3, 5, 2); scene.add(d);
                         const built = _buildShowroomCar(carId || 'cheburashka');
-                        dressCar(built, carId || 'cheburashka'); // витрина: та же покраска и прокачка, что в гараже и на трассе
+                        // витрина: купленная машина — с покраской, деталями и прокачкой из гаража (как на трассе); некупленная — в заводском цвете, без тюнинга
+                        if (currentPlayer && (currentPlayer.unlockedCars || []).indexOf(carId) >= 0) dressCar(built, carId);
+                        else {
+                            Object.keys(built.parts || {}).forEach(function(id) { if (built.parts[id]) built.parts[id].visible = false; });
+                            const presetCol = (CAR_PRESETS[carId] && CAR_PRESETS[carId].color) || 0xff2200;
+                            built.group.traverse(function(o) { if (o.isMesh && o.userData && o.userData.bodyPaint && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.setHex(presetCol); } });
+                        }
                         fitShowroom(built.group); scene.add(built.group); // крупные модели — меньше, чтобы не уходили за край
                         let rot = 0.5;
                         const tick = () => {
@@ -1969,7 +1975,8 @@ function createProfile(name) { return Profile.createProfile(name); }
             const lo = currentPlayer.carLoadout;
             const id = carId || currentPlayer.preferredCar || 'cheburashka';
             if (lo.paintByCar && lo.paintByCar[id]) return lo.paintByCar[id];
-            return lo.paint || 'stock';
+            // цвет — у каждой машины свой: некрашеная — заводская; общий lo.paint — только у старых сохранений без покраски по машинам
+            return (lo.paintByCar && Object.keys(lo.paintByCar).length) ? 'stock' : (lo.paint || 'stock');
         }
         function setPaintForCar(carId, paintId) {
             if (!currentPlayer) return;
