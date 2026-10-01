@@ -8007,8 +8007,8 @@ function startGaragePreview(carId) {
             const ABILITY = (carPreset.ability && carPreset.ability.id) || null;
             const ALWAYS_MAGNET = { magnet: 1 }; // способность «Зубила»
             const DRY_STEER = 3.2 * carStats.steerMul * (ABILITY === 'nimble' ? 1.15 : 1);
-            const NITRO_SPEED = ABILITY === 'turbo' ? 1.6 : 1.45;
-            const NITRO_ACCEL = ABILITY === 'turbo' ? 1.8 : 1.6;
+            const NITRO_SPEED = (ABILITY === 'turbo' ? 1.6 : 1.45) * (INF ? 0.9 : 1); // бесконечная трасса: нитро на 10% мягче — успеваешь реагировать
+            const NITRO_ACCEL = (ABILITY === 'turbo' ? 1.8 : 1.6) * (INF ? 0.9 : 1);
             const OIL_GRIP = carStats.oilGrip;
             const DURABILITY = carStats.durability; // множитель штрафа времени (меньше = танк); броня его снижает
             const NITRO_TIME = carStats.nitroTime * ((carPreset.ability && carPreset.ability.id === 'rocket') ? 1.5 : 1); // «Ракета» — форсаж
