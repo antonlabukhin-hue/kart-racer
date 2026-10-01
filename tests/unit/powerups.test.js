@@ -53,7 +53,7 @@ describe('прокачка брони за «Е»', () => {
         expect(shieldBonus(0)).toBe(0);
         expect(shieldBonus(3)).toBe(30);
         expect(powerLabel('shield', 0)).toBe('1 удар');
-        expect(powerLabel('shield', 1)).toBe('2 удара · +10 Е за отбитый');
+        expect(powerLabel('shield', 1)).toBe('2 удара · +10 Е');
         expect(powerLabel('magnet', 0)).toMatch(/ с$/);
     });
     it('покупается в гараже как магнит', () => {

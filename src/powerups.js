@@ -27,11 +27,11 @@ export function shieldHits(lv) { return SHIELD_HITS[Math.max(0, Math.min(POWER_L
 /** «Е» за удар, отбитый бронёй (0 на нулевом уровне) */
 export function shieldBonus(lv) { return 10 * Math.max(0, Math.min(POWER_LEVELS, lv || 0)); }
 function hitsWord(n) { return n + (n === 1 ? ' удар' : ' удара'); }
-/** Подпись уровня для гаража: «12 с» или «2 удара · +10 Е за отбитый» */
+/** Подпись уровня для гаража: «12 с» или «2 удара · +10 Е» (за отбитый удар) */
 export function powerLabel(type, lv) {
     if (type !== 'shield') return powerTime(type, lv) + ' с';
     const b = shieldBonus(lv);
-    return hitsWord(shieldHits(lv)) + (b ? ' · +' + b + ' Е за отбитый' : '');
+    return hitsWord(shieldHits(lv)) + (b ? ' · +' + b + ' Е' : ''); // «Е» — за каждый отбитый удар
 }
 export function powerTime(type, lv) {
     return POWERS[type].time + 2 * Math.max(0, Math.min(POWER_LEVELS, lv || 0));

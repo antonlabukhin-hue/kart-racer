@@ -2388,7 +2388,7 @@ function renderGaragePartsPanel() {
             box.innerHTML = '<div class="up-head">' + escapeHtml(preset.name) + ' · у тебя ' + chips + ' Е</div>' + abil +
                 '<div class="up-bars">' + bars + '</div>' + rows +
                 '<div class="up-note">Улучшения видны на машине и работают в заезде. У каждой машины своя прокачка.</div>' +
-                '<div class="up-head up-power-head">⚡ Усиления бесконечной трассы<small>для всех машин · дольше действуют, броня крепче</small></div>' + pRows;
+                '<div class="up-head up-power-head">⚡ Усиления бесконечной трассы<small>для всех машин · дольше действуют; броня — больше ударов и «Е» за отбитый</small></div>' + pRows;
             box.querySelectorAll('button[data-pw]').forEach(function(b) {
                 b.addEventListener('click', function() {
                     const r = buyPowerLevel(currentPlayer, b.dataset.pw);
