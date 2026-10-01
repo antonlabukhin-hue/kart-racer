@@ -384,3 +384,25 @@ test('узоры: чистый проход — рисковое действи�
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
+
+// событие пейзажа: посреди «Арсеньева» — свадебный кортеж (4 машины с шариками в одной полосе); проехал без аварии — «Е»
+test('событие пейзажа: кортеж — плашка, машины кортежа, награда без аварии', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 400); });
+    await expect(page.locator('.big-plaque')).toContainText('СВАДЕБНЫЙ КОРТЕЖ');
+    const convoy = await page.evaluate(() => window.__raceDebug.cars.filter(c => c.convoy).map(c => c.lane));
+    expect(convoy.length).toBe(4);
+    expect(new Set(convoy).size).toBe(1);
+    const e0 = await page.evaluate(() => window.__raceDebug.stats.eChips || 0);
+    await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 640); });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.themeEvents || 0)).toBe(1);
+    expect(await page.evaluate(() => window.__raceDebug.stats.eChips || 0)).toBeGreaterThanOrEqual(e0 + 30);
+    expect(await page.evaluate(() => window.__raceDebug.cars.filter(c => c.convoy).length)).toBe(0);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
