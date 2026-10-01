@@ -406,3 +406,30 @@ test('событие пейзажа: кортеж — плашка, машины
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
+
+// цели на дороге: на дальности рекорда — растяжка «ТВОЙ РЕКОРД», у соперников — щиты; позади — убираются
+test('цели на дороге: растяжка рекорда и щиты соперников', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.infinite = { best: 900, bestScore: 0, runs: 0 }; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 700); });
+    // рекорд (900 м) и соперник «Шурик» (800 м) — в пределах видимости
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.goals)).toBeGreaterThanOrEqual(2);
+    const arch = await page.evaluate(() => window.__raceDebug.scene.children.some(o => o.isGroup && Math.abs(o.position.z - (window.__raceDebug.startZ - 900)) < 0.5));
+    expect(arch).toBe(true);
+    await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 960); });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.scene.children.some(o => o.isGroup && Math.abs(o.position.z - (window.__raceDebug.startZ - 900)) < 0.5))).toBe(false);
+    await page.keyboard.up('w');
+    expect(problems).toEqual([]);
+});
