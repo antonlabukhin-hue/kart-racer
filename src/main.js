@@ -8013,7 +8013,7 @@ function startGaragePreview(carId) {
             const cleanRun = createCleanRun(); if (ABILITY === 'armor') cleanRun.grantShield(); /* «Буханка»: старт с бронёй */ let _armorShown = false;
             const boosts = INF ? pendingBoosts : [], headstartTo = boosts.indexOf('headstart') >= 0 ? HEADSTART_M : 0; pendingBoosts = []; // «Разгон» и «Запаска» (src/ui/boosts.js)
             if (boosts.indexOf('spare') >= 0) cleanRun.grantShield();
-            let rewindUsed = false; const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
+            let rewindUsed = false, spikeSlowT = 0; /* spikeSlowT — сколько ещё секунд тормозят пробитые шипами колёса */ const risk = createRisk(); // множитель за риск ×1…×5 (src/risk-combo.js)
             let shieldMesh = null;
             /** Крупная выскакивающая плашка по центру (броня и т. п.) — один слот */
             function grabPower(type) {
@@ -8608,7 +8608,8 @@ function startGaragePreview(carId) {
                     camera.updateProjectionMatrix();
                 }
 
-                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? NITRO_SPEED : 1.0) * infSpeedK; // бесконечная трасса: быстрее с каждым км
+                if (spikeSlowT > 0) spikeSlowT -= deltaTime;
+                const effectiveMax = MAX_SPEED * (nitroTimer > 0 ? NITRO_SPEED : 1.0) * infSpeedK * (spikeSlowT > 0 ? 0.7 : 1); // бесконечная трасса: быстрее с каждым км; после шипов — −30%
                 const effectiveAccel = ACCELERATION * (nitroTimer > 0 ? NITRO_ACCEL : 1.0);
 
                 // константы разгона/тормоза подобраны «за кадр при 60 fps» — масштабируем по времени кадра,
@@ -9160,9 +9161,9 @@ function startGaragePreview(carId) {
                             if (!obs._trikeShown) { obs._trikeShown = true; try { showTimePenaltyPopup(0, '🛞 Трайк держит дорогу'); } catch (e) {} }
                         } else if (obs.type === 'spikes') {
                             // шипы: не авария, но скорость резко падает; шипы приминаются
-                            stats.lastSpike = { before: speed, after: speed * 0.5 }; speed *= 0.5; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3;
+                            stats.lastSpike = { before: speed, after: speed * 0.7 }; speed *= 0.7; spikeSlowT = 2.2; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3; // шипы: −30% на пару секунд
                             stats.spikes = (stats.spikes || 0) + 1;
-                            try { showBigPlaque('⚠ ШИПЫ!', 'Скорость упала — перепрыгни или объезжай', 'crate-bad'); if (window.soundEngine) window.soundEngine.playSfx('bump', 1.3); } catch (e) {}
+                            try { showBigPlaque('⚠ ШИПЫ!', 'Пробил колёса: −30% скорости на пару секунд', 'crate-bad'); if (window.soundEngine) window.soundEngine.playSfx('bump', 1.3); } catch (e) {}
                         } else if (ABILITY === 'offroad' && obs.type !== 'oil' && obs.type !== 'acid') {
                             // Нива-внедорожник: ямы, кочки, лёд и смола — не помеха (масло и кислота — да)
                             if (!obs._offroadShown) {
