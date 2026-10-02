@@ -5825,3 +5825,72 @@ body #finish-screen .fin-btn { border-radius: 6px !important; font-style: italic
 .pf-card .pf-close { border-radius: 6px !important; border: 2px solid #000 !important; }
 .pf-card .pf-grid span, .pf-card .pf-cloud { border-radius: 6px !important; }
 .pf-card .pf-ava { border-radius: 14px !important; }
+
+/* ===== Итоги главы кампании (src/ui/finish-ui.js campFinishHtml): одна раскладка для победы и проигрыша ===== */
+#finish-screen.fin-camp { position: fixed; inset: 0; z-index: 9500; display: flex; align-items: center; justify-content: center; overflow-y: auto;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    background: rgba(0, 0, 0, 0.92); box-sizing: border-box; }
+.fin-camp .fc-card { width: min(400px, 100%); margin: auto; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "banner" "main" "result" "quote" "actions"; padding: 12px; box-sizing: border-box;
+    background: #0e0c12; border: 3px solid #ff5555; border-radius: 8px; box-shadow: 0 0 0 3px #000, 0 12px 0 #000; color: #e8e4ee; text-align: center; }
+.fin-camp .fc-banner { grid-area: banner; position: relative; height: 92px; border-radius: 6px; overflow: hidden; background: #1a1018; border: 2px solid rgba(255, 80, 80, 0.4); }
+.fin-camp .fc-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fin-camp .fc-banner span { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 8px; font-size: 9px; letter-spacing: 1px; color: #ff8888; background: linear-gradient(transparent, rgba(0,0,0,0.88)); }
+.fin-camp .fc-main { grid-area: main; display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; }
+.fin-camp .fc-title { font-size: 20px; font-weight: 900; color: #ff6a5a; line-height: 1.15; }
+.fin-camp .fc-card.win .fc-title { color: #ffd23c; }
+.fin-camp .fc-track { font-size: 13px; color: #b4aec0; }
+.fin-camp .finish-stars { margin: 0 !important; }
+.fin-camp .finish-stars span { font-size: 26px !important; }
+.fin-camp .finish-stars-hint { font-size: 12px; color: #cfc8dc; margin: 0 !important; }
+/* задания главы — ровным списком по левому краю, в рамке, как остальные блоки */
+.fin-camp .finish-tasks { margin: 0 !important; padding: 8px 12px; text-align: left; font-size: 13px !important; line-height: 1.45;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; max-width: none !important; }
+.fin-camp .finish-tasks .reward { margin-top: 4px; }
+/* подарок за главу — обычный блок потока, ничего не перекрывает */
+.fin-camp .chapter-gift-go { position: static !important; display: block; width: 100% !important; max-width: none !important; margin: 0 !important; box-sizing: border-box;
+    padding: 8px 12px !important; font-size: 13px !important; text-align: left; border-radius: 6px !important; }
+.fin-camp .chapter-gift-go .cg-row { display: flex; align-items: center; gap: 6px; }
+.fin-camp .chapter-gift-go .cg-go { margin-top: 4px; }
+/* итог заезда: рекорд, время, награды, риск и задания дня */
+.fin-camp .fc-result { grid-area: result; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.4; color: #d8d2e2;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; }
+.fin-camp .fc-result:empty { display: none; }
+.fin-camp .finish-record { font-size: 14px !important; margin: 0 !important; }
+.fin-camp .fin-rewards { margin: 2px 0 0 !important; justify-content: center; }
+.fin-camp .fin-chip { font-size: 15px !important; padding: 4px 12px !important; }
+.fin-camp .fin-total { margin: 0 !important; font-size: 12px; color: #a9a2b8; }
+.fin-camp .fin-risk, .fin-camp .fin-missions { margin: 0 !important; font-size: 13px; }
+.fin-camp .fin-missions { align-self: stretch; text-align: left; }
+.fin-camp .fc-quote { grid-area: quote; text-align: left; font-size: 13px; line-height: 1.45; color: #e8d0c8; background: rgba(70, 15, 25, 0.45); border-left: 3px solid #ff4444;
+    padding: 8px 12px; border-radius: 0 6px 6px 0; max-height: 96px; overflow-y: auto; }
+.fin-camp .fin-actions { grid-area: actions; display: grid; gap: 8px; margin: 0 !important; position: static !important; padding: 0 !important; background: none !important; }
+body #finish-screen.fin-camp .fin-btn { margin: 0 !important; min-height: 48px; height: auto; padding: 8px 12px !important; font-size: 15px !important; border-radius: 6px !important;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; white-space: normal; }
+body #finish-screen.fin-camp .fin-btn.primary { min-height: 52px; font-size: 17px !important; }
+body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size: 11px; font-weight: 700; font-style: normal; letter-spacing: 0; opacity: 0.85; text-transform: none; }
+/* горизонтально и на компьютере: слева глава, справа кнопки и итог — без пустого места */
+@media (min-width: 700px) and (orientation: landscape), (min-width: 900px) {
+    .fin-camp .fc-card { width: min(860px, 100%); grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); align-items: start;
+        grid-template-areas: "banner actions" "main actions" "main result" "quote result"; }
+    .fin-camp .fc-card.lose { grid-template-areas: "banner actions" "main actions" "main result" "quote result"; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+    #finish-screen.fin-camp { align-items: flex-start; }
+    .fin-camp .fc-banner { height: 60px; }
+    .fin-camp .fc-card { gap: 8px; padding: 10px; }
+    .fin-camp .fc-title { font-size: 18px; }
+    .fin-camp .finish-stars span { font-size: 22px !important; }
+    body #finish-screen.fin-camp .fin-btn { min-height: 42px; font-size: 14px !important; }
+    body #finish-screen.fin-camp .fin-btn.primary { min-height: 46px; font-size: 15px !important; }
+}
+/* общее правило итогов ограничивает карточку 440px — у итогов главы своя ширина */
+#finish-screen.fin-camp > .fc-card { max-width: none !important; margin: auto !important; }
+/* столбцы-обёртки итогов главы: на телефоне растворяются в общей сетке, горизонтально — две независимые колонки */
+.fin-camp .fc-left, .fin-camp .fc-right { display: contents; }
+@media (min-width: 700px) and (orientation: landscape), (min-width: 900px) {
+    .fin-camp .fc-card, .fin-camp .fc-card.lose { display: flex; align-items: flex-start; gap: 12px; }
+    .fin-camp .fc-left { display: flex; flex-direction: column; gap: 10px; flex: 1 1 0; min-width: 0; }
+    .fin-camp .fc-right { display: flex; flex-direction: column; gap: 10px; flex: 0 0 min(300px, 36%); position: sticky; top: 0; }
+}
+@media (max-height: 500px) and (orientation: landscape) { .fin-camp .fc-left, .fin-camp .fc-right { gap: 8px; } }

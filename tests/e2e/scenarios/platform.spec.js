@@ -18,7 +18,7 @@ test('площадка: второй шанс и ×2 «Е» за рекламу,
     const got = await page.evaluate(async () => {
         const g = window.__raceDebug;
         const c = g.collectibles.filter(c => c.type === 'echip' && c.active && c.baseY === 0.6 && c.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
-        g.setX(c.x); g.setZ(c.z + 0.2);
+        g.cars.forEach(car => { car.z = c.z - 300; car.mesh.position.z = car.z; }); g.setX(c.x); g.setZ(c.z + 0.2);
         await new Promise(r => setTimeout(r, 400));
         return g.stats.eChips || 0;
     });

@@ -22,6 +22,7 @@ test('бесконечная трасса: пейзажи, «Е», уборка 
         const g = window.__raceDebug;
         // цепочка на асфальте (не дуга над разломом): ближайшая впереди
         const c = g.collectibles.filter(c => c.type === 'echip' && c.active && c.baseY === 0.6 && c.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
+        g.cars.forEach(car => { car.z = c.z - 300; car.mesh.position.z = car.z; }); // попутки — подальше: проверяем «Е», а не аварию
         g.setX(c.x); g.setZ(c.z + 0.2);
         await new Promise(r => setTimeout(r, 400));
         return g.stats.eChips || 0;
@@ -379,6 +380,7 @@ test('узоры: чистый проход — рисковое действи�
         const g = window.__raceDebug;
         const o = g.obstacles.filter(o => o.pat && o.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
         const last = g.obstacles.filter(x => x.pat === o.pat).sort((a, b) => a.z - b.z)[0];
+        g.cars.forEach(car => { car.z = last.z - 300; car.mesh.position.z = car.z; }); // попутки — подальше: удар о них не даст «чисто»
         g.setZ(last.z + 2); // перед последним рядом узора — дальше игра едет сама (перескок далеко вперёд «чисто» не даёт)
         const row = g.obstacles.filter(x => x.pat === o.pat && Math.abs(x.z - last.z) < 1); g.setX([-2, 0, 2].find(lx => row.every(x => Math.abs(x.x - lx) > 1.2))); // в свободную полосу последнего ряда
         return last.z;
