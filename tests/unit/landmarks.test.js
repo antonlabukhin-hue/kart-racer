@@ -42,9 +42,15 @@ describe('узнаваемые детали трасс', () => {
         expect(ev2.debug.state).not.toBe('wait'); // успел тронуться навстречу
     });
 
-    it('ПАЗик перекрывает правую полосу, левая свободна', () => {
-        expect(drive(createSetpieceEvent('bus', 6, 0, LANES), 1.5)).toMatchObject({ kind: 'bus', strike: true });
-        expect(drive(createSetpieceEvent('bus', 6, 0, LANES), -1.5)).toBeNull();
+    it('ПАЗик выезжает с остановки справа или слева и перекрывает крайнюю полосу своей стороны, другая свободна', () => {
+        const sides = new Set();
+        for (let i = 0; i < 30; i++) {
+            const ev = createSetpieceEvent('bus', 6, 0, LANES), ev2 = createSetpieceEvent('bus', 6, 0, LANES);
+            sides.add(ev.side);
+            expect(drive(ev, ev.side * 1.5)).toMatchObject({ kind: 'bus', strike: true });
+            expect(drive(ev2, -ev2.side * 1.5)).toBeNull();
+        }
+        expect([...sides].sort()).toEqual([-1, 1]); // бывает и слева, и справа
     });
 
     it('магнитный кран роняет кузов в свою полосу, соседняя свободна', () => {
