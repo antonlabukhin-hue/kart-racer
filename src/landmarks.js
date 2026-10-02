@@ -155,17 +155,18 @@ function createBusPullout(trackWidth, z0) {
     const g = new THREE.Group();
     const hw = trackWidth / 2;
     const bus = busModel();
-    const parkX = hw + 1.9, laneX = 1.5;                      // стоит справа на остановке, выезжает в правую полосу
+    const side = Math.random() < 0.5 ? -1 : 1;                // остановка справа или слева — выезжает в крайнюю полосу своей стороны
+    const parkX = side * (hw + 1.9), laneX = side * 1.5;
     bus.position.set(parkX, 0, z0);
     g.add(bus);
     // остановка
-    box(g, 0x6a6e76, hw + 3.9, 1.2, z0 + 1.5, 0.1, 2.4, 3.2);
-    box(g, 0x3a6ab0, hw + 3.4, 2.45, z0 + 1.5, 1.2, 0.1, 3.4);
+    box(g, 0x6a6e76, side * (hw + 3.9), 1.2, z0 + 1.5, 0.1, 2.4, 3.2);
+    box(g, 0x3a6ab0, side * (hw + 3.4), 2.45, z0 + 1.5, 1.2, 0.1, 3.4);
     const sign = textPlate(['А', 'ОСТАНОВКА'], 0.9, 0.9, '#f2f2f2', '#1a3a8a');
-    sign.position.set(hw + 3.5, 2.2, z0 + 3.3); g.add(sign);
+    sign.position.set(side * (hw + 3.5), 2.2, z0 + 3.3); g.add(sign);
     const st = { state: 'park', x: parkX, t: 0, hitCd: 0 };
     return {
-        kind: 'bus', group: g, z: z0, debug: st,
+        kind: 'bus', group: g, z: z0, debug: st, side: side,
         update: function(ctx) {
             st.t += ctx.dt; st.hitCd -= ctx.dt;
             const blink = Math.floor(st.t * 3) % 2 === 0;
@@ -173,9 +174,9 @@ function createBusPullout(trackWidth, z0) {
             const dist = ctx.z - z0;
             if (st.state === 'park' && dist > 0 && dist < ctx.ups * 2.4 + 6) st.state = 'out';
             if (st.state === 'out') {
-                st.x = Math.max(laneX, st.x - 2.4 * ctx.dt);
+                st.x = side > 0 ? Math.max(laneX, st.x - 2.4 * ctx.dt) : Math.min(laneX, st.x + 2.4 * ctx.dt);
                 bus.position.x = st.x;
-                bus.rotation.y = st.x > laneX + 0.05 ? 0.12 : 0;
+                bus.rotation.y = Math.abs(st.x - laneX) > 0.05 ? 0.12 * side : 0; // нос — к дороге
             }
             if (st.hitCd <= 0 && ctx.y < 1.8 && Math.abs(ctx.z - z0) < 2.7 && Math.abs(ctx.x - st.x) < 1.25) {
                 st.hitCd = 3;

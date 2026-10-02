@@ -50,7 +50,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
@@ -6612,12 +6612,12 @@ function startGaragePreview(carId) {
                 }
 
                 try { mergeCarParts(car, { all: true }); } catch (e) {} // 10–19 деталей → 5–6 (колёса не крутятся, перекраски нет)
-                const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2;
+                const hug = hugFor(lane), x = carX(lane, hug); // по центру полосы или вплотную к обочине (src/traffic-lanes.js)
                 car.position.set(x, 0.1, z);
                 scene.add(car);
                 
                 return {
-                    mesh: car, x: x, z: z, lane: lane,
+                    mesh: car, x: x, z: z, lane: lane, hug: hug,
                     speed: 0.012 + Math.random() * 0.03,
                     active: true,
                     laneChangeTimer: 2 + Math.random() * 4,
@@ -6715,7 +6715,7 @@ function startGaragePreview(carId) {
                     group.add(mesh);
                 }
                 
-                const x = -TRACK_WIDTH / 2 + 0.5 + Math.floor(Math.random() * 3) * 2;
+                const x = laneX(Math.floor(Math.random() * 3));
                 group.position.set(x, 0, z);
                 scene.add(group);
                 
@@ -6924,13 +6924,13 @@ function startGaragePreview(carId) {
             const BASE_FOV = (window.__portraitMode) ? 48 : (window.__isMobile ? 52 : 55);
 
             function createNitroArrows(z, lane) {
-                const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2, group = nitroArrowsMesh(); // меш — src/pickups.js
+                const x = laneX(lane), group = nitroArrowsMesh(); // меш — src/pickups.js
                 group.position.set(x, 0, z);
                 scene.add(group);
                 return { mesh: group, x, z, type: 'nitro', active: true, bob: 0, radius: 0.7 };
             }
             function createHeartGum(z, lane) {
-                const x = -TRACK_WIDTH / 2 + 0.5 + lane * 2, group = heartGumMesh();
+                const x = laneX(lane), group = heartGumMesh();
                 group.position.set(x, 0, z);
                 scene.add(group);
                 return { mesh: group, x, z, type: 'gum', active: true, bob: Math.random() * Math.PI * 2, radius: 0.55 };
@@ -9066,11 +9066,11 @@ function startGaragePreview(carId) {
                             car.laneChangeProgress = 0;
                             car.isChangingLane = false;
                             car.lane = car.targetLane;
-                            car.x = -TRACK_WIDTH / 2 + 0.5 + car.lane * 2;
+                            car.x = carX(car.lane, car.hug); car._hug0 = null;
                             car.mesh.position.x = car.x;
                         } else {
-                            const currentX = -TRACK_WIDTH / 2 + 0.5 + car.lane * 2;
-                            const targetX = -TRACK_WIDTH / 2 + 0.5 + car.targetLane * 2;
+                            const currentX = carX(car.lane, car._hug0 != null ? car._hug0 : car.hug);
+                            const targetX = carX(car.targetLane, car.hug);
                             car.x = currentX + (targetX - currentX) * car.laneChangeProgress;
                             car.mesh.position.x = car.x;
                         }
@@ -9087,9 +9087,9 @@ function startGaragePreview(carId) {
                         let shouldCut = false;
                         if (ahead > -8 && ahead < 25) {
                             // Машина относительно близко — чаще лезет в полосу игрока
-                            const playerLaneApprox = Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2);
+                            const playerLaneApprox = laneOf(xPos);
                             const clampedLane = Math.max(0, Math.min(2, playerLaneApprox));
-                            if (car.lane !== clampedLane && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK * (ABILITY === 'boss' ? 0.1 : 1)) { // «Шестисотому» уступают
+                            if (car.lane !== clampedLane && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK * (ABILITY === 'boss' ? 0.1 : 1)) { car._hug0 = car.hug; car.hug = hugFor(clampedLane); // «Шестисотому» уступают
                                 car.targetLane = clampedLane;
                                 car.isChangingLane = true;
                                 car.laneChangeProgress = 0;
@@ -9104,13 +9104,13 @@ function startGaragePreview(carId) {
                                 // С шансом целимся в игрока, иначе случайная полоса
                                 let newLane;
                                 if (Math.random() < 0.55) {
-                                    const playerLaneApprox = Math.round((xPos + TRACK_WIDTH / 2 - 0.5) / 2);
+                                    const playerLaneApprox = laneOf(xPos);
                                     newLane = Math.max(0, Math.min(2, playerLaneApprox));
                                 } else {
                                     newLane = Math.floor(Math.random() * 3);
                                 }
                                 if (newLane !== car.lane) {
-                                    car.targetLane = newLane;
+                                    car._hug0 = car.hug; car.hug = hugFor(newLane); car.targetLane = newLane;
                                     car.isChangingLane = true;
                                     car.laneChangeProgress = 0;
                                 }
@@ -9142,8 +9142,8 @@ function startGaragePreview(carId) {
                     if (INF ? (car.z > zPos + 45 || car.z < zPos - 420) : car.z < -TRACK_LENGTH / 2 - 10) {
                         car.z = INF ? zPos - 170 - Math.random() * 220 : TRACK_LENGTH / 2 + 10 + Math.random() * 20;
                         car.lane = Math.floor(Math.random() * 3);
-                        car.targetLane = car.lane;
-                        car.x = -TRACK_WIDTH / 2 + 0.5 + car.lane * 2;
+                        car.targetLane = car.lane; car.hug = hugFor(car.lane);
+                        car.x = carX(car.lane, car.hug);
                         car.mesh.position.set(car.x, 0.1, car.z);
                         car.speed = (0.01 + Math.random() * 0.025 * (1 + progress * 0.3)) * infTrafficK;
                         car.laneChangeTimer = 2 + Math.random() * 3;
