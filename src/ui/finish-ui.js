@@ -9,7 +9,7 @@
  */
 export function finishActions(o) {
     const win = o.state === 'win';
-    const garage = { id: 'finish-garage-btn', label: o.canUpgrade ? '🔧 Гараж · можно прокачать' : '🔧 Гараж', kind: 'secondary', hot: !!o.canUpgrade };
+    const garage = { id: 'finish-garage-btn', label: o.canUpgrade ? '🔧 Гараж<small>можно прокачать</small>' : '🔧 Гараж', kind: 'secondary', hot: !!o.canUpgrade };
     const retry = { id: 'finish-restart-btn', label: '🔄 Повторить', kind: 'secondary' };
     const menu = { id: 'finish-menu-btn', label: '🏠 В меню', kind: 'ghost' };
     const list = [];
@@ -110,4 +110,21 @@ export function retentionHtml(r) {
         }).join('') + '</div>';
     }
     return h;
+}
+
+/**
+ * Итоги главы кампании (победа и проигрыш) — одна раскладка: баннер, заголовок и звёзды, итог заезда, реплика, кнопки.
+ * На телефоне — столбиком (кнопки внизу), горизонтально и на компьютере — два столбца: слева глава, справа кнопки и итог.
+ * Всё уже собранное — готовым HTML (stars, result, quote, actions); head и track — экранированные строки.
+ */
+export function campFinishHtml(o) {
+    // два столбца-обёртки: горизонтально каждый идёт своим потоком (без пустот), на телефоне они «растворяются» (display: contents)
+    return '<div class="fc-card' + (o.win ? ' win' : ' lose') + '"><div class="fc-left">'
+        + '<div class="fc-banner"><img src="images/villain_finish.jpg" alt="" '
+        + 'onerror="this.onerror=null;this.src=\'images/villain_finish.png\';this.onerror=function(){this.parentNode.style.display=\'none\';};" />'
+        + '<span>НЕИЗВЕСТНЫЙ ГОЛОС · ЗАКРЫТЫЙ КАНАЛ</span></div>'
+        + '<div class="fc-main"><div class="fc-title">' + escT(o.head) + '</div><div class="fc-track">«' + o.track + '»</div>' + (o.stars || '') + '</div>'
+        + '<div class="fc-quote">' + (o.quote || '') + '</div></div>'
+        + '<div class="fc-right">' + (o.actions || '') + '<div class="fc-result">' + (o.result || '') + '</div></div>'
+        + '</div>';
 }
