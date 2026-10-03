@@ -16,6 +16,8 @@ test('слово дня и таблица рекордов', async ({ page }) =>
     await page.keyboard.down('w');
     // ближайшая буква впереди — машину на неё
     await expect.poll(() => page.evaluate(() => window.__raceDebug.collectibles.some(c => c.type === 'letter' && c.active)), { timeout: 20_000 }).toBe(true);
+    // плашку «БУКВА» на медленной машине может сразу сменить другая — запоминаем сам факт появления
+    await page.evaluate(() => { window.__sawLetter = false; new MutationObserver(() => { const p = document.querySelector('.big-plaque'); if (p && p.textContent.includes('БУКВА')) window.__sawLetter = true; }).observe(document.body, { childList: true, subtree: true, characterData: true }); });
     const got = await page.evaluate(async () => {
         const g = window.__raceDebug;
         const c = g.collectibles.filter(c => c.type === 'letter' && c.active && c.z < g.z - 3).sort((a, b) => b.z - a.z)[0];
@@ -23,7 +25,7 @@ test('слово дня и таблица рекордов', async ({ page }) =>
         return JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].wordDay.got;
     });
     expect(got).toBe(1);
-    await expect(page.locator('.big-plaque')).toContainText('БУКВА');
+    await expect.poll(() => page.evaluate(() => window.__sawLetter)).toBe(true);
     await page.keyboard.up('w');
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await expect(page.locator('#finish-screen')).toContainText('Место на неделе: #', { timeout: 20_000 });

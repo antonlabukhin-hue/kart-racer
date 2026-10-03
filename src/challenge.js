@@ -1,5 +1,5 @@
 /**
- * «Вызов другу» по «Звериному часу»: ссылка с сидом, счётом, волной и именем.
+ * «Вызов другу» по «Звериному часу» и бесконечной трассе (m=inf, счёт — метры): ссылка с сидом, счётом, волной и именем.
  * Друг открывает ссылку — в меню баннер «Вызов от …», забег идёт по тому же сиду,
  * на финише видно, побит ли вызов. Сервера нет: всё в адресе ссылки.
  * Плюс лучший результат «Звериного часа дня» на устройстве (dailyBest).
@@ -18,6 +18,7 @@ export function challengeUrl(base, c) {
     q.set('ch', seedCode(c.seed));
     q.set('s', String(Math.max(0, Math.min(MAX_SCORE, Math.round(c.score || 0)))));
     if (c.wave) q.set('w', String(Math.max(1, Math.min(99, c.wave | 0))));
+    if (c.mode === 'inf') q.set('m', 'inf'); // бесконечная трасса: s — метры (без m — «Звериный час», s — очки)
     const n = cleanName(c.name);
     if (n) q.set('n', n);
     return String(base).split('?')[0].split('#')[0] + '?' + q.toString();
@@ -35,6 +36,7 @@ export function parseChallenge(search) {
         seed: seed,
         score: isFinite(score) ? Math.max(0, Math.min(MAX_SCORE, score)) : 0,
         wave: isFinite(wave) ? Math.max(1, Math.min(99, wave)) : null,
+        mode: q.get('m') === 'inf' ? 'inf' : 'beast',
         name: cleanName(q.get('n')) || 'Друг'
     };
 }
@@ -42,7 +44,7 @@ export function parseChallenge(search) {
 /** Строка поиска без параметров вызова (остальные — например, ?start= в тестах — сохраняются) */
 export function stripChallenge(search) {
     const q = new URLSearchParams(search || '');
-    ['ch', 's', 'w', 'n'].forEach(function(k) { q.delete(k); });
+    ['ch', 's', 'w', 'n', 'm'].forEach(function(k) { q.delete(k); });
     const t = q.toString();
     return t ? '?' + t : '';
 }

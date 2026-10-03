@@ -226,3 +226,25 @@ export function weekTheme(now) {
     const th = THEMES[((week % THEMES.length) + THEMES.length) % THEMES.length];
     return { theme: th, short: WEEK_SHORT[th.id] || th.name };
 }
+
+/** Генератор [0,1) по сиду (mulberry32): у одинакового сида — одинаковая раскладка трассы */
+export function seededRnd(seed) {
+    let a = (seed >>> 0) || 1;
+    return function() {
+        a = (a + 0x6D2B79F5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+/**
+ * Выполнить fn, пока Math.random — это rnd (постановочные участки круга, src/landmarks.js и main.js populateLap, берут Math.random;
+ * по сиду они должны встать так же — «Заезд дня» и вызов другу). Код синхронный — подмена не утекает.
+ */
+export function withRandom(rnd, fn) {
+    const prev = Math.random;
+    Math.random = rnd;
+    try { return fn(); } finally { Math.random = prev; }
+}

@@ -435,7 +435,8 @@ test('цели на дороге: растяжка рекорда и щиты с
     const arch = await page.evaluate(() => window.__raceDebug.scene.children.some(o => o.isGroup && Math.abs(o.position.z - (window.__raceDebug.startZ - 900)) < 0.5));
     expect(arch).toBe(true);
     await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 960); });
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.scene.children.some(o => o.isGroup && Math.abs(o.position.z - (window.__raceDebug.startZ - 900)) < 0.5))).toBe(false);
+    // позади — убраны (впереди до 960 + 320 м целей нет); на медленных кадрах — с запасом
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.goals), { timeout: 15_000 }).toBe(0);
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });
@@ -482,5 +483,107 @@ test('погоня ГАИ: падение в разлом — без погон�
     expect(res).toBe(1);
     await page.waitForTimeout(500);
     await expect(page.locator('.police-hud')).toHaveCount(0);
+    expect(problems).toEqual([]);
+});
+
+// «почти» на итогах: до рекорда не хватило — строка над наградами, тянет нажать «Повторить»
+test('итоги бесконечной трассы: «до рекорда не хватило N м»', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.infinite = { best: 400, bestScore: 0, runs: 1 }; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 300); });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('#finish-screen .fin-nearly')).toContainText('До рекорда не хватило', { timeout: 10_000 });
+    expect(problems).toEqual([]);
+});
+
+// машина дня: в витрине −30% и тест-драйв (раз в день); на итогах — способность и «Купить сегодня»
+test('машина дня: тест-драйв и покупка со скидкой на итогах', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => { const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1')); l.forEach(p => { p.season.chips = 100000; }); localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l)); });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    const tile = page.locator('.shop-car-btn', { hasText: '−30%' });
+    await expect(tile).toHaveCount(1);
+    const carId = await tile.getAttribute('data-car');
+    await tile.click();
+    await expect(page.locator('#shop-plate')).toContainText('Машина дня');
+    await expect(page.locator('#shop-try')).toBeVisible();
+    await page.locator('#shop-try').click();
+    await waitRacing(page);
+    await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 200); });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('#finish-screen .fin-testdrive')).toContainText('Тест-драйв', { timeout: 10_000 });
+    await page.locator('#finish-buy-car').click();
+    await expect(page.locator('#finish-buy-car')).toContainText('твоя');
+    const p = await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0]);
+    expect(p.unlockedCars).toContain(carId);
+    expect(p.carDay.tried).toBe(true);
+    expect(problems).toEqual([]);
+});
+
+// «Заезд дня»: в меню карточка с условием дня; одна попытка; на итогах — результат и место; второй раз — «попытка потрачена»
+test('заезд дня: одна попытка, результат и место на итогах', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#mm-daily').click();
+    await expect(page.locator('.daily-modal .dl-rule')).toBeVisible();
+    await page.locator('.daily-modal .dl-go').click();
+    await waitRacing(page);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].daily.started)).toBe(true);
+    await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 250); });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('#finish-screen .fin-daily')).toContainText('Заезд дня', { timeout: 10_000 });
+    await expect(page.locator('#fin-daily-place')).toContainText('место #1');
+    await expect(page.locator('#finish-challenge-btn')).toHaveCount(0); // «Заезд дня» — без вызова
+    await page.locator('#finish-menu-btn').click();
+    await expect(page.locator('#mm-daily-text')).toContainText('✔');
+    await page.locator('#mm-daily').click();
+    await expect(page.locator('.daily-modal .dl-go')).toHaveCount(0);
+    await expect(page.locator('.daily-modal .dl-done')).toContainText('новая завтра');
+    expect(problems).toEqual([]);
+});
+
+// вызов другу в бесконечной трассе: та же трасса по сиду, друг — цель на дороге, итог вызова
+test('вызов другу в бесконечной трассе: ссылка, та же трасса, итог', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    const layout1 = await page.evaluate(() => window.__raceDebug.obstacles.slice(0, 12).map(o => Math.round(o.z) + ':' + o.x).join('|'));
+    await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 300); });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await page.locator('#finish-challenge-btn').click();
+    const url = await page.evaluate(() => window.__lastChallengeUrl);
+    expect(url).toContain('m=inf');
+    // друг открывает ссылку
+    await page.goto(url.replace(/^https?:\/\/[^/]+/, ''));
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await expect(page.locator('#challenge-sub')).toContainText('Бесконечная трасса');
+    await page.locator('#challenge-accept').click();
+    await waitRacing(page);
+    const layout2 = await page.evaluate(() => window.__raceDebug.obstacles.slice(0, 12).map(o => Math.round(o.z) + ':' + o.x).join('|'));
+    expect(layout2).toBe(layout1);
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('#finish-screen .fin-daily')).toContainText('Вызов от Тестер', { timeout: 10_000 });
     expect(problems).toEqual([]);
 });

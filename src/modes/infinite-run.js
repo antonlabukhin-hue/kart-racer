@@ -11,9 +11,11 @@
  *   состояние заезда — геттеры: z, x, speed, strikes, state, stats, risk, powers, headstartTo, maxSpeed, nitro, animals, snowfall, chunks,
  *   ctx.addNitro(sec), ctx.setRamp({ speedK, laneK, trafficK }), ctx.setTheme(theme), ctx.startLap(k, easy) → генератор расстановки круга,
  *   показ: ctx.plaque(t, s, cls), ctx.story(t), ctx.popup(t), ctx.say(id); игрок: ctx.player, ctx.carPreset; ctx.online — грузить мировую таблицу.
+ *   ctx.seed — сид раскладки (одинаковый сид — одинаковая трасса: «Заезд дня», вызов другу), ctx.rule — условие «Заезда дня» (src/daily-run.js),
+ *   ctx.fair — честный заезд (день, вызов): без «горячего старта»; ctx.rival — { name, dist } друга из вызова — цель на дороге.
  */
 import * as THREE from 'three';
-import { themeAt, rampAt, planStretch, weekTheme, warmStart } from '../infinite.js';
+import { themeAt, rampAt, planStretch, weekTheme, warmStart, seededRnd, withRandom } from '../infinite.js';
 import { dropBusy } from '../patterns.js';
 import { createLaneCone, createCrateMesh, createSpikesMesh } from '../hazards.js';
 import { wordState, createLetterToken } from '../word-day.js';
@@ -41,14 +43,16 @@ export function createInfiniteRun(ctx) {
     const player = ctx.player;
     const word = player ? wordState(player, dayKey(new Date())) : {}; // «Слово дня» (src/word-day.js)
     const me = player ? player.name : '', best = player && player.infinite ? player.infinite.best || 0 : 0;
-    const warm = warmStart(best); // «горячий старт»: сложность — от рекорда
+    const rule = ctx.rule || {};
+    const warm = rule.warm != null ? rule.warm : ctx.fair ? 0 : warmStart(best); // «горячий старт»: сложность — от рекорда (в честном заезде — нет)
     const weekTh = weekTheme().theme; // пейзаж недели: «Е» за две
     const patEnds = [], patHit = new Set(); // узоры: где кончаются и какие задеты
     const roots = [], box = new THREE.Box3(); // объекты кругов в сцене — для уборки позади
     const police = createPolice(scene, function() { ctx.say('police'); }, function() { const s = ctx.stats; s.escapes = (s.escapes || 0) + 1; });
     // цели «До соперника N м»: таблица устройства и соперники сразу, мировая — когда придёт с сервера
-    const chase = player ? { targets: chaseTargets(topRuns(loadBoard(), 'all', Date.now(), me), me, best), passed: new Set() } : null;
-    if (chase && ctx.online) fetchTop('all').then(function(list) { if (list) chase.targets = chaseTargets(topRuns(list.concat(loadBoard()), 'all', Date.now(), me), me, best); });
+    const withRival = function(t) { return ctx.rival ? t.concat([{ name: ctx.rival.name, dist: ctx.rival.dist }]).sort(function(a, b) { return a.dist - b.dist; }) : t; }; // друг из вызова — тоже цель
+    const chase = player ? { targets: withRival(chaseTargets(topRuns(loadBoard(), 'all', Date.now(), me), me, best)), passed: new Set() } : null;
+    if (chase && ctx.online) fetchTop('all').then(function(list) { if (list) chase.targets = withRival(chaseTargets(topRuns(list.concat(loadBoard()), 'all', Date.now(), me), me, best)); });
     const roadGoals = chase ? createRoadGoals(scene, START_Z, ctx.TRACK_WIDTH, function() { return chase.targets; }) : null;
     const ringChain = createRingChain();
     const themeEv = createThemeEvents({
@@ -65,13 +69,14 @@ export function createInfiniteRun(ctx) {
         reward: function(e) { const s = ctx.stats; s.eChips = (s.eChips || 0) + e; s.themeEvents = (s.themeEvents || 0) + 1; riskEvent(ctx.risk, 'pattern'); }
     });
     let world = null, theme = null, headShown = false, warmShown = false, feverOn = false;
-    let lapK = 0, frame = 0, stage = 0, fresh = [], gen = null;
+    let lapK = 0, frame = 0, stage = 0, fresh = [], gen = null, genRnd = null;
 
     /** План круга k → предметы в сцене и списках заезда (мимо постановочных участков; узор — целиком или никак) */
     function planLap(k) {
         const d0 = k * ctx.span;
         // vhsMul — от пресета, не ABILITY: план круга 0 строится раньше её объявления
-        const plan = planStretch(d0 + (k ? 0 : 70), d0 + ctx.span, Math.random, { slide: 'slide', nextGap: Infinity,
+        const rnd = ctx.seed ? seededRnd((ctx.seed ^ Math.imul(k + 1, 0x9E3779B1)) >>> 0) : Math.random; // по сиду — одна и та же трасса
+        const plan = planStretch(d0 + (k ? 0 : 70), d0 + ctx.span, rnd, { slide: 'slide', nextGap: Infinity,
             vhsMul: (ctx.carPreset.ability && ctx.carPreset.ability.id === 'lucky') ? 2 : 1, letters: !!word.next, warm: warm, patId: k * 1000 }).items;
         dropBusy(plan, function(d) { const z = START_Z - d; return ctx.busy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; }); }).forEach(function(it) {
             const z = START_Z - it.d;
@@ -92,10 +97,10 @@ export function createInfiniteRun(ctx) {
                 (it.kind === 'crate' ? L.collectibles : L.obstacles).push({ mesh: m, x: LX[it.lane], z: z, type: it.kind, active: true, bob: 0, radius: 0.75, pat: it.pat });
                 return;
             }
-            if (it.kind === 'obstacle') { c = make.obstacle(z, it.type === 'slide' ? themeAt(it.d).theme.slide : it.type); L.obstacles.push(c); }
+            if (it.kind === 'obstacle') { c = make.obstacle(z, it.type === 'slide' ? (rule.slide || themeAt(it.d).theme.slide) : it.type); L.obstacles.push(c); }
             else {
-                // случайное нитро — не ближе 45 ед. к арке с падающим грузом
-                if (it.kind === 'nitro' && ctx.arch.some(function(az) { return Math.abs(az - z) < 45; })) return;
+                // случайное нитро — не ближе 45 ед. к арке с падающим грузом; «Без нитро» — нет совсем
+                if (it.kind === 'nitro' && (rule.noNitro || ctx.arch.some(function(az) { return Math.abs(az - z) < 45; }))) return;
                 c = make.collectible(z, it.kind); L.collectibles.push(c);
             }
             c.x = it.x != null ? it.x : LX[it.lane]; c.pat = it.pat; c.mesh.position.x = c.x;
@@ -139,7 +144,8 @@ export function createInfiniteRun(ctx) {
             return world;
         },
         /** Плотность зверей по километрам — для src/animals.js densityFn */
-        animalDensity: function() { return rampAt(world ? world.dist : 0, warm).animals; },
+        animalDensity: function() { return rampAt(world ? world.dist : 0, warm).animals * (rule.animalMul || 1); },
+        rule: rule,
         /** Узор задет (препятствие с it.pat не перепрыгнуто) */
         hitPattern: function(id) { patHit.add(id); },
         /** Каждый кадр заезда */
@@ -187,11 +193,12 @@ export function createInfiniteRun(ctx) {
             }
             // сложность по километрам
             const rp = rampAt(d, warm);
-            ctx.setRamp({ speedK: rp.speed, laneK: Math.max(0, Math.min(1, (d + warm - 700) / 2500)), trafficK: rp.trafficSpeed, maxAnimals: rp.maxAnimals, animalSpeed: rp.animalSpeed, traffic: rp.traffic });
+            ctx.setRamp({ speedK: rp.speed * (rule.speedMul || 1), laneK: Math.max(0, Math.min(1, (d + warm - 700) / 2500)), trafficK: rp.trafficSpeed,
+                maxAnimals: Math.round(rp.maxAnimals * (rule.animalMul || 1)), animalSpeed: rp.animalSpeed, traffic: Math.round(rp.traffic * (rule.trafficMul || 1)) + (rule.trafficAdd || 0) });
             // следующий круг расстановки — за 450 ед. до его начала (дальше тумана); по шагу за кадр — без рывка
             const k = Math.floor((d + 450) / ctx.span);
             if (gen) {
-                if (step(function() { return gen.next().done; })) { gen = null; stage = 1; }
+                if (step(function() { return genRnd ? withRandom(genRnd, function() { return gen.next().done; }) : gen.next().done; })) { gen = null; stage = 1; }
             } else if (stage === 1) {
                 step(function() { planLap(lapK); });
                 stage = 2;
@@ -202,6 +209,7 @@ export function createInfiniteRun(ctx) {
                 fresh = []; stage = 0;
             } else if (k > lapK) {
                 lapK = k;
+                genRnd = ctx.seed ? seededRnd((ctx.seed ^ Math.imul(k + 7, 0x85EBCA6B)) >>> 0) : null; // постановочные участки — тоже по сиду
                 gen = ctx.startLap(k, LAP_MAPS[k % 3], k < 2 && !warm ? 'easy' : 'medium'); // первые круги — лёгкая расстановка
             }
             if (++frame % 60 === 0) prune(z + 70);
