@@ -70,3 +70,25 @@ describe('конец узора', () => {
         });
     });
 });
+
+import { chapterPatterns, CHAPTER_T } from '../../src/patterns.js';
+describe('узоры в главе', () => {
+    it('только на участке до босса, не налезают; на «лёгкой» — без шипов', () => {
+        const items = chapterPatterns(1800, seq(4), { t: CHAPTER_T.easy, from: 0.07, to: 0.4, gap: 260 });
+        const ds = items.map(i => i.d);
+        expect(Math.min(...ds)).toBeGreaterThanOrEqual(1800 * 0.07 - 12);
+        expect(Math.max(...ds)).toBeLessThanOrEqual(1800 * 0.4 + 5);
+        expect(new Set(items.map(i => i.pat)).size).toBeGreaterThanOrEqual(2);
+        expect(items.some(i => i.kind === 'spikes')).toBe(false);
+        expect(Array.from({ length: 10 }, (_, k) => chapterPatterns(1800, seq(20 + k), { t: 1, spikesOk: true, to: 0.95 })).some(it => it.some(i => i.kind === 'spikes'))).toBe(true);
+    });
+});
+describe('узоры в главе: свободные окна', () => {
+    it('узор не встаёт на занятый участок, а сдвигается за него', () => {
+        const busy = [[150, 260]];
+        const free = (a, b) => busy.every(z => b < z[0] || a > z[1]);
+        const items = chapterPatterns(1020, seq(7), { t: 0.3, from: 0.07, to: 0.6, free });
+        expect(items.length).toBeGreaterThan(0);
+        items.forEach(i => expect(i.d < 150 - 3 || i.d > 260).toBe(true));
+    });
+});

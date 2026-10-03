@@ -165,7 +165,7 @@ test('бесконечная трасса: ящик «?» разбивается
     await expect(page.locator('.big-plaque')).toBeVisible();
     // вперёд за 600 м — там уже шипы
     await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 700); });
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.obstacles.some(o => o.type === 'spikes' && o.active)), { timeout: 15_000 }).toBe(true);
+    await expect.poll(() => page.evaluate(() => { const g = window.__raceDebug; return g.obstacles.some(o => o.type === 'spikes' && o.active && o.z < g.z - 3); }), { timeout: 15_000 }).toBe(true); // шипы — впереди машины
     await page.waitForTimeout(1500); // разогнаться
     const hit = await page.evaluate(async () => {
         const g = window.__raceDebug;

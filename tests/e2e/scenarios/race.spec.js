@@ -93,6 +93,8 @@ test('кампания: подарок за главу ведёт в гараж 
     await page.keyboard.down('w');
     await expect(page.locator('#finish-screen')).toContainText('ГЛАВА 1 ПРОЙДЕНА', { timeout: 150_000 });
     await page.keyboard.up('w');
+    // ★★★ без аварий — наклейка «Досье курьера» с куском истории (src/stickers.js)
+    await expect(page.locator('#finish-screen .fin-sticker')).toContainText('Наклейка «Выезд»');
     await page.locator('#finish-gift-btn').click();
     await expect(page.locator('#garage-screen')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.gift-modal')).toContainText('Такси 90-х');
@@ -103,5 +105,9 @@ test('кампания: подарок за главу ведёт в гараж 
     await page.locator('#garage-panel-parts .color-swatch[data-paint="yellow"]').click();
     await expect(page.locator('#garage-panel-parts .color-swatch[data-paint="yellow"]')).not.toHaveClass(/gift-glow/);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].carLoadout.newGifts)).toEqual([]);
+    // наклейка — в «Трофеях», по нажатию — история
+    await page.locator('.garage-tab[data-gtab="trophies"]').click();
+    await page.locator('.sticker-set [data-sticker="c01"]').click();
+    await expect(page.locator('.sticker-set .sticker-lore')).toContainText('антидот');
     expect(problems).toEqual([]);
 });

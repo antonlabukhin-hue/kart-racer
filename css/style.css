@@ -5946,3 +5946,16 @@ body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size:
 .fin-daily b { color: #ffe066; }
 .fin-daily small { display: block; margin-top: 2px; font-size: 12px; color: #e0cfae; }
 .mm-extras .mm-extra.mm-daily { grid-column: 1 / -1; }
+
+/* наклейки за ★★★ и рекорды глав (src/stickers.js, src/chapter-records.js) */
+.fin-sticker { display: flex; gap: 10px; align-items: center; margin: 8px 0; padding: 8px 10px; border-radius: 12px; text-align: left;
+    background: linear-gradient(90deg, rgba(255,210,60,0.2), rgba(255,160,0,0.06)); border: 1.5px solid #ffd23c; animation: uiPop .45s .3s both; }
+.fin-sticker i { font-style: normal; font-size: 30px; }
+.fin-sticker b { display: block; color: #ffe066; font-size: 15px; }
+.fin-sticker small { display: block; color: #f0e6d8; font-size: 12px; line-height: 1.35; }
+.fin-sticker em { display: block; margin-top: 3px; color: #7dff9a; font-style: normal; font-weight: 900; font-size: 13px; }
+.fin-world { margin: 4px 0; font-size: 13px; font-weight: 800; color: #9ad8ff; min-height: 1em; }
+.ct-best { margin-top: 2px; font-size: 12px; font-weight: 800; color: #ffd23c; }
+.sticker-set .sticker-lore { margin-top: 8px; padding: 8px 10px; border-radius: 10px; font-size: 13px; line-height: 1.4; color: #f0e6d8; background: rgba(255,210,60,0.1); border: 1px solid rgba(255,210,60,0.4); text-align: left; }
+.sticker-set .bs-grid span.got { cursor: pointer; }
+.fin-world:empty { display: none; }
