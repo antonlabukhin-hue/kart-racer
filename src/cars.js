@@ -916,7 +916,8 @@ export function buildShowroomCar(carId) {
             cx.fillStyle = '#f4f4f0'; cx.fillRect(0, 0, 256, 56);
             cx.strokeStyle = '#111'; cx.lineWidth = 4; cx.strokeRect(2, 2, 252, 52);
             cx.fillStyle = '#111'; cx.font = 'bold 36px Arial, sans-serif'; cx.textBaseline = 'middle';
-            const txt = { cheburashka: 'К 101 АР', kirpich: 'Н 404 ИВ', turbo: 'В 024 ГА', zubilo: 'Е 109 ЗБ', buhanka: 'У 452 АЗ', gorbaty: 'З 965 ЗА', pirozhok: 'Х 271 ЛБ', rafik: 'С 203 РФ', shestisot: 'А 600 АА', raketa: 'Р 911 КТ', saray: 'Д 104 АЧ', gazel: 'Г 330 ЧЛ', mechta: 'М 777 ЕЧ' }[carId] || 'А 000 АА';
+            // номера — вымышленные: в каждом есть буква, которой на настоящих российских номерах не бывает (там только А В Е К М Н О Р С Т У Х), — с чужой машиной не совпадут
+            const txt = { cheburashka: 'К 101 ЯР', kirpich: 'Н 404 ИВ', turbo: 'В 024 ГА', zubilo: 'Е 109 ЗБ', buhanka: 'У 452 АЗ', gorbaty: 'З 965 ЗА', pirozhok: 'Х 271 ЛБ', rafik: 'С 203 РФ', shestisot: 'А 600 ЯЯ', raketa: 'Р 911 ЖТ', saray: 'Д 104 АЧ', gazel: 'Г 330 ЧЛ', mechta: 'М 777 ЕЧ' }[carId] || 'А 000 АА';
             cx.fillText(txt, 12, 30);
             cx.fillRect(196, 4, 2, 48);
             cx.font = 'bold 22px Arial, sans-serif'; cx.fillText('25', 210, 22);
