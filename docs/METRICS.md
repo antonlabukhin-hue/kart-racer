@@ -78,3 +78,50 @@ from sessions group by ver, platform order by max(created_at) desc;
 ```
 
 Что считать хорошим для казуальной браузерной игры: D1 ≥ 30 %, D7 ≥ 10–12 %, средняя сессия ≥ 6–8 минут.
+
+## 3. Воронка глав кампании — где бросают (один раз: SQL Editor → Run)
+
+Игра (`src/metrics.js` → `chapterRow`) отправляет по событию на каждую попытку главы: `start` — начал, `win` — прошёл,
+`lose` — 5 аварий, `timeout` — время вышло, `quit` — вышел посреди заезда. Плюс аварии, время и сколько трассы проехал.
+
+```sql
+create table if not exists public.chapter_events (
+  id         bigint generated always as identity primary key,
+  pid        text not null,
+  chapter    text not null,
+  kind       text not null,
+  day        date not null,
+  strikes    int  not null default 0,
+  time_s     int  not null default 0,
+  progress   int  not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists chapter_events_ch on public.chapter_events (chapter, kind);
+alter table public.chapter_events enable row level security;   -- прямого доступа нет: только функция ниже
+
+create or replace function public.chapter_put(
+  p_pid text, p_chapter text, p_kind text, p_day date, p_strikes int, p_time int, p_progress int) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_pid !~ '^[0-9a-f]{16}$' or p_chapter !~ '^c[0-9]{2}$' or p_kind not in ('start', 'win', 'lose', 'timeout', 'quit') then raise exception 'bad'; end if;
+  if p_day > current_date + 1 or p_day < current_date - 2 then raise exception 'bad day'; end if;
+  insert into chapter_events (pid, chapter, kind, day, strikes, time_s, progress)
+  values (p_pid, p_chapter, p_kind, p_day, least(greatest(p_strikes, 0), 20), least(greatest(p_time, 0), 3600), least(greatest(p_progress, 0), 100));
+end $$;
+revoke all on function public.chapter_put from public;
+grant execute on function public.chapter_put to anon;
+```
+
+**Где бросают** (по главам: сколько игроков начали, прошли, доля побед, где чаще всего проигрывают):
+
+```sql
+select chapter as "глава",
+  count(distinct pid) filter (where kind = 'start') as "начали (игроков)",
+  count(distinct pid) filter (where kind = 'win') as "прошли (игроков)",
+  round(100.0 * count(*) filter (where kind = 'win') / nullif(count(*) filter (where kind = 'start'), 0), 1) as "побед из попыток %",
+  count(*) filter (where kind = 'lose') as "проигрыши (аварии)",
+  count(*) filter (where kind = 'timeout') as "время вышло",
+  count(*) filter (where kind = 'quit') as "вышли",
+  round(avg(progress) filter (where kind in ('lose', 'timeout', 'quit'))) as "где проигрывают, % трассы"
+from chapter_events group by chapter order by chapter;
+```
