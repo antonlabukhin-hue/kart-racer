@@ -30,3 +30,22 @@ create policy daily_add on public.daily_runs for insert to anon
 select mode, day, count(*) as "результатов", count(distinct name) as "игроков", max(score) as "лучший"
 from daily_runs group by mode, day order by day desc, mode;
 ```
+
+## Рекорды глав кампании (мировое лучшее время) — один раз: SQL Editor → Run
+
+Игра (`src/chapter-records.js`) отправляет время каждой победы в главе; в списке глав и на итогах — мировой рекорд главы.
+
+```sql
+create table if not exists public.chapter_times (
+  id         bigint generated always as identity primary key,
+  chapter    text not null check (chapter ~ '^c[0-9]{2}$'),
+  name       text not null check (char_length(name) between 1 and 24),
+  time_ms    int  not null check (time_ms between 5000 and 600000),
+  car        text check (car is null or char_length(car) <= 24),
+  created_at timestamptz not null default now()
+);
+create index if not exists chapter_times_ch on public.chapter_times (chapter, time_ms);
+alter table public.chapter_times enable row level security;
+create policy chapter_read on public.chapter_times for select to anon using (true);
+create policy chapter_add on public.chapter_times for insert to anon with check (true);
+```
