@@ -5979,3 +5979,8 @@ body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size:
 #endless-wave-card .ew-pick.on { opacity: 1; border-color: #7dff9a; background: rgba(80,255,140,0.18); }
 #endless-wave-card { background: rgba(12, 10, 16, 0.97) !important; width: min(380px, calc(100vw - 32px)); box-sizing: border-box; }
 @media (max-width: 480px) { #endless-wave-card { top: 50% !important; } #endless-wave-card .ew-title { font-size: 30px !important; } }
+
+/* витрина: своя машина (на которой ездишь) — подсвечена в ряду */
+#shop-cars .shop-car-btn.mine { border-color: #5dff8a !important; box-shadow: 0 0 0 2px rgba(93,255,138,0.35), 0 0 16px rgba(93,255,138,0.45); }
+#shop-cars .shop-car-btn.mine .price { color: #7dff9a !important; font-weight: 900; }
+#shop-plate em.own { background: linear-gradient(180deg, #5dff8a, #22c55e); color: #062010; }
