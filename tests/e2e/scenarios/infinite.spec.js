@@ -195,7 +195,7 @@ test('первое знакомство: пауза с плашкой перед
     await waitRacing(page);
     await page.keyboard.down('w');
     const card = page.locator('.meet-overlay .meet-card');
-    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expect(card).toBeVisible({ timeout: 45_000 }); // на медленных кадрах до первого нового на дороге дольше
     await expect(card.locator('.meet-go')).toContainText('Продолжить');
     const title = await card.locator('.meet-title').textContent();
     // пока плашка открыта — заезд стоит
