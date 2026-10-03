@@ -1698,12 +1698,12 @@ function createProfile(name) { return Profile.createProfile(name); }
             shopRaf = null;
             const wrap = document.getElementById('shop-canvas-wrap');
             if (wrap) wrap.innerHTML = '';
-            if (shopRenderer) { try { shopRenderer.dispose(); } catch(e){} shopRenderer = null; }
+            shopToken++; if (shopRenderer) { try { shopRenderer.dispose(); shopRenderer.forceContextLoss(); } catch(e){} shopRenderer = null; } // контекст — сразу: иначе при листании их копится больше лимита браузера, и он гасит фон меню
         }
 
         
-        function startShopPreview(carId) {
-            try { stopShopPreview(); } catch (e) {}
+        let shopToken = 0; function startShopPreview(carId) {
+            try { stopShopPreview(); } catch (e) {} const tok = shopToken; // листание быстрее двух кадров — старый вызов не создаёт свой холст
             const wrap = document.getElementById('shop-canvas-wrap');
             const THREE_REF = window.THREE || (typeof THREE !== 'undefined' ? THREE : null);
             if (!wrap || !THREE_REF) {
@@ -1712,7 +1712,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             }
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
-                    try {
+                    if (tok !== shopToken) return; try {
                         const { w, h } = _ensurePreviewSize(wrap, 220);
                         const scene = new THREE_REF.Scene();
                         scene.background = new THREE_REF.Color(0x2a1640);
@@ -2221,7 +2221,7 @@ function renderGaragePartsPanel() {
             trophyRaf = null;
             const wrap = document.getElementById('trophy-canvas-wrap');
             if (wrap) wrap.innerHTML = '';
-            if (trophyRenderer) { try { trophyRenderer.dispose(); } catch(e){} trophyRenderer = null; }
+            if (trophyRenderer) { try { trophyRenderer.dispose(); trophyRenderer.forceContextLoss(); } catch(e){} trophyRenderer = null; }
         }
 
         function startTrophyPreview(t) {
@@ -2280,8 +2280,7 @@ function renderGaragePartsPanel() {
             const wrap = document.getElementById('garage-canvas-wrap');
             if (wrap) wrap.innerHTML = '';
             if (garageRenderer) {
-                try { garageRenderer.dispose(); } catch (e) {}
-                garageRenderer = null;
+                try { garageRenderer.dispose(); garageRenderer.forceContextLoss(); } catch (e) {} garageRenderer = null;
             }
             window.__garageCar = null;
             window.__garageParts = null;
