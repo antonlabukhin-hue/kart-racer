@@ -38,6 +38,11 @@ export function startMenuBg(opts) {
     } catch (e) { return; }
     const canvas = renderer.domElement;
     canvas.id = 'menu-bg';
+    // браузер погасил контекст (слишком много 3D-холстов разом) — фон перезапускается, а не остаётся чёрным
+    canvas.addEventListener('webglcontextlost', function(e) {
+        e.preventDefault();
+        setTimeout(function() { if (st && st.renderer.domElement === canvas) { stopMenuBg(); startMenuBg(o); } }, 300);
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, o.lowPower ? 1 : 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     document.body.appendChild(canvas);

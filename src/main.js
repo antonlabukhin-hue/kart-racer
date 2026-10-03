@@ -1414,7 +1414,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                 missions: missionRows(currentPlayer), canClaimChest: canClaimChest(currentPlayer, dayKey(new Date())), chest: chestDeps });
             if (shouldShowNew(NEW_CARS_TAG)) setTimeout(function() { // «Появились новые машины» — раз на выпуск (src/ui/new-cars-pop.js)
                 const mm = document.getElementById('main-menu-screen');
-                if (mm && mm.style.display !== 'none' && mm.getClientRects().length) showNewCarsPop({ tag: NEW_CARS_TAG, names: NEW_CARS.map(function(id) { return (CAR_PRESETS[id] || {}).name || id; }), onOpen: function() { shopBackToGarage = false; openShopScreen(false, NEW_CARS[0]); } });
+                if (mm && mm.style.display !== 'none' && mm.getClientRects().length) showNewCarsPop({ tag: NEW_CARS_TAG, names: NEW_CARS.map(function(id) { return (CAR_PRESETS[id] || {}).name || id; }), onOpen: function() { shopBackToGarage = false; openShopScreen(false); } });
             }, 700);
             renderMenuExtras({ word: wordState(currentPlayer, dayKey(new Date())), list: loadBoard(), now: Date.now(), me: currentPlayer.name, fetchOnline: onlineBoard() ? fetchTop : null });
             menuGiftCars(); renderDailyCard({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onOpen: function() { showDailyPop({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onGo: function() { startInfiniteRun(true, { daily: true }); } }); } }); // «Заезд дня» (src/ui/daily-pop.js)
@@ -1537,7 +1537,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const p = CAR_PRESETS[id];
             if (!owned && currentPlayer && carOfDay(currentPlayer, dayKey(new Date()), shopOrder(), CAR_PRESETS, isGiftCar) === id) return '🔥 −30% · ' + dayPrice(p.priceChips) + ' Е'; return owned ? (isGiftCar(id) ? '🎁 Твоя' : p.priceChips || p.priceVhs ? 'Куплено' : 'Стартовый') : isGiftCar(id) ? '🎁 Подарок' : p.priceVhs ? p.priceVhs + ' 📼' : (p.priceChips + ' Е');
         }
-        function openShopScreen(fromFirstRace, focusCar) {
+        function shopList() { const own = (currentPlayer && currentPlayer.unlockedCars) || [], pref = currentPlayer && currentPlayer.preferredCar, all = shopOrder(); const gifts = all.filter(function(id) { return isGiftCar(id); }), mine = all.filter(function(id) { return own.indexOf(id) >= 0 && gifts.indexOf(id) < 0; }).sort(function(a, b) { return (b === pref) - (a === pref); }); return gifts.concat(mine, all.filter(function(id) { return gifts.indexOf(id) < 0 && mine.indexOf(id) < 0; })); } /* витрина: подарочные, свои (на которой ездишь — первой), остальные */ function openShopScreen(fromFirstRace, focusCar) {
             if (!currentPlayer) return;
             const forInf = fromFirstRace === 'infinite'; // первый заезд бесконечной трассы: выбрал — и сразу в путь
             { const bb = document.getElementById('shop-boosts'); if (bb) { bb.hidden = !forInf; if (forInf) renderBoostBar(bb, currentPlayer, boostSel); } } // бусты (src/ui/boosts.js)
@@ -1565,11 +1565,11 @@ function createProfile(name) { return Profile.createProfile(name); }
                 }
                 const plate = document.getElementById('shop-plate');
                 if (plate) {
-                    const vp = preset.priceVhs || 0, i = shopOrder().indexOf(shopSelectedCar), isNew = NEW_CARS.indexOf(shopSelectedCar) >= 0;
+                    const vp = preset.priceVhs || 0, i = shopList().indexOf(shopSelectedCar), isNew = NEW_CARS.indexOf(shopSelectedCar) >= 0;
                     plate.innerHTML = (isNew ? '<i class="new-tag">НОВИНКА</i>' : '') + '<b' + (isNew ? ' class="is-new"' : '') + '>' + escapeHtml(preset.name) + '</b>'
                         + (preset.ability ? '<span>★ ' + escapeHtml(preset.ability.name) + '</span>' : '')
-                        + '<em class="' + (owned ? 'own' : gift ? 'gift' : isDay ? 'day' : vp ? 'vhs' : 'e') + '">' + (owned ? '✓ Твоя' : gift ? '🎁 В подарок' : vp ? vp + ' 📼' : isDay ? '🔥 Машина дня −30% · ' + price + ' Е' : price + ' Е') + '</em>'
-                        + '<i class="dots">' + shopOrder().map(function(id, k) { return '<u class="' + (k === i ? 'on' : '') + '"></u>'; }).join('') + '</i>';
+                        + '<em class="' + (owned ? 'own' : gift ? 'gift' : isDay ? 'day' : vp ? 'vhs' : 'e') + '">' + (owned ? (shopSelectedCar === currentPlayer.preferredCar ? '✓ Твоя — едь на ней' : '✓ Твоя') : gift ? '🎁 В подарок' : vp ? vp + ' 📼' : isDay ? '🔥 Машина дня −30% · ' + price + ' Е' : price + ' Е') + '</em>'
+                        + '<i class="dots">' + shopList().map(function(id, k) { return '<u class="' + (k === i ? 'on' : '') + '"></u>'; }).join('') + '</i>';
                 }
                 const tryBtn = document.getElementById('shop-try'); if (tryBtn) { tryBtn.hidden = !(forInf && isDay && canTestDrive(currentPlayer, today)); tryBtn.onclick = function() { markTestDrive(currentPlayer, today); saveCurrentPlayer(); trackEvent('test_drive', { car: shopSelectedCar }); pendingTestDrive = { car: shopSelectedCar, price: preset.priceChips }; stopShopPreview(); sc.classList.remove('active'); sc.style.display = 'none'; pendingBoosts = []; startInfiniteRun(true); }; } // тест-драйв машины дня — один заезд
                 const act = document.getElementById('shop-action');
@@ -1623,15 +1623,15 @@ function createProfile(name) { return Profile.createProfile(name); }
                 }
                 startShopPreview(shopSelectedCar);
             }
-            box.innerHTML = shopOrder().map(function(id) { // новинки — первыми
+            box.innerHTML = shopList().map(function(id) { // подарочные, свои, новинки, остальные
                 const p = CAR_PRESETS[id];
                 const owned = (currentPlayer.unlockedCars || []).includes(id);
                 const price = carPriceText(id, owned);
-                return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + (NEW_CARS.indexOf(id) >= 0 ? ' is-new' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
+                return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + (NEW_CARS.indexOf(id) >= 0 ? ' is-new' : '') + (id === currentPlayer.preferredCar && owned ? ' mine' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
             }).join('');
             // листать как персонажей в Subway Surfers: стрелки и свайп по подиуму
             const flip = function(dir) {
-                const order = shopOrder(), n = order.length, i = order.indexOf(shopSelectedCar);
+                const order = shopList(), n = order.length, i = order.indexOf(shopSelectedCar);
                 shopSelectedCar = order[(i + dir + n) % n];
                 refreshShopSelection();
                 try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.5); } catch (e) {}
@@ -1681,7 +1681,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                     refreshShopSelection();
                 }, { passive: false });
             });
-            refreshShopSelection();
+            refreshShopSelection(); requestAnimationFrame(function() { const sel = box.querySelector('.shop-car-btn.selected'); if (sel) box.scrollLeft = sel.offsetLeft - (box.clientWidth - sel.offsetWidth) / 2; }); // ряд — сразу на выбранной машине
             document.getElementById('shop-close').onclick = () => {
                 currentPlayer.hasSeenShop = true;
                 saveCurrentPlayer();
@@ -1698,12 +1698,12 @@ function createProfile(name) { return Profile.createProfile(name); }
             shopRaf = null;
             const wrap = document.getElementById('shop-canvas-wrap');
             if (wrap) wrap.innerHTML = '';
-            if (shopRenderer) { try { shopRenderer.dispose(); } catch(e){} shopRenderer = null; }
+            shopToken++; if (shopRenderer) { try { shopRenderer.dispose(); shopRenderer.forceContextLoss(); } catch(e){} shopRenderer = null; } // контекст — сразу: иначе при листании их копится больше лимита браузера, и он гасит фон меню
         }
 
         
-        function startShopPreview(carId) {
-            try { stopShopPreview(); } catch (e) {}
+        let shopToken = 0; function startShopPreview(carId) {
+            try { stopShopPreview(); } catch (e) {} const tok = shopToken; // листание быстрее двух кадров — старый вызов не создаёт свой холст
             const wrap = document.getElementById('shop-canvas-wrap');
             const THREE_REF = window.THREE || (typeof THREE !== 'undefined' ? THREE : null);
             if (!wrap || !THREE_REF) {
@@ -1712,7 +1712,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             }
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
-                    try {
+                    if (tok !== shopToken) return; try {
                         const { w, h } = _ensurePreviewSize(wrap, 220);
                         const scene = new THREE_REF.Scene();
                         scene.background = new THREE_REF.Color(0x2a1640);
@@ -2221,7 +2221,7 @@ function renderGaragePartsPanel() {
             trophyRaf = null;
             const wrap = document.getElementById('trophy-canvas-wrap');
             if (wrap) wrap.innerHTML = '';
-            if (trophyRenderer) { try { trophyRenderer.dispose(); } catch(e){} trophyRenderer = null; }
+            if (trophyRenderer) { try { trophyRenderer.dispose(); trophyRenderer.forceContextLoss(); } catch(e){} trophyRenderer = null; }
         }
 
         function startTrophyPreview(t) {
@@ -2280,8 +2280,7 @@ function renderGaragePartsPanel() {
             const wrap = document.getElementById('garage-canvas-wrap');
             if (wrap) wrap.innerHTML = '';
             if (garageRenderer) {
-                try { garageRenderer.dispose(); } catch (e) {}
-                garageRenderer = null;
+                try { garageRenderer.dispose(); garageRenderer.forceContextLoss(); } catch (e) {} garageRenderer = null;
             }
             window.__garageCar = null;
             window.__garageParts = null;
@@ -10369,12 +10368,12 @@ function startGaragePreview(carId) {
                 const kFollow = 1 - Math.pow(1 - follow, deltaTime * 60);
                 const kLook = 1 - Math.pow(1 - 0.22, deltaTime * 60);
                 camera.position.x += (targetX - camera.position.x) * kFollow;
-                camera.position.y += (targetY - camera.position.y) * kFollow;
+                if (camMode !== 0) targetY += carYOffset; /* капот, салон, сбоку — камера поднимается с машиной в прыжке (иначе оказывается внутри кузова) */ camera.position.y = (camMode === 1 || camMode === 2) ? targetY : camera.position.y + (targetY - camera.position.y) * kFollow; // из кабины — без запаздывания
                 camera.position.z = targetZ + camSpeed * (1 - follow) / follow;
                 if (!_v.look) _v.look = new THREE.Vector3(xPos * 0.5, lookY, zPos + lookZoff);
                 // смотрим ближе к машине — она не уезжает под нижний край
                 _v.look.x += (xPos * 0.5 - _v.look.x) * kLook;
-                _v.look.y += (lookY - _v.look.y) * kLook;
+                _v.look.y += (lookY + (camMode !== 0 ? carYOffset : 0) - _v.look.y) * kLook;
                 _v.look.z = zPos + lookZoff + camSpeed * (1 - 0.22) / 0.22;
                 camera.lookAt(_v.look);
                 // тень следует за игроком (узкий frustum)

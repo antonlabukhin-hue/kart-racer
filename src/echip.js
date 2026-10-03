@@ -45,7 +45,7 @@ export function eGlow() {
 
 export function createEChip(big) {
     const m = new THREE.Mesh(eGeometry(), eMaterial(big));
-    m.scale.setScalar(big ? 1.7 : 1.15);
+    m.scale.setScalar((big ? 1.7 : 1.15) * 0.9); // на 10% меньше прежнего — не загораживают дорогу
     m.castShadow = false;
     return m;
 }
