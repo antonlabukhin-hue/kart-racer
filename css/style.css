@@ -5959,3 +5959,23 @@ body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size:
 .sticker-set .sticker-lore { margin-top: 8px; padding: 8px 10px; border-radius: 10px; font-size: 13px; line-height: 1.4; color: #f0e6d8; background: rgba(255,210,60,0.1); border: 1px solid rgba(255,210,60,0.4); text-align: left; }
 .sticker-set .bs-grid span.got { cursor: pointer; }
 .fin-world:empty { display: none; }
+#menu-endless-best { white-space: pre-line; }
+
+/* «Звериный час»: правило волны и выбор бонуса между волнами (src/wave-rules.js) */
+#endless-wave-card .ew-rule { display: grid; grid-template-columns: 34px 1fr; column-gap: 8px; align-items: center; margin: 8px auto; max-width: 340px; padding: 8px 10px;
+    border-radius: 12px; text-align: left; background: rgba(255,170,40,0.14); border: 1.5px solid rgba(255,170,40,0.6); }
+#endless-wave-card .ew-rule i { grid-row: span 2; font-style: normal; font-size: 26px; text-align: center; }
+#endless-wave-card .ew-rule b { color: #ffe066; font-size: 16px; }
+#endless-wave-card .ew-rule span { font-size: 12px; color: #f0e6d8; }
+#endless-wave-card .ew-choose { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px auto 6px; max-width: 340px; pointer-events: auto; }
+#endless-wave-card .ew-ct { grid-column: 1 / -1; font-size: 13px; color: #ffcf7a; font-weight: 800; }
+#endless-wave-card .ew-pick { display: grid; justify-items: center; gap: 1px; padding: 8px 6px; border-radius: 12px; cursor: pointer; color: #fff;
+    background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.3); font: inherit; }
+#endless-wave-card .ew-pick i { font-style: normal; font-size: 22px; color: #ff6a8a; }
+#endless-wave-card .ew-pick b { font-size: 15px; font-weight: 900; }
+#endless-wave-card .ew-pick small { font-size: 11px; color: #ddd; }
+#endless-wave-card .ew-pick:not(:disabled):hover { border-color: #ffd23c; background: rgba(255,210,60,0.15); }
+#endless-wave-card .ew-pick:disabled { opacity: 0.4; cursor: default; }
+#endless-wave-card .ew-pick.on { opacity: 1; border-color: #7dff9a; background: rgba(80,255,140,0.18); }
+#endless-wave-card { background: rgba(12, 10, 16, 0.97) !important; width: min(380px, calc(100vw - 32px)); box-sizing: border-box; }
+@media (max-width: 480px) { #endless-wave-card { top: 50% !important; } #endless-wave-card .ew-title { font-size: 30px !important; } }

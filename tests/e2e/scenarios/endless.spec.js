@@ -20,6 +20,10 @@ test('Звериный час: волны идут подряд, конец за
     await page.keyboard.down('w');
     await expect(page.locator('#endless-wave-card')).toContainText('ВОЛНА 2', { timeout: 60_000 });
     await expect(page.locator('#endless-wave-card .ew-seed')).toContainText('Звериный час дня');
+    // у второй волны — своё правило; между волнами — выбор бонуса (src/wave-rules.js)
+    await expect(page.locator('#endless-wave-card .ew-rule')).toBeVisible();
+    await page.locator('#endless-wave-card .ew-pick[data-choice="double"]').click();
+    await expect(page.locator('#endlessDisplay')).toContainText('×2', { timeout: 20_000 });
     await expect(page.locator('#endlessDisplay')).toContainText('ВОЛНА 2', { timeout: 20_000 });
     const score = await page.locator('#endlessDisplay').textContent();
     expect(parseInt(score.split('·')[1], 10)).toBeGreaterThanOrEqual(1000);
@@ -32,5 +36,6 @@ test('Звериный час: волны идут подряд, конец за
 
     await page.locator('#finish-menu-btn').click();
     await expect(page.locator('#menu-endless-best')).toContainText('🏆');
+    await expect(page.locator('#menu-endless-best')).toContainText('сегодня #1'); // «Звериный час дня» — в дневной таблице
     expect(problems).toEqual([]);
 });

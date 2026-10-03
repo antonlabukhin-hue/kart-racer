@@ -692,7 +692,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         // «Звериный час»: забег волнами — src/modes/beast-hour.js (старт, волны, итоги, рекорд, вызов другу)
         const beast = createBeastHour({ player: function() { return currentPlayer; }, save: function() { saveCurrentPlayer(); },
             startRace: function(q, df, car, map, w) { initGame(q, df, car, map, w); }, setMode: function(m) { pendingMode = m; },
-            clearCampaign: function() { clearCampaignGlobals(); }, hideMenu: function() { hideMainMenu(); },
+            clearCampaign: function() { clearCampaignGlobals(); }, hideMenu: function() { hideMainMenu(); }, online: function() { return onlineBoard(); },
             quality: function() { return window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium'; } });
         function isEndlessMode() { return beast.active(typeof pendingMode !== 'undefined' ? pendingMode : null); }
         /** seed не задан — «Звериный час дня» (сид общий для всех в этот день) */
@@ -1255,7 +1255,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const today = currentPlayer.beastDaily && currentPlayer.beastDaily.seed === dailySeed() ? currentPlayer.beastDaily.best : 0;
                 const ib = document.getElementById('menu-inf-best');
                 if (ib) ib.textContent = currentPlayer.infinite && currentPlayer.infinite.best ? '🏆 ' + currentPlayer.infinite.best + ' м' : '';
-                if (eb) eb.textContent = currentPlayer.endlessBest ? '🏆 ' + currentPlayer.endlessBest + (today ? ' · сегодня ' + today : '') : '';
+                if (eb) { eb.textContent = currentPlayer.endlessBest ? '🏆 ' + currentPlayer.endlessBest + (today ? ' · сегодня ' + today : '') : ''; const base = eb.textContent; beast.dayPlace(function(t) { eb.textContent = (base ? base + '\n' : '') + t; }); } // «Звериный час дня» — место и лидер (src/modes/beast-hour.js)
             } catch (e) {}
             // «Звериный час» — под замком до главы 1
             try {
@@ -4223,7 +4223,7 @@ function startGaragePreview(carId) {
             const powers = createPowers(currentPlayer && currentPlayer.powerLv); // усиления бесконечной трассы с прокачкой (src/powerups.js)
             const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
-                : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave) : DIFFICULTY_CONFIG[difficulty]);
+                : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave, beast.rule()) : DIFFICULTY_CONFIG[difficulty]);
             // глава может задать свою длину трассы (глава 1 — короткая, ~45–60 с)
             const _cmods = (_campIdx >= 0 && window.__campaignMods) || null;
             const config = INF ? Object.assign({}, baseConfig, { trackLength: 1800 }) : (_cmods && _cmods.trackLength) ? Object.assign({}, baseConfig, { trackLength: _cmods.trackLength }) : baseConfig;
@@ -5052,7 +5052,7 @@ function startGaragePreview(carId) {
                 if (isEndlessMode()) { // волна пройдена — карточка и следующая; нет — счёт, рекорд, «Звериный час дня» (src/modes/beast-hour.js)
                     if (state === 'win') { try { soundEngine.stopMusic(); } catch (e) {} }
                     if (beast.raceEnd({ state: state, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, strikes: strikes, time: timeTaken, timeLimit: TIME_LIMIT,
-                        starsPicked: stats.starsPicked || 0, progress: (START_Z - zPos) / (START_Z - FINISH_Z) }, function() { try { cleanupRaceKeepProfile(); } catch (e) {} })) return;
+                        starsPicked: stats.starsPicked || 0, jumps: stats.animalsJumped || 0, progress: (START_Z - zPos) / (START_Z - FINISH_Z) }, function() { try { cleanupRaceKeepProfile(); } catch (e) {} })) return;
                 }
                 try {
                     if (state === 'win' && wasCampaign && campaignTrackId) {
@@ -8132,7 +8132,7 @@ function startGaragePreview(carId) {
                 scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD,
                 config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
-            animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev;
+            animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev; const _br = isEndlessMode() && beast.rule(); if (_br) { if (_br.pool) animalSpawner.animalPool = _br.pool.slice(); if (_br.speedMul) animalSpawner.speedMul = _br.speedMul; } // правило волны «Звериного часа» (src/wave-rules.js)
             // зверь на «звериной тропе» за трамплином: виден заранее, медленно бредёт через середину.
             // Появляется, когда машина подъезжает (спавнер убирает зверей дальше 150 впереди)
             let trailPendingZ = window.__trailZ;
