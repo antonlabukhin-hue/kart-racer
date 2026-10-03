@@ -4,8 +4,8 @@ import path from 'path';
 
 // «Трещотка» для src/main.js: файл и число глобальных window.__* могут только уменьшаться.
 // Вынес кусок в модуль — опусти пороги до новых значений (тест подскажет какие).
-const MAX_MAIN_LINES = 11875;
-const MAX_MAIN_WINDOW_GLOBALS = 453;
+const MAX_MAIN_LINES = 11702;
+const MAX_MAIN_WINDOW_GLOBALS = 442;
 
 const read = f => fs.readFileSync(path.resolve(f), 'utf8');
 const globals = src => (src.match(/window\.__[A-Za-z0-9_]+/g) || []).length;

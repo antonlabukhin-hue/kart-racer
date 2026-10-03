@@ -1,0 +1,116 @@
+/**
+ * Режим «Звериный час»: забег волнами (правила волн и очки — src/endless.js, сид и раскладка волны — src/beast-seed.js,
+ * вызов другу — src/challenge.js). Здесь — жизнь забега между заездами: старт, запуск волны, карточка между волнами,
+ * итог волны, рекорд и «Звериный час дня», текст итогов, ссылка-вызов, строка в панели заезда.
+ * Сам заезд волны — общий движок main.js (initGame); связь — d:
+ *   d.player(), d.save(), d.startRace(quality, difficulty, carId, mapId, weatherId), d.setMode(mode), d.clearCampaign(), d.hideMenu(), d.quality()
+ * Забег лежит в window.__endless (его читают тесты и отладка), раскладка волны — window.__layoutOverride.
+ */
+import { newEndlessRun, waveDifficulty, waveScore, partialScore, recordBest } from '../endless.js';
+import { wavePlan, dailySeed, seedCode } from '../beast-seed.js';
+import { challengeUrl, challengeResult, dailyBest } from '../challenge.js';
+
+export const WAVE_CARD_MS = 1800;
+
+/** Карточка волны между трассами: «Волна N пройдена · +очки», счёт, аварии, сид */
+export function waveCardHtml(run, gained) {
+    return '<div class="ew-sub">Волна ' + (run.wave - 1) + ' пройдена · +' + gained + '</div>'
+        + '<div class="ew-title">🐾 ВОЛНА ' + run.wave + '</div>'
+        + '<div class="ew-sub">Счёт: ' + run.score + ' · Аварии: ' + run.strikes + ' / 5</div>'
+        + '<div class="ew-seed">' + (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '</div>';
+}
+
+/** Текст итогов забега: { title, color, message } */
+export function finishText(run, o) {
+    let message = (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '\n'
+        + 'Волна: ' + run.wave + ' · Счёт: ' + run.score
+        + '\n' + (o.state === 'timeout' ? 'Время волны вышло' : 'Аварий: ' + o.strikes + ' / ' + o.maxStrikes)
+        + '\n' + (run.isNewBest ? '🎉 НОВЫЙ РЕКОРД!' : '🏆 Рекорд: ' + (o.best || 0))
+        + (run.daily ? '\n📅 Лучший за сегодня: ' + (run.dailyBest || run.score) + (run.dailyNew && !run.isNewBest ? ' — новый!' : '') : '');
+    if (run.challenge) {
+        const cr = challengeResult(run.score, run.challenge.score);
+        message += '\n\n⚔ Вызов ' + run.challenge.name + ' (' + run.challenge.score + '): '
+            + (cr === 'win' ? 'побит! 🎉' : cr === 'tie' ? 'ничья' : 'не хватило ' + (run.challenge.score - run.score));
+    }
+    return { title: '🐾 ЗВЕРИНЫЙ ЧАС ОКОНЧЕН', color: '#ffd23c', message: message };
+}
+
+/**
+ * Итог волны (чистая логика): мутирует run и профиль. m: { state, nearMiss, strikes, time, timeLimit, starsPicked, progress }.
+ * Возвращает { next: true, gained } — волна пройдена (дальше следующая) или { next: false } — забег окончен (рекорд записан).
+ */
+export function settleWave(run, player, m) {
+    run.nearMiss += m.nearMiss || 0;
+    run.strikes = m.strikes;
+    if (m.state === 'win') {
+        const gained = waveScore({ time: m.time, nearMiss: m.nearMiss || 0, starsPicked: m.starsPicked || 0, timeLimit: m.timeLimit });
+        run.score += gained;
+        run.wave++;
+        return { next: true, gained: gained };
+    }
+    run.score += partialScore(m.progress, m.nearMiss || 0);
+    const rb = recordBest(player.endlessBest, run.score);
+    run.isNewBest = rb.isNew;
+    run.bestBefore = player.endlessBest || 0;
+    player.endlessBest = rb.best;
+    if (run.daily) { // лучший «Звериный час дня» на этом устройстве
+        const db = dailyBest(player.beastDaily, run.seed, run.score);
+        player.beastDaily = db.rec;
+        run.dailyBest = db.rec.best;
+        run.dailyNew = db.isNew;
+    }
+    return { next: false };
+}
+
+export function createBeastHour(d) {
+    const bh = {
+        get run() { return window.__endless || null; },
+        /** Идёт ли забег (pendingMode — режим из main.js) */
+        active: function(mode) { return mode === 'endless' && !!window.__endless; },
+        /** Новый забег: seed не задан — «Звериный час дня» (сид общий для всех в этот день); challenge — вызов от друга */
+        start: function(seed, challenge) {
+            d.clearCampaign();
+            const daily = seed == null;
+            window.__endless = newEndlessRun(daily ? dailySeed() : seed, daily);
+            if (challenge) window.__endless.challenge = challenge;
+            bh.launch();
+        },
+        /** Заезд текущей волны: карта, погода и раскладка — из сида */
+        launch: function() {
+            const run = window.__endless, p = d.player();
+            if (!run || !p) return;
+            d.setMode('endless');
+            try { d.hideMenu(); } catch (e) {}
+            const car = (p.unlockedCars || []).indexOf(p.preferredCar) >= 0 ? p.preferredCar : 'cheburashka';
+            const plan = wavePlan(run.seed, run.wave);
+            window.__layoutOverride = plan.layout;
+            d.startRace(d.quality(), waveDifficulty(run.wave), car, plan.map, plan.weather);
+        },
+        /** Строка в панели заезда */
+        hud: function() { const run = window.__endless; return '🐾 ВОЛНА ' + run.wave + ' · ' + run.score; },
+        /** Конец заезда волны: m — как в settleWave; onNext(cleanup) — между волнами. true — волна пройдена (итогов не будет) */
+        raceEnd: function(m, onNext) {
+            const run = window.__endless, p = d.player();
+            const r = settleWave(run, p, m);
+            if (r.next) {
+                const el = document.createElement('div');
+                el.id = 'endless-wave-card';
+                el.innerHTML = waveCardHtml(run, r.gained);
+                document.body.appendChild(el);
+                setTimeout(function() { try { el.remove(); } catch (e) {} if (onNext) onNext(); bh.launch(); }, WAVE_CARD_MS);
+                return true;
+            }
+            try { d.save(); } catch (e) {}
+            return false;
+        },
+        finishText: function(o) { return finishText(window.__endless, o); },
+        /** Ссылка-вызов другу: { url, text } */
+        challenge: function(origin) {
+            const run = window.__endless, p = d.player();
+            if (!run || !p) return null;
+            return { url: challengeUrl(origin, { seed: run.seed, score: run.score, wave: run.wave, name: p.name }),
+                text: 'Побей мой «Звериный час»: ' + run.score + ' очков, волна ' + run.wave };
+        }
+    };
+    return bh;
+}
