@@ -4,7 +4,7 @@
  *   onQuality(v), onLang(v), briefingKey, sound() → звуковой движок, cloud — облачное сохранение включено (src/cloud-save.js).
  */
 import { loadSettings, saveSettings } from '../settings.js';
-import { getCode, normalizeCode, pullSave, pushSave, snapshot, applySnapshot } from '../cloud-save.js';
+import { getCode, normalizeCode, pullSaveEx, pushSave, snapshot, applySnapshot } from '../cloud-save.js';
 
 export function openSettingsScreen(deps) {
     const d = deps || {};
@@ -98,9 +98,13 @@ export function openSettingsScreen(deps) {
         el.querySelector('#cloud-load').onclick = function() {
             const code = normalizeCode(el.querySelector('#cloud-input').value);
             if (!code) { status('Код — 12 знаков, например K7PQ-2ZMA-9XRD'); return; }
-            status('Загружаю…');
-            pullSave(code).then(function(data) {
-                if (!data) { status('Сохранение не найдено (или нет сети)'); return; }
+            const btn = el.querySelector('#cloud-load');
+            status('Загружаю…'); btn.disabled = true;
+            pullSaveEx(code, null, { onRetry: function(n) { status('Связь с облаком плохая — пробую ещё раз (' + (n + 1) + ')…'); } }).then(function(r) {
+                btn.disabled = false;
+                if (r.status === 'network') { status('Не получилось связаться с облаком. Проверь интернет (лучше Wi-Fi) и нажми «Загрузить» ещё раз'); return; }
+                if (r.status === 'notfound') { status('Такого кода в облаке нет. Проверь код — или открой игру на старом устройстве: прогресс отправится сам'); return; }
+                const data = r.data;
                 if (!confirm('Заменить прогресс на этом устройстве сохранением из облака?')) { status(''); return; }
                 applySnapshot(data);
                 try { localStorage.setItem('road_racing_cloud_code', code); } catch (e) {}

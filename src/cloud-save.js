@@ -53,31 +53,83 @@ export function applySnapshot(data, storage) {
     return n;
 }
 
-function rpc(name, body, f) {
+export const RPC_TIMEOUT = 8000;               // мс на одну попытку: мобильная сеть до сервера иногда «зависает»
+export const RETRY_WAITS = [0, 800, 2000, 4000]; // паузы перед попытками: 4 попытки
+
+/**
+ * Один запрос к функции базы. → Promise<{ net: true, value } | { net: false }>
+ * net: false — нет связи / таймаут / ошибка сервера (стоит повторить); иначе value — ответ функции (null — «нет такого»).
+ */
+function rpcOnce(name, body, f, keepalive) {
     const fx = f || (typeof fetch !== 'undefined' ? fetch : null);
-    if (!fx) return Promise.resolve(null);
-    return fx(RPC + name, { method: 'POST', headers: { apikey: ONLINE.key, Authorization: 'Bearer ' + ONLINE.key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        .then(function(r) { return r.ok ? r.text() : null; })
-        .then(function(t) { return t == null ? null : (t ? JSON.parse(t) : true); })
-        .catch(function() { return null; });
+    if (!fx) return Promise.resolve({ net: false });
+    const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ac ? setTimeout(function() { ac.abort(); }, RPC_TIMEOUT) : null;
+    return Promise.resolve().then(function() {
+        return fx(RPC + name, { method: 'POST', keepalive: !!keepalive, signal: ac ? ac.signal : undefined,
+            headers: { apikey: ONLINE.key, Authorization: 'Bearer ' + ONLINE.key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    })
+        .then(function(r) { if (!r || !r.ok) return { net: false }; return r.text().then(function(t) { return { net: true, value: t ? JSON.parse(t) : true }; }); })
+        .catch(function() { return { net: false }; })
+        .then(function(res) { if (timer) clearTimeout(timer); return res; });
+}
+/** Запрос с повторами при обрыве связи. opts: { waits, sleep(ms), onRetry(n), keepalive } */
+function rpcRetry(name, body, f, opts) {
+    const o = opts || {}, waits = o.waits || RETRY_WAITS;
+    const sleep = o.sleep || function(ms) { return new Promise(function(r) { setTimeout(r, ms); }); };
+    let i = 0;
+    const attempt = function() {
+        return sleep(waits[i] || 0).then(function() { return rpcOnce(name, body, f, o.keepalive); }).then(function(res) {
+            if (res.net || ++i >= waits.length) return res;
+            if (o.onRetry) o.onRetry(i);
+            return attempt();
+        });
+    };
+    return attempt();
 }
 
-/** Отправить прогресс (true — сохранено, null — нет сети/ошибка) */
-export function pushSave(code, data, f) { return rpc('save_put', { p_code: code, p_data: data }, f); }
+/** Отправить прогресс (true — сохранено, null — нет сети/ошибка); при обрыве — повторяет */
+export function pushSave(code, data, f, opts) { return rpcRetry('save_put', { p_code: code, p_data: data }, f, opts).then(function(r) { return r.net ? true : null; }); }
 /** Загрузить прогресс по коду (снимок или null) */
-export function pullSave(code, f) { return rpc('save_get', { p_code: code }, f).then(function(d) { return d && d.keys ? d : null; }); }
+export function pullSave(code, f, opts) { return pullSaveEx(code, f, opts).then(function(r) { return r.data; }); }
+/** Загрузить с ответом, что случилось: { status: 'ok' | 'notfound' | 'network', data } */
+export function pullSaveEx(code, f, opts) {
+    return rpcRetry('save_get', { p_code: code }, f, opts).then(function(r) {
+        if (!r.net) return { status: 'network', data: null };
+        return r.value && r.value.keys ? { status: 'ok', data: r.value } : { status: 'notfound', data: null };
+    });
+}
 
-/** Отправка не чаще раза в delay мс: после сохранения профиля — одна отправка, а не десять */
+/**
+ * Отправка не чаще раза в delay мс: после сохранения профиля — одна отправка, а не десять.
+ * Не дошло (нет связи) — повтор через retryDelay, пока не дойдёт; свернули игру — отправляем сразу (keepalive),
+ * чтобы в облаке всегда лежала свежая копия (иначе на новом устройстве код «не находился»).
+ */
 export function createAutoSync(opts) {
     const o = opts || {};
-    let timer = null;
-    return function schedule() {
-        if (timer) return;
-        timer = setTimeout(function() {
-            timer = null;
-            pushSave(getCode(o.storage), snapshot(o.storage), o.fetch).then(function(ok) { if (o.onDone) o.onDone(!!ok); });
-        }, o.delay != null ? o.delay : 4000);
+    let timer = null, dirty = false, sending = false;
+    const send = function(keepalive) {
+        if (sending) { dirty = true; return; }
+        sending = true; dirty = false;
+        pushSave(getCode(o.storage), snapshot(o.storage), o.fetch, { keepalive: keepalive, waits: o.waits, sleep: o.sleep }).then(function(ok) {
+            sending = false;
+            if (o.onDone) o.onDone(!!ok);
+            if (!ok || dirty) schedule(o.retryDelay != null ? o.retryDelay : 20000);
+        });
     };
+    const schedule = function(ms) {
+        dirty = true;
+        if (timer) return;
+        timer = setTimeout(function() { timer = null; send(false); }, ms != null ? ms : (o.delay != null ? o.delay : 4000));
+    };
+    if (o.flushOnHide !== false && typeof document !== 'undefined' && document.addEventListener) {
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden' && dirty) { if (timer) { clearTimeout(timer); timer = null; } send(true); }
+        });
+    }
+    const api = function() { schedule(); };
+    api.now = function() { if (timer) { clearTimeout(timer); timer = null; } send(false); };
+    return api;
 }
 
 /** После первой отправки в облако — один раз: «запиши код сохранения» (браузер может стереть данные сайта). notify — Notify игры */
