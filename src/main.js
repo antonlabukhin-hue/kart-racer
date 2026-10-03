@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { campFinishHtml } from './ui/finish-ui.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -54,9 +54,9 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
-        import { newEndlessRun, waveDifficulty, waveConfig, waveScore, partialScore, recordBest } from './endless.js';
-        import { wavePlan, dailySeed, seedCode } from './beast-seed.js';
-        import { challengeUrl, parseChallenge, stripChallenge, challengeResult, dailyBest } from './challenge.js';
+        import { waveConfig } from './endless.js';
+        import { dailySeed, seedCode } from './beast-seed.js';
+        import { parseChallenge, stripChallenge } from './challenge.js';
         import { createMapEvent, createPipeDrop } from './mapevents.js';
         import { pickSetpieces, placeFracs, createSetpieceEvent, createLandmark, EVENT_SIGNS } from './landmarks.js';
         import { calcCampaignStars, mergeStars, totalStars, starsText, STAR_RULES, MAX_STARS_PER_TRACK } from './campaign-stars.js';
@@ -689,29 +689,14 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         }
         window.clearCampaignGlobals = clearCampaignGlobals;
 
-        // «Звериный час»: забег волнами (src/endless.js)
-        function isEndlessMode() {
-            return typeof pendingMode !== 'undefined' && pendingMode === 'endless' && !!window.__endless;
-        }
-        function launchEndlessWave() {
-            const run = window.__endless;
-            if (!run || !currentPlayer) return;
-            pendingMode = 'endless';
-            try { hideMainMenu(); } catch (e) {}
-            const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
-            const q = window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium';
-            // волна строится из сида: карта, погода и раскладка трассы (src/beast-seed.js)
-            const plan = wavePlan(run.seed, run.wave);
-            window.__layoutOverride = plan.layout;
-            initGame(q, waveDifficulty(run.wave), car, plan.map, plan.weather);
-        }
+        // «Звериный час»: забег волнами — src/modes/beast-hour.js (старт, волны, итоги, рекорд, вызов другу)
+        const beast = createBeastHour({ player: function() { return currentPlayer; }, save: function() { saveCurrentPlayer(); },
+            startRace: function(q, df, car, map, w) { initGame(q, df, car, map, w); }, setMode: function(m) { pendingMode = m; },
+            clearCampaign: function() { clearCampaignGlobals(); }, hideMenu: function() { hideMainMenu(); },
+            quality: function() { return window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium'; } });
+        function isEndlessMode() { return beast.active(typeof pendingMode !== 'undefined' ? pendingMode : null); }
         /** seed не задан — «Звериный час дня» (сид общий для всех в этот день) */
-        function startEndlessRun(seed) {
-            clearCampaignGlobals();
-            const daily = seed == null;
-            window.__endless = newEndlessRun(daily ? dailySeed() : seed, daily);
-            launchEndlessWave();
-        }
+        function startEndlessRun(seed) { beast.start(seed); }
         window.startEndlessRun = startEndlessRun;
         /** «Бесконечная трасса» — вместо свободного заезда: сразу в путь на своей машине */
         function startInfiniteRun(direct) {
@@ -725,17 +710,6 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             try { hideMainMenu(); } catch (e) {}
             const car = (currentPlayer.unlockedCars || []).indexOf(currentPlayer.preferredCar) >= 0 ? currentPlayer.preferredCar : 'cheburashka';
             initGame((typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium', 'easy', car, 'arsenev', 'day'); // база — «лёгкая», сложность растёт с километрами (src/infinite.js)
-        }
-        // карточка волны между трассами
-        function showWaveCard(run, gained, onDone) {
-            const el = document.createElement('div');
-            el.id = 'endless-wave-card';
-            el.innerHTML = '<div class="ew-sub">Волна ' + (run.wave - 1) + ' пройдена · +' + gained + '</div>'
-                + '<div class="ew-title">🐾 ВОЛНА ' + run.wave + '</div>'
-                + '<div class="ew-sub">Счёт: ' + run.score + ' · Аварии: ' + run.strikes + ' / 5</div>'
-                + '<div class="ew-seed">' + (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '</div>';
-            document.body.appendChild(el);
-            setTimeout(function() { try { el.remove(); } catch (e) {} onDone(); }, 1800);
         }
         window.cleanupRaceKeepProfile = cleanupRaceKeepProfile;
 
@@ -1380,8 +1354,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                         document.getElementById('challenge-accept').onclick = function() {
                             const c = window.__challenge;
                             window.__challenge = null;
-                            startEndlessRun(c.seed);
-                            if (window.__endless) window.__endless.challenge = c;
+                            beast.start(c.seed, c);
                         };
                     }
                 }
@@ -4408,7 +4381,7 @@ function startGaragePreview(carId) {
                 hud.innerHTML = `
                     <div class="hud-time"><span class="hud-lbl">⏱ ВРЕМЯ:</span> <span id="timeDisplay" class="hud-big">${formatTime(INF ? 0 : TIME_LIMIT)}</span></div>
                     <div class="hud-crash"><span class="hud-lbl">💥 АВАРИИ:</span> <span id="heartsDisplay" class="hud-hearts">${'<i>♥︎</i>'.repeat(MAX_STRIKES)}</span><span id="strikesDisplay" class="hud-sr">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
-                    ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">🐾 ВОЛНА ' + window.__endless.wave + ' · ' + window.__endless.score + '</div>' : ''}
+                    ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">' + beast.hud() + '</div>' : ''}
                     ${INF ? '<div id="infDisplay" style="color:#ffd23c;">🛣 0 м · Е 0</div><div id="chaseDisplay"></div>' : ''}
                     <div id="ghostDeltaDisplay" style="display:none;font-weight:800;">👻 РЕКОРД: <span></span></div>
                     <div id="cleanDisplay" title="10 с без ударов — броня, дальше +20 Е"><span class="cl-label">✨ ЧИСТО</span><span class="cl-shield">🛡</span><div class="cl-bar"><i></i></div></div>
@@ -4683,19 +4656,8 @@ function startGaragePreview(carId) {
                     finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Собрано «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
                         ['📼', 'Кассеты', stats.vhs || 0], ['🗺', 'Пейзажей', ir.lands], ['⚡', 'На волоске', nearMissCount]];
                 } else if (isEndlessMode()) {
-                    const run = window.__endless;
-                    title = '🐾 ЗВЕРИНЫЙ ЧАС ОКОНЧЕН';
-                    color = '#ffd23c';
-                    message = (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '\n'
-                        + 'Волна: ' + run.wave + ' · Счёт: ' + run.score
-                        + '\n' + (state === 'timeout' ? 'Время волны вышло' : 'Аварий: ' + strikes + ' / ' + MAX_STRIKES)
-                        + '\n' + (run.isNewBest ? '🎉 НОВЫЙ РЕКОРД!' : '🏆 Рекорд: ' + (currentPlayer.endlessBest || 0))
-                        + (run.daily ? '\n📅 Лучший за сегодня: ' + (run.dailyBest || run.score) + (run.dailyNew && !run.isNewBest ? ' — новый!' : '') : '');
-                    if (run.challenge) {
-                        const cr = challengeResult(run.score, run.challenge.score);
-                        message += '\n\n⚔ Вызов ' + run.challenge.name + ' (' + run.challenge.score + '): '
-                            + (cr === 'win' ? 'побит! 🎉' : cr === 'tie' ? 'ничья' : 'не хватило ' + (run.challenge.score - run.score));
-                    }
+                    const ft = beast.finishText({ state: state, strikes: strikes, maxStrikes: MAX_STRIKES, best: currentPlayer.endlessBest }); // src/modes/beast-hour.js
+                    title = ft.title; color = ft.color; message = ft.message;
                 } else if (state === 'timeout') {
                     title = '🌉 МОСТ УЛЕТЕЛ';
                     color = '#ff6644';
@@ -4916,12 +4878,10 @@ function startGaragePreview(carId) {
                 bindFinishBtn('finish-garage-btn', goGarage); bindFinishBtn('finish-gift-btn', function(ev) { const gb = document.getElementById('finish-gift-btn'); try { setPendingGift(JSON.parse(gb.dataset.gift)); } catch (e) {} goGarage(ev); });
                 // «Вызвать друга»: ссылка с сидом и счётом — через «Поделиться» телефона или в буфер обмена
                 bindFinishBtn('finish-challenge-btn', function() {
-                    const run = window.__endless;
-                    if (!run || !currentPlayer) return;
-                    const url = challengeUrl(location.origin + location.pathname, { seed: run.seed, score: run.score, wave: run.wave, name: currentPlayer.name });
-                    window.__lastChallengeUrl = url;
-                    const text = 'Побей мой «Звериный час»: ' + run.score + ' очков, волна ' + run.wave;
-                    shareLink(url, { title: 'Дорожный прорыв — вызов', text: text, label: '📨 Ссылка-вызов',
+                    const ch = beast.challenge(location.origin + location.pathname);
+                    if (!ch) return;
+                    window.__lastChallengeUrl = ch.url;
+                    shareLink(ch.url, { title: 'Дорожный прорыв — вызов', text: ch.text, label: '📨 Ссылка-вызов',
                         onCopied: function() { Notify.success('📨 Ссылка-вызов скопирована', 'Отправь другу — у него будет тот же сид'); } });
                 });
 
@@ -5089,36 +5049,10 @@ function startGaragePreview(carId) {
                         }
                     } catch (e) { console.warn('ghost save', e); }
                 }
-                if (isEndlessMode()) {
-                    const run = window.__endless;
-                    const nm = typeof nearMissCount !== 'undefined' ? nearMissCount : 0;
-                    run.nearMiss += nm;
-                    run.strikes = strikes;
-                    if (state === 'win') {
-                        const gained = waveScore({ time: timeTaken, nearMiss: nm, starsPicked: stats.starsPicked || 0, timeLimit: TIME_LIMIT });
-                        run.score += gained;
-                        run.wave++;
-                        try { soundEngine.stopMusic(); } catch (e) {}
-                        showWaveCard(run, gained, function() {
-                            try { cleanupRaceKeepProfile(); } catch (e) {}
-                            launchEndlessWave();
-                        });
-                        return;
-                    }
-                    const prog = (START_Z - zPos) / (START_Z - FINISH_Z);
-                    run.score += partialScore(prog, nm);
-                    const rb = recordBest(currentPlayer.endlessBest, run.score);
-                    run.isNewBest = rb.isNew;
-                    run.bestBefore = currentPlayer.endlessBest || 0;
-                    currentPlayer.endlessBest = rb.best;
-                    // лучший «Звериный час дня» на этом устройстве
-                    if (run.daily) {
-                        const db = dailyBest(currentPlayer.beastDaily, run.seed, run.score);
-                        currentPlayer.beastDaily = db.rec;
-                        run.dailyBest = db.rec.best;
-                        run.dailyNew = db.isNew;
-                    }
-                    try { saveCurrentPlayer(); } catch (e) {}
+                if (isEndlessMode()) { // волна пройдена — карточка и следующая; нет — счёт, рекорд, «Звериный час дня» (src/modes/beast-hour.js)
+                    if (state === 'win') { try { soundEngine.stopMusic(); } catch (e) {} }
+                    if (beast.raceEnd({ state: state, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0, strikes: strikes, time: timeTaken, timeLimit: TIME_LIMIT,
+                        starsPicked: stats.starsPicked || 0, progress: (START_Z - zPos) / (START_Z - FINISH_Z) }, function() { try { cleanupRaceKeepProfile(); } catch (e) {} })) return;
                 }
                 try {
                     if (state === 'win' && wasCampaign && campaignTrackId) {
