@@ -10369,8 +10369,7 @@ function startGaragePreview(carId) {
                 const kFollow = 1 - Math.pow(1 - follow, deltaTime * 60);
                 const kLook = 1 - Math.pow(1 - 0.22, deltaTime * 60);
                 camera.position.x += (targetX - camera.position.x) * kFollow;
-                if (camMode !== 0) targetY += carYOffset; // капот, салон, сбоку — камера поднимается с машиной в прыжке (иначе оказывается внутри кузова)
-                camera.position.y = (camMode === 1 || camMode === 2) ? targetY : camera.position.y + (targetY - camera.position.y) * kFollow; // из кабины — без запаздывания
+                if (camMode !== 0) targetY += carYOffset; /* капот, салон, сбоку — камера поднимается с машиной в прыжке (иначе оказывается внутри кузова) */ camera.position.y = (camMode === 1 || camMode === 2) ? targetY : camera.position.y + (targetY - camera.position.y) * kFollow; // из кабины — без запаздывания
                 camera.position.z = targetZ + camSpeed * (1 - follow) / follow;
                 if (!_v.look) _v.look = new THREE.Vector3(xPos * 0.5, lookY, zPos + lookZoff);
                 // смотрим ближе к машине — она не уезжает под нижний край
