@@ -16,9 +16,9 @@ export function waveDifficulty(wave) {
     return wave <= 1 ? 'easy' : (wave === 2 ? 'medium' : 'hard');
 }
 
-/** с 4-й волны зверей больше и они чаще (до +60%), время волны не меняется */
-export function waveConfig(base, wave) {
-    const k = Math.min(1.6, 1 + 0.12 * Math.max(0, wave - 3));
+/** с 4-й волны зверей больше и они чаще (до +60%), время волны не меняется; rule — правило волны (src/wave-rules.js): animalMul */
+export function waveConfig(base, wave, rule) {
+    const k = Math.min(1.6, 1 + 0.12 * Math.max(0, wave - 3)) * ((rule && rule.animalMul) || 1);
     return Object.assign({}, base, {
         maxAnimals: Math.round((base.maxAnimals || 0) * k),
         animalSpawnRate: (base.animalSpawnRate || 0) * k
