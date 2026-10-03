@@ -102,3 +102,27 @@ export function dropBusy(items, busy) {
     items.forEach(function(it) { if (it.pat && busy(it.d)) cut.add(it.pat); });
     return items.filter(function(it) { return !busy(it.d) && !cut.has(it.pat); });
 }
+
+/**
+ * Узоры для главы кампании: на участке [from, to] трассы (доли длины len), до босса — с шагом gap (ед.), сложность t (0..1).
+ * free(d0, d1) — свободен ли участок трассы (нет разлома, арки, события): узор ищет свободное окно, шагая по 8 ед.
+ * Возвращает предметы плана (как planStretch) — их ставит src/plan-place.js. Шипы — только если spikesOk.
+ */
+export const CHAPTER_T = { easy: 0.1, medium: 0.35, hard: 0.6 };
+export function chapterPatterns(len, rnd, o) {
+    const r = rnd || Math.random, opt = o || {};
+    const from = len * (opt.from != null ? opt.from : 0.07), to = len * (opt.to != null ? opt.to : 0.4), gap = opt.gap || 160;
+    const free = opt.free || function() { return true; };
+    const out = [];
+    let id = opt.patId || 0;
+    for (let d = from + r() * 30; d < to; ) {
+        const pat = pickPattern(opt.t || 0, !!opt.spikesOk, r), sp = patternSpan(pat);
+        while (d + sp[1] + 3 <= to && !free(d + sp[0] - 8, d + sp[1] + 11)) d += 8; // не на разломе, арке, событии
+        if (d + sp[1] + 3 > to) break;
+        id++;
+        expandPattern(pat, d, r() < 0.5).forEach(function(it) { it.pat = id; out.push(it); });
+        out.push({ kind: 'patEnd', d: d + pat.len + 3, pat: id, name: pat.id });
+        d += sp[1] + gap * (0.8 + r() * 0.4);
+    }
+    return out;
+}

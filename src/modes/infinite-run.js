@@ -16,9 +16,8 @@
  */
 import * as THREE from 'three';
 import { themeAt, rampAt, planStretch, weekTheme, warmStart, seededRnd, withRandom } from '../infinite.js';
-import { dropBusy } from '../patterns.js';
-import { createLaneCone, createCrateMesh, createSpikesMesh } from '../hazards.js';
-import { wordState, createLetterToken } from '../word-day.js';
+import { placePlan } from '../plan-place.js';
+import { wordState } from '../word-day.js';
 import { dayKey } from '../streak.js';
 import { chaseTargets } from '../rival-chase.js';
 import { loadBoard, topRuns } from '../leaderboard.js';
@@ -78,34 +77,10 @@ export function createInfiniteRun(ctx) {
         const rnd = ctx.seed ? seededRnd((ctx.seed ^ Math.imul(k + 1, 0x9E3779B1)) >>> 0) : Math.random; // по сиду — одна и та же трасса
         const plan = planStretch(d0 + (k ? 0 : 70), d0 + ctx.span, rnd, { slide: 'slide', nextGap: Infinity,
             vhsMul: (ctx.carPreset.ability && ctx.carPreset.ability.id === 'lucky') ? 2 : 1, letters: !!word.next, warm: warm, patId: k * 1000 }).items;
-        dropBusy(plan, function(d) { const z = START_Z - d; return ctx.busy.some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; }); }).forEach(function(it) {
-            const z = START_Z - it.d;
-            let c = null;
-            if (it.kind === 'patEnd') { patEnds.push({ z: z, pat: it.pat }); return; }
-            if (it.kind === 'echip') { L.collectibles.push(make.eChip(it.x != null ? it.x : LX[it.lane], it.y, z)); return; }
-            if (it.kind === 'vhs') { L.collectibles.push(make.vhs(LX[it.lane], 0.75, z)); return; }
-            if (it.kind === 'power') { L.collectibles.push(make.power(LX[it.lane], z, it.type)); return; }
-            if (it.kind === 'letter') {
-                const w = wordState(player, dayKey(new Date()));
-                if (!w.next) return;
-                const m = createLetterToken(w.next); m.position.set(LX[it.lane], 0.9, z); scene.add(m);
-                L.collectibles.push({ mesh: m, x: LX[it.lane], z: z, type: 'letter', active: true, bob: 0, radius: 0.8, baseY: 0.9 });
-                return;
-            }
-            if (it.kind === 'crate' || it.kind === 'spikes') { // ящик «?» и шипы — src/hazards.js
-                const m = it.kind === 'crate' ? createCrateMesh() : createSpikesMesh(); m.position.set(LX[it.lane], 0, z); scene.add(m);
-                (it.kind === 'crate' ? L.collectibles : L.obstacles).push({ mesh: m, x: LX[it.lane], z: z, type: it.kind, active: true, bob: 0, radius: 0.75, pat: it.pat });
-                return;
-            }
-            if (it.kind === 'obstacle') { c = make.obstacle(z, it.type === 'slide' ? (rule.slide || themeAt(it.d).theme.slide) : it.type); L.obstacles.push(c); }
-            else {
-                // случайное нитро — не ближе 45 ед. к арке с падающим грузом; «Без нитро» — нет совсем
-                if (it.kind === 'nitro' && (rule.noNitro || ctx.arch.some(function(az) { return Math.abs(az - z) < 45; }))) return;
-                c = make.collectible(z, it.kind); L.collectibles.push(c);
-            }
-            c.x = it.x != null ? it.x : LX[it.lane]; c.pat = it.pat; c.mesh.position.x = c.x;
-            if (it.cone != null) { const cn = createLaneCone(); cn.position.x = it.cone; c.mesh.add(cn); } // узор: конус отмечает закрытую полосу
-        });
+        placePlan(plan, { scene: scene, START_Z: START_Z, lists: L, make: make, busy: ctx.busy, arch: ctx.arch, noNitro: rule.noNitro,
+            slideOf: function(d) { return rule.slide || themeAt(d).theme.slide; },
+            letter: function() { return wordState(player, dayKey(new Date())).next; },
+            onPatEnd: function(z, pat) { patEnds.push({ z: z, pat: pat }); } });
     }
     function track(list) {
         list.forEach(function(o) { box.setFromObject(o); if (!box.isEmpty()) roots.push([o, box.min.z]); });
