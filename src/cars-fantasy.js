@@ -289,19 +289,24 @@ function buildTimecar(k, m, group) {
 }
 
 // ---------------- «Ковёр-самолёт» ----------------
-let carpetTex = null;
-function carpetTexture() {
-    if (carpetTex || typeof document === 'undefined') return carpetTex;
+const carpetTexs = {};
+/** Узор ковра; base — цвет покраски (hex): фон и ромбы — от неё, золото и бирюза — свои. Без base — заводской бордовый */
+export function carpetTexture(base) {
+    const key = base == null ? 'stock' : String(base);
+    if (carpetTexs[key] || typeof document === 'undefined') return carpetTexs[key] || null;
+    const c = new THREE.Color(base == null ? 0x8a1030 : base), hex = function(k) { const x = c.clone().multiplyScalar(k); return '#' + x.getHexString(); };
+    const bg = '#' + c.getHexString(), dark = hex(0.6), light = '#' + c.clone().lerp(new THREE.Color(0xffffff), 0.35).getHexString();
     const cv = document.createElement('canvas'); cv.width = 256; cv.height = 448; const g = cv.getContext('2d');
-    g.fillStyle = '#8a1030'; g.fillRect(0, 0, 256, 448);
+    g.fillStyle = dark; g.fillRect(0, 0, 256, 448);
     g.fillStyle = '#e8b830'; g.fillRect(8, 8, 240, 432);
-    g.fillStyle = '#5a1080'; g.fillRect(16, 16, 224, 416);
-    g.fillStyle = '#8a1030'; g.fillRect(28, 28, 200, 392);
-    for (let y = 40; y < 410; y += 26) for (let x = 40; x < 220; x += 26) { g.fillStyle = (x + y) % 52 ? '#c8305a' : '#e8b830'; g.beginPath(); g.moveTo(x, y - 7); g.lineTo(x + 7, y); g.lineTo(x, y + 7); g.lineTo(x - 7, y); g.fill(); }
+    g.fillStyle = dark; g.fillRect(16, 16, 224, 416);
+    g.fillStyle = bg; g.fillRect(28, 28, 200, 392);
+    for (let y = 40; y < 410; y += 26) for (let x = 40; x < 220; x += 26) { g.fillStyle = (x + y) % 52 ? light : '#e8b830'; g.beginPath(); g.moveTo(x, y - 7); g.lineTo(x + 7, y); g.lineTo(x, y + 7); g.lineTo(x - 7, y); g.fill(); }
     g.fillStyle = '#1fb5a8'; g.beginPath(); g.moveTo(128, 150); g.lineTo(190, 224); g.lineTo(128, 298); g.lineTo(66, 224); g.fill();
     g.fillStyle = '#e8b830'; g.beginPath(); g.moveTo(128, 180); g.lineTo(165, 224); g.lineTo(128, 268); g.lineTo(91, 224); g.fill();
-    carpetTex = new THREE.CanvasTexture(cv); carpetTex.colorSpace = THREE.SRGBColorSpace; carpetTex.userData.keep = true;
-    return carpetTex;
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.userData.keep = true;
+    carpetTexs[key] = t;
+    return t;
 }
 function buildCarpet(k, m, group) {
     const geo = new THREE.PlaneGeometry(1.3, 2.3, 12, 24), p = geo.attributes.position;
@@ -313,7 +318,7 @@ function buildCarpet(k, m, group) {
     }
     geo.computeVertexNormals();
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: carpetTexture(), roughness: 0.85, side: THREE.DoubleSide });
-    const rug = new THREE.Mesh(geo, mat); rug.rotation.x = -Math.PI / 2; rug.position.y = 0.48; rug.userData.bodyPaint = true; group.add(rug);
+    const rug = new THREE.Mesh(geo, mat); rug.rotation.x = -Math.PI / 2; rug.position.y = 0.48; rug.userData.bodyPaint = true; rug.userData.repaint = function(hex) { const t = carpetTexture(hex); if (t && rug.material.map !== t) { rug.material.map = t; rug.material.needsUpdate = true; } }; group.add(rug); // покраска — новый узор ковра в этом цвете, а не тёмный оттенок поверх
     const gold = M(0xe8b830, { metalness: 0.7, roughness: 0.3 });
     // кисти на коротких краях
     [-1, 1].forEach(function(s) { for (let i = 0; i < 7; i++) { const x = -0.6 + i * 0.2, zz = s * 1.16, yy = s > 0 ? 0.48 : 0.48 + 0.08; k.rod(gold, 0.012, [x, yy, zz], [x, yy - 0.12, zz + s * 0.04]); k.sphere(gold, 0.022, 1, 1.4, 1, x, yy - 0.13, zz + s * 0.045); } });
@@ -335,7 +340,7 @@ function buildCarpet(k, m, group) {
         k.rod(sk, 0.045, [e * 0.3, 0.86, 0.28], [e * 0.26, 0.68, 0.18]);              // руки на коленях
     });
     // подушка и золотая лампа
-    k.sphere(M(0x5a1080, { roughness: 0.8 }), 0.25, 1.4, 0.45, 1, 0, 0.58, 0.55);
+    const pillow = k.sphere(M(0x5a1080, { roughness: 0.8 }), 0.25, 1.4, 0.45, 1, 0, 0.58, 0.55); if (pillow && pillow.isMesh) pillow.userData.bodyPaint = true; // подушка — в цвет покраски
     k.sphere(gold, 0.1, 1.3, 0.8, 1, 0.34, 0.57, -0.25);
     const spout = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.2, 8), gold); spout.rotation.x = Math.PI / 2 - 0.4; spout.position.set(0.34, 0.6, -0.4); group.add(spout);
     const handle = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.015, 6, 12), gold); handle.position.set(0.34, 0.6, -0.12); group.add(handle);

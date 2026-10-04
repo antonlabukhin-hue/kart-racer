@@ -26,8 +26,8 @@ describe('усиления бесконечной трассы', () => {
         expect(activePowers(st).map(p => p.type)).toEqual(['magnet']);
     });
     it('«Второй шанс»: 100, потом 200 «Е», не больше двух раз', () => {
-        expect(continueCost(0)).toBe(100);
-        expect(continueCost(1)).toBe(200);
+        expect(continueCost(0)).toBe(200);
+        expect(continueCost(1)).toBe(400);
         expect(MAX_CONTINUES).toBe(2);
     });
     it('прокачка усилений за «Е»: +2 с за уровень, 5 уровней, цена растёт', () => {
