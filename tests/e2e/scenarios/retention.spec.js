@@ -178,13 +178,21 @@ test('подарок за возвращение, именной номер, м�
     await page.locator('.hello-modal .hn-go').click();
     // 14-й день подряд
     await seed(1, 13);
+    await expect(page.locator('.giftcar-modal')).toContainText('Трайк', { timeout: 15_000 }); // 7+ дней подряд — сначала подарок «Трайк», «Привет» — после
+    await page.locator('.giftcar-modal .nc-later').click();
     await expect(page.locator('.hello-modal .hn-gift')).toContainText('Именной номер', { timeout: 15_000 });
     await page.locator('.hello-modal .hn-go').click();
+    await expect(page.locator('.chest-modal')).toBeVisible(); // сундук дня — после «Привет», а не поверх
+    await page.locator('.chest-modal .ch-later').click();
     // машина недели — прогресс на итогах бесконечной
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
+    await page.keyboard.down('w');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.inf ? window.__raceDebug.inf.dist : 0), { timeout: 20_000 }).toBeGreaterThan(30); // хоть немного проехать
+    await page.keyboard.up('w');
     await page.evaluate(() => window.__raceDebug.end('crash'));
+    await page.locator('.cc-no').click(); // «Е» за возвращение есть — предлагают «Дальше за 100 Е»; к итогам
     await expect(page.locator('#finish-screen .fin-week-prog')).toContainText('Машина недели');
     expect(problems).toEqual([]);
 });

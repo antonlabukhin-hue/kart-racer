@@ -34,7 +34,8 @@ export const HELLO_SKIP_KEY = 'road_racing_hello_skip';
 /** Показать ли окно: есть новое или сегодня ещё не здоровались */
 export function helloDue(profile, today, storage) {
     try { const st = storage || (typeof localStorage !== 'undefined' ? localStorage : null); if (st && st.getItem(HELLO_SKIP_KEY)) return false; } catch (e) {}
-    return unseenNews(profile).length > 0 || state(profile).day !== today;
+    const gift = !!((profile.comeback && profile.comeback.pending) || (profile.namePlate && profile.namePlate.fresh)); // неврученный подарок — окно в любом случае
+    return gift || unseenNews(profile).length > 0 || state(profile).day !== today;
 }
 
 /** Отметить: всё прочитано, сегодня поздоровались */
