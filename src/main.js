@@ -4230,7 +4230,7 @@ function startGaragePreview(carId) {
             const bossMaxPhase = (_cmods && _cmods.bossMaxPhase) || 3;
 
             if (window.soundEngine) {
-                window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35;
+                window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35; if (window.soundEngine.setCar) window.soundEngine.setCar(carId); /* свой мотор у машины (src/engine-sound.js) */
                 window.soundEngine._gear = 0;
                 window.soundEngine._gearShiftDrop = 0;
             }
@@ -8505,7 +8505,7 @@ function startGaragePreview(carId) {
                             const eng = window.soundEngine || soundEngine;
                             if (eng) {
                                 try { if (eng.audioCtx && eng.audioCtx.state === 'suspended') eng.audioCtx.resume(); } catch (e) {}
-                                if (eng.playSfx) eng.playSfx('gear', gear > prev ? 1.15 : 0.8);
+                                if (eng.playSfx) eng.playSfx('gear', gear > prev ? 0.6 : 0.4); // тише: провал оборотов теперь слышен в самом моторе
                                 eng._gearShiftDrop = 0.45;
                             }
                         }
