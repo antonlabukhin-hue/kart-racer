@@ -926,9 +926,9 @@ export function buildShowroomCar(carId) {
         })();
         const plateMat = new THREE_REF.MeshBasicMaterial({ map: plateTex });
         const pf = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.46, 0.1), plateMat);
-        pf.rotation.y = Math.PI; pf.position.set(0, 0.27, frontZ - (isSport ? 0.115 : 0.1)); group.add(pf); // на бампере, выше «губы» и трубы кенгурятника
+        pf.userData.plate = true; pf.rotation.y = Math.PI; pf.position.set(0, 0.27, frontZ - (isSport ? 0.115 : 0.1)); group.add(pf); // на бампере, выше «губы» и трубы кенгурятника
         const pr = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.46, 0.1), plateMat);
-        pr.position.set(0, isJeep ? 0.22 : 0.35, rearZ + (isJeep ? 0.09 : 0.13)); group.add(pr); // у Нивы — под запаской
+        pr.userData.plate = true; pr.position.set(0, isJeep ? 0.22 : 0.35, rearZ + (isJeep ? 0.09 : 0.13)); group.add(pr); // у Нивы — под запаской
         // зеркала на стойках у лобового: кронштейн от стенки кабины до корпуса зеркала (без зазоров)
         [-1, 1].forEach(function(sx) {
             const zM = wedge ? cabinZ - cabinLen * 0.5 - hatchF * 0.8 : cabinZ - cabinLen * 0.42; // у «Зубила» — у основания лобового

@@ -6081,3 +6081,20 @@ body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size:
 .fin-hook.fin-td b { color: #9fe8ff; }
 
 @media (max-width: 480px) { .hn-item { grid-template-columns: 30px 1fr; } .hn-item .hn-act { grid-column: 2; justify-self: start; margin-top: 2px; } .hello-card .hn-hi { font-size: 22px; } }
+
+/* подарки сверху окна «Привет» (за возвращение, именной номер) и плашки итогов: машина недели, сундук за вызов */
+.hello-card .hn-gifts { display: grid; gap: 8px; margin-bottom: 10px; }
+.hn-gift { display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; border: 2px solid #ffd23c;
+    background: linear-gradient(120deg, #ff8a3c, #ffd23c 55%, #ffe680); color: #2a1600; animation: giftGlow 1.4s ease-in-out infinite; }
+.hn-gift > i { font-style: normal; font-size: 30px; text-align: center; }
+.hn-gift b { display: block; font-size: 16px; font-weight: 900; }
+.hn-gift span { display: block; font-size: 13px; font-weight: 700; color: #4a2a00; }
+.hn-claim { padding: 9px 14px; border: 0; border-radius: 12px; cursor: pointer; font: 900 15px system-ui, sans-serif; color: #ffe066; background: #2a1600; box-shadow: 0 3px 0 #000; white-space: nowrap; }
+.hn-gift .hn-act { color: #ffe066; background: #2a1600; box-shadow: 0 3px 0 #000; }
+.hn-got { font-weight: 900; font-size: 14px; color: #1a5a00; white-space: nowrap; animation: uiPop .4s both; }
+.fin-hook.fin-week { border-color: #5aff8a; background: linear-gradient(100deg, rgba(90,255,138,0.22), rgba(90,255,138,0.05)); }
+.fin-hook.fin-week b { color: #9dffb4; }
+.fin-hook.fin-week-prog { animation: uiPop .4s both; border-color: rgba(90,255,138,0.5); background: rgba(90,255,138,0.08); }
+.fin-hook.fin-week-prog b { color: #c8ffd6; font-size: 14px; }
+.fin-hook.fin-friend { border-color: #ff8a5a; background: linear-gradient(100deg, rgba(255,120,80,0.22), rgba(255,120,80,0.05)); }
+.fin-hook.fin-friend b { color: #ffc0a0; }

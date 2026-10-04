@@ -70,7 +70,7 @@ export function refreshMainMenu(d) {
         sb.classList.toggle('ready', !!d.canClaimChest);
         setBadge('mm-badge-chest', d.canClaimChest ? 1 : 0);
         const mm = document.getElementById('main-menu-screen');
-        if (d.canClaimChest && p.streak.count >= 2 && chestAutoShown !== p.streak.last && d.chest && mm && mm.classList.contains("active")) { // новичка в первый день не перебиваем
+        if (d.canClaimChest && p.streak.count >= 2 && !d.holdChest && chestAutoShown !== p.streak.last && d.chest && mm && mm.classList.contains("active")) { // новичка в первый день не перебиваем; окно «Привет» — первым, сундук — после него
             chestAutoShown = p.streak.last;
             showChest(p, d.chest);
         }

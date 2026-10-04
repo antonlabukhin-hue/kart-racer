@@ -85,11 +85,15 @@ test('«Привет» с новостями, машины в подарок: в
     await login(page);
     const hello = page.locator('.hello-modal');
     await expect(hello).toContainText('Тестер', { timeout: 15_000 });
-    await expect(hello.locator('.hn-item.new')).toHaveCount(5);
-    await expect(hello).toContainText('Тест-драйвы за задания');
-    await expect(hello).toContainText('Машины в подарок');
-    await hello.locator('.hn-act[data-act="gift"]').click();
+    await expect(hello.locator('.hn-item.new')).toHaveCount(4); // новых — не больше 4, остальные — в «Ранее»
+    await expect(hello.locator('.hn-item.new').first()).toContainText('Машина недели');
+    await expect(hello.locator('.hn-old')).toContainText('Машины в подарок'); // старые новости — свёрнуты в «Ранее»
+    await expect(hello.locator('.hn-row[data-act="week"]')).toContainText(/\/ \d+\s000 м/);
+    await hello.locator('.hn-go').click();
+    await expect(hello).toHaveCount(0);
+    await page.locator('.mm-tab[data-menu="cars"]').click();
     await expect(page.locator('#shop-screen')).toBeVisible();
+    await page.locator('#shop-cars .shop-car-btn[data-car="trike"]').click();
     await expect(page.locator('#shop-action')).toContainText('ТОЛЬКО В ПОДАРОК');
     await expect(page.locator('#shop-desc')).toContainText('из 7 дней');
     await expect(page.locator('#shop-cars .shop-car-btn.gift')).toHaveCount(2); // подарочные — золотые
@@ -142,5 +146,53 @@ test('секретная краска и тест-драйв за вехи: пл
     expect(p.secretPaints.got.neon).toBeTruthy();
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await expect(page.locator('#finish-screen')).toContainText('Тест-драйв: «Ракета»');
+    expect(problems).toEqual([]);
+});
+
+// подарок за возвращение (3+ дня без игры), именной номер за 14 дней подряд, машина недели на итогах бесконечной
+test('подарок за возвращение, именной номер, машина недели', async ({ page }) => {
+    const problems = watchProblems(page);
+    await page.addInitScript(() => sessionStorage.setItem('keep_hello', '1'));
+    await login(page);
+    await page.locator('.hello-modal .hn-go').click();
+    const seed = async (days, count) => {
+        await page.evaluate(([days, count]) => {
+            const d = new Date(); d.setDate(d.getDate() - days);
+            const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+            l.forEach(p => { p.streak = { count: count, last: k, claimed: k }; });
+            localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+        }, [days, count]);
+        await page.reload();
+        await page.locator('#splash-screen').click();
+        await page.locator('#profile-list').getByText('Тестер').click();
+    };
+    // не было 5 дней
+    await seed(5, 3);
+    const gift = page.locator('.hello-modal .hn-gift');
+    await expect(gift).toContainText('С возвращением', { timeout: 15_000 });
+    const chips = await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].season.chips || 0);
+    await gift.locator('.hn-claim').click();
+    await expect(gift.locator('.hn-got')).toContainText('+400 Е');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].season.chips)).toBe(chips + 400);
+    await page.locator('.hello-modal .hn-go').click();
+    // 14-й день подряд
+    await seed(1, 13);
+    await expect(page.locator('.giftcar-modal')).toContainText('Трайк', { timeout: 15_000 }); // 7+ дней подряд — сначала подарок «Трайк», «Привет» — после
+    await page.locator('.giftcar-modal .nc-later').click();
+    await expect(page.locator('.hello-modal .hn-gift')).toContainText('Именной номер', { timeout: 15_000 });
+    await page.locator('.hello-modal .hn-go').click();
+    await expect(page.locator('.chest-modal')).toBeVisible(); // сундук дня — после «Привет», а не поверх
+    await page.locator('.chest-modal .ch-later').click();
+    // машина недели — прогресс на итогах бесконечной
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.inf ? window.__raceDebug.inf.dist : 0), { timeout: 20_000 }).toBeGreaterThan(30); // хоть немного проехать
+    await page.keyboard.up('w');
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await page.locator('.cc-no').click(); // «Е» за возвращение есть — предлагают «Дальше за 100 Е»; к итогам
+    await expect(page.locator('#finish-screen .fin-week-prog')).toContainText('Машина недели');
     expect(problems).toEqual([]);
 });

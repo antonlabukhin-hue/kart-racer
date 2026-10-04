@@ -4,6 +4,10 @@
  */
 import { SECRET_PAINTS, hasSecretPaint, paintProgress } from '../secret-paints.js';
 import { ladder, tickets } from '../test-drive.js';
+import { weekState, addWeekDist, WEEK_GOAL } from '../week-car.js';
+import { PLATE_DAYS, plateText } from '../name-plate.js';
+import { claimComeback } from '../comeback.js';
+import { weekKey } from '../leaderboard.js';
 
 const esc = function(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 const hex = function(c) { return '#' + (c >>> 0).toString(16).padStart(6, '0'); };
@@ -78,10 +82,14 @@ export function showTdPop(o) {
     return m;
 }
 
-// новые краски и билеты копятся между заездами (волны «Звериного часа» без итогов) и показываются на ближайших итогах
-let pending = { paints: [], tickets: [] };
-export function addHooks(paints, tks) { pending.paints = pending.paints.concat(paints || []); pending.tickets = pending.tickets.concat(tks || []); }
-export function takeHooksHtml(names) { const p = pending; pending = { paints: [], tickets: [] }; return hooksFinishHtml(p.paints, p.tickets, names); }
+// новые краски, билеты и прочие награды копятся между заездами (волны «Звериного часа» без итогов) и показываются на ближайших итогах
+let pending = { paints: [], tickets: [], extra: [] };
+/** extra — [{ icon, title, text, cls }] — машина недели, дружеский сундук */
+export function addHooks(paints, tks, extra) { pending.paints = pending.paints.concat(paints || []); pending.tickets = pending.tickets.concat(tks || []); pending.extra = pending.extra.concat((extra || []).filter(Boolean)); }
+export function takeHooksHtml(names) {
+    const p = pending; pending = { paints: [], tickets: [], extra: [] };
+    return p.extra.map(function(x) { return '<div class="fin-hook ' + (x.cls || '') + '"><i>' + x.icon + '</i><div><b>' + esc(x.title) + '</b><small>' + esc(x.text) + '</small></div></div>'; }).join('') + hooksFinishHtml(p.paints, p.tickets, names);
+}
 
 /** Строка «Сегодня для тебя»: ближайшая к получению секретная краска или null */
 export function secretNextText(profile, today) {
@@ -89,4 +97,50 @@ export function secretNextText(profile, today) {
         .map(function(sp) { const pr = paintProgress(profile, sp, today); return { sp: sp, pr: pr, k: pr[0] / pr[1] }; })
         .sort(function(a, b) { return b.k - a.k; })[0];
     return left ? 'Секретная краска: ' + left.sp.how + ' — ' + left.pr[0] + ' / ' + left.pr[1] : null;
+}
+
+// ---- машина недели, именной номер, подарок за возвращение, сундук за вызов друга ----
+const m = function(n) { return Math.round(n || 0).toLocaleString('ru-RU'); };
+const goalOf = function(w) { return (w && w.goal) || WEEK_GOAL; };
+
+/** После заезда по бесконечной: прибавить метры к машине недели; плашка — награда или прогресс */
+export function weekRaceExtra(profile, dist, presets, isGift, names, now) {
+    const wk = weekKey(now || new Date());
+    const before = weekState(profile, wk, presets, isGift);
+    if (before.done || !before.car) return null;
+    const r = addWeekDist(profile, wk, dist, presets, isGift);
+    if (r && r.car) return { icon: '🚗', title: 'Машина недели «' + names(r.car) + '» — твоя!', text: m(goalOf(profile.weekCar)) + ' м за неделю — она уже в гараже', cls: 'fin-week' };
+    if (r && r.vhs) return { icon: '📼', title: 'Машина недели: +' + r.vhs + ' кассеты', text: 'Все машины уже твои — вместо машины кассеты', cls: 'fin-week' };
+    const w = profile.weekCar;
+    return { icon: '🚗', title: 'Машина недели «' + names(w.car) + '»: ' + m(w.dist) + ' / ' + m(goalOf(w)) + ' м', text: 'Ещё ' + m(goalOf(w) - w.dist) + ' м в бесконечной до воскресенья — и машина твоя навсегда, без «Е»', cls: 'fin-week-prog' };
+}
+
+/** Плашка дружеского сундука (g — из grantFriendChest) */
+export function friendExtra(g, name) {
+    if (!g) return null;
+    return { icon: '⚔', title: (g.win ? 'Вызов побит — богатый сундук!' : 'Дружеский сундук за вызов') + ' +' + g.chips + ' Е' + (g.vhs ? ' · +' + g.vhs + ' 📼' : ''), text: 'Вызов от ' + name + ' · за каждого друга — раз в день', cls: 'fin-friend' };
+}
+
+/** Строки «Сегодня для тебя»: машина недели и именной номер */
+export function moreForYou(profile, presets, isGift, names, now) {
+    const rows = [];
+    const w = weekState(profile, weekKey(now || new Date()), presets, isGift);
+    if (w.car && !w.done) rows.push({ icon: '🚗', text: 'Машина недели «' + names(w.car) + '»: ' + m(w.dist) + ' / ' + m(goalOf(w)) + ' м', act: 'week' });
+    if (!(profile.namePlate && profile.namePlate.got)) {
+        const c = (profile.streak && profile.streak.count) || 0;
+        if (c >= 2) rows.push({ icon: '🏷', text: 'Именной номер: ' + c + ' / ' + PLATE_DAYS + ' дней подряд' });
+    }
+    return rows;
+}
+
+/** Подарки сверху окна «Привет»: за возвращение (забрать), именной номер (только что получен) */
+export function helloGifts(profile, onClaim) {
+    const plateNew = !!(profile.namePlate && profile.namePlate.fresh);
+    if (plateNew) delete profile.namePlate.fresh;
+    const out = [];
+    const c = profile.comeback && profile.comeback.pending;
+    if (c) out.push({ icon: '🎁', title: 'С возвращением! Подарок', text: 'Тебя не было ' + c.days + ' ' + (c.days % 10 === 1 && c.days % 100 !== 11 ? 'день' : c.days % 10 >= 2 && c.days % 10 <= 4 && (c.days % 100 < 12 || c.days % 100 > 14) ? 'дня' : 'дней') + ' — держи +' + c.chips + ' Е и +' + c.vhs + ' 📼',
+        btn: 'Забрать', claim: function() { const g = claimComeback(profile); if (onClaim) onClaim(); return g ? '+' + g.chips + ' Е · +' + g.vhs + ' 📼 ✓' : '✓'; } });
+    if (plateNew) out.push({ icon: '🏷', title: 'Именной номер — твой!', text: PLATE_DAYS + ' дней подряд: золотой номер «' + plateText(profile.name) + '» теперь на всех твоих машинах', act: 'garage', btn: 'Посмотреть' });
+    return out;
 }
