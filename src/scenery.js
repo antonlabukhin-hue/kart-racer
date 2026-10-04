@@ -392,13 +392,13 @@ function forestStretch(o, W, snow) {
 function townStretch(o, W) {
     const r = o.r;
     [-1, 1].forEach(function(side) {
-        if (r() < 0.75) fillBand(o, side, W / 2 + 26, W / 2 + 40, function() {
+        if (r() < 0.9) fillBand(o, side, W / 2 + 14, W / 2 + 22, function() { // пятиэтажки — сразу за частным сектором, а не у горизонта
             return pickW(r, [[2, function() { const n = 2 + Math.floor(r() * 3); return { t: house(['k5', 'k5b', 'brick5'][Math.floor(r() * 3)], 5, n), span: 4.2 * n, depth: 3.6 }; }],
                 [1, function() { return { t: house('p9', 9, 2), span: 8.4, depth: 4.2 }; }], [1.2, function() { return null; }]]);
         }, 4);
     });
     [-1, 1].forEach(function(side) { // середина: гаражи, частный сектор, сараи, трансформаторы, деревья
-        fillBand(o, side, W / 2 + 9, W / 2 + 20, function() {
+        fillBand(o, side, W / 2 + 4.5, W / 2 + 11, function() { // частный сектор, гаражи, сараи — вплотную к обочине
             return pickW(r, [[1.4, function() { return { t: garagesT(), span: 6.6, depth: 3.1 }; }],
                 [1.4, function() { const roof = IZBA_ROOFS[Math.floor(r() * IZBA_ROOFS.length)]; return { t: izbaT(roof[0], roof[1], IZBA_WALLS[Math.floor(r() * IZBA_WALLS.length)]), span: 4.2, depth: 4.2 }; }],
                 [1, function() { return { t: shedT(), span: 2.4, depth: 2.4 }; }],

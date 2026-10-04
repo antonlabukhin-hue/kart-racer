@@ -6201,3 +6201,77 @@ body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size:
     #endless-wave-card .ew-pick { padding: 6px 4px !important; }
     #endless-wave-card .ew-pick small { font-size: 10px; }
 }
+/* кнопки поворота на телефоне — на ~15% крупнее (было 76×70) */
+html.touch-ui.touch-land body.race-mode .control-btn.steer { width: 88px !important; height: 80px !important; font-size: 32px !important; }
+/* «В ударе» на телефоне лёжа — внизу по центру, между рулём и газом: большие плашки (30% высоты) всегда над ним
+   и не закрывают надпись и полоску оставшегося времени; индикатор риска — ещё ниже */
+@media (max-height: 560px) {
+    #fever-fx b { top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 58px) !important; font-size: 22px !important; }
+    #fever-fx i { top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 46px) !important; width: 170px !important; margin-left: -85px !important; height: 7px !important; }
+}
+/* пока «В ударе» — большие плашки чуть выше и меньше, чтобы ничего не лезло на надпись */
+body:has(#fever-fx) .big-plaque { top: 24% !important; }
+@media (max-height: 560px) { body:has(#fever-fx) .big-plaque { top: 22% !important; padding: 8px 18px !important; } body:has(#fever-fx) .big-plaque b { font-size: 22px !important; } }
+#fever-fx b em { font-style: normal; font-size: 0.8em; color: #fff; font-variant-numeric: tabular-nums; }
+
+/* ===== Итоги бесконечной трассы — новая раскладка (src/ui/finish-ui.js infFinishHtml) ===== */
+#finish-screen.finish-layout-f2 { align-items: center !important; justify-content: center !important; padding: 12px !important; }
+#finish-screen.finish-layout-f2 .f2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; width: min(860px, 100%); box-sizing: border-box;
+    padding: 16px; border-radius: 20px; background: rgba(8,8,12,0.94); border: 2px solid #ffd23c; box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+    font-family: system-ui, 'Segoe UI', Arial, sans-serif; color: #fff; text-align: center; max-height: calc(100dvh - 24px); }
+#finish-screen.finish-layout-f2 .f2-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+#finish-screen.finish-layout-f2 .f2-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+#finish-screen.finish-layout-f2 .f2-title { font: 900 15px system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #ffcf7a; }
+#finish-screen.finish-layout-f2 .f2-hero { display: flex; align-items: baseline; justify-content: center; gap: 6px; line-height: 1; }
+#finish-screen.finish-layout-f2 .f2-hero b { font: 900 64px/1 system-ui, 'Segoe UI', sans-serif; color: #ffe066; text-shadow: 0 0 22px rgba(255,200,40,0.55); font-variant-numeric: tabular-nums; }
+#finish-screen.finish-layout-f2 .f2-hero span { font: 900 24px system-ui, sans-serif; color: #ffcf7a; }
+#finish-screen.finish-layout-f2 .f2-rec { font: 800 14px system-ui, sans-serif; color: #d8d0e8; }
+#finish-screen.finish-layout-f2 .f2-rec.new { color: #7dff9a; font-size: 16px; text-shadow: 0 0 12px rgba(80,255,140,0.5); }
+#finish-screen.finish-layout-f2 .f2-meta { font: 700 12px system-ui, sans-serif; color: #a8a0b8; }
+#finish-screen.finish-layout-f2 .fin-rewards { margin: 2px 0 0 !important; }
+#finish-screen.finish-layout-f2 .fin-stats { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; margin: 4px 0 0 !important; }
+#finish-screen.finish-layout-f2 .fin-stats > div { padding: 6px 4px !important; border-radius: 10px !important; }
+#finish-screen.finish-layout-f2 .f2-feed { flex: 1 1 auto; min-height: 0; overflow-y: auto; text-align: left; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
+#finish-screen.finish-layout-f2 .f2-feed > * { margin: 0 !important; }
+#finish-screen.finish-layout-f2 .f2-feed :is(.fin-hook, .fin-near, .nearly, .fin-daily, .fin-testdrive, .retention, .finish-rank) { font-family: system-ui, 'Segoe UI', sans-serif !important; }
+#finish-screen.finish-layout-f2 .f2-actions { flex: none; }
+#finish-screen.finish-layout-f2 .f2-actions .fin-actions { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; position: static !important; margin: 0 !important; padding: 0 !important; background: none !important; }
+#finish-screen.finish-layout-f2 .f2-actions .fin-btn { margin: 0 !important; min-height: 44px !important; padding: 8px 6px !important; border-radius: 12px !important;
+    font: 800 13px/1.15 system-ui, 'Segoe UI', sans-serif !important; font-style: normal !important; text-transform: none !important; letter-spacing: 0 !important;
+    background: rgba(255,255,255,0.07) !important; border: 1.5px solid rgba(255,255,255,0.22) !important; color: #f2f2f2 !important; box-shadow: none !important; }
+#finish-screen.finish-layout-f2 .f2-actions .fin-btn small { display: block; font-size: 10px; font-weight: 700; color: #ffcf7a; }
+#finish-screen.finish-layout-f2 .f2-actions .fin-btn.primary { grid-column: 1 / -1; min-height: 52px !important; font-size: 18px !important; font-weight: 900 !important;
+    background: linear-gradient(180deg, #ffe066, #ffb000) !important; border-color: #ffd23c !important; color: #1a1000 !important; box-shadow: 0 4px 0 #a86a00 !important; }
+#finish-screen.finish-layout-f2 .f2-actions .fin-btn.hot { border-color: #ffb020 !important; }
+/* телефон: одной колонкой, кнопки — внизу под рукой */
+@media (max-width: 640px) {
+    #finish-screen.finish-layout-f2 { align-items: flex-start !important; }
+    #finish-screen.finish-layout-f2 .f2 { grid-template-columns: 1fr; gap: 10px; padding: 12px; max-height: none; }
+    #finish-screen.finish-layout-f2 .f2-hero b { font-size: 52px; }
+    #finish-screen.finish-layout-f2 .f2-feed { overflow: visible; }
+    #finish-screen.finish-layout-f2 .f2-actions { position: sticky; bottom: 0; padding: 8px 0 2px; background: linear-gradient(180deg, rgba(8,8,12,0), rgba(8,8,12,0.96) 30%); }
+}
+/* телефон лёжа: низкий экран — две колонки, всё компактнее */
+@media (max-height: 520px) and (min-width: 641px) {
+    #finish-screen.finish-layout-f2 .f2 { padding: 10px 12px; gap: 10px; }
+    #finish-screen.finish-layout-f2 .f2-hero b { font-size: 44px; }
+    #finish-screen.finish-layout-f2 .fin-stats > div { padding: 4px !important; }
+}
+/* итоги: карточка шире старого ограничения (400px), на телефоне лёжа — целиком в экране */
+body #finish-screen.finish-layout-f2 > .f2 { width: min(840px, 100%) !important; max-width: 840px !important; }
+@media (max-height: 520px) {
+    #finish-screen.finish-layout-f2 { align-items: flex-start !important; padding: 6px !important; }
+    body #finish-screen.finish-layout-f2 > .f2 { max-height: calc(100dvh - 12px) !important; overflow: hidden; padding: 8px 10px !important; gap: 8px !important; }
+    #finish-screen.finish-layout-f2 .f2-main { overflow-y: auto; min-height: 0; gap: 4px; }
+    #finish-screen.finish-layout-f2 .f2-hero b { font-size: 38px !important; }
+    #finish-screen.finish-layout-f2 .f2-title { font-size: 12px; }
+    #finish-screen.finish-layout-f2 .fin-stats { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+    #finish-screen.finish-layout-f2 .fin-stats small { display: none !important; }
+    #finish-screen.finish-layout-f2 .f2-actions .fin-btn { min-height: 36px !important; }
+    #finish-screen.finish-layout-f2 .f2-actions .fin-btn.primary { min-height: 42px !important; font-size: 16px !important; }
+}
+@media (max-height: 520px) {
+    body #finish-screen.finish-layout-f2 > .f2 { height: calc(100dvh - 12px) !important; grid-template-rows: minmax(0, 1fr) !important; }
+    #finish-screen.finish-layout-f2 .f2-side { min-height: 0; overflow: hidden; }
+    #finish-screen.finish-layout-f2 .f2-feed { overflow-y: auto !important; }
+}

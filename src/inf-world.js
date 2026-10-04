@@ -85,7 +85,8 @@ export function createInfWorld(o) {
         const g = new THREE.Group();
         g.name = 'inf_' + i;
         const own = th.style === 'city' || th.style === 'village'; // свой набор целиком (src/scenery.js)
-        for (let n = 0; n < (own ? 0 : envN); n++) {
+        const envK = th.style === 'arsenev' ? 2 : envN; // в Арсеньеве обочину заняли дома (src/scenery.js) — общего декора меньше, чтобы не налезал
+        for (let n = 0; n < (own ? 0 : envK); n++) {
             const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 3.5 + r() * 14), z = zr(), s = 0.7 + r() * 1.1;
             const b = Decor.decorFor(th.style, r());
             if (b) { const d = b(x, z, s); d.position.y = heightAt(x, z) - 0.05; g.add(d); } // по холму, а не в воздухе
@@ -111,7 +112,7 @@ export function createInfWorld(o) {
             const trees = [], n = Math.round(treeN * (th.style === 'industrial' ? 0.25 : 0.55));
             for (let t = 0; t < n; t++) {
                 const side = r() < 0.5 ? -1 : 1;
-                trees.push({ x: side * (W / 2 + 7 + r() * 16), z: zr(), s: 0.8 + r() * 0.7, kind: r() < 0.55 ? 'birch' : 'pine', rot: r() * Math.PI * 2 });
+                trees.push({ x: side * (W / 2 + (th.style === 'arsenev' ? 23 + r() * 14 : 7 + r() * 16)), z: zr(), s: 0.8 + r() * 0.7, kind: r() < 0.55 ? 'birch' : 'pine', rot: r() * Math.PI * 2 });
             }
             createForestInstanced(g, trees, mergeGeometries);
         }

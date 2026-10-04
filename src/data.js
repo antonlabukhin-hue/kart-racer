@@ -196,7 +196,7 @@ export const CAR_PRESETS = {
     cyborg:      { name: 'Киборг',     color: 0x18181c, maxSpeed: 0.5, accel: 0.034, durability: 0.7, oilGrip: 0.8, priceChips: 50000,
         ability: { id: 'cyborg', name: 'Киборг', desc: 'удар о зверя — не авария' } },
     avenger:     { name: 'Ночной мститель', color: 0x111116, maxSpeed: 0.52, accel: 0.033, durability: 1.2, oilGrip: 1.0, priceChips: 100000,
-        ability: { id: 'avenger', name: 'Таран', desc: 'удар о попутку — не авария: машину отбрасывает' } },
+        ability: { id: 'avenger', name: 'Таран', desc: 'до 5 попуток за заезд: удар — не авария, машину отбрасывает' } },
     // вторая шестёрка «из кино и мультфильмов» (src/cars-fantasy.js)
     trike:       { name: 'Трайк',      color: 0x8a1010, maxSpeed: 0.49, accel: 0.03, durability: 0.9, oilGrip: 1.3, priceChips: 15000,
         ability: { id: 'trike', name: 'Три колеса', desc: 'масло, лёд, кислота и смола не заносят' } },

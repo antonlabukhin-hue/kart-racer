@@ -128,3 +128,26 @@ export function campFinishHtml(o) {
         + '<div class="fc-right">' + (o.actions || '') + '<div class="fc-result">' + (o.result || '') + '</div></div>'
         + '</div>';
 }
+
+/**
+ * Итоги бесконечной трассы — новая раскладка: слева главное (дальность крупно, рекорд, награды, плитки),
+ * справа — что произошло (почти, задания, подарки) и кнопки; на телефоне — одной колонкой, кнопки внизу.
+ * o — { title, hero: { dist, time, score, mult, isNew, best, place, lvUp }, chips, tiles, feed, buttons }
+ */
+export function infFinishHtml(o) {
+    const h = o.hero || {}, m = function(n) { return Math.round(n || 0).toLocaleString('ru-RU'); };
+    const rec = h.isNew ? '<div class="f2-rec new">🎉 Новый рекорд дальности!</div>'
+        : '<div class="f2-rec">🏆 Рекорд ' + m(h.best) + ' м' + (h.best > h.dist ? ' · не хватило ' + m(h.best - h.dist) + ' м' : '') + '</div>';
+    const meta = ['⏱ ' + h.time, 'очки ' + m(h.score) + (h.mult > 1 ? ' ×' + h.mult : '')].concat(h.place ? ['#' + h.place + ' на неделе'] : []).concat(h.lvUp ? ['⬆ уровень сезона +' + h.lvUp * 100 + ' Е'] : []);
+    return '<div class="f2">'
+        + '<div class="f2-main">'
+        + '<div class="f2-title">' + o.title + '</div>'
+        + '<div class="f2-hero"><b>' + m(h.dist) + '</b><span>м</span></div>'
+        + rec + '<div class="f2-meta">' + meta.join(' · ') + '</div>'
+        + (o.chips || '') + (o.tiles || '')
+        + '</div>'
+        + '<div class="f2-side">'
+        + (o.feed ? '<div class="f2-feed">' + o.feed + '</div>' : '')
+        + '<div class="f2-actions" id="finish-actions">' + o.buttons + '</div>'
+        + '</div></div>';
+}
