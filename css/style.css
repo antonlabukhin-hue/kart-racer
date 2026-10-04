@@ -6177,3 +6177,13 @@ body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size:
 #rewards-screen .season-tabs .season-tab, #events-screen .season-tabs .season-tab { flex: 1 1 0 !important; min-width: 0; white-space: nowrap; font: 800 13px system-ui, sans-serif !important; padding: 8px 4px !important; }
 #rewards-screen.gifts-mode .menu-hero { display: none !important; }
 @media (max-height: 700px) { .hello-card .hn-item span { display: block !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
+/* закрытые секретные краски — вровень с остальными кружками */
+#garage-panel-parts .color-swatches { align-items: center !important; }
+#garage-panel-parts .secret-lock { width: 28px; height: 28px; margin: 0; border-width: 2px; flex: none; }
+#garage-panel-parts .secret-lock b { font-size: 12px; }
+#garage-panel-parts .secret-lock small { font-size: 7px; }
+/* «Привет»: текст новости не распирает строку — обрезается многоточием */
+.hello-card .hn-item > div { min-width: 0; }
+/* кнопки под заданиями: колонки не шире экрана */
+.mm-extras { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+.mm-extras .mm-extra { min-width: 0; }

@@ -10,10 +10,8 @@ describe('счётчики меню', () => {
         expect(unclaimedRewards({ season: { level: 0 } }, REWARDS)).toBe(0);
         expect(unclaimedRewards(null, REWARDS)).toBe(0);
     });
-    it('«Сезон»: плюс смена дня, пока не отработана', () => {
+    it('«Подарки»: незабранные награды сезона (смена дня не считается — её нет в меню)', () => {
         const p = { season: { level: 2 }, claimedRewards: {}, daily: { done: false } };
-        expect(seasonBadge(p, REWARDS)).toBe(3);
-        p.daily.done = true;
         expect(seasonBadge(p, REWARDS)).toBe(2);
     });
     it('прокачка: сколько улучшений по карману, максимальные не считаются', () => {
