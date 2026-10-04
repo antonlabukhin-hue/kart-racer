@@ -6,7 +6,7 @@ describe('рекорды глав', () => {
     it('своё лучшее — из призрака; нет — null', () => {
         const m = {}; const s = { getItem: k => m[k] || null };
         expect(localBest('p1', 'c03', 'medium', s)).toBe(null);
-        m[ghostKey('p1', 'camp_c03', 'medium')] = JSON.stringify({ v: 1, time: 61.4, step: 0.1, x: [0, 1], y: [0, 0], z: [0, -1] });
+        m[ghostKey('p1', 'camp2_c03', 'medium')] = JSON.stringify({ v: 1, time: 61.4, step: 0.1, x: [0, 1], y: [0, 0], z: [0, -1] });
         expect(localBest('p1', 'c03', 'medium', s)).toBe(61.4);
         expect(localBest('p1', 'c03', 'hard', s)).toBe(null);
     });

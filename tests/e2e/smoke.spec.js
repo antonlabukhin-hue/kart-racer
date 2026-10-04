@@ -224,6 +224,7 @@ test('трофеи в гараже с картинками', { tag: '@smoke' }, 
     await login(page);
     await page.locator('[data-menu="garage"]').click();
     await page.locator('.garage-tab[data-gtab="trophies"]').click();
+    await page.locator('.tro-tab[data-tro="cups"]').click(); // кубки — третья вкладка «Трофеев»
     const imgs = page.locator('#trophy-grid img.trophy-img');
     await expect(imgs).toHaveCount(10);
     await expect.poll(() => imgs.evaluateAll(list => list.filter(i => i.complete && i.naturalWidth > 0).length)).toBe(10);
