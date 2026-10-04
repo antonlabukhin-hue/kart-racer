@@ -136,9 +136,9 @@ export function campFinishHtml(o) {
  */
 export function infFinishHtml(o) {
     const h = o.hero || {}, m = function(n) { return Math.round(n || 0).toLocaleString('ru-RU'); };
-    const rec = h.isNew ? '<div class="f2-rec new">🎉 Новый рекорд дальности!</div>'
+    const rec = h.isNew ? '<div class="f2-rec new">🎉 НОВЫЙ РЕКОРД ДАЛЬНОСТИ!</div>'
         : '<div class="f2-rec">🏆 Рекорд ' + m(h.best) + ' м' + (h.best > h.dist ? ' · не хватило ' + m(h.best - h.dist) + ' м' : '') + '</div>';
-    const meta = ['⏱ ' + h.time, 'очки ' + m(h.score) + (h.mult > 1 ? ' ×' + h.mult : '')].concat(h.place ? ['#' + h.place + ' на неделе'] : []).concat(h.lvUp ? ['⬆ уровень сезона +' + h.lvUp * 100 + ' Е'] : []);
+    const meta = ['⏱ ' + h.time, 'очки ' + m(h.score) + (h.mult > 1 ? ' ×' + h.mult : '')].concat(h.place ? ['Место на неделе: #' + h.place] : []).concat(h.lvUp ? ['⬆ уровень сезона +' + h.lvUp * 100 + ' Е'] : []);
     return '<div class="f2">'
         + '<div class="f2-main">'
         + '<div class="f2-title">' + o.title + '</div>'

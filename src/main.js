@@ -4762,7 +4762,7 @@ function startGaragePreview(carId) {
                                 + (rk.tip ? '<span class="fr-tip">' + escapeHtml(rk.tip) + '</span>' : '<span class="fr-tip">Лучше не бывает</span>') + '</span></div>';
                         }
                     } catch (eR) { console.warn('rank', eR); }
-                    if (infHero) { screen.classList.add('finish-layout-f2'); screen.innerHTML = infFinishHtml({ title: '🛣 Заезд окончен', hero: infHero, chips: rewardChipsHtml(rewards, currentPlayer && currentPlayer.season), tiles: statTilesHtml(finStats), feed: nearHtml + rankHtml + retentionHtml(rewards) + takeHooksHtml(carName), buttons: finishButtonsHtml({ state: state, endless: !(infRunOpts && infRunOpts.daily), canUpgrade: canUpgradeNow() }) }); } else
+                    if (infHero) { screen.classList.add('finish-layout-f2'); screen.innerHTML = infFinishHtml({ title: '🛣 ЗАЕЗД ОКОНЧЕН', hero: infHero, chips: rewardChipsHtml(rewards, currentPlayer && currentPlayer.season), tiles: statTilesHtml(finStats), feed: nearHtml + rankHtml + retentionHtml(rewards) + takeHooksHtml(carName), buttons: finishButtonsHtml({ state: state, endless: !(infRunOpts && infRunOpts.daily), canUpgrade: canUpgradeNow() }) }); } else
                     screen.innerHTML = (
                         '<div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ' + color + ';text-align:center;max-width:400px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">'
                         + (imgHtml || '')
