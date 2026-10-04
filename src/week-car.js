@@ -1,13 +1,14 @@
 /**
  * «Машина недели»: каждую неделю (с понедельника) своя машина, которой у тебя нет, — проедь goal м
- * в бесконечной трассе за неделю, и она твоя бесплатно. Всё есть — WEEK_DUP_VHS кассет.
+ * в бесконечной трассе за неделю (метры всех заездов складываются), и она твоя навсегда, без «Е». Всё есть — WEEK_DUP_VHS кассет.
  * Машина — из продающихся за «Е» не дороже WEEK_MAX_PRICE (не подарочных), у каждого игрока своя, всю неделю одна и та же;
- * дороже машина — длиннее цель (goalFor). profile.weekCar = { week, dist, car, goal, done }. Логика — чистая (с тестами).
+ * цель — M_PER_E метра за каждую «Е» цены (goalFor): машина за 15 000 Е — 60 км. profile.weekCar = { week, dist, car, goal, done }. Логика — чистая (с тестами).
  */
 export const WEEK_GOAL = 15000;
 export const WEEK_MAX_PRICE = 15000;
 /** Сколько метров за неделю нужно на машину ценой price */
-export function goalFor(price) { return price <= 7500 ? 12000 : price <= 12000 ? WEEK_GOAL : 20000; }
+export const M_PER_E = 4;
+export function goalFor(price) { return Math.round(price * M_PER_E / 1000) * 1000; }
 export const WEEK_DUP_VHS = 3;
 
 function hash(s) {

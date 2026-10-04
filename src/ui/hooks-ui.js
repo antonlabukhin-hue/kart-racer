@@ -112,7 +112,7 @@ export function weekRaceExtra(profile, dist, presets, isGift, names, now) {
     if (r && r.car) return { icon: '🚗', title: 'Машина недели «' + names(r.car) + '» — твоя!', text: m(goalOf(profile.weekCar)) + ' м за неделю — она уже в гараже', cls: 'fin-week' };
     if (r && r.vhs) return { icon: '📼', title: 'Машина недели: +' + r.vhs + ' кассеты', text: 'Все машины уже твои — вместо машины кассеты', cls: 'fin-week' };
     const w = profile.weekCar;
-    return { icon: '🚗', title: 'Машина недели «' + names(w.car) + '»: ' + m(w.dist) + ' / ' + m(goalOf(w)) + ' м', text: 'Ещё ' + m(goalOf(w) - w.dist) + ' м в бесконечной до воскресенья — и она твоя бесплатно', cls: 'fin-week-prog' };
+    return { icon: '🚗', title: 'Машина недели «' + names(w.car) + '»: ' + m(w.dist) + ' / ' + m(goalOf(w)) + ' м', text: 'Ещё ' + m(goalOf(w) - w.dist) + ' м в бесконечной до воскресенья — и машина твоя навсегда, без «Е»', cls: 'fin-week-prog' };
 }
 
 /** Плашка дружеского сундука (g — из grantFriendChest) */
