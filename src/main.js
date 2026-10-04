@@ -1955,9 +1955,9 @@ function createProfile(name) { return Profile.createProfile(name); }
             ensureProfileFields(currentPlayer);
             const lo = currentPlayer.carLoadout;
             const id = carId || currentPlayer.preferredCar || 'cheburashka';
-            if (lo.paintByCar && lo.paintByCar[id]) return lo.paintByCar[id];
-            // цвет — у каждой машины свой: некрашеная — заводская; общий lo.paint — только у старых сохранений без покраски по машинам
-            return (lo.paintByCar && Object.keys(lo.paintByCar).length) ? 'stock' : (lo.paint || 'stock');
+            // старое сохранение (общий lo.paint без покраски по машинам) — краска остаётся только у той машины, на которой ездил: остальные — заводские
+            if ((!lo.paintByCar || !Object.keys(lo.paintByCar).length) && lo.paint && lo.paint !== 'stock') { lo.paintByCar = {}; lo.paintByCar[currentPlayer.preferredCar || 'cheburashka'] = lo.paint; }
+            return (lo.paintByCar && lo.paintByCar[id]) || 'stock'; // цвет — у каждой машины свой
         }
         function setPaintForCar(carId, paintId) {
             if (!currentPlayer) return;
