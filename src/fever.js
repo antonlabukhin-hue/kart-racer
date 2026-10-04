@@ -26,10 +26,11 @@ export function renderFeverFx(risk) {
     if (!el) {
         el = document.createElement('div');
         el.id = 'fever-fx';
-        el.innerHTML = '<b>🔥 В УДАРЕ</b><i><u></u></i>';
+        el.innerHTML = '<b>🔥 В УДАРЕ <em></em></b><i><u></u></i>';
         document.body.appendChild(el);
     }
     const k = risk.fever / FEVER_TIME;
     el.querySelector('u').style.width = Math.round(k * 100) + '%';
+    const sec = el.querySelector('em'); if (sec) sec.textContent = risk.fever.toFixed(1) + ' с'; // сколько ещё осталось
     el.classList.toggle('ending', risk.fever < 1.6);
 }

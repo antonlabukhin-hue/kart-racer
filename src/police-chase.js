@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 
-export const CHASE_TIME = 8;
+export const CHASE_TIME = 5;
 
 /** Состояние погони: { t } — сколько секунд ещё висит на хвосте */
 export function createChaseState() { return { t: 0 }; }
