@@ -12,8 +12,7 @@ export function unclaimedRewards(profile, rewards) {
 
 /** Счётчик вкладки «Сезон»: незабранные награды + смена дня, если ещё не отработана */
 export function seasonBadge(profile, rewards) {
-    const daily = profile && profile.daily && profile.daily.done ? 0 : 1;
-    return unclaimedRewards(profile, rewards) + daily;
+    return unclaimedRewards(profile, rewards); // «Смены дня» больше нет в меню — её не считаем
 }
 
 /**

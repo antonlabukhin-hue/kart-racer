@@ -35,7 +35,7 @@ test('гараж: после покупки улучшения фишки в ш�
     await page.locator('[data-menu="garage"]').click();
     await expect(page.locator('#garage-player-name')).toContainText('Е 5000');
     // краска: нажал — примерка и плашка «Купить / Отмена», «Е» не списаны; «Купить» — списаны
-    await page.getByRole('button', { name: /Кастом/ }).click();
+    await page.getByRole('button', { name: /Тюнинг/ }).click();
     await page.locator('.color-swatch[data-paint="red"]').click();
     await expect(page.locator('.try-bar')).toContainText('Арсеньев красный');
     await expect(page.locator('#garage-player-name')).toContainText('Е 5000');

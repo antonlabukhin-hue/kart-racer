@@ -98,6 +98,8 @@ export default {
         '⚙ Прокачка': '⚙ Upgrades',
         '🏆 Трофеи 90-х': '🏆 90s trophies',
         '🏅 Ачивки': '🏅 Achievements',
+        'Тюнинг': 'Tuning', 'Прокачка': 'Upgrades', 'Трофеи': 'Trophies', 'Ачивки': 'Achievements',
+        'Подарки': 'Gifts', '🎁 Подарки': '🎁 Gifts', '🏆 Сезон': '🏆 Season', '🎁 ПОДАРКИ': '🎁 GIFTS',
         'Двигатель': 'Engine',
         'Коробка': 'Gearbox',
         'Шины': 'Tires',
