@@ -7,6 +7,7 @@
 import { seasonBadge, unclaimedRewards, affordableUpgrades, badgeText } from './menu-badges.js';
 import { rankLabel, rankOf } from '../ranks.js';
 import { CHESTS } from '../streak.js';
+import { lootChance } from '../chest-loot.js';
 import { scoreMult } from '../missions.js';
 import { weekTheme } from '../infinite.js';
 import { renderAvatars, openProfileScreen } from './profile-screen.js';
@@ -101,11 +102,12 @@ export function showChest(p, c) {
     m.innerHTML = '<div class="chest-card" role="dialog" aria-label="Сундук дня">'
         + '<div class="ch-title">🔥 Серия: ' + p.streak.count + ' ' + dayWord(p.streak.count) + ' подряд</div>'
         + '<div class="ch-sub">Заходи каждый день — сундук богаче, 7-й — большой. Пропуск — серия заново.</div>'
+        + '<div class="ch-loot">🛠 Иногда внутри — <b>деталь тюнинга</b> или <b>уровень прокачки</b>! В 7-й день — всегда.</div>'
         + (p.giftCars && p.giftCars.got && p.giftCars.got.trike ? '' : '<div class="ch-gift">🎁 7 дней подряд — машина «Трайк» в подарок!</div>' /* src/gift-cars.js */)
         + '<div class="ch-days">' + CHESTS.map(function(x, i) {
             const n = i + 1;
             return '<div class="ch-day' + (n < day ? ' past' : n === day ? ' today' + (claimed ? ' opened' : '') : '') + '"><small>день ' + n + '</small><i>' + (n === 7 ? '🎁' : '📦') + '</i>'
-                + '<span>Е ' + x.chips + (x.vhs ? '<br>📼' + x.vhs : '') + '</span></div>';
+                + '<span>Е ' + x.chips + (x.vhs ? '<br>📼' + x.vhs : '') + (n === 7 ? '<br>🛠 тюнинг' : lootChance(n) >= 0.35 ? '<br>🛠?' : '') + '</span></div>';
         }).join('') + '</div>'
         + (claimed ? '<div class="ch-got">Сегодня уже забран — приходи завтра</div>' : '<button type="button" class="ch-claim">Забрать сундук</button>')
         + '<button type="button" class="ch-later">' + (claimed ? 'Понятно' : 'Позже') + '</button></div>';
@@ -117,7 +119,9 @@ export function showChest(p, c) {
     if (cl) cl.onclick = function() {
         const got = c.claim();
         if (!got) { close(); return; }
-        cl.outerHTML = '<div class="ch-got">+' + got.chips + ' Е' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>';
+        cl.outerHTML = '<div class="ch-got">+' + got.chips + ' Е' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>'
+            + (got.lootText ? '<div class="ch-tune"></div>' : '');
+        const tune = m.querySelector('.ch-tune'); if (tune) tune.textContent = got.lootText;
         const ok = m.querySelector('.ch-later'); ok.textContent = 'Отлично!'; ok.classList.add('ch-ok');
         m.querySelector('.ch-day.today').classList.add('opened');
     };

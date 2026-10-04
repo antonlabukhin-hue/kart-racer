@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { createDiorama, ROAD_W } from './art-scene.js';
 import { addNitroFlames } from './cars.js';
+import { setCurve } from './curved-world.js';
 
 const SPEED = 16;          // ед./с — скорость «прокрутки» мира
 const SPAN = 150;          // длина петли декораций
@@ -77,6 +78,7 @@ export function startMenuBg(opts) {
     document.addEventListener('visibilitychange', st.onVis);
 
     step(st.still ? 0 : 0.016);
+    setCurve(0, 0); // фон — ровный мир: изгиб дороги из заезда (кино рекорда сразу после финиша) уводил дорогу вбок от машины
     renderer.render(st.scene, st.camera);
     if (!st.still) loop();
 }
@@ -171,6 +173,7 @@ function loop() {
     const dt = Math.min(0.05, (now - st.last) / 1000);
     st.last = now;
     step(dt);
+    setCurve(0, 0);
     st.renderer.render(st.scene, st.camera);
 }
 

@@ -78,18 +78,21 @@ test('серия дней: сундук дня', async ({ page }) => {
     expect(problems).toEqual([]);
 });
 
-// машины в подарок: плашка-новинка в меню; в витрине «Трайк» — только в подарок; 7 дней подряд — «Тебе подарок!»
-test('машины в подарок: плашка в меню, витрина и подарок за 7 дней подряд', async ({ page }) => {
+// «Привет, Имя!» после заставки: новости (машины в подарок, тест-драйвы…) → «Смотреть» — витрина; 7 дней подряд — «Тебе подарок!»
+test('«Привет» с новостями, машины в подарок: витрина и подарок за 7 дней подряд', async ({ page }) => {
     const problems = watchProblems(page);
-    await page.addInitScript(() => sessionStorage.setItem('keep_giftintro', '1'));
+    await page.addInitScript(() => { sessionStorage.setItem('keep_hello', '1'); sessionStorage.setItem('keep_giftintro', '1'); });
     await login(page);
-    await expect(page.locator('.giftcar-modal')).toContainText('Машины в подарок', { timeout: 15_000 });
-    await expect(page.locator('.giftcar-modal')).toContainText('Трайк');
-    await expect(page.locator('.giftcar-modal')).toContainText('Призрачный патруль');
-    await page.locator('.giftcar-modal .nc-go').click();
+    const hello = page.locator('.hello-modal');
+    await expect(hello).toContainText('Тестер', { timeout: 15_000 });
+    await expect(hello.locator('.hn-item.new')).toHaveCount(5);
+    await expect(hello).toContainText('Тест-драйвы за задания');
+    await expect(hello).toContainText('Машины в подарок');
+    await hello.locator('.hn-act[data-act="gift"]').click();
     await expect(page.locator('#shop-screen')).toBeVisible();
     await expect(page.locator('#shop-action')).toContainText('ТОЛЬКО В ПОДАРОК');
     await expect(page.locator('#shop-desc')).toContainText('из 7 дней');
+    await expect(page.locator('#shop-cars .shop-car-btn.gift')).toHaveCount(2); // подарочные — золотые
     // седьмой день подряд (сундук сегодня уже забран — не мешает)
     await page.evaluate(() => {
         const d = new Date(), p2 = n => (n < 10 ? '0' : '') + n, today = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
@@ -105,5 +108,39 @@ test('машины в подарок: плашка в меню, витрина �
     await page.locator('.giftcar-modal .nc-go').click();
     await expect(page.locator('#shop-action')).toContainText('ВЫБРАТЬ');
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].unlockedCars)).toContain('trike');
+    expect(problems).toEqual([]);
+});
+
+// крючки: секретная краска за 10 заездов в 3 дня и билет тест-драйва за 2 главы — на итогах; билет — кнопка в меню и заезд на чужой машине
+test('секретная краска и тест-драйв за вехи: плашки на итогах, билет в меню, один заезд', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.evaluate(() => {
+        const d = new Date(), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        const l = JSON.parse(localStorage.getItem('road_racing_profiles_v1'));
+        l.forEach(p => { p.campaign = Object.assign(p.campaign || {}, { completed: [0, 1] }); p.activity = { [k]: 9 }; p.streak = { count: 1, last: k, claimed: k }; });
+        localStorage.setItem('road_racing_profiles_v1', JSON.stringify(l));
+    });
+    await page.reload();
+    await page.locator('#splash-screen').click();
+    await page.locator('#profile-list').getByText('Тестер').click();
+    await expect(page.locator('#mm-td')).not.toHaveClass(/has/);
+    await page.locator('.menu-card[data-menu="infinite"]').click();
+    await page.locator('#shop-action').click();
+    await waitRacing(page);
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('#finish-screen .fin-paint')).toContainText('Неон');
+    await expect(page.locator('#finish-screen .fin-td')).toContainText('Ракета');
+    await page.locator('#finish-menu-btn').click();
+    await expect(page.locator('#mm-td')).toHaveClass(/has/);
+    await expect(page.locator('#mm-td-text')).toContainText('Ракета');
+    await page.locator('#mm-td').click();
+    await page.locator('.td-ticket').first().click();
+    await waitRacing(page);
+    const p = await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0]);
+    expect(p.testDrives.tickets).toEqual([]);
+    expect(p.secretPaints.got.neon).toBeTruthy();
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('#finish-screen')).toContainText('Тест-драйв: «Ракета»');
     expect(problems).toEqual([]);
 });

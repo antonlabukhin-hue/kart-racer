@@ -3,6 +3,7 @@
  */
 import { loadSettings, saveSettings } from './settings.js';
 import { mapAudioTheme, musicRate, startAmbientBed } from './map-audio.js';
+import { engineProfile, targetRpm, stepRpm, createEngineVoice } from './engine-sound.js';
 class SoundEngine {
     constructor() {
         this.audioCtx = null;
@@ -559,24 +560,26 @@ class SoundEngine {
         this._lastGear = gear;
         this._gear = gear;
 
-        const g0 = edges[gear], g1 = edges[Math.min(gear + 1, 6)];
-        const inG = g1 > g0 ? Math.max(0, Math.min(1, (n - g0) / (g1 - g0))) : 0;
-
-        // Шире диапазон внутри каждой передачи — набор скорости слышен, а не только сам щелчок
-        const bases = [65, 95, 135, 190, 260, 350];
-        const spans = [50, 60, 75, 90, 100, 120];
-        let freq = bases[gear] + inG * spans[gear];
-        if (absSp < 0.01) freq = 55;
-        if (this._gearShiftDrop > 0) {
-            freq *= 0.5;
-            this._gearShiftDrop = Math.max(0, this._gearShiftDrop - 0.045);
-        }
+        // обороты (src/engine-sound.js): цель — по передаче, догоняют с инерцией; переключение — сброс газа и провал оборотов
+        const prof = this._engProf || engineProfile(null);
+        const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+        const dt = Math.min(0.1, Math.max(0, now - (this._engT || now)));
+        this._engT = now;
+        if (this._gearShiftDrop > 0) { this._shiftCut = 0.14; this._gearShiftDrop = 0; }
+        if (this._shiftCut > 0) this._shiftCut -= dt;
+        const tgt = targetRpm(n, gear, prof);
+        this._rpm = stepRpm(this._rpm || prof.idle, tgt, dt);
+        // газ: разгоняемся — под нагрузкой, катимся/тормозим — без газа; на переключении — сброс
+        const dv = absSp - (this._lastSp != null ? this._lastSp : absSp);
+        this._lastSp = absSp;
+        const want = this._shiftCut > 0 ? 0.05 : dv > 0.00002 ? 1 : n > 0.97 ? 0.75 : 0.25;
+        this._load = (this._load != null ? this._load : 0.5) + (want - this._load) * Math.min(1, dt * 10);
 
         const volMul = (this.engineVolumeMultiplier != null) ? this.engineVolumeMultiplier : 0.6;
-        let vol = (0.05 + n * 0.24) * volMul;
+        let vol = (0.07 + n * 0.16 + this._load * 0.05) * volMul * (this._shiftCut > 0 ? 0.6 : 1);
         if (absSp < 0.01) vol = 0.001;
 
-        this.engineFrequency = freq;
+        this.engineFrequency = this._rpm;
         this.engineVolume = vol;
 
         if (absSp > 0.012) {
@@ -586,38 +589,30 @@ class SoundEngine {
             }
             this._isEngineStopping = false;
             if (!this.isPlaying || !this.engineNode) this.startEngine();
-            this._applyEngineTone(freq, vol);
+            this._applyEngineTone(this._rpm, vol);
         } else if (this.isPlaying) {
             this.stopEngineSmooth();
         }
     }
 
-    _applyEngineTone(freq, vol) {
+    /** Профиль мотора машины (большие — ниже, мопед и мотоциклы — выше): src/engine-sound.js */
+    setCar(carId) {
+        const p = engineProfile(carId);
+        if (p === this._engProf) return;
+        this._engProf = p;
+        this._rpm = p.idle;
+        if (this.engineNode) this.restartEngine();
+    }
+
+    _applyEngineTone(rpm, vol) {
         if (!this.audioCtx || !this.engineNode) return;
         try {
             const t = this.audioCtx.currentTime;
-            const f = Math.max(40, Math.min(520, freq));
-            const v = Math.max(0.0008, Math.min(0.4, vol));
-            // cancel + setValue = гарантированное изменение каждый кадр
-            this.engineNode.frequency.cancelScheduledValues(t);
-            this.engineNode.frequency.setValueAtTime(f, t);
-            if (this.engineNode2) {
-                this.engineNode2.frequency.cancelScheduledValues(t);
-                this.engineNode2.frequency.setValueAtTime(f * 0.5, t);
-            }
-            if (this.engineFilter) {
-                const cut = Math.max(400, Math.min(2800, 350 + f * 4));
-                this.engineFilter.frequency.cancelScheduledValues(t);
-                this.engineFilter.frequency.setValueAtTime(cut, t);
-            }
-            if (this.engineGain) {
-                this.engineGain.gain.cancelScheduledValues(t);
-                this.engineGain.gain.setValueAtTime(v, t);
-            }
+            this.engineNode.set(rpm, this._load != null ? this._load : 0.5);
+            if (this.engineGain) this.engineGain.gain.setTargetAtTime(Math.max(0.0008, Math.min(0.4, vol)), t, 0.03);
         } catch (e) {
             this.isPlaying = false;
             this.engineNode = null;
-            this.engineNode2 = null;
         }
     }
 
@@ -627,49 +622,21 @@ class SoundEngine {
         try {
             if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
             this._engineId = (this._engineId || 0) + 1;
-            const f0 = Math.max(40, this.engineFrequency || 70);
             const v0 = Math.max(0.02, this.engineVolume || 0.06);
-
             if (!this.engineGain) {
                 this.engineGain = this.audioCtx.createGain();
                 this.engineGain.connect(this.audioCtx.destination);
             }
             this.engineGain.gain.cancelScheduledValues(this.audioCtx.currentTime);
             this.engineGain.gain.setValueAtTime(v0, this.audioCtx.currentTime);
-
-            if (!this.engineFilter) {
-                this.engineFilter = this.audioCtx.createBiquadFilter();
-                this.engineFilter.type = 'lowpass';
-                this.engineFilter.Q.value = 1.0;
-            }
-            try { this.engineFilter.disconnect(); } catch (e) {}
-            this.engineFilter.frequency.value = 1200;
-            this.engineFilter.connect(this.engineGain);
-
-            const osc = this.audioCtx.createOscillator();
-            osc.type = 'sawtooth';
-            osc.frequency.value = f0;
-            osc.connect(this.engineFilter);
-            osc.start();
-
-            const osc2 = this.audioCtx.createOscillator();
-            osc2.type = 'square';
-            osc2.frequency.value = f0 * 0.5;
-            const g2 = this.audioCtx.createGain();
-            g2.gain.value = 0.4;
-            osc2.connect(g2);
-            g2.connect(this.engineFilter);
-            osc2.start();
-
-            this.engineNode = osc;
-            this.engineNode2 = osc2;
-            this.engineNode2Gain = g2;
+            const prof = this._engProf || engineProfile(null);
+            this.engineNode = createEngineVoice(this.audioCtx, this.engineGain, prof);
+            this.engineNode.set(this._rpm || prof.idle, 0.5);
             this.isPlaying = true;
             this._isEngineStopping = false;
         } catch (e) {
             console.warn('startEngine', e);
             this.engineNode = null;
-            this.engineNode2 = null;
             this.isPlaying = false;
         }
     }

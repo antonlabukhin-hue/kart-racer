@@ -25,8 +25,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { campaignHardConfig } from './balance.js';
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
-        import { shareLink } from './ui/share-link.js'; import { campFinishHtml } from './ui/finish-ui.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { shareLink } from './ui/share-link.js'; import { campFinishHtml } from './ui/finish-ui.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { rollChestLoot, lootText } from './chest-loot.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet } from './first-meet.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI } from './ui/season-screens.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -1405,7 +1405,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         function openRewardsScreen() { openRewardsScreenUI(seasonScreenDeps); refreshMenuUI(); }
         function openEventsScreen() { openEventsScreenUI(seasonScreenDeps); refreshMenuUI(); }
         function canUpgradeNow() { const car = (currentPlayer && currentPlayer.preferredCar) || 'cheburashka'; return !!currentPlayer && affordableUpgrades(getUpgradeLevels(car), currentPlayer.season.chips, UPGRADES, nextCost, MAX_UPGRADE_LEVEL) > 0; }
-        const chestDeps = { claim: function() { const g = claimChest(currentPlayer, dayKey(new Date())); saveCurrentPlayer(); return g; }, after: function() { refreshMenuUI(); } };
+        const chestDeps = { claim: function() { const g = claimChest(currentPlayer, dayKey(new Date())); if (g) { g.loot = rollChestLoot(currentPlayer, g.day); g.lootText = lootText(g.loot, (CAR_PRESETS[currentPlayer.preferredCar] || {}).name); } saveCurrentPlayer(); return g; /* иногда — тюнинг (src/chest-loot.js) */ }, after: function() { refreshMenuUI(); } };
         function refreshMenuUI() {
             if (!currentPlayer) return;
             const car = currentPlayer.preferredCar || 'cheburashka';
@@ -1417,22 +1417,22 @@ function createProfile(name) { return Profile.createProfile(name); }
                 if (mm && mm.style.display !== 'none' && mm.getClientRects().length) showNewCarsPop({ tag: NEW_CARS_TAG, names: NEW_CARS.map(function(id) { return (CAR_PRESETS[id] || {}).name || id; }), onOpen: function() { shopBackToGarage = false; openShopScreen(false); } });
             }, 700);
             renderMenuExtras({ word: wordState(currentPlayer, dayKey(new Date())), list: loadBoard(), now: Date.now(), me: currentPlayer.name, fetchOnline: onlineBoard() ? fetchTop : null });
-            menuGiftCars(); renderDailyCard({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onOpen: function() { showDailyPop({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onGo: function() { startInfiniteRun(true, { daily: true }); } }); } }); // «Заезд дня» (src/ui/daily-pop.js)
+            menuGiftCars(); renderTdButton(currentPlayer, hookStats(), carName, openTd); renderDailyCard({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onOpen: function() { showDailyPop({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onGo: function() { startInfiniteRun(true, { daily: true }); } }); } }); // «Заезд дня» (src/ui/daily-pop.js)
         }
         /** Машины в подарок (src/gift-cars.js): проверить серию и прошлую неделю; плашки — по очереди, когда меню свободно */
         let giftPopWait = null;
-        function menuGiftCars() {
+        function carName(id) { return (CAR_PRESETS[id] || {}).name || id; } function hookStats() { return { chapters: ((currentPlayer.campaign || {}).completed || []).length, beastWaves: currentPlayer.beastWaves || 0, infBest: (currentPlayer.infinite || {}).best || 0 }; } function openTd() { showTdPop({ profile: currentPlayer, stats: hookStats(), names: carName, onGo: function(car) { if (!useTicket(currentPlayer, car)) return; saveCurrentPlayer(); trackEvent('test_drive', { car: car, ticket: true }); pendingTestDrive = tdOffer(car, CAR_PRESETS); pendingBoosts = []; hideMainMenu(); startInfiniteRun(true); } }); } /* тест-драйв по билету — один заезд (src/test-drive.js) */ function forYouRows() { const p = currentPlayer, rows = [], t = dayKey(new Date()); if (canClaimChest(p, t)) rows.push({ icon: '📦', text: 'Сундук дня ждёт — серия ' + ((p.streak && p.streak.count) || 1) + ' дн.', act: 'chest' }); const tk = ((p.testDrives && p.testDrives.tickets) || []).filter(function(k) { return (p.unlockedCars || []).indexOf(k.car) < 0; }); if (tk.length) rows.push({ icon: '🎟', text: 'Билет на тест-драйв «' + carName(tk[0].car) + '»', act: 'td' }); else rows.push({ icon: '🎟', text: 'Задания на тест-драйв — машины и мотоциклы на 1 заезд', act: 'td' }); const st = secretNextText(p, t); if (st) rows.push({ icon: '🔒', text: st, act: 'garage' }); const dr = ruleOf(t); if (dr) rows.push({ icon: '📅', text: 'Заезд дня: ' + dr.icon + ' ' + dr.name + ' — одна попытка, у всех одна трасса', act: 'daily' }); return rows; } function helloAct(a) { if (a === 'td') openTd(); else if (a === 'chest') { const sb = document.getElementById('mm-streak'); if (sb) sb.click(); } else if (a === 'garage') { const g = document.querySelector('.mm-tab[data-menu="garage"]'); if (g) g.click(); } else if (a === 'daily') { const d = document.getElementById('mm-daily'); if (d) d.click(); } else if (a === 'gift') { shopBackToGarage = false; hideMainMenu(); openShopScreen(false, 'trike'); } } function menuGiftCars() {
             if (!currentPlayer || giftPopWait) return;
             if (checkGiftCars(currentPlayer, { now: Date.now(), board: loadBoard() }).length) saveCurrentPlayer();
             const nameOf = function(id) { return (CAR_PRESETS[id] || {}).name || id; };
             const openCar = function(id) { shopBackToGarage = false; hideMainMenu(); openShopScreen(false, id); };
             const pending = (currentPlayer.giftCars && currentPlayer.giftCars.pending) || [];
-            if (!pending.length && introSeen()) return;
+            const today = dayKey(new Date()); if (introSeen()) markSeen(currentPlayer, 'gift-cars-v1'); /* «машины в подарок» видели раньше — в «Привет» уже не новость */ if (!pending.length && !helloDue(currentPlayer, today)) return;
             giftPopWait = whenMenuFree(function() {
                 giftPopWait = null;
                 const gift = takeGiftPending(currentPlayer);
                 if (gift) { saveCurrentPlayer(); try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.9); } catch (e) {} showGiftCarPop(gift, { name: nameOf(gift.car), onOpen: openCar, onClose: function() { menuGiftCars(); } }); return; }
-                if (!introSeen()) showGiftCarsIntro({ names: { trike: nameOf('trike'), ghostcar: nameOf('ghostcar') }, onOpen: openCar });
+                if (helloDue(currentPlayer, today)) { try { localStorage.setItem('road_racing_gift_cars_intro_v1', '1'); } catch (e) {} showHello({ profile: currentPlayer, today: today, hour: new Date().getHours(), forYou: forYouRows(), onAct: helloAct }); saveCurrentPlayer(); } // «Привет, Имя!» — новости и «сегодня для тебя» (src/ui/hello-news.js)
             }, function() { giftPopWait = null; });
         }
 
@@ -1627,7 +1627,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                 const p = CAR_PRESETS[id];
                 const owned = (currentPlayer.unlockedCars || []).includes(id);
                 const price = carPriceText(id, owned);
-                return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + (NEW_CARS.indexOf(id) >= 0 ? ' is-new' : '') + (id === currentPlayer.preferredCar && owned ? ' mine' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
+                return '<div class="shop-car-btn' + (shopSelectedCar === id ? ' selected' : '') + (NEW_CARS.indexOf(id) >= 0 ? ' is-new' : '') + (isGiftCar(id) ? ' gift' : '') + (id === currentPlayer.preferredCar && owned ? ' mine' : '') + '" data-car="' + id + '" role="button" tabindex="0"><b>' + p.name + '</b><div class="price">' + price + '</div></div>';
             }).join('');
             // листать как персонажей в Subway Surfers: стрелки и свайп по подиуму
             const flip = function(dir) {
@@ -1794,6 +1794,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                 });
                 // экран финиша сравнивает время с рекордом уже после этой записи — флаг для «НОВЫЙ РЕКОРД!»
                 window.__lastRaceNewBest = r.newBest;
+                const br = pendingMode === 'endless' && beast ? beast.run : null, bw = br ? br.wave - (state === 'win' ? 0 : 1) : 0; currentPlayer.beastWaves = Math.max(currentPlayer.beastWaves || 0, bw); addHooks(checkSecretPaints(currentPlayer, dayKey(new Date())), checkTestDrives(currentPlayer, hookStats(), CAR_PRESETS)); // секретные краски и тест-драйвы (src/secret-paints.js, src/test-drive.js)
                 if (meta.distance > 0) { const bl = saveBoardRun(meta.distance); r.boardRank = rankOf(topRuns(bl, 'week', Date.now(), currentPlayer.name), currentPlayer.name); } // таблица рекордов (src/leaderboard.js)
                 if (r.levelAfter > r.levelBefore && window.Notify) Notify.success('⬆️ Уровень сезона ' + r.levelAfter, 'Новые награды в меню «Награды»');
                 if (r.contractDone && window.Notify) Notify.success('📋 Смена дня', r.contractTitle || 'Контракт выполнен');
@@ -1941,7 +1942,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         }
 
         
-        function getPaintForCar(carId) {
+        function paintById(id) { return CAR_PAINTS.find(function(x) { return x.id === id; }) || SECRET_PAINTS.find(function(x) { return x.id === id; }); } /* и секретные краски (src/secret-paints.js) */ function getPaintForCar(carId) {
             if (!currentPlayer) return 'stock';
             ensureProfileFields(currentPlayer);
             const lo = currentPlayer.carLoadout;
@@ -1961,16 +1962,13 @@ function createProfile(name) { return Profile.createProfile(name); }
         /** Одеть модель машины (src/cars.js buildShowroomCar) по профилю: покраска этой машины, детали тюнинга, прокачка. Возвращает купленные детали */
         function dressCar(built, carId) {
             const ld = (currentPlayer && currentPlayer.carLoadout) || { parts: [] };
-            const paint = CAR_PAINTS.find(function(x) { return x.id === getPaintForCar(carId); }) || CAR_PAINTS[0] || { id: 'stock', color: null };
+            const paint = paintById(getPaintForCar(carId)) || CAR_PAINTS[0] || { id: 'stock', color: null };
             const col = paint.color != null ? paint.color : ((CAR_PRESETS[carId] || {}).color || 0xff2200);
             const owned = ld.parts || [];
             built.group.traverse(function(o) {
                 if (!o.isMesh || !o.material) return;
                 if (o.userData && o.userData.bodyPaint && o.material.color) {
-                    o.material = o.material.clone();
-                    o.material.color.setHex(col);
-                    o.material.metalness = paint.id === 'chrome' ? 0.85 : Math.min(o.material.metalness || 0.4, 0.55);
-                    o.material.roughness = paint.id === 'chrome' ? 0.2 : Math.max(o.material.roughness || 0.35, 0.32);
+                    o.material = o.material.clone(); paintBody(o, paint, col); // в т.ч. секретные: неон, радуга, золото (src/paint-fx.js)
                 }
                 if (owned.indexOf('xenon') >= 0 && o.userData && o.userData.isLight && o.material.emissive) { o.material.emissive.setHex(0xaaccff); o.material.emissiveIntensity = Math.max(o.material.emissiveIntensity || 0.8, 1.5); } // ксенон — ярче фары
             });
@@ -2005,7 +2003,7 @@ function renderGaragePartsPanel() {
                 const active = getPaintForCar(currentPlayer.preferredCar || 'cheburashka') === p.id ? ' active' : '';
                 html += '<div class="color-swatch' + active + '" data-paint="' + p.id + '" style="background:' + hex + '" title="' + escapeHtml(p.name) + (!p.price ? ' бесплатно' : (ownedPaints.includes(p.id) ? ' ✓ куплено' : (' ' + p.price + ' Е'))) + '"></div>';
             });
-            html += '</div>';
+            html += secretSwatchesHtml(currentPlayer, getPaintForCar(currentPlayer.preferredCar || 'cheburashka'), dayKey(new Date())) + '</div>'; // секретные: заработанные — кружком с эффектом, остальные — «?» с условием
             const carId = currentPlayer.preferredCar || 'cheburashka';
             const isNiva = carId === 'kirpich';
             CAR_PARTS.forEach(part => {
@@ -2018,7 +2016,7 @@ function renderGaragePartsPanel() {
                     '<span>' + escapeHtml(partName(carId, part.id) || part.name) + '</span>' +
                     '<span class="part-price">' + priceLabel + '</span></div>';
             });
-            box.innerHTML = html; markGiftGlow(box, currentPlayer.carLoadout); // подарки за главы сияют золотом, пока не тронешь
+            box.innerHTML = html; markGiftGlow(box, currentPlayer.carLoadout); box.querySelectorAll('.secret-lock').forEach(function(el) { el.onclick = function() { const h = secretHint(currentPlayer, el.dataset.secret, dayKey(new Date())); if (h) Notify.info(h.title, h.text, 6000); }; }); // подарки за главы сияют золотом, пока не тронешь
             const restore = () => { if (garageTry) showGarageTry(); else applyGarageLoadoutVisual(); };
             box.querySelectorAll('.color-swatch').forEach(sw => {
                 sw.addEventListener('mouseenter', () => previewGaragePaint(sw.dataset.paint));
@@ -2049,7 +2047,7 @@ function renderGaragePartsPanel() {
             if (garageTry.kind === 'paint') previewGaragePaint(garageTry.id); else previewGaragePart(garageTry.id, true);
         }
         function buyGaragePaint(paintId) {
-            const p = CAR_PAINTS.find(x => x.id === paintId);
+            const p = paintById(paintId);
             if (!p || !currentPlayer) return;
             ensureProfileFields(currentPlayer);
             const r = Profile.buyPaint(currentPlayer, currentPlayer.preferredCar || 'cheburashka', p);
@@ -2094,16 +2092,10 @@ function renderGaragePartsPanel() {
 
         function previewGaragePaint(paintId) {
             if (!window.__garageCar) return;
-            const p = CAR_PAINTS.find(x => x.id === paintId);
+            const p = paintById(paintId);
             const base = (CAR_PRESETS[currentPlayer.preferredCar]||{}).color || 0xff2200;
             const col = (p && p.color != null) ? p.color : base;
-            window.__garageCar.traverse(o => {
-                if (o.isMesh && o.userData && o.userData.bodyPaint) {
-                    o.material.color.setHex(col);
-                    o.material.metalness = paintId === 'chrome' ? 0.85 : 0.35;
-                    o.material.roughness = paintId === 'chrome' ? 0.2 : 0.4;
-                }
-            });
+            window.__garageCar.traverse(o => { if (o.isMesh && o.userData && o.userData.bodyPaint) paintBody(o, p || { id: paintId }, col); });
         }
 
         function previewGaragePart(partId, on) {
@@ -2123,15 +2115,11 @@ function renderGaragePartsPanel() {
             if (!currentPlayer || !window.__garageCar) return;
             ensureProfileFields(currentPlayer);
             const carIdPaint = currentPlayer.preferredCar || 'cheburashka';
-            const paint = CAR_PAINTS.find(x => x.id === getPaintForCar(carIdPaint)) || CAR_PAINTS[0];
+            const paint = paintById(getPaintForCar(carIdPaint)) || CAR_PAINTS[0];
             const base = (CAR_PRESETS[carIdPaint]||{}).color || 0xff2200;
             const col = paint.color != null ? paint.color : base;
             window.__garageCar.traverse(o => {
-                if (o.isMesh && o.userData && o.userData.bodyPaint) {
-                    o.material.color.setHex(col);
-                    o.material.metalness = paint.id === 'chrome' ? 0.85 : 0.35;
-                    o.material.roughness = paint.id === 'chrome' ? 0.2 : 0.4;
-                }
+                if (o.isMesh && o.userData && o.userData.bodyPaint) paintBody(o, paint, col);
             });
             if (window.__garageParts) {
                 const carId = (currentPlayer.preferredCar || 'cheburashka');
@@ -4230,7 +4218,7 @@ function startGaragePreview(carId) {
             const bossMaxPhase = (_cmods && _cmods.bossMaxPhase) || 3;
 
             if (window.soundEngine) {
-                window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35;
+                window.soundEngine.carMaxSpeed = carPreset.maxSpeed || 0.35; if (window.soundEngine.setCar) window.soundEngine.setCar(carId); /* свой мотор у машины (src/engine-sound.js) */
                 window.soundEngine._gear = 0;
                 window.soundEngine._gearShiftDrop = 0;
             }
@@ -4651,7 +4639,7 @@ function startGaragePreview(carId) {
                     message = 'Проехано: ' + ir.dist + ' м · ' + formatTime(timeTaken) + '\nОчки забега: ' + ir.score.toLocaleString('ru-RU') + (ir.mult > 1 ? ' (×' + ir.mult + ' за задания)' : '')
                         + (lvUp ? '\n⬆ Уровень сезона: +' + lvUp * 100 + ' Е' : '') + (rewards.boardRank ? '\n🏆 Место на неделе: #' + rewards.boardRank : '')
                         + '\n' + (ib.isNew ? '🎉 НОВЫЙ РЕКОРД ДАЛЬНОСТИ!' : '🏆 Рекорд: ' + (ib.best || ir.dist) + ' м');
-                    nearHtml = nearlyHtml(nearlyLines({ dist: ir.dist, best: ib.isNew ? 0 : (ib.best || 0), isNew: ib.isNew, targets: chase ? chase.targets : [], missions: rewards.missions ? rewards.missions.progressed : [] })); if (infRunOpts && infRunOpts.daily) nearHtml += dailyFinishHtml({ profile: currentPlayer, day: infRunOpts.daily, dist: ir.dist, car: carId, online: onlineBoard(), submit: onlineBoard() }); if (infRunOpts && infRunOpts.challenge) nearHtml += challengeFinishHtml(infRunOpts.challenge, ir.dist); if (testDrive && testDrive.car === carId) nearHtml += testDriveHtml({ name: carPreset.name, ability: carPreset.ability, dist: ir.dist, myBest: ib.isNew ? 0 : ib.best, price: testDrive.price, cost: dayPrice(testDrive.price) }); finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Собрано «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
+                    nearHtml = nearlyHtml(nearlyLines({ dist: ir.dist, best: ib.isNew ? 0 : (ib.best || 0), isNew: ib.isNew, targets: chase ? chase.targets : [], missions: rewards.missions ? rewards.missions.progressed : [] })); if (infRunOpts && infRunOpts.daily) nearHtml += dailyFinishHtml({ profile: currentPlayer, day: infRunOpts.daily, dist: ir.dist, car: carId, online: onlineBoard(), submit: onlineBoard() }); if (infRunOpts && infRunOpts.challenge) nearHtml += challengeFinishHtml(infRunOpts.challenge, ir.dist); if (testDrive && testDrive.car === carId) nearHtml += testDriveHtml({ name: carPreset.name, ability: carPreset.ability, dist: ir.dist, myBest: ib.isNew ? 0 : ib.best, price: testDrive.price, cost: dayPrice(testDrive.price), how: testDrive.how }); finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Собрано «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
                         ['📼', 'Кассеты', stats.vhs || 0], ['🗺', 'Пейзажей', ir.lands], ['⚡', 'На волоске', nearMissCount]];
                 } else if (isEndlessMode()) {
                     const ft = beast.finishText({ state: state, strikes: strikes, maxStrikes: MAX_STRIKES, best: currentPlayer.endlessBest }); // src/modes/beast-hour.js
@@ -4743,7 +4731,7 @@ function startGaragePreview(carId) {
                             + rewardChipsHtml(rewards, currentPlayer && currentPlayer.season))
                         : String(message || '').replace(/\n/g, '<br>');
 
-                    statsLine += retentionHtml(rewards); // очки риска и задания — при любом исходе
+                    statsLine += retentionHtml(rewards) + takeHooksHtml(carName); // очки риска и задания — при любом исходе; новые секретные краски и билеты тест-драйва
                     const nextBtn = finishButtonsHtml({ camp: true, state: state, hasNext: hasNext, canUpgrade: canUpgradeNow() }); // одна главная кнопка по исходу (src/ui/finish-ui.js)
 
                     screen.className = 'fin-camp'; screen.style.cssText = ''; // итоги главы: раскладка — src/ui/finish-ui.js campFinishHtml, стили — .fin-camp
@@ -4769,7 +4757,7 @@ function startGaragePreview(carId) {
                         '<div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ' + color + ';text-align:center;max-width:400px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">'
                         + (imgHtml || '')
                         + '<h1 style="font-size:28px;color:' + color + ';margin-bottom:10px;">' + escapeHtml(title) + '</h1>'
-                        + nearHtml + rankHtml + rewardChipsHtml(rewards, currentPlayer && currentPlayer.season) + retentionHtml(rewards) + statTilesHtml(finStats)
+                        + nearHtml + rankHtml + rewardChipsHtml(rewards, currentPlayer && currentPlayer.season) + retentionHtml(rewards) + takeHooksHtml(carName) + statTilesHtml(finStats)
                         + '<div style="font-size:15px;color:#fff;margin:10px 0 6px;white-space:pre-line;line-height:1.45;">' + escapeHtml(message) + '</div>'
                         + '</div>'
                         + '<div class="finish-actions" id="finish-actions" style="width:min(400px,100%);margin:12px auto 0;display:flex;flex-direction:column;gap:8px;">'
@@ -8505,7 +8493,7 @@ function startGaragePreview(carId) {
                             const eng = window.soundEngine || soundEngine;
                             if (eng) {
                                 try { if (eng.audioCtx && eng.audioCtx.state === 'suspended') eng.audioCtx.resume(); } catch (e) {}
-                                if (eng.playSfx) eng.playSfx('gear', gear > prev ? 1.15 : 0.8);
+                                if (eng.playSfx) eng.playSfx('gear', gear > prev ? 0.6 : 0.4); // тише: провал оборотов теперь слышен в самом моторе
                                 eng._gearShiftDrop = 0.45;
                             }
                         }

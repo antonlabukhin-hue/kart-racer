@@ -7,7 +7,7 @@
 import { GIFT_CARS, GIFT_DUP_VHS } from '../gift-cars.js';
 
 export const GIFT_INTRO_KEY = 'road_racing_gift_cars_intro_v1';
-const BUSY = '.chest-modal,.newcars-modal,.gift-modal,.giftcar-modal,.ach-plaque,.meet-modal';
+const BUSY = '.chest-modal,.newcars-modal,.gift-modal,.giftcar-modal,.ach-plaque,.meet-modal,.hello-modal,.td-modal';
 
 /** Запустить fn, когда главное меню на экране и в нём нет другой плашки (проверка раз в 0.7 с, до ~40 с; не дождались — giveUp) */
 export function whenMenuFree(fn, giveUp) {
