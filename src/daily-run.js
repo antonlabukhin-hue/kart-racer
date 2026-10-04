@@ -4,9 +4,10 @@
  * Без бустов, «горячего старта» и «Второго шанса» — у всех равные условия.
  * profile.daily = { day, started, dist, score }. Логика — чистая (с тестами).
  */
+import { themeIndex } from './infinite.js';
 export const DAILY_RULES = [
     { id: 'one_crash', icon: '💥', name: 'Одна авария', desc: 'Первая авария — конец заезда', strikes: 1 },
-    { id: 'night_ice', icon: '🌙', name: 'Ночь и гололёд', desc: 'Старт ночью, все скользкие пятна — лёд', themeStart: 3, slide: 'ice' },
+    { id: 'night_ice', icon: '🌙', name: 'Ночь и гололёд', desc: 'Старт ночью, все скользкие пятна — лёд', themeStart: themeIndex('night'), slide: 'ice' },
     { id: 'rush', icon: '🚗', name: 'Час пик', desc: 'Попуток вдвое больше с первого метра', trafficMul: 2, trafficAdd: 4 },
     { id: 'zoo', icon: '🐾', name: 'Зоопарк сбежал', desc: 'Зверей вдвое больше', animalMul: 2 },
     { id: 'no_nitro', icon: '🚫', name: 'Без нитро', desc: 'Нитро на трассе не попадается', noNitro: true },

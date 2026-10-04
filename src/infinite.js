@@ -9,10 +9,14 @@ import { pickPattern, expandPattern, patternSpan, patternGap } from './patterns.
 export const THEMES = [
     { id: 'day', name: 'Арсеньев, день', style: 'arsenev', sky: 0xe8c898, fog: 0xe0c090, fogNear: 55, fogFar: 200, ground: 0xa08866, light: 1, slide: 'oil',
         animals: ['DOG', 'CAT', 'DEER', 'BOAR', 'FOX', 'HUMAN', 'CHICKEN'] },
+    { id: 'village', name: 'Деревня', style: 'village', sky: 0xd4e2ea, fog: 0xcad8d4, fogNear: 55, fogFar: 200, ground: 0x7e9a52, light: 1.05, slide: 'oil',
+        animals: ['CHICKEN', 'DOG', 'CAT', 'BOAR', 'FOX', 'DEER'] },
     { id: 'promzona', name: 'Промзона', style: 'industrial', sky: 0x9a8a78, fog: 0x8a7a68, fogNear: 40, fogFar: 170, ground: 0x7a7468, light: 0.9, slide: 'acid',
         animals: ['CROC', 'RHINO', 'DINO', 'PEACOCK', 'DOG'] },
     { id: 'snow', name: 'Снежная тайга', style: 'forest', snow: true, sky: 0xc8d4e0, fog: 0xd0dae4, fogNear: 35, fogFar: 160, ground: 0xe8f0f8, light: 1.05, slide: 'ice',
         animals: ['BEAR', 'FOX', 'DEER', 'BOAR'] },
+    { id: 'city', name: 'Микрорайон', style: 'city', sky: 0xdcc8a8, fog: 0xd4c0a0, fogNear: 50, fogFar: 190, ground: 0x8a8a78, light: 0.95, slide: 'oil',
+        animals: ['DOG', 'CAT', 'HUMAN', 'CHICKEN'] },
     { id: 'night', name: 'Ночная трасса', style: 'arsenev', night: true, sky: 0x0a1020, fog: 0x12182a, fogNear: 22, fogFar: 120, ground: 0x3a4458, light: 0.45, slide: 'oil',
         animals: ['BEAR', 'BOAR', 'DOG', 'CAT', 'FOX', 'DEER'] },
     { id: 'svalka', name: 'Свалка «Надежда»', style: 'junk', sky: 0xb0a080, fog: 0xa89878, fogNear: 45, fogFar: 180, ground: 0x8a7650, light: 0.95, slide: 'tar',
@@ -22,6 +26,8 @@ export const THEMES = [
     { id: 'jungle', name: 'Джунгли-зоопарк', style: 'forest', sky: 0x4a6a40, fog: 0x3d5a38, fogNear: 30, fogFar: 140, ground: 0x5a7a40, light: 0.9, slide: 'tar',
         animals: ['CROC', 'ELEPHANT', 'RHINO', 'LION', 'MONKEY'] }
 ];
+/** Номер пейзажа по id (для setThemeStart) */
+export function themeIndex(id) { return Math.max(0, THEMES.findIndex(function(t) { return t.id === id; })); }
 export const THEME_LEN = 900;   // длина пейзажа, ед. (~30–40 с езды)
 export const BLEND_LEN = 120;   // на стольких единицах небо, туман и земля плавно перетекают в следующий пейзаж
 
