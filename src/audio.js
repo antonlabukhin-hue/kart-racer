@@ -3,7 +3,7 @@
  */
 import { loadSettings, saveSettings } from './settings.js';
 import { mapAudioTheme, musicRate, startAmbientBed } from './map-audio.js';
-import { engineProfile, targetRpm, stepRpm, createEngineVoice } from './engine-sound.js';
+import { engineProfile, targetRpm, stepRpm, createEngineVoice, glide } from './engine-sound.js';
 class SoundEngine {
     constructor() {
         this.audioCtx = null;
@@ -83,6 +83,18 @@ class SoundEngine {
                     if (!this.isMusicPlaying) this.startMusic();
                 } else {
                     this.startMenuMusic();
+                    // iPhone: трек гонки «разблокировать» первым касанием в меню (тихий старт и пауза) —
+                    // иначе на старте заезда (без касания) Safari не даёт играть, и музыка включается только от следующего тапа
+                    if (!this._raceUnlocked) {
+                        this._raceUnlocked = true;
+                        try {
+                            if (!this.raceAudio) { this.raceAudio = new Audio(this.musicUrl || 'music/race-music.mp3'); this.raceAudio.loop = true; this.raceAudio.preload = 'auto'; }
+                            const ra = this.raceAudio; ra.muted = true;
+                            const pp = ra.play();
+                            const done = () => { if (!window.__inRace) { try { ra.pause(); ra.currentTime = 0; } catch (e) {} } ra.muted = false; };
+                            if (pp && pp.then) pp.then(done).catch(() => { ra.muted = false; this._raceUnlocked = false; }); else done();
+                        } catch (e) {}
+                    }
                 }
             };
             document.addEventListener('click', resumeAudio);
@@ -609,7 +621,7 @@ class SoundEngine {
         try {
             const t = this.audioCtx.currentTime;
             this.engineNode.set(rpm, this._load != null ? this._load : 0.5);
-            if (this.engineGain) this.engineGain.gain.setTargetAtTime(Math.max(0.0008, Math.min(0.4, vol)), t, 0.03);
+            if (this.engineGain) glide(this.engineGain.gain, Math.max(0.0008, Math.min(0.4, vol)), t, 0.03, true); // без накопления событий (iPhone)
         } catch (e) {
             this.isPlaying = false;
             this.engineNode = null;
@@ -630,7 +642,7 @@ class SoundEngine {
             this.engineGain.gain.cancelScheduledValues(this.audioCtx.currentTime);
             this.engineGain.gain.setValueAtTime(v0, this.audioCtx.currentTime);
             const prof = this._engProf || engineProfile(null);
-            this.engineNode = createEngineVoice(this.audioCtx, this.engineGain, prof);
+            this.engineNode = createEngineVoice(this.audioCtx, this.engineGain, prof, { lite: !!window.__isMobile || /iPhone|iPad|Android/i.test(navigator.userAgent || '') });
             this.engineNode.set(this._rpm || prof.idle, 0.5);
             this.isPlaying = true;
             this._isEngineStopping = false;

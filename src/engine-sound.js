@@ -94,15 +94,31 @@ function shaperCurve(drive) {
 }
 
 /**
+ * Плавно к значению v. В игре — без накопления событий автоматизации: на iPhone (WebKit) каждое setTargetAtTime
+ * остаётся в очереди параметра, 30–60 вызовов в секунду за заезд — тысячи событий: звук заикается («пикает»),
+ * память растёт, вкладку выкидывает. Поэтому: сброс очереди → текущее значение → короткий линейный переход (2 события).
+ * live = false — запись демо (OfflineAudioContext): там можно setTargetAtTime по времени.
+ */
+export function glide(param, v, now, tc, live) {
+    if (!isFinite(v)) return;
+    if (!live) { param.setTargetAtTime(v, now, tc); return; }
+    try {
+        param.cancelScheduledValues(now);
+        param.setValueAtTime(param.value, now);
+        param.linearRampToValueAtTime(v, now + tc * 2);
+    } catch (e) { try { param.value = v; } catch (e2) {} }
+}
+
+/**
  * Голос мотора: граф Web Audio в out (GainNode). voice.set(rpm, load, prof) — каждый кадр; voice.stop().
  * load 0..1 — газ (разгон громче и «грязнее», сброс газа — тише и глуше).
  */
-export function createEngineVoice(ctx, out, prof) {
-    const p = prof || ENGINE_PROFILES._default;
+export function createEngineVoice(ctx, out, prof, opts) {
+    const p = prof || ENGINE_PROFILES._default, lite = !!(opts && opts.lite); // lite — телефон: меньше узлов, без «дрожания» и свиста
     const t = ctx.currentTime, nodes = [];
     const mk = function(n) { nodes.push(n); return n; };
     const mix = mk(ctx.createGain()); mix.gain.value = 1;
-    const shaper = mk(ctx.createWaveShaper()); shaper.curve = shaperCurve(1.6); shaper.oversample = '2x';
+    const shaper = mk(ctx.createWaveShaper()); shaper.curve = shaperCurve(1.6); shaper.oversample = lite ? 'none' : '2x';
     const exh = mk(ctx.createBiquadFilter()); exh.type = 'peaking'; exh.frequency.value = p.exh; exh.Q.value = 1.1; exh.gain.value = 7;
     const lp = mk(ctx.createBiquadFilter()); lp.type = 'lowpass'; lp.Q.value = 0.7; lp.frequency.value = 900;
     const hp = mk(ctx.createBiquadFilter()); hp.type = 'highpass'; hp.frequency.value = 35;
@@ -127,14 +143,17 @@ export function createEngineVoice(ctx, out, prof) {
     noise.connect(bp); bp.connect(gNoise); gNoise.connect(mix);
 
     // неровность вспышек: два медленных «дрожания» частоты
-    const lfoA = mk(ctx.createOscillator()); lfoA.frequency.value = 5.3;
-    const lfoB = mk(ctx.createOscillator()); lfoB.frequency.value = 8.7;
-    const gJit = mk(ctx.createGain()); gJit.gain.value = 0;
-    lfoA.connect(gJit); lfoB.connect(gJit); gJit.connect(main.frequency); gJit.connect(pulse.frequency);
+    let lfoA = null, lfoB = null, gJit = null;
+    if (!lite) {
+        lfoA = mk(ctx.createOscillator()); lfoA.frequency.value = 5.3;
+        lfoB = mk(ctx.createOscillator()); lfoB.frequency.value = 8.7;
+        gJit = mk(ctx.createGain()); gJit.gain.value = 0;
+        lfoA.connect(gJit); lfoB.connect(gJit); gJit.connect(main.frequency); gJit.connect(pulse.frequency);
+    }
 
     // турбо-свист / электро-вой
     let whine = null, gWhine = null;
-    if (p.turbo || p.elec) {
+    if (!lite && (p.turbo || p.elec)) {
         whine = mk(ctx.createOscillator()); whine.type = 'sine'; whine.frequency.value = 1200;
         gWhine = mk(ctx.createGain()); gWhine.gain.value = 0;
         whine.connect(gWhine); gWhine.connect(hp);
@@ -142,23 +161,24 @@ export function createEngineVoice(ctx, out, prof) {
     [main, sub, noise, pulse, lfoA, lfoB, whine].forEach(function(o) { if (o) o.start(t); });
 
     const tc = 0.025;
+    let lastSet = -1;
     return {
         prof: p,
+        /** at — время для записи без проигрывания (демо); в игре — не чаще 30 раз в секунду */
         set: function(rpm, load, at) {
-            const now = at != null ? at : ctx.currentTime, f = firingHz(rpm, p.cyl), rn = Math.max(0, Math.min(1, rpm / p.red)), L = Math.max(0, Math.min(1, load));
-            main.frequency.setTargetAtTime(f, now, tc);
-            pulse.frequency.setTargetAtTime(f, now, tc);
-            sub.frequency.setTargetAtTime(f / 2, now, tc);
-            bp.frequency.setTargetAtTime(Math.min(4000, f * 3 + 200), now, tc);
-            gJit.gain.setTargetAtTime(f * 0.012 * (p.rough || 0) * (1.2 - rn), now, 0.08);
+            const live = at == null, now = live ? ctx.currentTime : at;
+            if (live && now - lastSet < 0.033) return;
+            lastSet = now;
+            const f = firingHz(rpm, p.cyl), rn = Math.max(0, Math.min(1, rpm / p.red)), L = Math.max(0, Math.min(1, load));
+            const g = function(param, v, k) { glide(param, v, now, k || tc, live); };
+            g(main.frequency, f); g(pulse.frequency, f); g(sub.frequency, f / 2);
+            g(bp.frequency, Math.min(4000, f * 3 + 200));
+            if (gJit) g(gJit.gain, f * 0.012 * (p.rough || 0) * (1.2 - rn), 0.08);
             // под газом — ярче и громче шум, без газа — глухо
-            lp.frequency.setTargetAtTime(Math.min(7000, 500 + rn * 2600 + L * 1800), now, tc);
-            gNoise.gain.setTargetAtTime(p.elec ? 0 : 0.1 + 0.2 * L, now, tc);
-            gMain.gain.setTargetAtTime(0.45 + 0.2 * L, now, tc);
-            if (whine) {
-                whine.frequency.setTargetAtTime(p.elec ? f * 6 : 900 + rn * 2600, now, tc);
-                gWhine.gain.setTargetAtTime(p.elec ? 0.05 + 0.05 * rn : 0.025 * L * rn * rn, now, 0.06);
-            }
+            g(lp.frequency, Math.min(7000, 500 + rn * 2600 + L * 1800));
+            g(gNoise.gain, p.elec ? 0 : 0.1 + 0.2 * L);
+            g(gMain.gain, 0.45 + 0.2 * L);
+            if (whine) { g(whine.frequency, p.elec ? f * 6 : 900 + rn * 2600); g(gWhine.gain, p.elec ? 0.05 + 0.05 * rn : 0.025 * L * rn * rn, 0.06); }
         },
         stop: function() {
             [main, sub, noise, pulse, lfoA, lfoB, whine].forEach(function(o) { if (o) { try { o.stop(); } catch (e) {} } });
