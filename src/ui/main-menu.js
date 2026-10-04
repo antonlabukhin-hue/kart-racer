@@ -120,7 +120,7 @@ export function showChest(p, c) {
         const got = c.claim();
         if (!got) { close(); return; }
         cl.outerHTML = '<div class="ch-got">+' + got.chips + ' Е' + (got.vhs ? ' · +' + got.vhs + ' 📼 кассета!' : '') + '</div>'
-            + (got.lootText ? '<div class="ch-got ch-tune"></div>' : '');
+            + (got.lootText ? '<div class="ch-tune"></div>' : '');
         const tune = m.querySelector('.ch-tune'); if (tune) tune.textContent = got.lootText;
         const ok = m.querySelector('.ch-later'); ok.textContent = 'Отлично!'; ok.classList.add('ch-ok');
         m.querySelector('.ch-day.today').classList.add('opened');

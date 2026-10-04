@@ -54,6 +54,6 @@ export function rollChestLoot(profile, day, rnd) {
 /** Строка в окне сундука */
 export function lootText(loot, carName) {
     if (!loot) return '';
-    return loot.kind === 'part' ? '🛠 Деталь «' + loot.name + '» — уже в гараже!'
+    return loot.kind === 'part' ? '🛠 Деталь: ' + loot.name + ' — уже в гараже!'
         : loot.icon + ' ' + loot.name + ' → ур. ' + loot.level + (carName ? ' для «' + carName + '»' : '') + ' — бесплатно!';
 }

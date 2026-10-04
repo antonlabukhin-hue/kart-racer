@@ -18,7 +18,7 @@ describe('тюнинг в сундуке', () => {
         expect(l.kind).toBe('part');
         expect(p.carLoadout.ownedParts).toContain(l.id);
         expect(p.carLoadout.newGifts).toContain('part:' + l.id);
-        expect(lootText(l)).toMatch(/Деталь/);
+        expect(lootText(l)).toMatch(/Деталь: /);
     });
     it('прокачка — +1 уровень машине, на которой ездишь', () => {
         const p = prof();
