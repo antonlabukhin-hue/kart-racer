@@ -23,6 +23,8 @@ test('Звериный час: волны идут подряд, конец за
     // у второй волны — своё правило; между волнами — выбор бонуса (src/wave-rules.js)
     await expect(page.locator('#endless-wave-card .ew-rule')).toBeVisible();
     await page.locator('#endless-wave-card .ew-pick[data-choice="double"]').click();
+    await expect(page.locator('#endless-wave-card .ew-go')).toBeEnabled(); // бонус выбран — «Поехали»
+    await page.locator('#endless-wave-card .ew-go').click();
     await expect(page.locator('#endlessDisplay')).toContainText('×2', { timeout: 20_000 });
     await expect(page.locator('#endlessDisplay')).toContainText('ВОЛНА 2', { timeout: 20_000 });
     const score = await page.locator('#endlessDisplay').textContent();

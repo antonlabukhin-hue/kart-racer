@@ -11,7 +11,7 @@
  * высота — по холмам обочин (heightAt), фундамент уходит в землю — дома не висят над склоном.
  */
 import * as THREE from 'three';
-import { cellRect as R, box, cyl, gable, template, place, createBatch, batchMesh, kitMaterial, waterMaterial } from './scenery-kit.js';
+import { cellRect as R, box, cyl, gable, template, place, createBatch, batchMesh, kitMaterial, waterMaterial, setKitGlow } from './scenery-kit.js';
 
 const C = function(h) { return new THREE.Color(h); };
 const FACADES = { k5: 'k5', k5b: 'k5b', brick5: 'brick5', stalin: 'stalin', p9: 'p9', p9b: 'p9b' };
@@ -456,4 +456,25 @@ export function buildScenery(o) {
     else if (s === 'junk') junkStretch(st, o.W);
     const mesh = batchMesh(st.b, kitMaterial(o.lite)), water = batchMesh(st.wb, waterMaterial());
     return { mesh: mesh, water: water, verts: st.b.p.length / 3 };
+}
+
+/**
+ * Насытить всю трассу кампании или волны (там она строится сразу целиком): участки по 60 ед. от старта до финиша,
+ * стиль — по зоне трассы (src/biomes.js: town → окраина, иногда деревня; forest → лес/тайга; industrial; junk).
+ * Каждый участок — отдельный меш прямо в сцене: отсечение по видимости и по кускам трассы (src/chunk-cull.js) работает.
+ * o — { scene, startZ, finishZ, W, biomeAt(progress 0..1), snow, lite, glow (0..1 — ночь) }
+ */
+export function buildTrackScenery(o) {
+    const LEN = 60, total = Math.max(1, o.startZ - o.finishZ);
+    let n = 0;
+    setKitGlow(o.glow || 0);
+    for (let i = 0, z0 = o.startZ + 20; z0 > o.finishZ - 40; i++, z0 -= LEN) {
+        const pr = Math.max(0, Math.min(1, (o.startZ - (z0 - LEN / 2)) / total));
+        const b = o.biomeAt(pr);
+        const style = b === 'town' ? (i % 5 === 2 ? 'village' : 'arsenev') : b === 'forest' ? 'forest' : b === 'industrial' ? 'industrial' : b === 'junk' ? 'junk' : 'arsenev';
+        const sc = buildScenery({ style: style, snow: !!o.snow, i: i, z0: z0, len: LEN, W: o.W, lite: o.lite, rnd: Math.random });
+        if (sc.mesh) { o.scene.add(sc.mesh); n++; }
+        if (sc.water) o.scene.add(sc.water);
+    }
+    return n;
 }

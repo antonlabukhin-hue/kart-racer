@@ -24,9 +24,10 @@ export function waveCardHtml(run, gained) {
         + '<div class="ew-title">🐾 ВОЛНА ' + run.wave + '</div>'
         + (rule ? '<div class="ew-rule"><i>' + rule.icon + '</i><b>' + esc(rule.name) + '</b><span>' + esc(rule.desc) + '</span></div>' : '')
         + '<div class="ew-sub">Счёт: ' + run.score + ' · Аварии: ' + run.strikes + ' / 5</div>'
-        + '<div class="ew-choose"><div class="ew-ct">Выбери бонус · <b class="ew-left">' + CHOICE_SECONDS + '</b> с</div>'
+        + '<div class="ew-choose"><div class="ew-ct">1. Выбери бонус ·<b class="ew-left">' + CHOICE_SECONDS + '</b> с</div>'
         + CHOICES.map(function(c) { return '<button type="button" class="ew-pick" data-choice="' + c.id + '"' + (c.id === 'heart' && !(run.strikes > 0) ? ' disabled' : '') + '><i>' + c.icon + '</i><b>' + c.name + '</b><small>' + c.desc + '</small></button>'; }).join('')
         + '</div>'
+        + '<button type="button" class="ew-go" disabled>2. ▶ ПОЕХАЛИ</button>'
         + '<div class="ew-seed">' + (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '</div>';
 }
 
@@ -113,16 +114,28 @@ export function createBeastHour(d) {
                 el.id = 'endless-wave-card';
                 el.innerHTML = waveCardHtml(run, r.gained);
                 document.body.appendChild(el);
-                let left = CHOICE_SECONDS, done = false, t = null;
-                const go = function(id) {
-                    if (done) return;
-                    done = true; clearInterval(t);
+                // сначала бонус (не выбрал за CHOICE_SECONDS с — по умолчанию), потом «Поехали» — волна стартует по нажатию
+                let left = CHOICE_SECONDS, picked = false, started = false, t = null;
+                const goBtn = el.querySelector('.ew-go');
+                const pick = function(id) {
+                    if (picked) return;
+                    picked = true; clearInterval(t);
                     const got = applyChoice(run, id);
                     el.querySelectorAll('.ew-pick').forEach(function(b) { b.disabled = true; b.classList.toggle('on', b.dataset.choice === got); });
-                    setTimeout(function() { try { el.remove(); } catch (e) {} if (onNext) onNext(); bh.launch(); }, WAVE_CARD_MS / 2);
+                    const ct = el.querySelector('.ew-ct'); if (ct) ct.textContent = '✔ Бонус выбран';
+                    if (goBtn) { goBtn.disabled = false; goBtn.classList.add('ready'); try { goBtn.focus(); } catch (e) {} }
                 };
-                t = setInterval(function() { left--; const l = el.querySelector('.ew-left'); if (l) l.textContent = String(left); if (left <= 0) go(defaultChoice(run)); }, 1000);
-                el.querySelectorAll('.ew-pick').forEach(function(b) { b.onclick = function() { go(b.dataset.choice); }; });
+                const onKey = function(e) { if (e.key === 'Enter' || e.key === ' ') { if (!picked) pick(defaultChoice(run)); else start(); } };
+                const start = function() {
+                    if (!picked || started) return;
+                    started = true;
+                    document.removeEventListener('keydown', onKey);
+                    try { el.remove(); } catch (e) {} if (onNext) onNext(); bh.launch();
+                };
+                document.addEventListener('keydown', onKey);
+                t = setInterval(function() { left--; const l = el.querySelector('.ew-left'); if (l) l.textContent = String(left); if (left <= 0) pick(defaultChoice(run)); }, 1000);
+                el.querySelectorAll('.ew-pick').forEach(function(b) { b.onclick = function() { pick(b.dataset.choice); }; });
+                if (goBtn) goBtn.onclick = start;
                 return true;
             }
             if (run.daily && run.score > 0) { // «Звериный час дня» — в дневную таблицу (src/daily-board.js)

@@ -24,3 +24,18 @@ export function campaignHardConfig(hard, medium, idx, total) {
     out.curveK = k;
     return out;
 }
+
+/**
+ * Трасса кампании — вдвое длиннее (короткая проходилась с запасом в минуту): длина ×CAMP_LEN_K,
+ * лимит времени +CAMP_TIME_ADD с, препятствий — больше, чтобы плотность не упала вдвое.
+ */
+export const CAMP_LEN_K = 2;
+export const CAMP_TIME_ADD = 20;
+export function campaignLength(cfg) {
+    return Object.assign({}, cfg, {
+        trackLength: Math.round(cfg.trackLength * CAMP_LEN_K),
+        timeLimit: cfg.timeLimit + CAMP_TIME_ADD,
+        maxObstacles: Math.round((cfg.maxObstacles || 0) * 1.8),
+        trees: Math.round((cfg.trees || 0) * 1.5)
+    });
+}

@@ -7,13 +7,15 @@ import { ONLINE, cleanName } from './online-board.js';
 import { ghostKey, isValidGhost } from './ghost.js';
 
 const URL = ONLINE.url.replace(/\/runs$/, '/chapter_times');
+/** С этого дня трассы глав вдвое длиннее — мировые рекорды считаются заново (старые времена — короткой трассы) */
+export const RECORDS_SINCE = '2026-10-05T00:00:00Z';
 const H = function(extra) { return Object.assign({ apikey: ONLINE.key, Authorization: 'Bearer ' + ONLINE.key }, extra || {}); };
 const timed = function(p) { return Promise.race([p, new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 6000); })]); };
 
 /** Своё лучшее время главы (с): из сохранённого призрака; null — ещё не проходил */
 export function localBest(profileId, chapterId, diff, storage) {
     try {
-        const g = JSON.parse((storage || localStorage).getItem(ghostKey(profileId, 'camp_' + chapterId, diff)) || 'null');
+        const g = JSON.parse((storage || localStorage).getItem(ghostKey(profileId, 'camp2_' + chapterId, diff)) || 'null');
         return isValidGhost(g) ? g.time : null;
     } catch (e) { return null; }
 }
@@ -48,7 +50,7 @@ export function fetchWorldBests(f) {
     const fx = f || (typeof fetch !== 'undefined' ? fetch : null);
     if (!fx) return Promise.resolve(null);
     if (cache && Date.now() - cache.at < 60000) return Promise.resolve(cache.map);
-    return timed(fx(URL + '?select=chapter,name,time_ms&order=time_ms.asc&limit=2000', { headers: H() }))
+    return timed(fx(URL + '?select=chapter,name,time_ms&created_at=gte.' + RECORDS_SINCE + '&order=time_ms.asc&limit=2000', { headers: H() }))
         .then(function(res) { return res && res.ok ? res.json() : null; })
         .then(function(rows) { if (!Array.isArray(rows)) return null; cache = { at: Date.now(), map: worldBests(rows) }; return cache.map; })
         .catch(function() { return null; });

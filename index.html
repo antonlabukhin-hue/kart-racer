@@ -286,8 +286,14 @@
             <div class="garage-panel active" id="garage-panel-parts"></div>
             <div class="garage-panel" id="garage-panel-upgrades"></div>
             <div class="garage-panel" id="garage-panel-trophies">
-                <div id="badge-set"></div>
-                <div class="trophy-grid" id="trophy-grid"></div>
+                <div class="tro-tabs" role="tablist">
+                    <button type="button" class="tro-tab active" data-tro="badges" role="tab"><i aria-hidden="true">🎖</i>Значки<em></em></button>
+                    <button type="button" class="tro-tab" data-tro="stickers" role="tab"><i aria-hidden="true">⭐</i>Наклейки<em></em></button>
+                    <button type="button" class="tro-tab" data-tro="cups" role="tab"><i aria-hidden="true">🏆</i>Кубки<em></em></button>
+                </div>
+                <div id="badge-set" class="tro-pane" data-pane="badges"></div>
+                <div id="sticker-set" class="tro-pane" data-pane="stickers" hidden></div>
+                <div class="trophy-grid tro-pane" id="trophy-grid" data-pane="cups" hidden></div>
                 <div id="trophy-detail">
                     <div id="trophy-canvas-wrap"></div>
                     <div id="trophy-detail-text" style="font-size:12px;color:#ccc;"></div>
