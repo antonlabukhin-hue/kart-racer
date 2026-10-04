@@ -107,6 +107,7 @@ test('кампания: подарок за главу ведёт в гараж 
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].carLoadout.newGifts)).toEqual([]);
     // наклейка — в «Трофеях», по нажатию — история
     await page.locator('.garage-tab[data-gtab="trophies"]').click();
+    await page.locator('.tro-tab[data-tro="stickers"]').click(); // наклейки — своя вкладка «Трофеев»
     await page.locator('.sticker-set [data-sticker="c01"]').click();
     await expect(page.locator('.sticker-set .sticker-lore')).toContainText('антидот');
     expect(problems).toEqual([]);
