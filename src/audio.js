@@ -3,7 +3,7 @@
  */
 import { loadSettings, saveSettings } from './settings.js';
 import { mapAudioTheme, musicRate, startAmbientBed } from './map-audio.js';
-import { engineProfile, targetRpm, stepRpm, createEngineVoice, glide } from './engine-sound.js';
+import { engineProfile, targetRpm, stepRpm, createEngineVoice, createSimpleVoice, glide } from './engine-sound.js';
 class SoundEngine {
     constructor() {
         this.audioCtx = null;
@@ -623,8 +623,7 @@ class SoundEngine {
             this.engineNode.set(rpm, this._load != null ? this._load : 0.5);
             if (this.engineGain) glide(this.engineGain.gain, Math.max(0.0008, Math.min(0.4, vol)), t, 0.03, true); // без накопления событий (iPhone)
         } catch (e) {
-            this.isPlaying = false;
-            this.engineNode = null;
+            this._engineFailed(e); // голос не бросаем работать «в пустоту»: остановить, после двух сбоев — простой звук
         }
     }
 
@@ -642,15 +641,30 @@ class SoundEngine {
             this.engineGain.gain.cancelScheduledValues(this.audioCtx.currentTime);
             this.engineGain.gain.setValueAtTime(v0, this.audioCtx.currentTime);
             const prof = this._engProf || engineProfile(null);
-            this.engineNode = createEngineVoice(this.audioCtx, this.engineGain, prof, { lite: !!window.__isMobile || /iPhone|iPad|Android/i.test(navigator.userAgent || '') });
-            this.engineNode.set(this._rpm || prof.idle, 0.5);
+            // перезапуски чаще 6 раз за 3 с — что-то не так: дальше простой звук (без петли пересоздания)
+            const nowMs = Date.now();
+            this._engStarts = (this._engStarts || []).filter(function(x) { return nowMs - x < 3000; }); this._engStarts.push(nowMs);
+            if (this._engStarts.length > 6) this._engSimple = true;
+            const make = this._engSimple ? createSimpleVoice : createEngineVoice;
+            const voice = make(this.audioCtx, this.engineGain, prof, { lite: !!window.__isMobile || /iPhone|iPad|Android/i.test(navigator.userAgent || '') });
+            this.engineNode = voice;
+            voice.set(this._rpm || prof.idle, 0.5);
             this.isPlaying = true;
             this._isEngineStopping = false;
         } catch (e) {
             console.warn('startEngine', e);
-            this.engineNode = null;
-            this.isPlaying = false;
+            this._engineFailed(e);
         }
+    }
+
+    /** Сбой голоса мотора: остановить его (иначе он звучит дальше без хозяина и копится), запомнить ошибку; после двух — простой звук */
+    _engineFailed(e) {
+        try { if (this.engineNode && this.engineNode.stop) this.engineNode.stop(); } catch (e2) {}
+        this.engineNode = null;
+        this.isPlaying = false;
+        this.engineErrors = (this.engineErrors || 0) + 1;
+        this.lastAudioError = String(e && (e.message || e));
+        if (this.engineErrors >= 2) this._engSimple = true;
     }
 
     stopEngineSmooth() {

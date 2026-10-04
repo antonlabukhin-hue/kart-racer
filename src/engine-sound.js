@@ -94,6 +94,33 @@ function shaperCurve(drive) {
 }
 
 /**
+ * Запасной простой мотор (два осциллятора, как раньше): если полный голос на устройстве не заработал.
+ * Тот же интерфейс { set(rpm, load), stop() }; частота — от оборотов, без автоматизаций с накоплением.
+ */
+export function createSimpleVoice(ctx, out, prof) {
+    const p = prof || ENGINE_PROFILES._default;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; lp.connect(out);
+    const o1 = ctx.createOscillator(); o1.type = 'sawtooth';
+    const o2 = ctx.createOscillator(); o2.type = 'square';
+    const g2 = ctx.createGain(); g2.gain.value = 0.4;
+    o1.connect(lp); o2.connect(g2); g2.connect(lp);
+    o1.start(); o2.start();
+    let last = -1;
+    return {
+        prof: p, simple: true,
+        set: function(rpm) {
+            const now = ctx.currentTime;
+            if (now - last < 0.033) return;
+            last = now;
+            const f = Math.max(40, Math.min(420, firingHz(rpm, p.cyl) * (p.cyl >= 8 ? 0.6 : 1.1)));
+            o1.frequency.setValueAtTime(f, now); o2.frequency.setValueAtTime(f * 0.5, now);
+            lp.frequency.setValueAtTime(Math.min(2600, 350 + f * 4), now);
+        },
+        stop: function() { [o1, o2].forEach(function(o) { try { o.stop(); } catch (e) {} }); [o1, o2, g2, lp].forEach(function(n) { try { n.disconnect(); } catch (e) {} }); }
+    };
+}
+
+/**
  * Плавно к значению v. В игре — без накопления событий автоматизации: на iPhone (WebKit) каждое setTargetAtTime
  * остаётся в очереди параметра, 30–60 вызовов в секунду за заезд — тысячи событий: звук заикается («пикает»),
  * память растёт, вкладку выкидывает. Поэтому: сброс очереди → текущее значение → короткий линейный переход (2 события).
