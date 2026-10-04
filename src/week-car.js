@@ -1,10 +1,11 @@
 /**
  * «Машина недели»: каждую неделю (с понедельника) своя машина, которой у тебя нет, — проедь goal м
  * в бесконечной трассе за неделю (метры всех заездов складываются), и она твоя навсегда, без «Е». Всё есть — WEEK_DUP_VHS кассет.
- * Машина — из продающихся за «Е» не дороже WEEK_MAX_PRICE (не подарочных), у каждого игрока своя, всю неделю одна и та же;
+ * Машина — из продающихся за «Е» от WEEK_MIN_PRICE до WEEK_MAX_PRICE (не подарочных), у каждого игрока своя, всю неделю одна и та же;
  * цель — M_PER_E метра за каждую «Е» цены (goalFor): машина за 15 000 Е — 60 км. profile.weekCar = { week, dist, car, goal, done }. Логика — чистая (с тестами).
  */
 export const WEEK_GOAL = 15000;
+export const WEEK_MIN_PRICE = 10000; // дешёвые — не машины недели
 export const WEEK_MAX_PRICE = 15000;
 /** Сколько метров за неделю нужно на машину ценой price */
 export const M_PER_E = 4;
@@ -22,7 +23,7 @@ export function weekState(profile, week, presets, isGift) {
     let w = profile.weekCar;
     if (!w || w.week !== week) {
         const own = profile.unlockedCars || [];
-        const list = Object.keys(presets).filter(function(id) { const p = presets[id]; return own.indexOf(id) < 0 && p.priceChips > 0 && p.priceChips <= WEEK_MAX_PRICE && !p.priceVhs && !(isGift && isGift(id)); }).sort();
+        const list = Object.keys(presets).filter(function(id) { const p = presets[id]; return own.indexOf(id) < 0 && p.priceChips >= WEEK_MIN_PRICE && p.priceChips <= WEEK_MAX_PRICE && !p.priceVhs && !(isGift && isGift(id)); }).sort();
         const car = list.length ? list[hash(week + '|' + (profile.name || '')) % list.length] : null;
         w = profile.weekCar = { week: week, dist: 0, car: car, goal: car ? goalFor(presets[car].priceChips) : WEEK_GOAL, done: false };
     }
