@@ -1677,6 +1677,7 @@ function createProfile(name) { return Profile.createProfile(name); }
                     refreshShopSelection();
                 }, { passive: false });
                 btn.addEventListener('touchend', function(ev) {
+                    if (tapMoved(ev)) return; // листал ряд пальцем — это не нажатие
                     ev.preventDefault();
                     const id = btn.getAttribute('data-car');
                     if (!id || !CAR_PRESETS[id]) return;
@@ -1811,6 +1812,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             }
         }
 
+        let tapStart = null; document.addEventListener('touchstart', function(e) { const t = e.touches && e.touches[0]; tapStart = t ? { x: t.clientX, y: t.clientY } : null; }, { passive: true, capture: true }); function tapMoved(e) { const t = e.changedTouches && e.changedTouches[0]; return !!(tapStart && t && Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y) > 12); } /* касание с прокруткой — не нажатие (кнопки на touchend) */
         function onlineBoard() { return import.meta.env.MODE !== 'test' && !navigator.webdriver; } // автотесты (тестовая сборка, Playwright) не пишут в мировую таблицу; функция — видна и выше по коду
         function saveBoardRun(dist) { const run = { name: currentPlayer.name, dist: dist, car: currentPlayer.preferredCar }, bl = addRun(loadBoard(), run); saveBoard(bl); if (onlineBoard()) submitRun(run); return bl; }
         function openGarage() {
@@ -4859,6 +4861,7 @@ function startGaragePreview(carId) {
                     el.style.pointerEvents = 'auto';
                     el.onclick = handler;
                     el.addEventListener('touchend', function(e) {
+                        if (tapMoved(e)) return; // прокручивал итоги — не нажимать кнопку под пальцем
                         e.preventDefault();
                         handler(e);
                     }, { passive: false });
