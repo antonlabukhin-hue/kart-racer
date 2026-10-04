@@ -5984,3 +5984,18 @@ body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size:
 #shop-cars .shop-car-btn.mine { border-color: #5dff8a !important; box-shadow: 0 0 0 2px rgba(93,255,138,0.35), 0 0 16px rgba(93,255,138,0.45); }
 #shop-cars .shop-car-btn.mine .price { color: #7dff9a !important; font-weight: 900; }
 #shop-plate em.own { background: linear-gradient(180deg, #5dff8a, #22c55e); color: #062010; }
+/* подарочные машины в витрине — золотые, с бегущим бликом (их не купить — только заслужить) */
+#shop-cars .shop-car-btn.gift { position: relative; overflow: hidden; border-color: #ffd23c !important;
+    background: linear-gradient(160deg, #ffe680 0%, #f5b81c 45%, #c98a0a 100%) !important; animation: giftGlow 1.6s ease-in-out infinite; }
+#shop-cars .shop-car-btn.gift b { color: #3a2400 !important; text-shadow: 0 1px 0 rgba(255,255,255,0.55); }
+#shop-cars .shop-car-btn.gift .price { color: #5a3500 !important; font-weight: 900; }
+#shop-cars .shop-car-btn.gift::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 40%; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.75), transparent); transform: skewX(-18deg); animation: giftShine 2.4s ease-in-out infinite; }
+#shop-cars .shop-car-btn.gift.selected { box-shadow: 0 0 0 3px #fff6c8, 0 0 22px 6px rgba(255,200,40,0.95) !important; }
+@keyframes giftShine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+@media (prefers-reduced-motion: reduce) { #shop-cars .shop-car-btn.gift, #shop-cars .shop-car-btn.gift::after { animation: none; } }
+/* сундук: тюнинг внутри (src/chest-loot.js) */
+.chest-card .ch-loot { margin: 0 0 8px; padding: 5px 10px; border-radius: 10px; font-size: 13px; color: #cfe8ff; background: rgba(90,170,255,0.12); border: 1px solid rgba(120,190,255,0.45); }
+.chest-card .ch-loot b { color: #fff; }
+.chest-card .ch-got.ch-tune { font-size: 16px; color: #ffe066; padding: 8px 12px; margin: 2px 0 6px; border-radius: 12px; border: 1.5px solid #ffd23c;
+    background: linear-gradient(90deg, rgba(255,210,60,0.25), rgba(255,160,0,0.08)); animation: uiPop .4s .25s both, giftGlow 1.4s .7s ease-in-out infinite; }
