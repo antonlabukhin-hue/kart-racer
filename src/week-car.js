@@ -6,7 +6,7 @@
  */
 export const WEEK_GOAL = 15000;
 export const WEEK_MIN_PRICE = 10000; // дешёвые — не машины недели
-export const WEEK_MAX_PRICE = 50000;
+export const WEEK_MAX_PRICE = 30000; // до «Бычка»; «Киборг» (50 000 Е, 200 км) — слишком долго
 /** Сколько метров за неделю нужно на машину ценой price */
 export const M_PER_E = 4;
 export function goalFor(price) { return Math.round(price * M_PER_E / 1000) * 1000; }

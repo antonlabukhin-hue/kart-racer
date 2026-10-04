@@ -29,7 +29,7 @@ describe('машина недели', () => {
         const w = weekState(p, '2026-09-28', CAR_PRESETS, function(id) { return id === 'trike' || id === 'ghostcar'; });
         expect(p.unlockedCars).not.toContain(w.car);
         expect(CAR_PRESETS[w.car].priceChips).toBeGreaterThanOrEqual(10000);
-        expect(CAR_PRESETS[w.car].priceChips).toBeLessThanOrEqual(50000);
+        expect(CAR_PRESETS[w.car].priceChips).toBeLessThanOrEqual(30000);
         expect(w.goal).toBe(goalFor(CAR_PRESETS[w.car].priceChips));
         expect(addWeekDist(p, '2026-09-28', w.goal - 6, CAR_PRESETS)).toBe(null);
         expect(addWeekDist(p, '2026-09-28', 6, CAR_PRESETS)).toEqual({ car: w.car });
