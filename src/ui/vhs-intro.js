@@ -23,13 +23,10 @@ export function playVhsIntro(opts) {
     try { sessionStorage.setItem(VHS_KEY, '1'); } catch (e) {}
     const root = document.createElement('div');
     root.className = 'vhs-intro';
-    root.innerHTML = '<canvas width="160" height="90"></canvas><div class="vhs-band"></div>'
-        + '<div class="vhs-osd vhs-play">PLAY ►</div><div class="vhs-osd vhs-ctr">0:00:07</div><div class="vhs-osd vhs-sp">SP</div>'
-        + '<div class="vhs-skip">коснись, чтобы пропустить</div>';
+    root.innerHTML = '<canvas width="160" height="90"></canvas><div class="vhs-band"></div>'; // только шипение: без счётчика ленты и надписей — они ложились на надписи заставки
     document.body.appendChild(root);
     document.body.classList.add('vhs-reveal'); // заставка игры под снегом дрожит и «плывёт» цветами, пока лента не встала
     const cv = root.querySelector('canvas'), g = cv.getContext('2d'), img = g.createImageData(160, 90);
-    const ctr = root.querySelector('.vhs-ctr');
     const t0 = performance.now(), SNOW = 1200, TOTAL = 3000;
     let raf = 0, done = false;
     const finish = function() {
@@ -52,7 +49,6 @@ export function playVhsIntro(opts) {
         }
         g.putImageData(img, 0, 0);
         root.style.setProperty('--vhs-k', k.toFixed(2));
-        if (ctr) ctr.textContent = tapeCounter(t);
         if (t > SNOW) root.classList.add('vhs-play-on');
         if (t >= TOTAL) { finish(); return; }
         raf = requestAnimationFrame(frame);
