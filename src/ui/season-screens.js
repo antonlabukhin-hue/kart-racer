@@ -5,6 +5,17 @@
  *   contract(), escape(str), startContract().
  */
 
+/** Экран «Подарки»: вкладка «🎁 Подарки» (прогресс и новости) или «🏆 Сезон» (награды) — один экран, разное содержимое */
+export function setSeasonMode(sc, mode) {
+    if (!sc) return;
+    sc.querySelectorAll('.season-tab[data-stab]').forEach(function(t) { const on = t.dataset.stab === mode; t.classList.toggle('active', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); });
+    const g = sc.querySelector('#gifts-body'), pr = sc.querySelector('#rewards-progress'), l = sc.querySelector('#rewards-list');
+    if (g) g.hidden = mode !== 'gifts';
+    sc.classList.toggle('gifts-mode', mode === 'gifts');
+    if (pr) pr.hidden = mode === 'gifts';
+    if (l) l.hidden = mode === 'gifts';
+}
+
 export function openRewardsScreen(d) {
     const currentPlayer = d.player();
     if (!currentPlayer) return;
@@ -12,6 +23,7 @@ export function openRewardsScreen(d) {
     d.hideMenu();
     const sc = document.getElementById('rewards-screen');
     sc.classList.add('active'); sc.style.display = 'flex';
+    setSeasonMode(sc, 'rewards');
     const se = currentPlayer.season;
     const claimableCount = d.rewards.filter(r => se.level >= r.level && !currentPlayer.claimedRewards[r.level]).length;
     document.getElementById('rewards-progress').textContent =

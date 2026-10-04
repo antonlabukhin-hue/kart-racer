@@ -192,7 +192,7 @@
             <nav class="mm-dock" aria-label="Разделы">
                 <button type="button" class="mm-tab" data-menu="cars"><i aria-hidden="true">🚗</i><span>Машины</span></button>
                 <button type="button" class="mm-tab" data-menu="garage"><i aria-hidden="true">🔧</i><span>Гараж</span><em class="mm-badge" id="mm-badge-garage" hidden></em></button>
-                <button type="button" class="mm-tab" data-menu="season"><i aria-hidden="true">🎁</i><span>Сезон</span><em class="mm-badge" id="mm-badge-season" hidden></em></button>
+                <button type="button" class="mm-tab" data-menu="season"><i aria-hidden="true">🎁</i><span>Подарки</span><em class="mm-badge" id="mm-badge-season" hidden></em></button>
                 <button type="button" class="mm-tab" data-menu="trophies"><i aria-hidden="true">🏆</i><span>Трофеи</span></button>
             </nav>
         </div>
@@ -202,11 +202,13 @@
     <div id="rewards-screen">
         <div class="content">
             <img class="menu-hero" loading="lazy" decoding="async" src="images/menu_rewards.jpg" alt="Награды" onerror="this.style.display='none'">
-            <h1 style="color:#ffdd00;">🎁 СЕЗОН 1</h1>
+            <h1 style="color:#ffdd00;" id="rewards-title">🎁 ПОДАРКИ</h1>
             <div class="season-tabs" role="tablist">
-                <button type="button" class="season-tab active" data-stab="rewards" role="tab" aria-selected="true">🎁 Награды<em class="mm-badge sb-rewards" hidden></em></button>
+                <button type="button" class="season-tab" data-stab="gifts" role="tab" aria-selected="false">🎁 Подарки<em class="mm-badge sb-gifts" hidden></em></button>
+                <button type="button" class="season-tab active" data-stab="rewards" role="tab" aria-selected="true">🏆 Сезон<em class="mm-badge sb-rewards" hidden></em></button>
                 <button type="button" class="season-tab" data-stab="events" role="tab" aria-selected="false">📋 События<em class="mm-badge sb-events" hidden></em></button>
             </div>
+            <div id="gifts-body" hidden></div>
             <div class="sub" id="rewards-progress" style="color:#aaa;">Уровень —</div>
             <div id="rewards-list" style="max-height:50vh;overflow-y:auto;"></div>
             <button class="garage-btn secondary" id="rewards-close">← В меню</button>
@@ -217,9 +219,10 @@
     <div id="events-screen">
         <div class="content">
             <img class="menu-hero" loading="lazy" decoding="async" src="images/menu_events.jpg" alt="События" onerror="this.style.display='none'">
-            <h1 style="color:#ffdd00;">🎁 СЕЗОН 1</h1>
+            <h1 style="color:#ffdd00;">🎁 ПОДАРКИ</h1>
             <div class="season-tabs" role="tablist">
-                <button type="button" class="season-tab" data-stab="rewards" role="tab" aria-selected="false">🎁 Награды<em class="mm-badge sb-rewards" hidden></em></button>
+                <button type="button" class="season-tab" data-stab="gifts" role="tab" aria-selected="false">🎁 Подарки<em class="mm-badge sb-gifts" hidden></em></button>
+                <button type="button" class="season-tab" data-stab="rewards" role="tab" aria-selected="false">🏆 Сезон<em class="mm-badge sb-rewards" hidden></em></button>
                 <button type="button" class="season-tab active" data-stab="events" role="tab" aria-selected="true">📋 События<em class="mm-badge sb-events" hidden></em></button>
             </div>
             <div id="events-body"></div>
@@ -276,10 +279,10 @@
             <div class="season-bar-bg"><div class="season-bar-fill" id="garage-season-fill"></div></div>
             <div class="garage-cars" id="garage-cars"><button type="button" class="garage-btn secondary garage-shop-btn" id="main-menu-shop">🚗 Все машины</button></div>
             <div class="garage-tabs">
-                <button type="button" class="garage-tab garage-tab-up" data-gtab="upgrades">⚙ Прокачка<em class="mm-badge" id="garage-up-badge" hidden></em></button>
-                <button type="button" class="garage-tab active" data-gtab="parts">🛠️ Кастом</button>
-                <button type="button" class="garage-tab" data-gtab="trophies">🏆 Трофеи 90-х</button>
-                <button type="button" class="garage-tab" data-gtab="achs">🏅 Ачивки</button>
+                <button type="button" class="garage-tab garage-tab-up" data-gtab="upgrades"><i aria-hidden="true">⚙</i>Прокачка<em class="mm-badge" id="garage-up-badge" hidden></em></button>
+                <button type="button" class="garage-tab active" data-gtab="parts"><i aria-hidden="true">🛠️</i>Тюнинг</button>
+                <button type="button" class="garage-tab" data-gtab="trophies"><i aria-hidden="true">🏆</i>Трофеи</button>
+                <button type="button" class="garage-tab" data-gtab="achs"><i aria-hidden="true">🏅</i>Ачивки</button>
             </div>
             <div class="garage-panel active" id="garage-panel-parts"></div>
             <div class="garage-panel" id="garage-panel-upgrades"></div>

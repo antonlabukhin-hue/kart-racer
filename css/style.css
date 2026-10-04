@@ -6098,3 +6098,82 @@ body #finish-screen .fin-btn small { display: block; margin-top: 2px; font-size:
 .fin-hook.fin-week-prog b { color: #c8ffd6; font-size: 14px; }
 .fin-hook.fin-friend { border-color: #ff8a5a; background: linear-gradient(100deg, rgba(255,120,80,0.22), rgba(255,120,80,0.05)); }
 .fin-hook.fin-friend b { color: #ffc0a0; }
+
+/* ===== «Привет» — влезает в экран телефона (видимая высота — dvh: на iPhone 100vh выше экрана) ===== */
+.hello-modal { padding: 8px; }
+.hello-card { max-height: calc(100dvh - 16px) !important; padding: 14px 12px 10px !important; }
+.hello-card .hn-hi { font-size: 22px !important; }
+.hello-card .hn-sub { margin: 2px 0 8px !important; font-size: 13px !important; }
+.hello-card .hn-list { gap: 6px !important; }
+.hello-card .hn-item { padding: 7px 9px !important; gap: 8px !important; }
+.hello-card .hn-item i { font-size: 22px !important; }
+.hello-card .hn-item b { font-size: 14px !important; }
+.hello-card .hn-item span { font-size: 12px !important; }
+.hello-card .hn-today { margin-top: 8px !important; padding: 7px !important; }
+.hello-card .hn-row { padding: 5px 7px !important; font-size: 12px !important; }
+.hello-card .hn-go { min-height: 46px !important; margin-top: 8px !important; font-size: 18px !important; }
+.hello-card .hn-all { display: block; width: 100%; margin-top: 8px; padding: 8px 10px; border-radius: 12px; cursor: pointer; text-align: left;
+    font: 800 13px system-ui, sans-serif; color: #ffe066; background: rgba(255,210,60,0.1); border: 1.5px dashed rgba(255,210,60,0.6); }
+@media (max-height: 700px) { .hello-card .hn-hi { font-size: 19px !important; } }
+
+/* ===== Кнопка «Подарки» в меню сияет, пока есть что забрать или прочитать ===== */
+.mm-dock .mm-tab.glow { color: #ffe066 !important; animation: giftGlow 1.6s ease-in-out infinite; border-radius: 14px; }
+.mm-dock .mm-tab.glow i { animation: giftBob 1.6s ease-in-out infinite; display: inline-block; }
+@keyframes giftBob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .mm-dock .mm-tab.glow, .mm-dock .mm-tab.glow i { animation: none; } }
+
+/* ===== Вкладка «🎁 Подарки» (src/ui/gifts-screen.js) ===== */
+#rewards-screen .season-tabs { gap: 6px; }
+#rewards-screen .season-tab { flex: 1 1 0; font: 800 13px system-ui, sans-serif !important; padding: 8px 6px !important; }
+#gifts-body { text-align: left; max-height: 58vh; overflow-y: auto; padding: 2px 2px 6px; }
+#gifts-body .gf-h { margin: 10px 2px 6px; font: 900 13px system-ui, sans-serif; letter-spacing: 0.04em; color: #9fd8ff; text-transform: uppercase; }
+#gifts-body .gf-h:first-child { margin-top: 2px; }
+.gf-card { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: center; margin-bottom: 6px; padding: 9px 10px; border-radius: 14px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; }
+.gf-card > i { font-style: normal; font-size: 24px; text-align: center; }
+.gf-card b { display: block; font-size: 14px; color: #fff; }
+.gf-card span { display: block; font-size: 12px; color: #d8d0e8; margin-top: 1px; }
+.gf-card.hot { border-color: #ffd23c; background: linear-gradient(100deg, rgba(255,210,60,0.22), rgba(255,140,0,0.06)); animation: giftGlow 1.8s ease-in-out infinite; }
+.gf-card.hot b { color: #ffe066; }
+.gf-act { padding: 7px 11px; border: 0; border-radius: 10px; cursor: pointer; white-space: nowrap; font: 900 12px system-ui, sans-serif; color: #1a1000;
+    background: linear-gradient(180deg, #ffe066, #ffb000); box-shadow: 0 3px 0 #a86a00; }
+.gf-got { font-weight: 900; font-size: 13px; color: #9dffb4; white-space: nowrap; }
+.gf-bar { display: block; height: 6px; margin-top: 5px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.gf-bar s { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #5ad2ff, #5aff8a); }
+.gf-paints { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.gf-paints li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: center; font-size: 12px; color: #d8d0e8; }
+.gf-paints li .gf-bar { grid-column: 2; margin-top: 0; }
+.gf-paints li.got span { color: #9dffb4; font-weight: 800; }
+.gf-paints .sw { display: block; width: 20px; height: 20px; border-radius: 50%; font-style: normal; text-align: center; line-height: 18px; font-size: 11px; font-weight: 900; }
+.gf-paints .sw.lock { border: 2px dashed #8a7ab8; color: #d8ccff; background: #1a1a26; box-sizing: border-box; }
+.gf-paints .sw.fx-glow { background: var(--c); box-shadow: 0 0 8px 2px var(--c); }
+.gf-paints .sw.fx-rainbow { background: conic-gradient(#ff3030, #ffd23c, #5aff8a, #3cd2ff, #c86aff, #ff3030); }
+.gf-paints .sw.fx-gold { background: radial-gradient(circle at 35% 30%, #fff6c8, #f2c033 45%, #8a5a00); }
+.gf-news { display: grid; grid-template-columns: 30px 1fr; gap: 8px; margin-bottom: 6px; padding: 7px 10px; border-radius: 12px; background: rgba(255,255,255,0.04); }
+.gf-news i { font-style: normal; font-size: 20px; text-align: center; }
+.gf-news b { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: #f0e8ff; }
+.gf-news b em { font-style: normal; font-size: 9px; letter-spacing: 0.1em; padding: 2px 7px; border-radius: 999px; color: #1a1000;
+    background: linear-gradient(90deg, #ff4a3c, #ffd23c, #5aff8a, #3cd2ff, #c86aff, #ff4a3c); background-size: 300% 100%; animation: ncRainbow 2.5s linear infinite; }
+.gf-news span { display: block; font-size: 12px; color: #c8bedc; line-height: 1.35; }
+.gf-news.new { background: rgba(255,210,60,0.1); border: 1px solid rgba(255,210,60,0.4); }
+
+/* ===== Гараж: выбор машины и вкладки — один шрифт, плотнее, читается ===== */
+#garage-screen .garage-cars { flex-wrap: nowrap !important; justify-content: flex-start !important; overflow-x: auto; gap: 6px !important; margin: 6px 0 6px !important; padding: 2px 1px 4px; scrollbar-width: none; }
+#garage-screen .garage-cars::-webkit-scrollbar { display: none; }
+#garage-screen #garage-car-pick { flex-wrap: nowrap !important; gap: 6px !important; }
+#garage-screen .garage-cars .garage-btn { font: 800 13px/1.1 system-ui, 'Segoe UI', sans-serif !important; font-style: normal !important; text-transform: none !important; letter-spacing: 0 !important;
+    padding: 9px 13px !important; border-radius: 12px !important; white-space: nowrap; flex: none; box-shadow: none !important; transform: none !important; }
+#garage-screen .garage-cars .garage-btn.secondary { background: rgba(255,255,255,0.08) !important; border: 1.5px solid rgba(255,255,255,0.28) !important; color: #f2f2f2 !important; }
+#garage-screen .garage-cars .garage-btn:not(.secondary) { background: linear-gradient(180deg, #ffe066, #ffb000) !important; border: 1.5px solid #ffd23c !important; color: #1a1000 !important; }
+#garage-screen .garage-cars #main-menu-shop { margin-left: auto !important; background: rgba(90,210,255,0.12) !important; border: 1.5px solid #5ad2ff !important; color: #bfeeff !important; }
+#garage-screen .garage-tabs { display: grid !important; grid-template-columns: repeat(4, 1fr); gap: 6px !important; margin: 4px 0 8px !important; }
+#garage-screen .garage-tabs .garage-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; padding: 6px 4px !important;
+    font: 800 12px/1.15 system-ui, 'Segoe UI', sans-serif !important; font-style: normal !important; text-transform: none !important; letter-spacing: 0 !important; border-radius: 12px !important; margin: 0 !important; }
+#garage-screen .garage-tabs .garage-tab i { font-style: normal; font-size: 18px; line-height: 1; }
+#garage-screen .garage-stats { margin: 4px 0 !important; }
+#garage-screen .season-bar-bg { margin: 4px 0 !important; }
+#garage-screen .menu-pane > .sub:first-child { margin: 2px 0 !important; }
+#rewards-screen .season-tabs, #events-screen .season-tabs { display: flex !important; flex-wrap: nowrap !important; }
+#rewards-screen .season-tabs .season-tab, #events-screen .season-tabs .season-tab { flex: 1 1 0 !important; min-width: 0; white-space: nowrap; font: 800 13px system-ui, sans-serif !important; padding: 8px 4px !important; }
+#rewards-screen.gifts-mode .menu-hero { display: none !important; }
+@media (max-height: 700px) { .hello-card .hn-item span { display: block !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }

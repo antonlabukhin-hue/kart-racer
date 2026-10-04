@@ -54,7 +54,9 @@ export function refreshMainMenu(d) {
     setBadge('garage-up-badge', ups);
     const upTab = document.querySelector('.garage-tab[data-gtab="upgrades"]');
     if (upTab) upTab.classList.toggle('has-new', ups > 0);
-    setBadge('mm-badge-season', seasonBadge(p, d.rewards));
+    setBadge('mm-badge-season', seasonBadge(p, d.rewards) + (d.giftsCount || 0));
+    const gt = document.querySelector('.mm-tab[data-menu="season"]'); // «Подарки» сияет, пока есть что забрать или прочитать
+    if (gt) gt.classList.toggle('glow', (d.giftsCount || 0) + unclaimedRewards(p, d.rewards) > 0);
     setBadge('.sb-rewards', unclaimedRewards(p, d.rewards));
     setBadge('.sb-events', p.daily && p.daily.done ? 0 : 1);
     const st = p.stats || {};
@@ -145,14 +147,14 @@ export function wireMainMenu(d) {
         openProfileScreen({ player: d.player(), save: d.save, carTotal: d.carTotal || 0, cloud: !!d.cloud,
             logout: out ? function() { out.click(); } : null, install: inst && !inst.hidden ? function() { inst.click(); } : null });
     });
-    // «Сезон» — два экрана под одной вкладкой: переключатель сверху у обоих
+    // «Подарки» — три вкладки (подарки и прогресс, награды сезона, события) на двух экранах: переключатель сверху у обоих
     document.querySelectorAll('.season-tab[data-stab]').forEach(function(t) {
         t.addEventListener('click', function() {
             if (t.classList.contains('active')) return;
             if (d.sound) d.sound();
             const scr = t.closest('#rewards-screen, #events-screen');
             if (scr) { scr.classList.remove('active'); scr.style.display = 'none'; }
-            if (t.dataset.stab === 'events') d.openEvents(); else d.openRewards();
+            if (t.dataset.stab === 'events') d.openEvents(); else if (t.dataset.stab === 'gifts' && d.openGifts) d.openGifts(); else d.openRewards();
         });
     });
     // огонёк серии — открыть сундук дня (или посмотреть серию, если сегодня уже забран)
