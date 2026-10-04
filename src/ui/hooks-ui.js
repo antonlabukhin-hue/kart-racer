@@ -1,0 +1,92 @@
+/**
+ * Крючки удержания в интерфейсе: секретные краски в гараже (src/secret-paints.js), тест-драйвы за вехи (src/test-drive.js) —
+ * кружки красок, плашки на итогах, кнопка билета в меню и окно «Тест-драйвы».
+ */
+import { SECRET_PAINTS, hasSecretPaint, paintProgress } from '../secret-paints.js';
+import { ladder, tickets } from '../test-drive.js';
+
+const esc = function(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+const hex = function(c) { return '#' + (c >>> 0).toString(16).padStart(6, '0'); };
+
+/** Кружки секретных красок: заработанные — с эффектом, остальные — «?» с условием и прогрессом */
+export function secretSwatchesHtml(profile, current, today) {
+    return SECRET_PAINTS.map(function(sp) {
+        if (hasSecretPaint(profile, sp.id)) return '<div class="color-swatch secret fx-' + sp.fx + (current === sp.id ? ' active' : '') + '" data-paint="' + sp.id + '" style="--c:' + hex(sp.color) + '" title="' + sp.icon + ' ' + esc(sp.name) + ' — секретная, твоя"></div>';
+        const pr = paintProgress(profile, sp, today);
+        return '<div class="secret-lock" data-secret="' + sp.id + '" title="Секретная краска: ' + esc(sp.how) + ' (' + pr[0] + '/' + pr[1] + ')"><b>?</b><small>' + pr[0] + '/' + pr[1] + '</small></div>';
+    }).join('');
+}
+
+/** Текст подсказки для «?» */
+export function secretHint(profile, id, today) {
+    const sp = SECRET_PAINTS.find(function(x) { return x.id === id; });
+    if (!sp) return null;
+    const pr = paintProgress(profile, sp, today);
+    return { title: '🔒 Секретная краска', text: sp.how + ' — сейчас ' + pr[0] + ' из ' + pr[1] + '. Какая — узнаешь, когда получишь!' };
+}
+
+/** Плашки на итогах: новые секретные краски и билеты тест-драйва */
+export function hooksFinishHtml(paints, tks, names) {
+    let h = '';
+    (paints || []).forEach(function(sp) {
+        h += '<div class="fin-hook fin-paint"><i class="hook-swatch fx-' + sp.fx + '" style="--c:' + hex(sp.color) + '"></i><div><b>Секретная краска «' + esc(sp.name) + '»!</b><small>' + esc(sp.how) + ' — бесплатно для всех твоих машин, в гараже сияет</small></div></div>';
+    });
+    (tks || []).forEach(function(k) {
+        h += '<div class="fin-hook fin-td"><i>🎟</i><div><b>Тест-драйв: «' + esc(names(k.car)) + '»!</b><small>' + k.icon + ' ' + esc(k.why) + ' · один заезд — в меню кнопка «Тест-драйв»</small></div></div>';
+    });
+    return h;
+}
+
+/** Кнопка билета в меню (#mm-td): есть билет — «🎟 Тест-драйв: Машина», нет — прогресс ближайшей вехи */
+export function renderTdButton(profile, s, names, onOpen) {
+    const btn = document.getElementById('mm-td'), t = document.getElementById('mm-td-text');
+    if (!btn || !t || !profile) return;
+    const tk = tickets(profile);
+    btn.classList.toggle('has', tk.length > 0);
+    btn.onclick = onOpen;
+    if (tk.length) { t.textContent = '🎟 «' + names(tk[0].car) + '»' + (tk.length > 1 ? ' +' + (tk.length - 1) : ''); return; }
+    const next = ladder(profile, s).filter(function(m) { return !m.done && !m.locked && m.prog; })
+        .sort(function(a, b) { return b.prog[0] / b.prog[1] - a.prog[0] / a.prog[1]; })[0];
+    t.textContent = next ? next.icon + ' ' + Math.round(next.prog[0] / next.prog[1] * 100) + '% до билета' : 'новые машины — на 1 заезд';
+}
+
+/** Окно «Тест-драйвы»: билеты (поехать) и лестница вех. o — { profile, stats, names(id), onGo(car) } */
+export function showTdPop(o) {
+    document.querySelectorAll('.td-modal').forEach(function(n) { n.remove(); });
+    const tk = tickets(o.profile), lad = ladder(o.profile, o.stats);
+    const m = document.createElement('div');
+    m.className = 'td-modal';
+    const fmt = function(n) { return Math.round(n).toLocaleString('ru-RU'); };
+    m.innerHTML = '<div class="td-card" role="dialog" aria-label="Тест-драйвы">'
+        + '<div class="td-h">🎟 ТЕСТ-ДРАЙВЫ</div>'
+        + '<div class="td-sub">Выполни задание — прокатись <b>один заезд</b> на машине или мотоцикле, которых у тебя ещё нет. Понравится — купишь со скидкой прямо на финише.</div>'
+        + (tk.length ? '<div class="td-tickets">' + tk.map(function(k) {
+            return '<button type="button" class="td-ticket" data-car="' + esc(k.car) + '"><i>🎟</i><span><b>' + esc(o.names(k.car)) + '</b><small>' + k.icon + ' ' + esc(k.why) + '</small></span><em>▶ ПОЕХАЛИ</em></button>';
+        }).join('') + '</div>' : '')
+        + '<ol class="td-ladder">' + lad.map(function(s) {
+            const pct = s.prog ? Math.round(s.prog[0] / s.prog[1] * 100) : 0;
+            return '<li class="' + (s.done ? 'done' : s.locked ? 'locked' : '') + '"><i>' + (s.done ? '✅' : s.locked ? '🔒' : s.icon) + '</i><span><b>' + esc(s.text) + '</b><small>'
+                + (s.done ? 'получено' : s.locked ? 'сначала — 4 000 м' : 'тест-драйв «' + esc(o.names(s.car)) + '»' + (s.prog ? ' · ' + fmt(s.prog[0]) + ' / ' + fmt(s.prog[1]) : ''))
+                + '</small>' + (!s.done && !s.locked && s.prog ? '<u><s style="width:' + pct + '%"></s></u>' : '') + '</span></li>';
+        }).join('') + '<li class="more"><i>🔁</i><span><b>Дальше — каждый +1 000 м к рекорду</b><small>новый тест-драйв машины, которой у тебя нет</small></span></li></ol>'
+        + '<button type="button" class="td-close">Понятно</button></div>';
+    document.body.appendChild(m);
+    const close = function() { m.remove(); };
+    m.querySelector('.td-close').onclick = close;
+    m.addEventListener('click', function(e) { if (e.target === m) close(); });
+    m.querySelectorAll('.td-ticket').forEach(function(b) { b.onclick = function() { close(); o.onGo(b.dataset.car); }; });
+    return m;
+}
+
+// новые краски и билеты копятся между заездами (волны «Звериного часа» без итогов) и показываются на ближайших итогах
+let pending = { paints: [], tickets: [] };
+export function addHooks(paints, tks) { pending.paints = pending.paints.concat(paints || []); pending.tickets = pending.tickets.concat(tks || []); }
+export function takeHooksHtml(names) { const p = pending; pending = { paints: [], tickets: [] }; return hooksFinishHtml(p.paints, p.tickets, names); }
+
+/** Строка «Сегодня для тебя»: ближайшая к получению секретная краска или null */
+export function secretNextText(profile, today) {
+    const left = SECRET_PAINTS.filter(function(sp) { return !hasSecretPaint(profile, sp.id); })
+        .map(function(sp) { const pr = paintProgress(profile, sp, today); return { sp: sp, pr: pr, k: pr[0] / pr[1] }; })
+        .sort(function(a, b) { return b.k - a.k; })[0];
+    return left ? 'Секретная краска: ' + left.sp.how + ' — ' + left.pr[0] + ' / ' + left.pr[1] : null;
+}

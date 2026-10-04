@@ -58,5 +58,6 @@ export function testDriveHtml(o) {
     return '<div class="fin-testdrive"><div class="td-title">🚗 Тест-драйв: «' + esc(o.name) + '»</div>'
         + (o.ability ? '<div class="td-ab">★ ' + esc(o.ability.name) + ' — ' + esc(o.ability.desc || '') + '</div>' : '')
         + '<div class="td-res">Проехал ' + Math.round(o.dist).toLocaleString('ru-RU') + ' м' + (o.myBest ? ' · твой рекорд ' + Math.round(o.myBest).toLocaleString('ru-RU') + ' м' : '') + '</div>'
-        + '<button type="button" id="finish-buy-car" class="td-buy">🔥 Купить сегодня за ' + o.cost.toLocaleString('ru-RU') + ' Е <s>' + o.price.toLocaleString('ru-RU') + '</s></button></div>';
+        + (o.price ? '<button type="button" id="finish-buy-car" class="td-buy">🔥 Купить сегодня за ' + o.cost.toLocaleString('ru-RU') + ' Е <s>' + o.price.toLocaleString('ru-RU') + '</s></button>'
+            : '<div class="td-how">🎁 Её не купить — только заслужить: ' + esc(o.how ? o.how.charAt(0).toLowerCase() + o.how.slice(1) : 'подарок') + '</div>') + '</div>';
 }

@@ -44,6 +44,8 @@ export async function login(page, name = 'Тестер', url = './', { briefing 
     await page.addInitScript(() => { if (!sessionStorage.getItem('keep_meet') && !localStorage.getItem('road_racing_met_v1')) localStorage.setItem('road_racing_met_v1', 'all'); });
     // плашку «Машины в подарок» проверяет свой тест — остальным она не мешает
     await page.addInitScript(() => { if (!sessionStorage.getItem('keep_giftintro')) localStorage.setItem('road_racing_gift_cars_intro_v1', '1'); });
+    // «Привет, Имя!» с новостями (src/ui/hello-news.js) проверяет свой тест — остальным не мешает
+    await page.addInitScript(() => { if (!sessionStorage.getItem('keep_hello')) localStorage.setItem('road_racing_hello_skip', '1'); else localStorage.removeItem('road_racing_hello_skip'); });
     await page.goto(url);
     await expect(page.locator('#profile-login-btn')).toBeEnabled();
     await page.locator('#splash-screen').click();
