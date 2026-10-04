@@ -3,7 +3,8 @@
  * а не только другой цвет неба. Проехал событие без аварии — награда «Е» и рисковое действие.
  *   Арсеньев — свадебный кортеж в одной полосе (обгони всех), Промзона — прорвало трубу (кислота в двух полосах),
  *   Тайга — метель (белая мгла), Ночь — свет погас (темнота), Свалка — кран сбрасывает хлам (тень → падение),
- *   Дождь — ливень (лужи-скольжение и мгла), Джунгли — стадо слонов (перебегают волнами).
+ *   Дождь — ливень (лужи-скольжение и мгла), Джунгли — стадо слонов (перебегают волнами),
+ *   Деревня — куры на дороге, Микрорайон — час пик (машины стоят в двух полосах).
  * Расписание и выбор полос — чистые функции (с тестами); сцену трогает host из main.js.
  */
 import * as THREE from 'three';
@@ -13,6 +14,8 @@ export const EVENT_AT = 380;      // с какого места пейзажа �
 export const EVENT_REWARD = 30;   // «Е» за событие без аварии
 export const THEME_EVENTS = {
     day: { id: 'convoy', icon: '💒', name: 'СВАДЕБНЫЙ КОРТЕЖ', sub: 'Кортеж едет по одной полосе — обгони всех', len: 220, done: 'Обогнал кортеж!' },
+    village: { id: 'hens', icon: '🐔', name: 'КУРЫ НА ДОРОГЕ', sub: 'Деревенские куры бегут через трассу — объезжай', len: 220, done: 'Ни одной курицы не задел!' },
+    city: { id: 'jam', icon: '🚦', name: 'ЧАС ПИК', sub: 'Пробка в двух полосах — ищи свободную', len: 240, done: 'Пробку проскочил!' },
     promzona: { id: 'acid', icon: '☣', name: 'ПРОРВАЛО ТРУБУ', sub: 'Кислота разлилась — держись свободной полосы', len: 240, done: 'Проскочил кислоту!' },
     snow: { id: 'blizzard', icon: '🌨', name: 'МЕТЕЛЬ', sub: 'Ничего не видно — смотри в оба', len: 260, done: 'Пережил метель!' },
     night: { id: 'blackout', icon: '🌑', name: 'СВЕТ ПОГАС', sub: 'Фонари отключили — едем по фарам', len: 260, done: 'Проехал в темноте!' },
@@ -132,6 +135,11 @@ export function createThemeEvents(host) {
                 const m = shadowRing(); m.position.set(LX[l], 0.03, z); host.scene.add(m);
                 rings.push({ m: m, x: LX[l], z: z, fallen: false, t: 0 });
             });
+        } else if (id === 'jam') {
+            rl.block.forEach(function(l) { const c = host.addCar(z, l); c.speed = 0.004; c.laneChangeTimer = 1e9; convoy.push(c); });
+        } else if (id === 'hens') {
+            const left = Math.random() < 0.5;
+            for (let k = 0; k < 3; k++) host.addAnimal('CHICKEN', z - k * 2.5, left);
         } else if (id === 'herd') {
             const left = Math.random() < 0.5;
             host.addAnimal('ELEPHANT', z, left);
@@ -159,8 +167,8 @@ export function createThemeEvents(host) {
             }
             if (!cur) return null;
             // ряды опасностей — впереди, за 65 ед.
-            if (id === 'acid' || id === 'puddles' || id === 'junk' || id === 'herd') {
-                const step = id === 'herd' ? 60 : id === 'junk' ? 30 : 28;
+            if (id === 'acid' || id === 'puddles' || id === 'junk' || id === 'herd' || id === 'jam' || id === 'hens') {
+                const step = id === 'herd' ? 60 : id === 'hens' ? 45 : id === 'jam' ? 34 : id === 'junk' ? 30 : 28;
                 while (next < cur.d1 - 20 && next < dist + 65) { row(zPos - (next - dist)); next += step; }
             }
             // хлам падает, когда машина подъезжает

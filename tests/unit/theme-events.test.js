@@ -19,9 +19,9 @@ describe('события пейзажей', () => {
         expect(eventAt(EVENT_AT + e.ev.len + 1)).toBe(null);
         const e2 = eventAt(THEME_LEN + EVENT_AT + 5);
         expect(e2.key).toBe(1);
-        expect(e2.ev.id).toBe('acid');
-        // заезд начался с ночи (пейзаж 3): событие ночи — на своём месте
-        setThemeStart(3);
+        expect(e2.ev.id).toBe('hens'); // за Арсеньевом — деревня
+        // заезд начался с ночи (пейзаж 5): событие ночи — на своём месте
+        setThemeStart(5);
         expect(eventAt(EVENT_AT + 5).ev.id).toBe('blackout');
     });
     it('ряд опасностей: свободная полоса рядом с прошлой и не там, где уже стоит препятствие', () => {

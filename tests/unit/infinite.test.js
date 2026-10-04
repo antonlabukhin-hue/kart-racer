@@ -10,7 +10,7 @@ describe('бесконечная трасса: пейзажи', () => {
         expect(themeAt(THEME_LEN - BLEND_LEN / 2).k).toBeCloseTo(0.5, 5);
         expect(themeAt(THEME_LEN + 1).theme.id).toBe(THEMES[1].id);
         expect(themeAt(THEME_LEN * THEMES.length + 5).theme.id).toBe('day');
-        expect(new Set(THEMES.map(t => t.style))).toEqual(new Set(['arsenev', 'industrial', 'forest', 'junk']));
+        expect(new Set(THEMES.map(t => t.style))).toEqual(new Set(['arsenev', 'industrial', 'forest', 'junk', 'city', 'village']));
     });
     it('смешение цветов', () => {
         expect(mixHex(0x000000, 0xffffff, 0.5)).toBe(0x808080);

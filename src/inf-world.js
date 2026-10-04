@@ -12,6 +12,8 @@ import * as Decor from './decor.js';
 import { createRock, createLog, createForestInstanced } from './biomes.js';
 import { createSpruce, createSnowBank, createSnowman } from './snow.js';
 import { mergeStaticMeshes } from './merge-static.js';
+import { buildScenery } from './scenery.js';
+import { setKitGlow } from './scenery-kit.js';
 
 export const RIG_STEP = 180;
 export const STRETCH = 60;
@@ -56,6 +58,25 @@ export function createInfWorld(o) {
     const stretches = new Map();
     const envN = o.lite ? 4 : 6, treeN = o.lite ? 12 : 22;
 
+    /** Высота холмов обочины в точке (x, z) — по сетке их геометрии (холмы едут с дорогой) */
+    function heightAt(x, z) {
+        const hills = o.hills || [];
+        const h = hills[x < 0 ? 0 : 1];
+        if (!h || !h.geometry || !h.geometry.parameters) return 0;
+        const P = h.geometry.parameters, pos = h.geometry.attributes.position;
+        const across = Math.abs(x) - (W / 2 + 0.6);
+        if (across <= 0) return 0;
+        const cx = Math.min(P.widthSegments, across / (P.width / P.widthSegments));
+        const zl = z - (o.rig ? o.rig.position.z : 0) - h.position.z;
+        const rz = (zl + P.height / 2) / (P.height / P.heightSegments);
+        if (rz < 0 || rz > P.heightSegments) return 0;
+        const c0 = Math.floor(cx), r0 = Math.floor(rz), c1 = Math.min(P.widthSegments, c0 + 1), r1 = Math.min(P.heightSegments, r0 + 1), fx = cx - c0, fz = rz - r0, n = P.widthSegments + 1;
+        // ряды геометрии идут от −height/2 к +height/2 по z (после поворота плоскости)
+        const yAt = function(c, r) { return pos.getY((P.heightSegments - r) * n + c); };
+        const y = (yAt(c0, r0) * (1 - fx) + yAt(c1, r0) * fx) * (1 - fz) + (yAt(c0, r1) * (1 - fx) + yAt(c1, r1) * fx) * fz;
+        return y + h.position.y;
+    }
+
     function build(i) {
         const th = stretchTheme(i);
         const z0 = o.startZ - i * STRETCH;
@@ -63,14 +84,15 @@ export function createInfWorld(o) {
         const zr = function() { return z0 - r() * STRETCH; };
         const g = new THREE.Group();
         g.name = 'inf_' + i;
-        for (let n = 0; n < envN; n++) {
+        const own = th.style === 'city' || th.style === 'village'; // свой набор целиком (src/scenery.js)
+        for (let n = 0; n < (own ? 0 : envN); n++) {
             const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 3.5 + r() * 14), z = zr(), s = 0.7 + r() * 1.1;
             const b = Decor.decorFor(th.style, r());
-            if (b) g.add(b(x, z, s));
+            if (b) { const d = b(x, z, s); d.position.y = heightAt(x, z) - 0.05; g.add(d); } // по холму, а не в воздухе
             else (r() < 0.57 ? createRock : createLog)(g, x, z, s);
         }
         // мелочь у самой обочины
-        {
+        if (!own) {
             const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 1.4 + r() * 1.6), z = zr();
             if (th.style === 'forest') (r() < 0.5 ? createRock : createLog)(g, x, z, 0.5 + r() * 0.3);
             else if (th.style === 'junk') g.add(Decor.createScrapPile(x, z, 0.5 + r() * 0.4));
@@ -84,25 +106,23 @@ export function createInfWorld(o) {
                 else if (q < 0.88) createSnowBank(g, x, z, 1 + r() * 0.6);
                 else createSnowman(g, x, z, 0.85 + r() * 0.4);
             }
-        } else if (th.style === 'forest') {
-            const trees = [];
-            for (let n = 0; n < treeN; n++) {
-                const side = r() < 0.5 ? -1 : 1;
-                trees.push({ x: side * (W / 2 + 3.2 + r() * 22), z: zr(), s: 0.8 + r() * 0.8, kind: r() < 0.62 ? 'pine' : 'birch', rot: r() * Math.PI * 2 });
-            }
-            createForestInstanced(g, trees, mergeGeometries);
-        } else if (th.style !== 'junk') {
+        } else if (th.style !== 'junk' && th.style !== 'forest' && !own) { // лес — в наборе (src/scenery.js): гуще и одним мешем
             // и у города, и у промзоны — живые деревья подальше от дороги: берёзы и сосны группами
             const trees = [], n = Math.round(treeN * (th.style === 'industrial' ? 0.25 : 0.55));
             for (let t = 0; t < n; t++) {
                 const side = r() < 0.5 ? -1 : 1;
-                trees.push({ x: side * (W / 2 + 7 + r() * 24), z: zr(), s: 0.8 + r() * 0.7, kind: r() < 0.55 ? 'birch' : 'pine', rot: r() * Math.PI * 2 });
+                trees.push({ x: side * (W / 2 + 7 + r() * 16), z: zr(), s: 0.8 + r() * 0.7, kind: r() < 0.55 ? 'birch' : 'pine', rot: r() * Math.PI * 2 });
             }
             createForestInstanced(g, trees, mergeGeometries);
         }
-        if (th.night) lamp(g, (i % 2 ? 1 : -1) * (W / 2 + 1.8), z0 - STRETCH / 2);
+        if (th.night && th.style === 'city') { /* в городе свои фонари */ } else if (th.night) lamp(g, (i % 2 ? 1 : -1) * (W / 2 + 1.8), z0 - STRETCH / 2);
         else if (i % 3 === 0) g.add(Decor.createCinemaBanner((i % 2 ? 1 : -1) * (W / 2 + 5 + r() * 4), zr(), BANNERS[i % BANNERS.length]));
         try { mergeStaticMeshes(g.children.slice(), g); } catch (e) { /* склейка — только ради скорости */ }
+        try { // насыщенные обочины: дома, избы, лес, озёра — один меш на участок (src/scenery.js)
+            const sc = buildScenery({ style: th.style, jungle: th.id === 'jungle', snow: !!th.snow, night: !!th.night, i: i, z0: z0, len: STRETCH, W: W, lite: o.lite, rnd: r, heightAt: heightAt });
+            if (sc.mesh) g.add(sc.mesh);
+            if (sc.water) g.add(sc.water);
+        } catch (e) { console.warn('scenery', e); }
         scene.add(g);
         stretches.set(i, g);
     }
@@ -123,12 +143,14 @@ export function createInfWorld(o) {
         o.lights.ambient.intensity = base.amb * L;
         o.lights.hemi.intensity = base.hemi * L;
         o.lights.sun.intensity = base.sun * L;
+        setKitGlow((1 - L) * 1.7); // ночью и в дождь окна и вывески светятся
         return t;
     }
 
     const world = {
         dist: 0,
         get stretches() { return stretches.size; },
+        heightAt: heightAt,
         tick: function(zPos, prefill) {
             const d = Math.max(0, o.startZ - zPos);
             world.dist = Math.max(world.dist, d);
