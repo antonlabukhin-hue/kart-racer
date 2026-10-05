@@ -3,10 +3,11 @@ import { trafficPlan, laneBlocked, freeZ, JUMP_H } from '../../src/traffic-avoid
 
 describe('попутки объезжают помехи', () => {
     const gap = { zNear: -100, zFar: -112, lanes: [2] };
-    it('перед разломом — не лезут в полосу трамплина, над разломом — в прыжке', () => {
+    it('перед разломом — уходят с полосы трамплина и не лезут в неё (она только для игрока), над разломом — в прыжке', () => {
         expect(trafficPlan(-80, 0, { gaps: [gap] }).lane).toBe(null);
-        expect(trafficPlan(-80, 2, { gaps: [gap] }).lane).toBe(null);
-        const mid = trafficPlan(-106, 2, { gaps: [gap] });
+        expect(trafficPlan(-80, 2, { gaps: [gap] }).lane).toBe(1);
+        expect(laneBlocked(-80, 2, { gaps: [gap] })).toBe(true);
+        const mid = trafficPlan(-106, 0, { gaps: [gap] });
         expect(mid.y).toBeGreaterThan(JUMP_H * 0.8);
         expect(trafficPlan(-200, 0, { gaps: [gap] })).toEqual({ lane: null, y: 0 });
     });

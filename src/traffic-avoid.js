@@ -24,7 +24,10 @@ export function trafficPlan(z, lane, h) {
     let target = null, y = 0;
     (h.gaps || []).forEach(function(g) {
         if (!(z < g.zNear + LOOK && z > g.zFar - 2)) return;
-        // в полосу трамплина не перестраиваемся: она — для игрока (иначе попутка встаёт у него на трамплине); перелетаем из своей
+        // полоса трамплина — только для игрока: из неё заранее уходим (иначе машины толпятся на трамплине и проезда нет),
+        // в неё не перестраиваемся (laneBlocked); остальные полосы разлом перелетают прыжком
+        const ramps = g.lanes || [];
+        if (target == null && ramps.indexOf(lane) >= 0) { const l = [lane - 1, lane + 1, lane - 2, lane + 2].find(function(x) { return x >= 0 && x <= 2 && ramps.indexOf(x) < 0; }); if (l != null) target = l; }
         const a = g.zNear + RAMP_START, b = g.zFar - 1;   // от начала трамплина — через разлом: дуга всё время над плитой
         if (z <= a && z >= b) y = Math.sin((a - z) / (a - b) * Math.PI) * JUMP_H;
     });

@@ -103,6 +103,8 @@ export function runXp(dist) {
  */
 export const LANES = 3;
 export const GAP_EVERY = [380, 560];
+export const EMPTY_RUN = 70;  // м без «Е» — уже «пустой участок»
+export const TRAIL_STEP = 7;  // м между «Е» в редкой дорожке
 export const VHS_EVERY = 1700;
 export const POWER_EVERY = [450, 750];
 export const POWER_KINDS = ['magnet', 'x2', 'shield']; // src/powerups.js
@@ -171,6 +173,20 @@ export function planStretch(d0, d1, rnd, opts) {
             }
         }
         d += 200 + r() * 150; // реже, чем до узоров: в каждом узоре — своя цепочка «Е»
+    }
+    // редкие дорожки «Е» на пустых прямых: где больше EMPTY_RUN м без «Е» — 4–6 штук через TRAIL_STEP м по одной полосе
+    // (не плотная цепочка, а «хлебные крошки» — ведут по дороге и не дают заскучать)
+    {
+        const blockedAt = function(dd, l) { return out.some(function(o) { return o.kind === 'obstacle' && o.lane === l && Math.abs(o.d - dd) < 6; }); }; // «Е» не ведут в яму
+        const eds = out.filter(function(i) { return i.kind === 'echip' && !i.side; }).map(function(i) { return i.d; }).concat([d0, d1]).sort(function(a, b) { return a - b; });
+        for (let i = 1; i < eds.length; i++) {
+            for (let from = eds[i - 1] + 18; eds[i] - from > EMPTY_RUN - 18; ) {
+                const n = 4 + Math.floor(r() * 3), ln = lane();
+                const ok = []; for (let k = 0; k < n; k++) { const dd = from + k * TRAIL_STEP; if (dd < eds[i] - 12 && !nearGap(dd) && !blockedAt(dd, ln)) ok.push(dd); }
+                ok.forEach(function(dd) { out.push({ kind: 'echip', d: dd, lane: ln, y: 0.6, trail: true }); });
+                from += n * TRAIL_STEP + 30 + r() * 20;
+            }
+        }
     }
     // нитро и сердечки — реже
     for (let dd = d0 + 90 + r() * 80; dd < d1; dd += 180 + r() * 140) if (!nearGap(dd)) out.push({ kind: 'nitro', d: dd, lane: lane() });
