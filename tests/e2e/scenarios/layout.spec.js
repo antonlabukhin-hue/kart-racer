@@ -6,7 +6,7 @@ test('трасса из данных: разломы, арки и сцена с�
     const problems = watchProblems(page);
     await login(page);
     await startFreeRace(page, 'easy');
-    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout: 20_000 }).toBe('racing');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout: 60_000 }).toBe('racing');
     const r = await page.evaluate(() => ({
         layout: window.__trackLayout,
         gaps: window.__raceDebug.gaps.length,

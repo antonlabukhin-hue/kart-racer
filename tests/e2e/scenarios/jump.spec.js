@@ -16,6 +16,7 @@ test('разлом: по полосе трамплина машина взлет
         // звери не мешают замеру
         const f = () => {
             (d.animals || []).forEach(a => { a.hit = true; if (a.mesh) a.mesh.visible = false; });
+            (d.cars || []).forEach(c => { if (Math.abs(c.z - d.z) < 60) { c.z = d.z - 400; if (c.mesh) c.mesh.position.z = c.z; } }); // и попутки
             d.setX(laneX);
             if (d.air) { flew = true; maxY = Math.max(maxY, d.y); }
             if (d.z < zFar - 6 || performance.now() - t0 > 30000) res({ flew, maxY, strikes: d.hitLog.length - h0 }); else requestAnimationFrame(f);
