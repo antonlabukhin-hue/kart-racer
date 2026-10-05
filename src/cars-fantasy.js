@@ -9,6 +9,7 @@
  * Сборка — как у src/cars-movie.js (оттуда общие детали: профиль кузова, стёкла, колёса).
  */
 import * as THREE from 'three';
+import { sideWindows } from './cars-detail.js';
 import { pane, paintFlag, LIGHT } from './cars-movie.js';
 
 const MC = {};
@@ -125,8 +126,8 @@ function buildGhostcar(k, m, group) {
     const cab = [[-0.32, 0.67], [-0.06, 1.2], [1.34, 1.22], [1.42, 0.72]];
     k.profile(m.body, cab, 1.3, 0, 0.03, paintFlag());
     pane(k, m.glass, cab[0], cab[1], 1.2);
-    k.profile(m.glass, [[-0.2, 0.75], [-0.03, 1.13], [0.42, 1.13], [0.42, 0.75]], 1.335, 0, 0);
-    k.profile(m.glass, [[0.55, 0.8], [0.55, 1.12], [1.26, 1.12], [1.26, 0.8]], 1.335, 0, 0);
+    sideWindows(k, m, [[-0.2, 0.75], [-0.03, 1.13], [0.42, 1.13], [0.42, 0.75]], 1.3);
+    sideWindows(k, m, [[0.55, 0.8], [0.55, 1.12], [1.26, 1.12], [1.26, 0.8]], 1.3);
     // красные плавники с пулями-фонарями и полосы по бокам
     [-1, 1].forEach(function(s) {
         k.profile(red, [[0.85, 0.7], [1.52, 1.0], [1.64, 0.98], [1.64, 0.7]], 0.07, s * 0.64, 0.01);
@@ -144,7 +145,6 @@ function buildGhostcar(k, m, group) {
     k.box(m.glass, 1.0, 0.3, 0.02, 0, 0.98, 1.432);                    // заднее стекло
     k.box(m.black, 0.012, 0.5, 0.02, 0, 0.72, 1.62);                   // створки задней двери «скорой»
     k.box(chrome, 0.1, 0.03, 0.03, 0.12, 0.7, 1.625);
-    k.box(M(0xf4f4ee), 0.36, 0.1, 0.02, 0, 0.42, 1.63);                // номер
     // крыша: рейлинги и снаряжение
     [-1, 1].forEach(function(s) { k.box(alu, 0.05, 0.05, 1.45, s * 0.58, 1.28, 0.62); });
     [0, 0.6, 1.2].forEach(function(z) { k.box(alu, 1.2, 0.04, 0.05, 0, 1.27, z + 0.02); });
@@ -232,7 +232,7 @@ function buildTimecar(k, m, group) {
     const cab = [[-0.36, 0.6], [0.02, 0.97], [0.42, 0.98], [0.98, 0.71]];
     k.profile(m.body, cab.concat([[0.98, 0.66]]), 1.12, 0, 0.02, paintFlag());
     pane(k, m.glass, cab[0], cab[1], 1.02, 0.03);
-    k.profile(m.glass, [[-0.24, 0.64], [0.04, 0.92], [0.38, 0.93], [0.38, 0.64]], 1.145, 0, 0);
+    sideWindows(k, m, [[-0.24, 0.64], [0.04, 0.92], [0.38, 0.93], [0.38, 0.64]], 1.12);
     // жалюзи на заднем стекле
     const dz = cab[3][0] - cab[2][0], dy = cab[3][1] - cab[2][1], ang = -Math.atan2(dy, dz);
     for (let i = 0; i < 10; i++) { const t = (i + 0.5) / 10; const sl = k.box(black, 0.98, 0.014, 0.05, 0, cab[2][1] + dy * t + 0.022, cab[2][0] + dz * t); sl.rotation.x = ang; }

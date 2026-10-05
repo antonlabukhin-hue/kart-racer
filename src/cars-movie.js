@@ -12,6 +12,7 @@
 import * as THREE from 'three';
 import { buildTuning } from './cars-tuning.js';
 import { FANTASY_BUILDERS, FANTASY_FINISH, fantasyRim } from './cars-fantasy.js';
+import { sideWindows, applyDetails } from './cars-detail.js';
 
 export const MOVIE_CARS = ['thief', 'neon', 'bull', 'cyborg', 'avenger', 'trike', 'ghostcar', 'moped', 'chariot', 'timecar', 'carpet']; // вторая шестёрка — src/cars-fantasy.js
 
@@ -22,7 +23,7 @@ export function mats(color, o) {
         black: new THREE.MeshStandardMaterial({ color: 0x131315, metalness: 0.5, roughness: 0.45 }),
         matte: new THREE.MeshStandardMaterial({ color: 0x0c0c0e, metalness: 0.1, roughness: 0.85 }),
         chrome: new THREE.MeshStandardMaterial({ color: 0xd4d6de, metalness: 0.85, roughness: 0.18 }),
-        glass: new THREE.MeshStandardMaterial({ color: 0x14263a, metalness: 0.6, roughness: 0.08, transparent: true, opacity: 0.85 }),
+        glass: new THREE.MeshStandardMaterial({ color: 0x1a2c40, metalness: 0.65, roughness: 0.08 }), // непрозрачное тонированное: не пропадает при сортировке после покраски
         rubber: new THREE.MeshStandardMaterial({ color: 0x0d0d0d, roughness: 0.92, metalness: 0.1 }),
         hl: new THREE.MeshStandardMaterial({ color: 0xfff8e0, emissive: 0xffcc66, emissiveIntensity: 0.95, roughness: 0.25 }),
         tail: new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1.6, roughness: 0.4 })
@@ -118,7 +119,7 @@ function buildThief(k, m, group) {
     // крыша-фастбэк: лобовое, крыша, длинное заднее стекло до багажника
     const cab = [[-0.2, 0.62], [0.06, 0.94], [0.42, 0.96], [1.02, 0.665]];
     k.profile(m.body, cab.concat([[1.02, 0.62]]), 1.02, 0, 0.03, paintFlag());
-    k.profile(m.glass, [[-0.1, 0.665], [0.08, 0.905], [0.4, 0.92], [0.78, 0.74], [0.78, 0.665]], 1.045, 0, 0);
+    sideWindows(k, m, [[-0.1, 0.665], [0.08, 0.905], [0.4, 0.92], [0.78, 0.74], [0.78, 0.665]], 1.02);
     pane(k, m.glass, cab[0], cab[1], 0.92);
     pane(k, m.glass, cab[2], cab[3], 0.86);
     // две чёрные полосы по капоту, крыше и багажнику
@@ -149,7 +150,7 @@ function buildNeon(k, m, group) {
     k.profile(m.body, [[-1.12, 0.2], [-1.19, 0.26], [-1.2, 0.36], [-1.12, 0.46], [-0.42, 0.575], [-0.12, 0.6], [1.0, 0.64], [1.17, 0.62], [1.18, 0.27], [1.1, 0.2]], W, 0, 0.05, paintFlag());
     const cab = [[-0.16, 0.595], [0.14, 0.87], [0.48, 0.89], [0.92, 0.645]];
     k.profile(m.body, cab.concat([[0.92, 0.6]]), 1.04, 0, 0.05, paintFlag());
-    k.profile(m.glass, [[-0.06, 0.64], [0.16, 0.84], [0.46, 0.855], [0.74, 0.7], [0.74, 0.64]], 1.07, 0, 0);
+    sideWindows(k, m, [[-0.06, 0.64], [0.16, 0.84], [0.46, 0.855], [0.74, 0.7], [0.74, 0.64]], 1.04);
     pane(k, m.glass, cab[0], cab[1], 0.94);
     pane(k, m.glass, cab[2], cab[3], 0.9);
     // большое антикрыло на стойках
@@ -179,7 +180,7 @@ function buildBull(k, m, group) {
     k.profile(m.body, [[-1.12, 0.19], [-1.22, 0.26], [-1.22, 0.33], [-0.36, 0.555], [1.05, 0.62], [1.2, 0.6], [1.21, 0.25], [1.1, 0.19]], W, 0, 0.025, paintFlag());
     const cab = [[-0.42, 0.555], [0.04, 0.82], [0.5, 0.83], [1.0, 0.64]];
     k.profile(m.body, cab.concat([[1.0, 0.6]]), 1.02, 0, 0.02, paintFlag());
-    k.profile(m.glass, [[-0.3, 0.6], [0.06, 0.79], [0.46, 0.8], [0.62, 0.72], [0.62, 0.6]], 1.045, 0, 0);
+    sideWindows(k, m, [[-0.3, 0.6], [0.06, 0.79], [0.46, 0.8], [0.62, 0.72], [0.62, 0.6]], 1.02);
     pane(k, m.glass, cab[0], cab[1], 0.94);
     // решётки-жалюзи на моторном отсеке
     for (let i = 0; i < 5; i++) k.box(m.matte, 0.7, 0.012, 0.03, 0, 0.71 - i * 0.017, 0.62 + i * 0.075, -0.2);
@@ -294,6 +295,7 @@ export function buildMovieCar(carId, preset) {
     const m = mats((preset && preset.color) || 0x333333, FINISH[carId] || FANTASY_FINISH[carId] || {});
     const k = kit(group);
     const d = (BUILDERS[carId] || FANTASY_BUILDERS[carId])(k, m, group);
+    applyDetails(k, m, group, carId); // номера, зеркала, двери, дворники (src/cars-detail.js)
     const rim = carId === 'avenger' ? m.black : carId === 'thief' ? new THREE.MeshStandardMaterial({ color: 0x5a5e66, metalness: 0.7, roughness: 0.3 }) : (fantasyRim(carId, m) || m.chrome);
     const wheels = wheelSet(group, m, d.wheels, rim, carId === 'avenger' ? new THREE.MeshStandardMaterial({ color: 0xe8c020, metalness: 0.6, roughness: 0.3 }) : null);
     group.traverse(function(o) { if (o.isMesh) o.castShadow = true; });
