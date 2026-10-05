@@ -3,8 +3,8 @@ import { trafficPlan, JUMP_H } from '../../src/traffic-avoid.js';
 
 describe('попутки объезжают помехи', () => {
     const gap = { zNear: -100, zFar: -112, lanes: [2] };
-    it('перед разломом — в полосу трамплина, над разломом — в прыжке', () => {
-        expect(trafficPlan(-80, 0, { gaps: [gap] }).lane).toBe(2);
+    it('перед разломом — не лезут в полосу трамплина, над разломом — в прыжке', () => {
+        expect(trafficPlan(-80, 0, { gaps: [gap] }).lane).toBe(null);
         expect(trafficPlan(-80, 2, { gaps: [gap] }).lane).toBe(null);
         const mid = trafficPlan(-106, 2, { gaps: [gap] });
         expect(mid.y).toBeGreaterThan(JUMP_H * 0.8);

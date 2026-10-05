@@ -6,7 +6,7 @@ test('обучение: в 1-й главе тренер подсказывает
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.05');
     await startCampaign(page);
-    await expect(page.locator('#coach-tip.show')).toContainText('Меняй полосу', { timeout: 20_000 });
+    await expect(page.locator('#coach-tip.show')).toContainText('Меняй полосу', { timeout: 45_000 }); // на CI (без видеокарты) трасса строится дольше
     await page.keyboard.down('w');
     await page.evaluate(() => { const g = window.__raceDebug; g.setZ(Math.min(g.z, g.gaps[0].zNear + 110)); }); // трасса вдвое длиннее — к разлому ближе
     await expect(page.locator('#coach-tip.show')).toContainText('Разлом', { timeout: 20_000 });
