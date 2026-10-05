@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS = {
     lang: 'auto',     // auto (по языку браузера) | ru | en
     curve: true,      // «кривой мир»: повороты и холмы
     host: 'voice',    // ведущий-комментатор: voice — голос и текст | text — только текст | off
-    controls: 'buttons', // управление на телефоне: buttons — кнопки на экране | swipe — свайпы, газ сам
+    controls: 'auto', // управление на телефоне: auto — вертикально свайпы, боком кнопки | buttons — кнопки | swipe — свайпы, газ сам
     tutorial: false,  // обучение в заезде («Даю установку:», «Новое на дороге», тренер глав 1–3) — включается в «Настройках»
     v: 2              // версия настроек (v2 — тише музыка и двигатель по умолчанию)
 };
@@ -38,7 +38,7 @@ export function normalizeSettings(raw) {
         lang: ['auto', 'ru', 'en'].indexOf(r.lang) >= 0 ? r.lang : d.lang,
         curve: r.curve == null ? d.curve : !!r.curve,
         host: ['voice', 'text', 'off'].indexOf(r.host) >= 0 ? r.host : d.host,
-        controls: ['buttons', 'swipe'].indexOf(r.controls) >= 0 ? r.controls : d.controls,
+        controls: ['auto', 'buttons', 'swipe'].indexOf(r.controls) >= 0 ? r.controls : d.controls,
         tutorial: r.tutorial == null ? d.tutorial : !!r.tutorial,
         v: 2
     };

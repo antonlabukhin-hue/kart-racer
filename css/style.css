@@ -6369,3 +6369,10 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
     :root body.race-mode .rt.rt.rt { top: calc(env(safe-area-inset-top, 0px) + 46px) !important; font-size: 12px !important; padding: 3px 10px !important; max-width: 52vw !important; }
     :root body.race-mode .rt.rt.rt small { display: none !important; }
 }
+
+/* ===== Заезд вертикально (src/portrait.js): спидометр — вниз влево, мельче; верх экрана — время, «Е» и надписи ===== */
+@media (orientation: portrait) {
+    :root body.race-mode #hud-speedo#hud-speedo { top: auto !important; right: auto !important; left: max(8px, env(safe-area-inset-left)) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important; transform: scale(.72) !important; transform-origin: bottom left !important; }
+    :root body.race-mode .police-hud.police-hud { top: calc(env(safe-area-inset-top, 0px) + 104px) !important; }
+}

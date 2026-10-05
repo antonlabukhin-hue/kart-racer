@@ -280,6 +280,8 @@ export default {
         'Камера в заезде': 'Race camera',
         'Удобство': 'Comfort',
         'Управление на телефоне': 'Phone controls',
+        '📱 Авто': '📱 Auto',
+        'Телефон вертикально — свайпы, боком — кнопки': 'Phone upright — swipes, sideways — buttons',
         '🕹 Кнопки': '🕹 Buttons',
         '👆 Свайпы': '👆 Swipes',
         'Свайп влево/вправо — полоса, вниз — тормоз, газ жмётся сам': 'Swipe left/right to change lanes, down to brake, gas is automatic',
