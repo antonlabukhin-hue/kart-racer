@@ -31,7 +31,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
         import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
-        import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames } from './cars.js'; import { partName } from './cars-tuning.js';
+        import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames, showroomFrame, frameShowroom } from './cars.js'; import { partName } from './cars-tuning.js';
         import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
         import { bossIntroHtml, bossPhaseHtml, bossEscapeHtml } from './boss-intro.js';
@@ -2410,6 +2410,8 @@ function startGaragePreview(carId) {
                         // простые фары без SpotLight (стабильнее)
                         window.__garageHeadLights = null;
                         if (typeof applyGarageLoadoutVisual === 'function') applyGarageLoadoutVisual();
+                        // камера — по габаритам модели: высокие (колесница, ковёр) и детали тюнинга целиком в кадре (src/cars.js)
+                        let gFrame = showroomFrame(built.group), gFrameT = 0;
 
                         let dragging = false, lastX = 0, rotY = 0.7;
                         const onDown = e => { dragging = true; lastX = (e.touches ? e.touches[0].clientX : e.clientX); };
@@ -2436,6 +2438,8 @@ function startGaragePreview(carId) {
                             if (!dragging) rotY += 0.006;
                             built.group.rotation.y = rotY;
                             fitPreview(renderer, camera, wrap);
+                            if (++gFrameT % 30 === 0) { const ry = built.group.rotation.y; built.group.rotation.y = 0; gFrame = showroomFrame(built.group); built.group.rotation.y = ry; } // примерили деталь — кадр подстроится
+                            frameShowroom(camera, gFrame);
                             renderer.render(scene, camera);
                         };
                         tick();

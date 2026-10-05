@@ -1155,3 +1155,25 @@ export function fitShowroom(group) {
     group.scale.setScalar(k);
     return k;
 }
+
+/**
+ * Кадр витрины по габаритам модели: камера с прежнего ракурса (сбоку-сверху), но на таком расстоянии,
+ * чтобы машина целиком влезала и по высоте, и по ширине — при любом повороте на подиуме (высокие —
+ * колесница с трезубцем, ковёр с седоком — тоже). frame — { cy, r }: центр по высоте и радиус вращения.
+ */
+export function showroomFrame(group) {
+    group.updateMatrixWorld(true);
+    const box = new THREE.Box3(), tmp = new THREE.Box3();
+    group.traverse(function(o) { let v = o.visible; for (let p = o.parent; p && v; p = p.parent) v = p.visible; if (o.isMesh && v) box.union(tmp.setFromObject(o)); });
+    if (box.isEmpty()) return { cy: 0.45, r: 1.4 };
+    const rxz = Math.max(Math.hypot(box.min.x, box.min.z), Math.hypot(box.max.x, box.max.z), Math.hypot(box.min.x, box.max.z), Math.hypot(box.max.x, box.min.z));
+    const hy = (box.max.y - box.min.y) / 2;
+    return { cy: (box.max.y + box.min.y) / 2, r: Math.hypot(rxz, hy) };
+}
+const SHOWROOM_DIR = new THREE.Vector3(2.8, 1.15, 3.8).normalize();
+export function frameShowroom(camera, frame, margin) {
+    const v = camera.fov * Math.PI / 360, h = Math.atan(Math.tan(v) * camera.aspect);
+    const d = frame.r / Math.sin(Math.min(v, h)) * (margin || 1.02);
+    camera.position.set(SHOWROOM_DIR.x * d, frame.cy + SHOWROOM_DIR.y * d, SHOWROOM_DIR.z * d);
+    camera.lookAt(0, frame.cy, 0);
+}
