@@ -33,9 +33,12 @@ import { renderPowerHud } from '../ui/second-chance.js';
 import { HEADSTART_M } from '../ui/boosts.js';
 import { createInfWorld, disposeTree } from '../inf-world.js';
 import * as Decor from '../decor.js';
+import { pickMeme, createSideMeme, decorateMemeCar, MEME_EVERY, MEMES } from '../memes.js';
+import { buildShowroomCar } from '../cars.js';
 
 const LX = [-2, 0, 2];
 const LAP_MAPS = ['arsenev', 'promzona', 'svalka'];
+const MEME_CAR_SCALE = 0.62; // как машина игрока (RACE_CAR_SCALE в main.js)
 
 export function createInfiniteRun(ctx) {
     const scene = ctx.scene, START_Z = ctx.START_Z, L = ctx.lists, make = ctx.make;
@@ -69,6 +72,34 @@ export function createInfiniteRun(ctx) {
     });
     let world = null, theme = null, headShown = false, warmShown = false, feverOn = false;
     let lapK = 0, frame = 0, stage = 0, fresh = [], gen = null, genRnd = null;
+    // мем-моменты 90-х (src/memes.js): попутка с коровой или шкафом, бабка с тележкой, рыбак, гаишник — раз в 380–620 м
+    let nextMeme = 300 + Math.random() * 200, lastMeme = null;
+    const memeWalkers = [];
+    function spawnMeme(d, forcedId) {
+        const m = (forcedId && MEMES.find(function(x) { return x.id === forcedId; })) || pickMeme(lastMeme, Math.random, !!ctx.fair); lastMeme = m.id;
+        const z = START_Z - d;
+        if (m.kind === 'car') {
+            const lane = Math.floor(Math.random() * 3), c = make.car(z, lane);
+            scene.remove(c.mesh);
+            const g = buildShowroomCar(m.car).group;
+            decorateMemeCar(g, m.id);
+            g.scale.setScalar(MEME_CAR_SCALE);
+            g.position.copy(c.mesh.position);
+            scene.add(g);
+            Object.assign(c, { mesh: g, kind: 'meme_' + m.id, hitW: 0.8, hitL: 1.8, speed: 0.02 + Math.random() * 0.01 });
+            L.cars.push(c);
+            return g;
+        }
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const g = createSideMeme(m.id);
+        g.position.set(side * (ctx.TRACK_WIDTH / 2 + 1.1), 0, z);
+        g.scale.setScalar(1.35); // крупнее — чтобы заметить на скорости
+        // бабка идёт по обочине навстречу; рыбак и гаишник — лицом к дороге
+        g.rotation.y = m.id === 'babka' ? 0 : (side < 0 ? Math.PI / 2 : -Math.PI / 2);
+        scene.add(g); track([g]);
+        if (m.id === 'babka') memeWalkers.push(g);
+        return g;
+    }
 
     /** План круга k → предметы в сцене и списках заезда (мимо постановочных участков; узор — целиком или никак) */
     function planLap(k) {
@@ -123,6 +154,8 @@ export function createInfiniteRun(ctx) {
         rule: rule,
         /** Узор задет (препятствие с it.pat не перепрыгнуто) */
         hitPattern: function(id) { patHit.add(id); },
+        /** Мем впереди на ahead м (тесты и скриншоты): id из src/memes.js MEMES */
+        spawnMeme: function(id, ahead) { return spawnMeme((world ? world.dist : 0) + ahead, id); },
         /** Каждый кадр заезда */
         tick: function(dt) {
             const t = world.tick(ctx.z), d = world.dist, stats = ctx.stats, risk = ctx.risk, powers = ctx.powers, z = ctx.z;
@@ -185,6 +218,16 @@ export function createInfiniteRun(ctx) {
                 lapK = k;
                 genRnd = ctx.seed ? seededRnd((ctx.seed ^ Math.imul(k + 7, 0x85EBCA6B)) >>> 0) : null; // постановочные участки — тоже по сиду
                 gen = ctx.startLap(k, LAP_MAPS[k % 3], k < 2 && !warm ? 'easy' : 'medium'); // первые круги — лёгкая расстановка
+            }
+            // мемы: следующий — за 170 м впереди (до тумана), не над разломом
+            if (d + 170 > nextMeme) {
+                if (!L.gaps.some(function(g) { const gd = START_Z - g.zNear; return nextMeme > gd - 25 && nextMeme < gd + 20; })) spawnMeme(nextMeme);
+                nextMeme += MEME_EVERY[0] + Math.random() * (MEME_EVERY[1] - MEME_EVERY[0]);
+            }
+            for (let i = memeWalkers.length - 1; i >= 0; i--) {
+                const w = memeWalkers[i];
+                if (!w.parent) { memeWalkers.splice(i, 1); continue; }
+                w.position.z += 0.9 * dt; w.position.y = Math.abs(Math.sin(w.position.z * 6)) * 0.03; // шаркает навстречу
             }
             if (++frame % 60 === 0) prune(z + 70);
         }
