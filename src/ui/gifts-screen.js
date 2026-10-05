@@ -32,7 +32,7 @@ export function giftsBadge(profile, o) {
 export function giftsHtml(o) {
     const p = o.profile, waits = [], prog = [];
     const card = function(icon, title, text, act, btn, extra, cls) {
-        return '<div class="gf-card' + (cls ? ' ' + cls : '') + '"><i>' + icon + '</i><div><b>' + esc(title) + '</b>' + (text ? '<span>' + esc(text) + '</span>' : '') + (extra || '') + '</div>'
+        return '<div class="gf-card' + (cls ? ' ' + cls : '') + (act ? ' gf-tap' : '') + '"' + (act ? ' data-card-act="' + act + '"' : '') + '><i>' + icon + '</i><div><b>' + esc(title) + '</b>' + (text ? '<span>' + esc(text) + '</span>' : '') + (extra || '') + '</div>'
             + (act ? '<button type="button" class="gf-act" data-act="' + act + '">' + esc(btn) + '</button>' : '') + '</div>';
     };
     // ждут тебя
@@ -78,6 +78,10 @@ export function renderGifts(el, o) {
     el.innerHTML = giftsHtml(o);
     NEWS.forEach(function(x) { markSeen(o.profile, x.id); });
     if (o.save) o.save();
+    // вся карточка нажимается, не только кнопка справа (нажимали на светящуюся строку — ничего не происходило)
+    el.querySelectorAll('[data-card-act]').forEach(function(c) {
+        c.addEventListener('click', function(ev) { if (ev.target.closest('[data-act]')) return; const btn = c.querySelector('[data-act]'); if (btn) btn.click(); });
+    });
     el.querySelectorAll('[data-act]').forEach(function(b) {
         b.onclick = function() {
             const a = b.dataset.act;

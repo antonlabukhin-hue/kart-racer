@@ -6399,3 +6399,9 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 #armor-bar.hit { animation: armorHit .35s; }
 @keyframes armorHit { 0% { transform: translateX(-50%) scale(1.1); } 30% { transform: translateX(calc(-50% - 6px)); } 60% { transform: translateX(calc(-50% + 5px)); } 100% { transform: translateX(-50%); } }
 @media (max-height: 560px) { #armor-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 46px); width: 170px; } #armor-bar b { font-size: 18px; } }
+
+/* плашки наград на итогах нажимаются */
+.fin-hook[data-go] { cursor: pointer; pointer-events: auto; }
+.fin-hook[data-go] small::after { content: ' →'; font-weight: 900; }
+.fin-hook[data-go]:active { transform: scale(.98); }
+.gf-card.gf-tap { cursor: pointer; } .gf-card.gf-tap:active { transform: scale(.99); }

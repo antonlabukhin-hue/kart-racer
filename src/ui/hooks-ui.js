@@ -33,10 +33,10 @@ export function secretHint(profile, id, today) {
 export function hooksFinishHtml(paints, tks, names) {
     let h = '';
     (paints || []).forEach(function(sp) {
-        h += '<div class="fin-hook fin-paint"><i class="hook-swatch fx-' + sp.fx + '" style="--c:' + hex(sp.color) + '"></i><div><b>Секретная краска «' + esc(sp.name) + '»!</b><small>' + esc(sp.how) + ' — бесплатно для всех твоих машин, в гараже сияет</small></div></div>';
+        h += '<div class="fin-hook fin-paint" role="button" tabindex="0" data-go="paint"><i class="hook-swatch fx-' + sp.fx + '" style="--c:' + hex(sp.color) + '"></i><div><b>Секретная краска «' + esc(sp.name) + '»!</b><small>' + esc(sp.how) + ' — бесплатно для всех твоих машин, в гараже сияет</small></div></div>';
     });
     (tks || []).forEach(function(k) {
-        h += '<div class="fin-hook fin-td"><i>🎟</i><div><b>Тест-драйв: «' + esc(names(k.car)) + '»!</b><small>' + k.icon + ' ' + esc(k.why) + ' · один заезд — в меню кнопка «Тест-драйв»</small></div></div>';
+        h += '<div class="fin-hook fin-td" role="button" tabindex="0" data-go="td"><i>🎟</i><div><b>Тест-драйв: «' + esc(names(k.car)) + '»!</b><small>' + k.icon + ' ' + esc(k.why) + ' · один заезд — в меню кнопка «Тест-драйв»</small></div></div>';
     });
     return h;
 }
