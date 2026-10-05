@@ -6320,3 +6320,10 @@ body #finish-screen.finish-layout-f2 > .f2 { width: min(840px, 100%) !important;
     #finish-screen.finish-layout-f2 .fin-stats small { font-size: 10px !important; }
     #finish-screen.finish-layout-f2 .f2-actions { margin-bottom: 10px; }
 }
+/* экран качества: всё внутри окна — колонка не шире панели, панель на компьютере шире */
+#difficulty-screen .diff-main { grid-template-columns: minmax(0, 1fr) !important; min-width: 0 !important; }
+#difficulty-screen .diff-main > * { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
+#difficulty-screen .quality-selector { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+#difficulty-screen .q-btn { padding: 6px 4px !important; font-size: 13px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 900px) { body #difficulty-screen .content { width: min(520px, 46vw) !important; max-width: 520px !important; } }
+@media (min-width: 900px) { body #difficulty-screen .content { grid-template-columns: 170px minmax(0, 1fr) !important; } }
