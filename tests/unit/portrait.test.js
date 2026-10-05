@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fovFor, chaseRig, PORTRAIT_HFOV, MAX_PORTRAIT_FOV } from '../../src/portrait.js';
+import { fovFor, chaseRig, PORTRAIT_HFOV, MAX_PORTRAIT_FOV, PORTRAIT_RIG } from '../../src/portrait.js';
 
 describe('заезд вертикально', () => {
     it('боком — угол как был; вертикально — шире, чтобы по ширине влезали три полосы', () => {
