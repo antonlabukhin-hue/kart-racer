@@ -1,7 +1,7 @@
 /**
  * Конец заезда — «вкус победы»: сначала (если новый рекорд) праздник с салютом и яркой плашкой,
  * потом крупная золотая «Е» крутится в 3D и снизу набегает, сколько заработал; «Дальше» — 3D-кассета (если были).
- * o: { chips, vhs, record: { dist } | null, onRecordStart(), onDone() }
+ * o: { chips, vhs, record: { dist } | null, onRecordStart(), onDone(), onRetry() — «🔄 Ещё раз»: сразу новый заезд, без итогов }
  * onRecordStart — показать «кино» с машиной за салютом (главный модуль запускает 3D-сцену заставки).
  */
 import * as THREE from 'three';
@@ -97,13 +97,20 @@ export function showRewardReveal(o) {
     let stopSpin = null, stopFw = null;
     const clear = function() { if (stopSpin) stopSpin(); if (stopFw) stopFw(); stopSpin = stopFw = null; root.innerHTML = ''; };
     const finish = function() { clear(); root.remove(); if (o.onDone) o.onDone(); };
+    // «Ещё раз» на каждом шаге: от аварии до нового заезда — одно нажатие
+    const retry = function() {
+        if (!o.onRetry) return;
+        const r = el('button', 'rr-retry', '🔄 Ещё раз'); r.type = 'button';
+        r.onclick = function() { clear(); root.remove(); o.onRetry(); };
+        root.appendChild(r);
+    };
     const steps = [];
     if (o.record) steps.push(function(next) {
         root.classList.add('rr-record');
         if (o.onRecordStart) { try { o.onRecordStart(); } catch (e) {} }
         stopFw = fireworks(root);
         root.appendChild(el('div', 'rr-record-plaque', '🎉 НОВЫЙ РЕКОРД!<small>' + Math.round(o.record.dist) + ' м</small>'));
-        const b = el('button', 'rr-next', 'Дальше →'); b.type = 'button'; b.onclick = next; root.appendChild(b);
+        const b = el('button', 'rr-next', 'Дальше →'); b.type = 'button'; b.onclick = next; root.appendChild(b); retry();
         setTimeout(function() { if (b.isConnected) b.classList.add('show'); }, 900);
     });
     steps.push(function(next) {
@@ -111,13 +118,13 @@ export function showRewardReveal(o) {
         stopSpin = spinner(root, function() { const g = new THREE.Group(); g.add(createEChip(true), eGlow()); g.userData.base = 1.25; return g; });
         const pl = el('div', 'rr-plaque rr-gold', '<i>Е</i><b>+0</b><small>железных «Е» за заезд</small>');
         root.appendChild(pl); countUp(pl.querySelector('b'), o.chips || 0, '');
-        const b = el('button', 'rr-next show', o.vhs > 0 ? 'Дальше →' : 'К итогам →'); b.type = 'button'; b.onclick = next; root.appendChild(b);
+        const b = el('button', 'rr-next show', o.vhs > 0 ? 'Дальше →' : 'К итогам →'); b.type = 'button'; b.onclick = next; root.appendChild(b); retry();
     });
     if (o.vhs > 0) steps.push(function(next) {
         stopSpin = spinner(root, function() { const g = createCassette(); g.userData.base = 1.7; return g; });
         const pl = el('div', 'rr-plaque rr-vhs', '<i>📼</i><b>+0</b><small>видеокассет — редкая валюта</small>');
         root.appendChild(pl); countUp(pl.querySelector('b'), o.vhs, '');
-        const b = el('button', 'rr-next show', 'К итогам →'); b.type = 'button'; b.onclick = next; root.appendChild(b);
+        const b = el('button', 'rr-next show', 'К итогам →'); b.type = 'button'; b.onclick = next; root.appendChild(b); retry();
     });
     let i = 0;
     const go = function() { clear(); if (i >= steps.length) { finish(); return; } steps[i++](go); };

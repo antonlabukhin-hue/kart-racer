@@ -6376,3 +6376,16 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
         bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important; transform: scale(.72) !important; transform-origin: bottom left !important; }
     :root body.race-mode .police-hud.police-hud { top: calc(env(safe-area-inset-top, 0px) + 104px) !important; }
 }
+
+/* ===== Итоги заезда: «Ещё N Е — и машина твоя» (src/car-goal.js) ===== */
+.fin-cargoal { margin: 0 0 10px; padding: 8px 12px; border-radius: 12px; text-align: left; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,210,60,0.35); }
+.fin-cargoal i { font-style: normal; margin-right: 6px; }
+.fin-cargoal span { font-weight: 900; font-size: 15px; color: #fff; }
+.fin-cargoal u { display: block; height: 8px; margin: 7px 0 3px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; text-decoration: none; }
+.fin-cargoal u b { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #ffb300, #ffe066); }
+.fin-cargoal small { font-size: 12px; color: #ffcf9a; font-weight: 700; }
+.fin-cargoal.ready { border-color: #5dff8a; } .fin-cargoal.ready u b { background: linear-gradient(90deg, #2bd46a, #8affb0); }
+
+/* «🔄 Ещё раз» на экранах наград после заезда (src/ui/reward-reveal.js) */
+.rr-retry { position: relative; margin-top: 10px; min-width: 220px; min-height: 48px; border: 2px solid rgba(255,255,255,0.5); border-radius: 16px; background: rgba(0,0,0,0.45); color: #fff; font: 900 18px system-ui, sans-serif; cursor: pointer; }
+@media (max-height: 500px) { .rr-retry { min-height: 40px; font-size: 15px; margin-top: 4px; } }
