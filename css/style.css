@@ -6338,3 +6338,14 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 
 /* ===== Новичку — не всё сразу: «Слово дня», «Рекорды», «Заезд дня», «Тест-драйв» появляются со 2-го дня игры (src/visits.js) ===== */
 #main-menu-screen.mm-fresh .mm-extras { display: none !important; }
+
+/* ===== Главный экран телефона: «ПОЕХАЛИ» и 4 кнопки — «Кампания», «Машины», «Гараж», «Подарки» ===== */
+/* «Бесконечная трасса» — это и есть «ПОЕХАЛИ»; «Звериный час» — когда откроется; задания — на итогах заезда; трофеи — в гараже */
+@media (orientation: portrait) and (max-width: 700px) {
+    body #main-menu-screen .mm-modes .menu-infinite,
+    body #main-menu-screen .mm-modes .menu-endless.locked,
+    body #main-menu-screen .mm-missions,
+    body #main-menu-screen .mm-dock .mm-tab[data-menu="trophies"] { display: none !important; }
+    body #main-menu-screen .menu-grid.mm-modes { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important; }
+    body #main-menu-screen .mm-dock { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
