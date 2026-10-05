@@ -253,3 +253,27 @@ test('студия: трофеи', async ({ page }) => {
         }, { pos: [1.1, 1.6, -3.4], look: [0, 0.95, 0], fov: 38 });
     }
 });
+
+// ---------------------------------------------------------------- каталог Яндекс Игр / VK (не в сборке — docs/store)
+// Иконка — вариант «В» (ночной прыжок, «Шестисотый» в погоне), обложка — вариант «А» (прыжок через разлом, босс). Выбраны 2026-10-05.
+// Только по запросу: ART_ONLY=store npm run art; потом node tools/make-icons.mjs — иконки приложения из этой иконки
+const STORE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../docs/store');
+const STORE_SHOTS = {
+    'icon-1024.png': { w: 1024, h: 1024, spec: { map: 'arsenev', time: 'night', seed: 32, decoCount: 0.5,
+        cars: [{ id: 'cheburashka', x: 0, y: 1.25, z: 0.6, tiltX: 0.18, nitro: true }, { id: 'shestisot', x: 1.9, z: 7, rotY: 0 }],
+        camera: { pos: [-1.3, 0.9, -5.4], look: [0, 1.3, 0.6], fov: 34 } } },
+    'cover-800x470.png': { w: 800, h: 470, spec: { map: 'arsenev', time: 'sunset', seed: 11,
+        gap: { z: -3.2, len: 5.5 }, ramp: { x: 0, z: 6.5 },
+        car: { id: 'cheburashka', x: 0, y: 1.5, z: -0.2, tiltX: 0.14, nitro: true },
+        boss: { idx: 0, x: -1, z: 10, rotY: PI }, boards: [{ x: 5.8, z: 20, ad: 1 }],
+        camera: { pos: [8.5, 1.6, -3.5], look: [0, 1.3, 0.5], fov: 42 } } },
+};
+test('каталог: иконка и обложка', async ({ page }) => {
+    test.skip(!only || !only.includes('store'));
+    fs.mkdirSync(STORE, { recursive: true });
+    await boot(page);
+    for (const [file, shot] of Object.entries(STORE_SHOTS)) {
+        const url = await page.evaluate(([spec, w, h]) => window.__artKit.renderDiorama(spec, w, h, 'image/png'), [shot.spec, shot.w, shot.h]);
+        fs.writeFileSync(path.join(STORE, file), Buffer.from(url.split(',')[1], 'base64'));
+    }
+});

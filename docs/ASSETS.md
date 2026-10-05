@@ -45,7 +45,7 @@
 | images/map_svalka.jpg | карта «Свалка» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/car_select.jpg | выбор машины | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
 | images/car_cheburashka.png | машина «Ушастик» | рендер из движка игры (`npm run art`, `tools/art`) | собственная | ✅ |
-| icons/icon-192.png | иконка приложения | рисуется скриптом `tools/make-icons.mjs` из рендера машины | собственная | ✅ |
+| icons/icon-192.png | иконка приложения | `tools/make-icons.mjs` из иконки каталога docs/store/icon-1024.png (рендер из движка, `ART_ONLY=store npm run art`) | собственная | ✅ |
 | icons/icon-512.png | иконка приложения | `tools/make-icons.mjs` | собственная | ✅ |
 | icons/maskable-512.png | иконка Android (обрезается системой) | `tools/make-icons.mjs` | собственная | ✅ |
 | icons/apple-touch-icon.png | иконка iPhone | `tools/make-icons.mjs` | собственная | ✅ |
