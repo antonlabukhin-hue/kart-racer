@@ -7985,6 +7985,7 @@ function startGaragePreview(carId) {
             };
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;
+                _nmBlock = 2; /* любой удар — даже не засчитанный («Разгон», «В ударе», начало первого заезда, броня) — 2 с «на волоске» не считается: проезд сквозь машину — не риск */
                 if ((headstartTo && infWorld && infWorld.dist < headstartTo) || risk.fever > 0 || firstRunSafe(FIRST_RUN, raceTime)) return; // «Разгон», «В ударе» и начало первого заезда: удары не считаются
                 if (ABILITY === 'rewind' && !rewindUsed) { rewindUsed = true; speed *= 0.8; try { showBigPlaque('⏪ ОТМОТКА ВРЕМЕНИ', 'Этой аварии не было — один раз за заезд', 'armor'); } catch (e) {} return; } // «Машина времени»
                 // щит «чистого отрезка» съедает удар (кроме падения в разлом — там спасает только трамплин)
