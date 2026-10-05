@@ -97,7 +97,7 @@ export function activePowers(st) {
 export const MAX_CONTINUES = 2;
 /** Цена «Второго шанса» в «Е»: 100, потом 200 (n — сколько раз уже продолжал) */
 export function continueCost(n) {
-    return 100 * Math.pow(2, Math.max(0, n || 0));
+    return 200 * Math.pow(2, Math.max(0, n || 0)); // первое продолжение — 200 Е, второе — 400
 }
 
 const TEX = {};

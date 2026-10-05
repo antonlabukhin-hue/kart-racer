@@ -38,7 +38,8 @@ export function paintBody(o, paint, color) {
     const m = o.material, id = paint && paint.id, fx = (paint && paint.fx) || null;
     if (!m || !m.color) return;
     m.userData.paintFx = fx;
-    m.color.setHex(color);
+    if (o.userData && o.userData.repaint) { o.userData.repaint(paint && paint.color != null ? color : null); /* заводская — родной узор */ m.color.setHex(fx === 'rainbow' ? color : 0xffffff); if (fx !== 'rainbow') { live.delete(m); if (m.emissive && fx === 'glow') { m.emissive.setHex(color); m.emissiveIntensity = 0.35; track(m); } return; } } // ковёр: узор перекрашен целиком
+    else m.color.setHex(color);
     m.metalness = id === 'chrome' ? 0.85 : fx === 'gold' ? 0.9 : fx === 'rainbow' ? 0.5 : 0.35;
     m.roughness = id === 'chrome' ? 0.2 : fx === 'gold' ? 0.22 : fx === 'glow' ? 0.45 : 0.4;
     if (m.emissive) {
