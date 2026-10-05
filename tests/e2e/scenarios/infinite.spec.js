@@ -210,7 +210,7 @@ test('первое знакомство: пауза с плашкой перед
     const seen = await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_met_v1') || '[]'));
     expect(seen.length).toBeGreaterThanOrEqual(1);
     // «Больше не подсказывать» — все знакомства отмечены
-    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expect(card).toBeVisible({ timeout: 45_000 }); // на CI без видеокарты до следующего нового — дольше
     expect(await card.locator('.meet-title').textContent()).not.toBe(title);
     await card.locator('.meet-off').click();
     await expect(page.locator('.meet-overlay')).toHaveCount(0);
