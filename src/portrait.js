@@ -9,6 +9,9 @@ export const MAX_PORTRAIT_FOV = 82; // вертикальный угол — н�
 
 const rad = Math.PI / 180;
 
+/** Камера вертикально: чуть выше, чем на отсчёте (2,7 м), и ниже крыши тоннеля (4,6 м) */
+export const PORTRAIT_RIG = { dist: 6.2, height: 3.2, lookY: 0.5, lookZoff: -8 };
+
 /** Вертикальный угол камеры: экран боком — как был (base), вертикально — из горизонтального PORTRAIT_HFOV */
 export function fovFor(aspect, base) {
     if (!(aspect > 0) || aspect >= 1) return base;
@@ -18,7 +21,10 @@ export function fovFor(aspect, base) {
 
 /** Камера «сзади»: где стоит и куда смотрит. view — 'portrait' | 'mobile' | 'desktop', spdK — 0..1 доля скорости */
 export function chaseRig(view, spdK) {
-    if (view === 'portrait') return { dist: 4.2 - spdK * 0.2, height: 5.0 - spdK * 0.2, lookY: 0, lookZoff: -6 }; // круто сверху: горизонт у верха экрана, машина внизу (~¾ высоты)
+    if (view === 'portrait') {
+        const o = (typeof window !== 'undefined' && window.__portraitRig) || PORTRAIT_RIG; // __portraitRig — подбор вида на скриншотах
+        return { dist: o.dist - spdK * 0.2, height: o.height - spdK * 0.15, lookY: o.lookY, lookZoff: o.lookZoff };
+    }
     if (view === 'mobile') return { dist: 5.0 - spdK * 0.3, height: 2.2 - spdK * 0.15, lookY: 1.15, lookZoff: -11 };
     return { dist: 6.8 - spdK * 0.6, height: 2.7 - spdK * 0.15, lookY: 0.7, lookZoff: -5.8 };
 }
