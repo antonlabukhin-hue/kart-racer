@@ -6290,3 +6290,33 @@ body #finish-screen.finish-layout-f2 > .f2 { width: min(840px, 100%) !important;
 .tro-tab.active { background: linear-gradient(180deg, #ffe066, #ffb000); border-color: #ffd23c; color: #1a1000; }
 .tro-tab.active em { color: #5a3500; }
 .tro-pane[hidden] { display: none !important; }
+/* ===== Экран качества и сложности — общий вид (как «Подарки», итоги, гараж): один шрифт, кнопки-плитки, без наклона ===== */
+#difficulty-screen .diff-main h1 { font: 900 24px/1.15 system-ui, 'Segoe UI', sans-serif !important; font-style: normal !important; letter-spacing: 0.02em !important; color: #ffe066 !important; text-shadow: 0 0 14px rgba(255,200,40,0.45) !important; margin: 4px 0 2px !important; }
+#difficulty-screen .diff-main .sub { font: 700 12px system-ui, sans-serif !important; color: #a8a0b8 !important; }
+#difficulty-screen .camp-note { font: 800 13px/1.3 system-ui, sans-serif !important; border-radius: 12px !important; padding: 8px 12px !important; }
+#difficulty-screen .best-time { font: 800 13px system-ui, sans-serif !important; margin: 6px 0 !important; }
+#difficulty-screen .quality-selector { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; padding: 0 !important; background: none !important; border: 0 !important; margin: 6px 0 10px !important; }
+#difficulty-screen .q-btn { min-height: 48px !important; border-radius: 12px !important; font: 800 14px/1.1 system-ui, 'Segoe UI', sans-serif !important; font-style: normal !important; text-transform: none !important; letter-spacing: 0 !important;
+    background: rgba(255,255,255,0.07) !important; border: 1.5px solid rgba(255,255,255,0.22) !important; color: #f2f2f2 !important; box-shadow: none !important; }
+#difficulty-screen .q-btn.active { background: linear-gradient(180deg, #ffe066, #ffb000) !important; border-color: #ffd23c !important; color: #1a1000 !important; }
+#difficulty-screen .difficulty-btn { border-radius: 12px !important; font: 900 15px/1.15 system-ui, 'Segoe UI', sans-serif !important; font-style: normal !important; text-transform: none !important; }
+#difficulty-screen .difficulty-btn .desc { font: 700 11px system-ui, sans-serif !important; }
+#difficulty-screen .go-btn { min-height: 54px !important; border-radius: 14px !important; font: 900 20px system-ui, 'Segoe UI', sans-serif !important; font-style: normal !important; letter-spacing: 0.02em !important; text-transform: none !important;
+    background: linear-gradient(180deg, #ffe066, #ffb000) !important; color: #1a1000 !important; box-shadow: 0 4px 0 #a86a00 !important; }
+#difficulty-screen .diff-nav { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
+#difficulty-screen .nav-mini { min-height: 44px !important; border-radius: 12px !important; font: 800 14px system-ui, 'Segoe UI', sans-serif !important; font-style: normal !important; text-transform: none !important; letter-spacing: 0 !important;
+    background: rgba(255,255,255,0.07) !important; border: 1.5px solid rgba(255,255,255,0.22) !important; color: #f2f2f2 !important; box-shadow: none !important; }
+/* итоги бесконечной: плитки — 3 в ряд, крупнее; кнопки справа — не у самого края */
+#finish-screen.finish-layout-f2 .fin-stats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+#finish-screen.finish-layout-f2 .fin-stats > div { padding: 10px 6px !important; }
+#finish-screen.finish-layout-f2 .fin-stats > div i { font-size: 22px !important; }
+#finish-screen.finish-layout-f2 .fin-stats > div b { font-size: 20px !important; }
+#finish-screen.finish-layout-f2 .fin-stats small { display: block !important; font-size: 11px !important; }
+#finish-screen.finish-layout-f2 .f2-actions { margin-bottom: 6px; }
+@media (max-height: 520px) {
+    #finish-screen.finish-layout-f2 .fin-stats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    #finish-screen.finish-layout-f2 .fin-stats > div { padding: 6px 4px !important; }
+    #finish-screen.finish-layout-f2 .fin-stats > div b { font-size: 17px !important; }
+    #finish-screen.finish-layout-f2 .fin-stats small { font-size: 10px !important; }
+    #finish-screen.finish-layout-f2 .f2-actions { margin-bottom: 10px; }
+}
