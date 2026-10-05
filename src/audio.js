@@ -964,6 +964,46 @@ class SoundEngine {
                     tone('triangle', 1318.5, 0.32, 0.5, 0.14); tone('sine', 2637, 0.32, 0.4, 0.05);
                     break;
                 }
+                case 'heart': {
+                    // сердечко — тёплое и «живое», не как «Е»: двойной удар сердца (тук-тук) и мягкий мажорный перелив вверх
+                    const tone = (wave, freq, at, dur, peak, slide) => {
+                        const o = this.audioCtx.createOscillator(), g = this.audioCtx.createGain();
+                        o.type = wave; o.frequency.setValueAtTime(freq, t0 + at);
+                        if (slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + at + dur);
+                        g.gain.setValueAtTime(0.0001, t0);
+                        g.gain.setValueAtTime(Math.max(0.001, peak * vs), t0 + at);
+                        g.gain.exponentialRampToValueAtTime(0.001, t0 + at + dur);
+                        o.connect(g); g.connect(this.audioCtx.destination);
+                        o.start(t0 + at); o.stop(t0 + at + dur + 0.02);
+                    };
+                    tone('sine', 120, 0, 0.12, 0.45, 70); tone('sine', 110, 0.16, 0.14, 0.38, 60); // тук-тук
+                    [523.3, 659.3, 784].forEach((f, i) => tone('triangle', f, 0.08 + i * 0.07, 0.3, 0.14)); // до-ми-соль
+                    tone('sine', 1046.5, 0.3, 0.4, 0.07);
+                    break;
+                }
+                case 'armor': {
+                    // броня — металл: удар по железу (шум через полосовой фильтр), звон пластины и низкий «щит включён»
+                    const tone = (wave, freq, at, dur, peak, slide) => {
+                        const o = this.audioCtx.createOscillator(), g = this.audioCtx.createGain();
+                        o.type = wave; o.frequency.setValueAtTime(freq, t0 + at);
+                        if (slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + at + dur);
+                        g.gain.setValueAtTime(0.0001, t0);
+                        g.gain.setValueAtTime(Math.max(0.001, peak * vs), t0 + at);
+                        g.gain.exponentialRampToValueAtTime(0.001, t0 + at + dur);
+                        o.connect(g); g.connect(this.audioCtx.destination);
+                        o.start(t0 + at); o.stop(t0 + at + dur + 0.02);
+                    };
+                    if (this.noiseBuffer) {
+                        const n = this.audioCtx.createBufferSource(); n.buffer = this.noiseBuffer;
+                        const bp = this.audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 4;
+                        const ng = this.audioCtx.createGain(); ng.gain.setValueAtTime(0.35 * vs, t0); ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+                        n.connect(bp); bp.connect(ng); ng.connect(this.audioCtx.destination); n.start(t0); n.stop(t0 + 0.1);
+                    }
+                    tone('square', 1480, 0, 0.35, 0.07); tone('square', 1975, 0.01, 0.3, 0.05); // звон пластины
+                    tone('sawtooth', 98, 0.04, 0.4, 0.16, 196); // «щит включён» — гул вверх
+                    tone('triangle', 392, 0.18, 0.3, 0.1, 587);
+                    break;
+                }
                 case 'pickup':
                     mk('sine', 660, 0.08, 0.1, 990);
                     mk('square', 440, 0.06, 0.05, 660);
