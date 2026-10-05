@@ -7,6 +7,11 @@ test.use({
     userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36',
 });
 
+// заезд на телефоне просит полный экран; в полноэкранном окне браузер не даёт «повернуть» телефон (setViewportSize) — на CI так и падало
+test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { Element.prototype.requestFullscreen = function() { return Promise.resolve(); }; });
+});
+
 async function swipe(page, dx, dy) {
     await page.evaluate(({ dx, dy }) => {
         const el = document.querySelector('canvas') || document.body;
