@@ -191,7 +191,7 @@ test('бесконечная трасса: ящик «?» разбивается
 test('первое знакомство: пауза с плашкой перед новым, «Продолжить» — дальше', async ({ page }) => {
     const problems = watchProblems(page);
     await page.addInitScript(() => sessionStorage.setItem('keep_meet', '1'));
-    await login(page);
+    await login(page, 'Тестер', './', { tutorial: true });
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);

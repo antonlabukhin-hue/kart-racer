@@ -1,7 +1,7 @@
 /**
  * Экран настроек — карточка поверх меню. Значения хранит src/settings.js.
  * Зависимости от игры передаются явно (deps), без глобальных window.*:
- *   onQuality(v), onLang(v), briefingKey, sound() → звуковой движок, cloud — облачное сохранение включено (src/cloud-save.js).
+ *   onQuality(v), onLang(v), tutorialKeys — что сбросить при включении обучения, sound() → звуковой движок, cloud — облачное сохранение включено (src/cloud-save.js).
  */
 import { loadSettings, saveSettings } from '../settings.js';
 import { getCode, normalizeCode, pullSave, pushSave, snapshot, applySnapshot } from '../cloud-save.js';
@@ -44,12 +44,12 @@ export function openSettingsScreen(deps) {
         toggle('vibrate', 'Вибрация телефона при аварии') +
         toggle('ghost', '👻 Призрак лучшего заезда') +
         toggle('curve', '🛣 Повороты и холмы дороги') +
+        toggle('tutorial', '🎓 Обучение в заезде (подсказки с паузой)') +
         (d.cloud ? '<div class="st-group">☁ Облачное сохранение</div>' +
             '<div class="st-cloud"><div class="sc-code"><small>Твой код — запиши или сохрани:</small><b id="cloud-code">' + getCode() + '</b><button type="button" class="st-btn" id="cloud-copy">Скопировать</button></div>' +
             '<small class="sc-note">Прогресс сохраняется сам. На новом телефоне введи код — всё вернётся.</small>' +
             '<div class="sc-load"><input id="cloud-input" placeholder="XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters"><button type="button" class="st-btn" id="cloud-load">Загрузить</button></div>' +
             '<small class="sc-status" id="cloud-status"></small></div>' : '') +
-        '<button type="button" class="st-btn" id="settings-briefing">📋 Показать «Даю установку:» снова</button>' +
         '<button type="button" class="st-btn primary" id="settings-close">← В меню</button>' +
         // для разбора вёрстки на телефоне: экран устройства, окно страницы, масштаб интерфейса, режим приложения
         '<div class="st-copy">© 2026 Антон Лабухин 1989 · Все права защищены</div>' +
@@ -86,7 +86,11 @@ export function openSettingsScreen(deps) {
         });
     });
     el.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
-        cb.addEventListener('change', function() { save({ [cb.dataset.key]: cb.checked }); });
+        cb.addEventListener('change', function() {
+            save({ [cb.dataset.key]: cb.checked });
+            // включили обучение — пройти его заново: брифинг, знакомства с новым на дороге, подсказки
+            if (cb.dataset.key === 'tutorial' && cb.checked) (d.tutorialKeys || []).forEach(function(k) { try { localStorage.removeItem(k); } catch (e) {} });
+        });
     });
     if (d.cloud) {
         const status = function(t) { el.querySelector('#cloud-status').textContent = t; };
@@ -108,10 +112,6 @@ export function openSettingsScreen(deps) {
             });
         };
     }
-    el.querySelector('#settings-briefing').addEventListener('click', function(ev) {
-        try { if (d.briefingKey) localStorage.removeItem(d.briefingKey); } catch (e) {}
-        ev.currentTarget.textContent = '✓ Покажем в следующем заезде';
-    });
     const close = function() { el.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = function(ev) { if (ev.key === 'Escape') close(); };
     el.querySelector('#settings-close').addEventListener('click', close);

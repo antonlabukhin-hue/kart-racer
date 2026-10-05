@@ -291,7 +291,7 @@ export default {
         'Вибрация телефона при аварии': 'Vibrate on crash',
         '👻 Призрак лучшего заезда': '👻 Best-run ghost',
         '🛣 Повороты и холмы дороги': '🛣 Road bends and hills',
-        '📋 Показать «Даю установку:» снова': '📋 Show the briefing again',
+        '🎓 Обучение в заезде (подсказки с паузой)': '🎓 In-race tutorial (tips with a pause)',
         'Авто': 'Auto',
         'МУЗЫКА': 'MUSIC',
         'ДВИГАТЕЛЬ': 'ENGINE',

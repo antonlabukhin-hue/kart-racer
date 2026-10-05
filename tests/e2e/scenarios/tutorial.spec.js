@@ -4,7 +4,7 @@ import { watchProblems, login, startCampaign } from '../helpers.js';
 // Главы 1–3 — обучение: подсказка тренера по ситуации; до разлома — про трамплин
 test('обучение: в 1-й главе тренер подсказывает руль и разлом до подъезда к нему', async ({ page }) => {
     const problems = watchProblems(page);
-    await login(page, 'Тестер', './?start=0.05');
+    await login(page, 'Тестер', './?start=0.05', { tutorial: true });
     await startCampaign(page);
     await expect(page.locator('#coach-tip.show')).toContainText('Меняй полосу', { timeout: 45_000 }); // на CI (без видеокарты) трасса строится дольше
     await page.keyboard.down('w');

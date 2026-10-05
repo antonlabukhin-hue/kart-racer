@@ -33,9 +33,11 @@ export async function countShouts(page) {
     });
 }
 
-// briefing: true — не отмечать «Даю установку:» как прочитанный (плашка первого заезда покажется)
-export async function login(page, name = 'Тестер', url = './', { briefing = false } = {}) {
+// briefing: true — не отмечать «Даю установку:» как прочитанный (плашка первого заезда покажется);
+// tutorial: true — включить «Обучение в заезде» в настройках (по умолчанию оно выключено)
+export async function login(page, name = 'Тестер', url = './', { briefing = false, tutorial = false } = {}) {
     if (!briefing) await page.addInitScript(() => localStorage.setItem('road_racing_briefing_v2', '1'));
+    if (tutorial) await page.addInitScript(() => { const k = 'road_racing_settings_v1'; const st = JSON.parse(localStorage.getItem(k) || '{}'); st.tutorial = true; localStorage.setItem(k, JSON.stringify(st)); });
     // показ наград в конце заезда (крутящаяся «Е», кассета, салют рекорда) проверяет свой тест — остальным сразу итоги
     await page.addInitScript(() => { if (!sessionStorage.getItem('keep_reveal')) localStorage.setItem('road_racing_skip_reveal', '1'); });
     // плашку «Появились новые машины» проверяет свой тест — остальным она не мешает
