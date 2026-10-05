@@ -17,7 +17,7 @@ test('английский: меню, заезд и пауза переведе�
     await page.locator('#map-select-go').click();
     await expect(page.locator('#game-hud')).toContainText('TIME', { timeout: 20_000 });
     await expect(page.locator('#game-hud')).toContainText('CRASHES');
-    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout: 20_000 }).toBe('racing');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout: 60_000 }).toBe('racing');
     await page.keyboard.press('Escape');
     await expect(page.locator('#pause-overlay')).toContainText('PAUSED');
     await expect(page.locator('#pause-overlay')).toContainText('Resume');

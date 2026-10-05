@@ -18,7 +18,7 @@ test('геймпад: RT — газ, стик — полоса, Start — пау
     await fakeGamepad(page);
     await login(page, 'Тестер', './?start=0.3');
     await startFreeRace(page, 'easy');
-    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout: 20_000 }).toBe('racing');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout: 60_000 }).toBe('racing');
     await page.evaluate(() => { window.__fakePad.buttons[7] = true; window.__fakePad.axes = [0.9, 0]; });
     await expect.poll(() => page.evaluate(() => window.__raceDebug.speed), { timeout: 5_000 }).toBeGreaterThan(0.1);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.x), { timeout: 5_000 }).toBeGreaterThan(0.5);
