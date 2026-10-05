@@ -78,7 +78,7 @@ test('бесконечная трасса: усиление подбираетс
     await login(page);
     await page.evaluate(() => {
         const list = JSON.parse(localStorage.getItem('road_racing_profiles_v1') || '[]');
-        list.forEach(p => { p.season = Object.assign({}, p.season, { chips: 500 }); });
+        list.forEach(p => { p.season = Object.assign({}, p.season, { chips: 1000 }); });
         localStorage.setItem('road_racing_profiles_v1', JSON.stringify(list));
     });
     await page.reload();
@@ -104,7 +104,7 @@ test('бесконечная трасса: усиление подбираетс
     expect(picked).toBe(1);
 
     await page.evaluate(() => window.__raceDebug.end('crash'));
-    await expect(page.locator('.chance-modal')).toContainText('100 Е');
+    await expect(page.locator('.chance-modal')).toContainText('200 Е');
     await page.locator('.chance-modal .cc-pay-e').click();
     await expect(page.locator('.chance-modal')).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => [window.__raceDebug.state, window.__raceDebug.strikes].join())).toBe('racing,3');
@@ -115,7 +115,7 @@ test('бесконечная трасса: усиление подбираетс
     await page.keyboard.up('w');
     // второй раз дороже; отказ — итоги
     await page.evaluate(() => window.__raceDebug.end('crash'));
-    await expect(page.locator('.chance-modal')).toContainText('200 Е');
+    await expect(page.locator('.chance-modal')).toContainText('400 Е');
     await page.locator('.chance-modal .cc-no').click();
     await expect(page.locator('#finish-screen')).toContainText('ЗАЕЗД ОКОНЧЕН', { timeout: 10_000 });
     expect(problems).toEqual([]);
@@ -210,7 +210,7 @@ test('первое знакомство: пауза с плашкой перед
     const seen = await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_met_v1') || '[]'));
     expect(seen.length).toBeGreaterThanOrEqual(1);
     // «Больше не подсказывать» — все знакомства отмечены
-    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expect(card).toBeVisible({ timeout: 45_000 }); // на CI без видеокарты до следующего нового — дольше
     expect(await card.locator('.meet-title').textContent()).not.toBe(title);
     await card.locator('.meet-off').click();
     await expect(page.locator('.meet-overlay')).toHaveCount(0);

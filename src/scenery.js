@@ -376,7 +376,7 @@ function junkStretch(o, W) {
 }
 
 function forestStretch(o, W, snow) {
-    const r = o.r, n = o.lite ? 34 : 72;
+    const r = o.r, n = o.noTrees ? 0 : o.lite ? 34 : 72; // кампания: лес уже стоит инстансами (src/biomes.js) — второй лес не нужен
     for (let i = 0; i < n; i++) {
         const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 3.2 + Math.pow(r(), 1.3) * 42), z = o.z0 - r() * o.len; // гуще у дороги
         const q = r();
@@ -441,7 +441,7 @@ function industrialStretch(o, W) {
  * Возвращает [меш набора, меш воды] (null — пусто) и что сделано (для тестов и отладки).
  */
 export function buildScenery(o) {
-    const st = { b: createBatch(), wb: createBatch(), r: o.rnd || Math.random, z0: o.z0, len: o.len, W: o.W, i: o.i, lite: !!o.lite, jungle: !!o.jungle };
+    const st = { b: createBatch(), wb: createBatch(), r: o.rnd || Math.random, z0: o.z0, len: o.len, W: o.W, i: o.i, lite: !!o.lite, jungle: !!o.jungle, noTrees: !!o.noTrees };
     st.groundAt = function(x, z, w, d) {
         if (!o.heightAt) return 0;
         const hw = (w || 1) / 2, hd = (d || 1) / 2;
@@ -472,7 +472,7 @@ export function buildTrackScenery(o) {
         const pr = Math.max(0, Math.min(1, (o.startZ - (z0 - LEN / 2)) / total));
         const b = o.biomeAt(pr);
         const style = b === 'town' ? (i % 5 === 2 ? 'village' : 'arsenev') : b === 'forest' ? 'forest' : b === 'industrial' ? 'industrial' : b === 'junk' ? 'junk' : 'arsenev';
-        const sc = buildScenery({ style: style, snow: !!o.snow, i: i, z0: z0, len: LEN, W: o.W, lite: o.lite, rnd: Math.random });
+        const sc = buildScenery({ style: style, snow: !!o.snow, i: i, z0: z0, len: LEN, W: o.W, lite: true, noTrees: true, rnd: Math.random }); // вся трасса сразу — облегчённо: без дальних высоток и второго леса
         if (sc.mesh) { o.scene.add(sc.mesh); n++; }
         if (sc.water) o.scene.add(sc.water);
     }
