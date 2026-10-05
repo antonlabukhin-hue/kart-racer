@@ -20,7 +20,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { gapStyle, rampTexture, createGapCones, createRoadSign, createGapMesh, createLaneChevrons, createDebrisSource, createBarricade, createWarnMark, createChargeChevrons } from './setpieces.js';
         import { resolveLayout, SEGMENT_LEN } from './track-layout.js';
         import { createRoadworks, createTunnel, roadworksLane, approach } from './segments.js';
-        import { MAP_ORDER, MAP_NAMES, CAMPAIGN_FINISH_LINES, VILLAIN_INTRO, ACHIEVEMENTS, CAR_SHOP_ORDER, NEW_CARS, NEW_CARS_TAG, shopOrder, CAR_PARTS, CAR_PAINTS, TROPHIES, SEASON_REWARDS, DAILY_CONTRACTS, ANIMAL_SHOUTS_LIST } from './content.js';
+        import { MAP_ORDER, MAP_NAMES, CAMPAIGN_FINISH_LINES, VILLAIN_INTRO, ACHIEVEMENTS, CAR_SHOP_ORDER, NEW_CARS, NEW_CARS_TAG, shopOrder, CAR_PARTS, CAR_PAINTS, TROPHIES, SEASON_REWARDS, DAILY_CONTRACTS } from './content.js';
         import { DIFFICULTY_CONFIG } from './difficulty.js';
         import { campaignHardConfig, campaignLength } from './balance.js'; import { buildTrackScenery } from './scenery.js';
         import { loadSettings, saveSettings } from './settings.js';
@@ -43,7 +43,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { tutorialFor, pickCoach } from './tutorial.js';
         import { startGamepadPolling } from './gamepad.js';
         import * as curvedWorld from './curved-world.js';
-        import { biomeAt, biomeIndexAt, biomePlan, BIOME_INFO, groundColorAt, createRock, createLog, forestTrees, createForestInstanced, dustDensity, rollDustGust } from './biomes.js';
+        import { biomeAt, biomeIndexAt, groundColorAt, createRock, createLog, forestTrees, createForestInstanced, dustDensity, rollDustGust } from './biomes.js';
         import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
         curvedWorld.install();
         import { resolveLang, applyLang } from './i18n.js';
@@ -2983,29 +2983,8 @@ function startGaragePreview(carId) {
         // ============================================================
         // ВЫКРИКИ ЖИВОТНЫХ
         // ============================================================
-        // для совместимости со старым кодом
-        const ANIMAL_SHOUTS = {};
-        Object.keys(ANIMAL_TYPES).forEach(k => {
-            const id = ANIMAL_TYPES[k].id;
-            ANIMAL_SHOUTS[id] = ANIMAL_SHOUTS_LIST;
-            ANIMAL_SHOUTS[k] = ANIMAL_SHOUTS_LIST;
-            ANIMAL_SHOUTS[String(k).toLowerCase()] = ANIMAL_SHOUTS_LIST;
-        });
-
-        function showAnimalShout(typeId, x, y) {
-            let key = typeId;
-            if (key && ANIMAL_TYPES[key]) key = ANIMAL_TYPES[key].id;
-            if (typeof key === 'string') key = key.toLowerCase();
-            const shouts = ANIMAL_SHOUTS[key] || ANIMAL_SHOUTS_LIST;
-            const text = shouts[Math.floor(Math.random() * shouts.length)];
-            
-            const el = document.createElement('div');
-            el.className = 'animal-shout';
-            el.textContent = text;
-            const mob = !!(window.__isMobile || window.innerHeight < 500);
-            if (mob && Math.random() > 0.45) return; // реже на мобилках
-            postShout(el, mob ? 1400 : 2200);
-        }
+        // выкрики зверей отключены: отвлекали от дороги. animals.js по-прежнему зовёт этот мост, когда зверь выбегает
+        function showAnimalShout() {}
         window.showAnimalShout = showAnimalShout;
 
         /** Показать реплику: все реплики стоят в одной точке, поэтому новая заменяет прежнюю (босс — отдельно) */
@@ -8562,7 +8541,6 @@ function startGaragePreview(carId) {
                 {
                     const bIdx = biomeIndexAt(mapId, progress);
                     if (bIdx !== lastBiome) {
-                        if (lastBiome >= 0) { try { showStory(BIOME_INFO[biomePlan(mapId)[bIdx].style].label); } catch (e) {} }
                         lastBiome = bIdx;
                     }
                 }
@@ -10673,23 +10651,6 @@ function startGaragePreview(carId) {
             };
 
             animate(performance.now());
-            
-            // Первый заезд на карте — лор-плашка
-            const MAP_LORE_KEY = 'road_racing_map_lore_seen';
-            function showMapIntroLore() {
-                let seen = {};
-                try { seen = JSON.parse(localStorage.getItem(MAP_LORE_KEY) || '{}'); } catch(e) {}
-                if (seen[mapId]) return;
-                seen[mapId] = true;
-                try { localStorage.setItem(MAP_LORE_KEY, JSON.stringify(seen)); } catch (e) {}
-                const texts = {
-                    arsenev: '📍 Трасса Арсеньева: когда-то здесь ездили на дачу. Теперь — только курьеры и хамы с правами.',
-                    promzona: '📍 Промзона: трубы ещё дымят, хотя завод закрыли в 2029. Говорят, в цехах слышны «Яблоньки»…',
-                    svalka: '📍 Свалка «Надежда»: всё, что город стыдится, лежит здесь. И да — жвачка Турбо тоже иногда попадается.'
-                };
-                if (texts[mapId]) setTimeout(() => showStory(texts[mapId]), 1200);
-            }
-            showMapIntroLore();
 
 
             // --- PERF: пометить динамику, затем заморозить статику ---
