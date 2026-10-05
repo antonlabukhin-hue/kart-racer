@@ -12,6 +12,12 @@ describe('локализация', () => {
         expect(resolveLang('auto', [])).toBe('ru');
         expect(resolveLang('en', ['ru'])).toBe('en');
         expect(resolveLang('ru', ['en'])).toBe('ru');
+        // Яндекс Игры: язык площадки из SDK главнее языка браузера (требование 2.14), но выбор игрока — главнее всех
+        expect(resolveLang('auto', ['ru-RU'], 'en')).toBe('en');
+        expect(resolveLang('auto', ['en-US'], 'be')).toBe('ru');
+        expect(resolveLang('auto', ['en-US'], 'tr')).toBe('en');
+        expect(resolveLang('ru', ['en'], 'en')).toBe('ru');
+        expect(resolveLang('auto', ['uk'], null)).toBe('ru');
     });
 
     it('строки и шаблоны переводятся, пробелы по краям сохраняются', () => {

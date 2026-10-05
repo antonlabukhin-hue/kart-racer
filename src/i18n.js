@@ -11,10 +11,11 @@ const DICTS = { en: EN };
 const ATTRS = ['title', 'placeholder', 'alt', 'aria-label'];
 const SLAVIC = /^(ru|uk|be|kk)\b/i;
 
-/** 'auto' | 'ru' | 'en' → 'ru' | 'en' */
-export function resolveLang(setting, navLangs) {
+/** 'auto' | 'ru' | 'en' → 'ru' | 'en'. platformLang — язык площадки (Яндекс Игры, ysdk.environment.i18n.lang):
+ *  в «Авто» он главнее языка браузера (требование 2.14 — язык определяется через SDK) */
+export function resolveLang(setting, navLangs, platformLang) {
     if (setting === 'ru' || setting === 'en') return setting;
-    const list = (navLangs && navLangs.length) ? navLangs : ['ru'];
+    const list = platformLang ? [platformLang] : (navLangs && navLangs.length) ? navLangs : ['ru'];
     return list.some(function(l) { return SLAVIC.test(String(l)); }) ? 'ru' : 'en';
 }
 

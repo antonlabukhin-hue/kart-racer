@@ -2770,7 +2770,7 @@ function startGaragePreview(carId) {
         function openSettingsScreen() {
             openSettingsScreenUI({
                 onQuality: applyQualityChoice,
-                onLang: function(v) { applyLang(resolveLang(v, navigator.languages)); },
+                onLang: function(v) { applyLang(resolveLang(v, navigator.languages, platform.lang())); },
                 tutorialKeys: [BRIEFING_KEY, MEET_KEY, 'road_racing_hint_board'],
                 cloud: onlineBoard(),
                 sound: function() { return window.soundEngine; }
@@ -11554,6 +11554,8 @@ function showLoreScreen(quality, difficulty) {
         try {
             const qLang = new URLSearchParams(location.search).get('lang');
             applyLang(resolveLang(qLang || loadSettings().lang, navigator.languages));
+            // Яндекс Игры: SDK грузится не сразу — когда готов, язык площадки (в «Авто») заменяет язык браузера
+            platform.init().then(function() { if (!qLang && platform.lang()) applyLang(resolveLang(loadSettings().lang, navigator.languages, platform.lang())); });
         } catch (e) { console.warn('i18n', e); }
         // геймпад: гонка, пауза, камера и навигация по меню
         startGamepadPolling({
