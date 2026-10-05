@@ -91,7 +91,7 @@ for (const map of ['arsenev', 'promzona', 'svalka']) {
         await noAnimals(page);
         await page.evaluate((z) => window.__raceDebug.setZ(z + 70), evs[0].z);
         await page.keyboard.down('w');
-        await expect.poll(() => page.evaluate((z) => window.__raceDebug.z < z - 5, evs[0].z), { timeout: 20_000 }).toBe(true);
+        await expect.poll(() => page.evaluate((z) => window.__raceDebug.z < z - 5, evs[0].z), { timeout: 60_000 }).toBe(true);
         await page.keyboard.up('w');
         expect(await page.evaluate(() => { const s = window.__raceDebug.setEvents[0].debug; return s.state || 'swing'; })).not.toBe('wait');
         expect(problems).toEqual([]);

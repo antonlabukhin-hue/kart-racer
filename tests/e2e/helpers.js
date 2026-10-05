@@ -115,6 +115,6 @@ export async function progress(page) {
 
 // Дождаться, пока заезд реально пошёл (обработчики клавиш уже висят) — иначе на медленном CI
 // нажатие газа до конца загрузки сцены теряется и машина стоит
-export async function waitRacing(page, timeout = 30_000) {
+export async function waitRacing(page, timeout = 60_000) { // CI без видеокарты: сцена с пейзажами стартует дольше
     await expect.poll(() => page.evaluate(() => window.__raceDebug && window.__raceDebug.state), { timeout }).toBe('racing');
 }

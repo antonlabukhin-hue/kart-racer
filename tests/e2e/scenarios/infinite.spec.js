@@ -386,7 +386,7 @@ test('узоры: чистый проход — рисковое действи�
         const row = g.obstacles.filter(x => x.pat === o.pat && Math.abs(x.z - last.z) < 1); g.setX([-2, 0, 2].find(lx => row.every(x => Math.abs(x.x - lx) > 1.2))); // в свободную полосу последнего ряда
         return last.z;
     });
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.patterns || 0), { timeout: 5000 }).toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.patterns || 0), { timeout: 20_000 }).toBeGreaterThan(0);
     expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThan(0);
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
