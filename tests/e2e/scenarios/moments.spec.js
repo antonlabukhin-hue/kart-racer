@@ -29,8 +29,8 @@ test('рекламный щит в полосе: снёс — не авария,
     await page.evaluate(() => { window.__sawSmash = false; new MutationObserver(() => { if (document.querySelector('.big-plaque.smash')) window.__sawSmash = true; }).observe(document.body, { childList: true }); });
     await page.keyboard.down('w');
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.billboards || 0), { timeout: 30_000 }).toBeGreaterThanOrEqual(1);
-    // перед щитом — подсказка «рекламу можно сносить», после удара — плашка с бонусом
-    expect(await page.evaluate(() => Number(localStorage.getItem('road_racing_hint_board') || 0))).toBe(1);
+    // подсказка «рекламу можно сносить» — часть обучения, по умолчанию его нет; после удара — плашка с бонусом
+    expect(await page.evaluate(() => Number(localStorage.getItem('road_racing_hint_board') || 0))).toBe(0);
     await expect.poll(() => page.evaluate(() => window.__sawSmash), { timeout: 5_000 }).toBe(true);
     await page.keyboard.up('w');
     expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
