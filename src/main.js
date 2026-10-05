@@ -4763,8 +4763,6 @@ function startGaragePreview(carId) {
                 try {
                     const mc = document.getElementById('mobile-controls');
                     if (mc) { mc.classList.remove('active'); mc.style.pointerEvents = ''; mc.style.display = ''; }
-                    const vc = document.getElementById('volume-controls');
-                    if (vc) { vc.style.pointerEvents = 'none'; vc.style.opacity = '0.3'; }
                     const ar = document.getElementById('ach-plaque-root');
                     if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
                     window.__achQueue = [];
@@ -4776,8 +4774,6 @@ function startGaragePreview(carId) {
                 const cleanupFinishUI = function() {
                     try {
                         document.body.classList.remove('finish-open');
-                        const vc = document.getElementById('volume-controls');
-                        if (vc) { vc.style.pointerEvents = ''; vc.style.opacity = ''; }
                         const ar = document.getElementById('ach-plaque-root');
                         if (ar) { ar.innerHTML = ''; ar.style.pointerEvents = 'none'; }
                         window.__achQueue = [];
