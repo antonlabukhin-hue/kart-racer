@@ -17,7 +17,8 @@ export const POWER_EVERY = [450, 750];
 /**
  * Прокачка усилений за «Е» (как в Subway Surfers — главная трата монет): 5 уровней.
  * Магнит и ×2 — +2 с действия за уровень. Броня — держит больше ударов (1 → 4) и за каждый отбитый удар даёт «Е».
- * profile.powerLv = { magnet, x2, shield }
+ * Прокачка — у каждой машины своя: profile.powerLvByCar = { [carId]: { magnet, x2, shield } }.
+ * Раньше была общая profile.powerLv — при первом обращении она переходит машине, на которой игрок ездит (preferredCar).
  */
 export const POWER_LEVELS = 5;
 export const POWER_UP_COST = [150, 300, 600, 1200, 2400];
@@ -39,10 +40,23 @@ export function powerTime(type, lv) {
 export function nextPowerCost(lv) {
     return (lv || 0) >= POWER_LEVELS ? null : POWER_UP_COST[lv || 0];
 }
-/** Купить следующий уровень усиления: списывает «Е». { ok, cost } | { ok: false, reason: 'max' | 'no_chips' } */
-export function buyPowerLevel(profile, type) {
+/** Уровни усилений машины carId (живой объект в профиле — менять можно) */
+export function powerLevelsFor(profile, carId) {
+    if (!profile) return { magnet: 0, x2: 0, shield: 0 };
+    const by = profile.powerLvByCar = (profile.powerLvByCar && typeof profile.powerLvByCar === 'object') ? profile.powerLvByCar : {};
+    if (profile.powerLv) { // миграция общей прокачки — машине, на которой ездит игрок
+        const to = profile.preferredCar || 'cheburashka';
+        by[to] = Object.assign({ magnet: 0, x2: 0, shield: 0 }, by[to], profile.powerLv);
+        delete profile.powerLv;
+    }
+    const id = carId || profile.preferredCar || 'cheburashka';
+    by[id] = Object.assign({ magnet: 0, x2: 0, shield: 0 }, by[id]);
+    return by[id];
+}
+/** Купить следующий уровень усиления машине carId: списывает «Е». { ok, cost } | { ok: false, reason: 'max' | 'no_chips' } */
+export function buyPowerLevel(profile, type, carId) {
     if (POWER_UPGRADABLE.indexOf(type) < 0) return { ok: false, reason: 'max' };
-    const lv = profile.powerLv = Object.assign({ magnet: 0, x2: 0, shield: 0 }, profile.powerLv);
+    const lv = powerLevelsFor(profile, carId);
     const cost = nextPowerCost(lv[type]);
     if (cost == null) return { ok: false, reason: 'max' };
     if ((profile.season.chips || 0) < cost) return { ok: false, reason: 'no_chips', cost: cost };
