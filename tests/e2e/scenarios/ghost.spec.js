@@ -21,9 +21,9 @@ test('призрак: после победы на следующем заезд
     // призрак стартует вместе с игроком и уезжает вперёд по трассе (z уменьшается)
     const z0 = await page.evaluate(() => window.__raceDebug.ghost.z);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.ghost.z), { timeout: 5_000 }).toBeLessThan(z0 - 3);
-    // в HUD — живое отставание от рекорда: «👻 РЕКОРД: ±X.X с»
-    await expect(page.locator('#ghostDeltaDisplay')).toBeVisible({ timeout: 15_000 }); // под нагрузкой полного прогона кадры длиннее
-    await expect(page.locator('#ghostDeltaDisplay')).toContainText(/[−+]\d+\.\d с/);
+    // живое отставание от рекорда считается («👻 РЕКОРД: ±X.X с»), но на плашке заезда скрыто — там только время, сердечки и метры
+    await expect(page.locator('#ghostDeltaDisplay')).toContainText(/[−+]\d+\.\d с/, { timeout: 15_000 }); // под нагрузкой полного прогона кадры длиннее
+    await expect(page.locator('#ghostDeltaDisplay')).toBeHidden();
     await page.keyboard.up('w');
     expect(problems).toEqual([]);
 });

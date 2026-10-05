@@ -4355,7 +4355,7 @@ function startGaragePreview(carId) {
                     <div class="hud-time"><span class="hud-lbl">⏱ ВРЕМЯ:</span> <span id="timeDisplay" class="hud-big">${formatTime(INF ? 0 : TIME_LIMIT)}</span></div>
                     <div class="hud-crash"><span class="hud-lbl">💥 АВАРИИ:</span> <span id="heartsDisplay" class="hud-hearts">${'<i>♥︎</i>'.repeat(MAX_STRIKES)}</span><span id="strikesDisplay" class="hud-sr">${isEndlessMode() ? window.__endless.strikes : 0} / ${MAX_STRIKES}</span></div>
                     ${isEndlessMode() ? '<div id="endlessDisplay" style="color:#ffd23c;">' + beast.hud() + '</div>' : ''}
-                    ${INF ? '<div id="infDisplay" style="color:#ffd23c;">🛣 0 м · Е 0</div><div id="chaseDisplay"></div>' : ''}
+                    ${INF ? '<div id="infDisplay" style="color:#ffd23c;">🛣 0 м</div><div id="chaseDisplay"></div>' : isEndlessMode() ? '' : '<div id="metersDisplay" style="color:#ffd23c;">🏁 — м</div>'}
                     <div id="ghostDeltaDisplay" style="display:none;font-weight:800;">👻 РЕКОРД: <span></span></div>
                     <div id="cleanDisplay" title="10 с без ударов — броня, дальше +20 Е"><span class="cl-label">✨ ЧИСТО</span><span class="cl-shield">🛡</span><div class="cl-bar"><i></i></div></div>
                     <div id="comboDisplay" style="display:none;color:#ffaa66;margin-top:4px;font-size:13px;">🔥 КОМБО</div>
@@ -4509,6 +4509,8 @@ function startGaragePreview(carId) {
                     const progress = INF ? (infWorld ? (infWorld.dist % 900) / 9 : 0) : Math.min(100, ((START_Z - zPos) / (START_Z - FINISH_Z)) * 100);
                     progressBar.style.width = Math.max(0, progress) + '%';
                 }
+                const mEl = !INF && document.getElementById('metersDisplay'); // в главах — сколько осталось до финиша
+                if (mEl) mEl.textContent = '🏁 ' + Math.max(0, Math.round(zPos - FINISH_Z)) + ' м';
                 if (comboEl && typeof comboTime !== 'undefined') {
                     if (comboTime >= 5) {
                         comboEl.style.display = 'block';
@@ -4535,7 +4537,7 @@ function startGaragePreview(carId) {
                     }
                     if (INF && infTheme) { wtxt = '🗺 ' + infTheme.name; wcol = '#ffd98a'; }
                     const infEl = INF && infWorld && document.getElementById('infDisplay');
-                    if (infEl) infEl.textContent = '🛣 ' + Math.round(infWorld.dist) + ' м · Е ' + (stats.eChips || 0);
+                    if (infEl) infEl.textContent = '🛣 ' + Math.round(infWorld.dist) + ' м'; /* «Е» — крупно сверху (#e-counter) */
                     const ov = chase && stepChase(chase, infWorld.dist, document.getElementById('chaseDisplay')); // «До соперника N м» (src/rival-chase.js)
                     if (ov) { try { showBigPlaque(ov.mine ? '🏆 НОВЫЙ РЕКОРД!' : '🏁 ОБОГНАЛ: ' + ov.name, ov.mine ? 'Дальше — только вперёд' : ov.dist.toLocaleString('ru-RU') + ' м позади', 'crate-good'); soundEngine.playSfx('pickup_nitro', 1); } catch (e) {} }
                     weatherEl.textContent = wtxt;

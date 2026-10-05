@@ -6327,3 +6327,8 @@ body #finish-screen.finish-layout-f2 > .f2 { width: min(840px, 100%) !important;
 #difficulty-screen .q-btn { padding: 6px 4px !important; font-size: 13px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (min-width: 900px) { body #difficulty-screen .content { width: min(520px, 46vw) !important; max-width: 520px !important; } }
 @media (min-width: 900px) { body #difficulty-screen .content { grid-template-columns: 170px minmax(0, 1fr) !important; } }
+
+/* ===== Плашка заезда слева вверху: только время, сердечки и метры (в «Звериный час» — ещё волна) ===== */
+#game-hud.hud-v2 > :not(.hud-time):not(.hud-crash):not(#infDisplay):not(#metersDisplay):not(#endlessDisplay) { display: none !important; }
+#game-hud.hud-v2 { min-width: 0 !important; }
+#game-hud.hud-v2 #infDisplay, #game-hud.hud-v2 #metersDisplay { font-variant-numeric: tabular-nums; }
