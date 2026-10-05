@@ -7,7 +7,9 @@ import { loadSettings, saveSettings } from '../settings.js';
 import { getCode, normalizeCode, pullSave, pushSave, snapshot, applySnapshot } from '../cloud-save.js';
 
 function controlsNote(v) {
-    return v === 'swipe' ? 'Свайп влево/вправо — полоса, вниз — тормоз, газ жмётся сам' : 'Руль, газ и тормоз — кнопками на экране';
+    return v === 'swipe' ? 'Свайп влево/вправо — полоса, вниз — тормоз, газ жмётся сам'
+        : v === 'buttons' ? 'Руль, газ и тормоз — кнопками на экране'
+        : 'Телефон вертикально — свайпы, боком — кнопки';
 }
 
 export function openSettingsScreen(deps) {
@@ -44,7 +46,7 @@ export function openSettingsScreen(deps) {
         '<div class="st-group">Язык</div>' +
         choice('lang', [['auto', 'Авто'], ['ru', 'Русский'], ['en', 'English']]) +
         '<div class="st-group">Управление на телефоне</div>' +
-        choice('controls', [['buttons', '🕹 Кнопки'], ['swipe', '👆 Свайпы']]) +
+        choice('controls', [['auto', '📱 Авто'], ['buttons', '🕹 Кнопки'], ['swipe', '👆 Свайпы']]) +
         '<small class="sc-note" id="st-controls-note">' + controlsNote(st.controls) + '</small>' +
         '<div class="st-group">Удобство</div>' +
         toggle('shake', 'Тряска камеры при ударах') +

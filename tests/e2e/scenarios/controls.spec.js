@@ -47,3 +47,19 @@ test('свайпы: газ сам, свайп влево/вправо — в с�
     await expect.poll(async () => { await clear(); return page.evaluate(() => Math.abs(window.__raceDebug.x)); }, { timeout: 5_000 }).toBeLessThan(0.4);
     expect(problems).toEqual([]);
 });
+
+// эксперимент «как Subway Surfers»: заезд вертикально, телефон не поворачиваем; «Авто» — свайпы
+test('вертикально: заезд без «поверни телефон», свайпы по умолчанию', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    await expect(page.locator('#rotate-lock')).toBeHidden();
+    await expect(page.locator('#btnGas')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.speed), { timeout: 10_000 }).toBeGreaterThan(0.05);
+    const clear = () => page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.cars.forEach(c => { c.z = g.z - 400; if (c.mesh) c.mesh.position.z = c.z; }); });
+    await clear();
+    await swipe(page, 90, 4);
+    await expect.poll(async () => { await clear(); return page.evaluate(() => window.__raceDebug.x); }, { timeout: 5_000 }).toBeGreaterThan(1.6);
+    expect(problems).toEqual([]);
+});

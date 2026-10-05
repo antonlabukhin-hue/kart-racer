@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { campFinishHtml } from './ui/finish-ui.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { rollChestLoot, lootText } from './chest-loot.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml, infFinishHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet, MEET_KEY } from './first-meet.js'; import { createSwipe, swipeDir } from './swipe-control.js'; import { markVisit, newsReady, extrasReady } from './visits.js'; import { installRaceToasts } from './ui/race-toasts.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf, weekKey } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart, THEMES } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { diagOn, installDiag, setDiagSource } from './ui/diag.js'; import { trafficPlan, laneBlocked, freeZ } from './traffic-avoid.js'; import { wireTrophyTabs } from './ui/trophy-tabs.js'; import { checkComeback } from './comeback.js'; import { checkNamePlate, namePlateOn, applyNamePlate } from './name-plate.js'; import { grantFriendChest } from './friend-chest.js'; import { WEEK_GOAL } from './week-car.js'; import { weekRaceExtra, friendExtra, moreForYou, helloGifts } from './ui/hooks-ui.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); installRaceToasts(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); if (diagOn(location.search)) installDiag({ sound: function() { return window.soundEngine; } }); /* ?diag=1 — счётчики памяти и звука на телефоне (src/ui/diag.js) */ // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet, MEET_KEY } from './first-meet.js'; import { createSwipe, swipeDir } from './swipe-control.js'; import { markVisit, newsReady, extrasReady } from './visits.js'; import { installRaceToasts } from './ui/race-toasts.js'; import { fovFor, chaseRig } from './portrait.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf, weekKey } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart, THEMES } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { diagOn, installDiag, setDiagSource } from './ui/diag.js'; import { trafficPlan, laneBlocked, freeZ } from './traffic-avoid.js'; import { wireTrophyTabs } from './ui/trophy-tabs.js'; import { checkComeback } from './comeback.js'; import { checkNamePlate, namePlateOn, applyNamePlate } from './name-plate.js'; import { grantFriendChest } from './friend-chest.js'; import { WEEK_GOAL } from './week-car.js'; import { weekRaceExtra, friendExtra, moreForYou, helloGifts } from './ui/hooks-ui.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); installRaceToasts(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); if (diagOn(location.search)) installDiag({ sound: function() { return window.soundEngine; } }); /* ?diag=1 — счётчики памяти и звука на телефоне (src/ui/diag.js) */ // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI, setSeasonMode } from './ui/season-screens.js'; import { renderGifts, giftsBadge } from './ui/gifts-screen.js'; import { showChest } from './ui/main-menu.js'; import { unclaimedRewards } from './ui/menu-badges.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -147,52 +147,32 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         function updateRotateLock() {
             const el = document.getElementById('rotate-lock');
             if (!el) return;
-            // заезд — только горизонтально (машина крупно), меню — только вертикально (всё крупно, одной рукой)
+            // заезд — в любой ориентации, вертикально — как Subway Surfers (src/portrait.js); меню — только вертикально
             const racing = !!(window.__waitingLandscape || window.__inRace);
-            const needLand = !!(window.__isMobile && isPortrait() && racing);
             // «поверни вертикально» — только над настоящими экранами меню (не над переходом между главами и не на планшете)
             const menuOpen = ['splash-screen', 'profile-screen', 'main-menu-screen', 'garage-screen', 'shop-screen', 'campaign-screen', 'rewards-screen', 'events-screen', 'difficulty-screen', 'map-select-screen'].some(function(id) {
                 const e = document.getElementById(id);
                 return e && getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0;
             });
             const needPort = !!(window.__isMobile && !isPortrait() && !racing && menuOpen && Math.min(window.innerWidth, window.innerHeight) < 600);
-            el.classList.toggle('show', needLand || needPort);
+            el.classList.toggle('show', needPort);
             el.classList.toggle('need-portrait', needPort);
             const h = el.querySelector('h2'), t = el.querySelector('p'), sub = el.querySelector('.hint-sub');
             if (h) h.textContent = 'Поверни телефон';
-            if (t) t.innerHTML = needPort ? 'Меню — в <b>вертикальном</b> положении экрана, заезд — в горизонтальном. Поверни устройство вертикально.'
-                : 'Играть можно только в <b>горизонтальном</b> положении экрана. Поверни устройство набок — и заезд продолжится.';
-            if (sub) sub.textContent = needPort ? 'Книжная ориентация · Portrait' : 'Альбомная ориентация · Landscape';
-            return needLand;
+            if (t) t.innerHTML = 'Меню — в <b>вертикальном</b> положении экрана. Поверни устройство вертикально.';
+            if (sub) sub.textContent = 'Книжная ориентация · Portrait';
+            return false;
         }
 
-        async function lockLandscape() {
-            if (!window.__isMobile) return false;
+        /** Заезд на телефоне — во весь экран (без панелей браузера); поворачивать не нужно */
+        function goFullscreen() {
+            if (!window.__isMobile) return;
             try {
-                // fullscreen помогает браузеру разрешить orientation.lock
                 const root = document.documentElement;
-                if (root.requestFullscreen) {
-                    try { await root.requestFullscreen(); } catch (e) {}
-                } else if (root.webkitRequestFullscreen) {
-                    try { root.webkitRequestFullscreen(); } catch (e) {}
-                }
+                if (document.fullscreenElement || document.webkitFullscreenElement) return;
+                const p = root.requestFullscreen ? root.requestFullscreen() : root.webkitRequestFullscreen ? root.webkitRequestFullscreen() : null;
+                if (p && p.catch) p.catch(function() {});
             } catch (e) {}
-            try {
-                if (screen.orientation && screen.orientation.lock) {
-                    await screen.orientation.lock('landscape');
-                    console.log('🔒 orientation locked landscape');
-                    return true;
-                }
-            } catch (e) {
-                console.warn('orientation.lock недоступен:', e && e.message);
-            }
-            try {
-                // старые Android
-                if (screen.lockOrientation) screen.lockOrientation('landscape');
-                else if (screen.mozLockOrientation) screen.mozLockOrientation('landscape');
-                else if (screen.msLockOrientation) screen.msLockOrientation('landscape');
-            } catch (e) {}
-            return false;
         }
 
         function unlockOrientation() {
@@ -204,33 +184,6 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
             } catch (e) {}
         }
 
-        /** true = можно стартовать гонку */
-        async function ensureLandscapeForRace() {
-            if (!window.__isMobile) return true;
-            updateRotateLock();
-            if (!isPortrait()) {
-                await lockLandscape();
-                updateRotateLock();
-                return true;
-            }
-            // ждём поворота
-            updateRotateLock();
-            return new Promise((resolve) => {
-                const check = () => {
-                    updateRotateLock();
-                    if (!isPortrait()) {
-                        window.removeEventListener('resize', check);
-                        window.removeEventListener('orientationchange', check);
-                        lockLandscape().then(() => resolve(true));
-                    }
-                };
-                window.addEventListener('resize', check);
-                window.addEventListener('orientationchange', check);
-                // на случай если уже почти landscape
-                setTimeout(check, 300);
-            });
-        }
-
         window.addEventListener('resize', updateRotateLock);
         setInterval(updateRotateLock, 800); // экраны меню открываются и закрываются без resize — проверять и так
         window.addEventListener('orientationchange', () => setTimeout(updateRotateLock, 50));
@@ -239,9 +192,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         } else {
             updateRotateLock();
         }
-        window.ensureLandscapeForRace = ensureLandscapeForRace;
         window.updateRotateLock = updateRotateLock;
-        window.lockLandscape = lockLandscape;
 
 
 
@@ -4128,33 +4079,9 @@ function startGaragePreview(carId) {
                 window.__trackThemeActive = trackTheme;
                 console.log('[theme]', trackTheme, 'track=', window.__campaignTrackId);
             })();
-            // Мобильные: гонка только в landscape
-            if (window.__isMobile && typeof isPortrait === 'function' && isPortrait()) {
-                console.log('📱 Ждём горизонтальную ориентацию...');
-                window.__inRace = false;
-                window.__waitingLandscape = true;
-                if (typeof updateRotateLock === 'function') updateRotateLock();
-                const retry = () => {
-                    if (typeof isPortrait === 'function' && !isPortrait()) {
-                        window.__waitingLandscape = false;
-                        window.removeEventListener('resize', retry);
-                        window.removeEventListener('orientationchange', retry);
-                        if (typeof lockLandscape === 'function') lockLandscape();
-                        setTimeout(function() {
-                            initGame(quality, difficulty, carId, mapId, weatherId);
-                        }, 150);
-                    } else if (typeof updateRotateLock === 'function') {
-                        updateRotateLock();
-                    }
-                };
-                window.addEventListener('resize', retry);
-                window.addEventListener('orientationchange', retry);
-                return;
-            }
+            // телефон не поворачиваем: заезд идёт и вертикально (src/portrait.js), и боком — как держат
             window.__waitingLandscape = false;
-            if (typeof lockLandscape === 'function') {
-                try { lockLandscape(); } catch (e) {}
-            }
+            goFullscreen();
             if (typeof updateRotateLock === 'function') updateRotateLock();
 
             window.__forcePBR = false; // гонка — лёгкие шейдеры
@@ -4291,12 +4218,10 @@ function startGaragePreview(carId) {
             const TIME_LIMIT = config.timeLimit;
             const MAX_STRIKES = (INF && infRunOpts && infRunOpts.rule && infRunOpts.rule.strikes) || 5 + (carPreset.ability && carPreset.ability.id === 'medic' ? 1 : 0); // «Рафик» — шестая жизнь; «Заезд дня» «Одна авария» — одна
             let TRIGGER_LOOKAHEAD = config.triggerLookahead;
-            const _portrait = window.__isMobile && window.innerHeight > window.innerWidth;
             // мобилка: почти те же значения (без сильного урезания)
             if (window.__isMobile) {
                 TRIGGER_LOOKAHEAD = Math.max(13, Math.round(TRIGGER_LOOKAHEAD * 0.95));
             }
-            window.__portraitMode = _portrait;
             const FOG_NEAR = 45;
             const HAS_NIGHT_ZONE = false; // всегда день
 
@@ -6819,7 +6744,7 @@ function startGaragePreview(carId) {
             let nitroTimer = 0;
             let fovPunch = 0;
             let camSpeed = 0; // сглаженная скорость для камеры
-            const BASE_FOV = (window.__portraitMode) ? 48 : (window.__isMobile ? 52 : 55);
+            const baseFov = function() { return fovFor(camera.aspect, window.__isMobile ? 52 : 55); }; // вертикально — шире, чтобы влезли три полосы
 
             function createNitroArrows(z, lane) {
                 const x = laneX(lane), group = nitroArrowsMesh(); // меш — src/pickups.js
@@ -7782,8 +7707,12 @@ function startGaragePreview(carId) {
 
             let mobileKeys = { w: false, s: false, a: false, d: false };
             // свайпы вместо кнопок — если выбраны в «Настройках» (src/swipe-control.js); кнопки руля, газа и тормоза прячутся
-            const swipeCtl = isMobile && _settings.controls === 'swipe' ? createSwipe() : null;
-            document.body.classList.toggle('swipe-ctl', !!swipeCtl);
+            // «Авто»: телефон вертикально — свайпы, боком — кнопки; повернули посреди заезда — управление меняется следом
+            const swipeCtl = isMobile && _settings.controls !== 'buttons' ? createSwipe() : null;
+            const swipeOn = function() { return !!swipeCtl && (_settings.controls === 'swipe' || window.innerHeight > window.innerWidth); };
+            const syncSwipeUi = function() { document.body.classList.toggle('swipe-ctl', swipeOn()); };
+            syncSwipeUi();
+            window.addEventListener('resize', syncSwipeUi, { signal });
             if (swipeCtl) {
                 let t0 = null;
                 document.addEventListener('touchstart', function(e) {
@@ -7792,7 +7721,7 @@ function startGaragePreview(carId) {
                 }, { passive: true, signal });
                 document.addEventListener('touchmove', function(e) { // срабатывает на ходу, не дожидаясь, пока палец отпустят
                     const t = e.touches && e.touches[0];
-                    if (!t0 || !t || gameState !== 'racing') return;
+                    if (!t0 || !t || gameState !== 'racing' || !swipeOn()) return;
                     const dir = swipeDir(t.clientX - t0.x, t.clientY - t0.y);
                     if (dir) { swipeCtl.swipe(dir, xPos, performance.now()); t0 = null; }
                 }, { passive: true, signal });
@@ -7932,7 +7861,7 @@ function startGaragePreview(carId) {
 
             function getKeys() {
                 const pk = window.__padKeys; // геймпад (src/gamepad.js)
-                if (swipeCtl) { const sk = swipeCtl.keys(xPos, xVelocity, performance.now()); return { w: keys.w || sk.w, s: keys.s || sk.s, a: keys.a || sk.a, d: keys.d || sk.d }; }
+                if (swipeOn()) { const sk = swipeCtl.keys(xPos, xVelocity, performance.now()); return { w: keys.w || sk.w, s: keys.s || sk.s, a: keys.a || sk.a, d: keys.d || sk.d }; }
                 if (isMobile || pk) {
                     const m = isMobile ? mobileKeys : {};
                     return {
@@ -8421,10 +8350,10 @@ function startGaragePreview(carId) {
                 }
                 const spFov = INF ? speedFov(speed / MAX_SPEED, nitroTimer > 0) : 0; /* бесконечная: на скорости камера шире (src/juice.js) */ if (fovPunch > 0) {
                     fovPunch = Math.max(0, fovPunch - deltaTime * 12);
-                    camera.fov = BASE_FOV + spFov + fovPunch;
+                    camera.fov = baseFov() + spFov + fovPunch;
                     camera.updateProjectionMatrix();
-                } else if (Math.abs(camera.fov - BASE_FOV - spFov) > 0.1) {
-                    camera.fov += (BASE_FOV + spFov - camera.fov) * 0.1;
+                } else if (Math.abs(camera.fov - baseFov() - spFov) > 0.1) {
+                    camera.fov += (baseFov() + spFov - camera.fov) * 0.1;
                     camera.updateProjectionMatrix();
                 }
 
@@ -10325,16 +10254,14 @@ function startGaragePreview(carId) {
                     targetX = xPos + 5.5; targetY = 2.2; targetZ = zPos + 2.5;
                     lookY = 0.6; lookZoff = -6;
                 } else {
-                    // chase: машина в нижней трети, стабильная дистанция. Телефон: экран низкий — камера ближе и ниже,
-                    // смотрит дальше вперёд: машина крупнее и у нижнего края, дорога впереди видна
-                    const mob = isMobile;
-                    const dist = (mob ? 5.0 : 6.8) - spdK * (mob ? 0.3 : 0.6);
-                    const height = (mob ? 2.2 : 2.7) - spdK * 0.15;
-                    targetX = xPos * 0.15;
-                    targetY = height;
-                    targetZ = zPos + dist;
-                    lookY = mob ? 1.15 : 0.7;
-                    lookZoff = mob ? -11 : -5.8;
+                    // chase: машина в нижней трети, стабильная дистанция. Телефон боком: экран низкий — камера ближе и ниже;
+                    // телефон вертикально — выше и дальше, как в Subway Surfers (src/portrait.js)
+                    const rig = chaseRig(camera.aspect < 1 ? 'portrait' : isMobile ? 'mobile' : 'desktop', spdK);
+                    targetX = xPos * (camera.aspect < 1 ? 0.3 : 0.15);
+                    targetY = rig.height;
+                    targetZ = zPos + rig.dist;
+                    lookY = rig.lookY;
+                    lookZoff = rig.lookZoff;
                 }
                 // Раньше камера догоняла цель на долю пути ЗА КАДР, а машина едет на путь ЗА ВРЕМЯ:
                 // при неровных кадрах отставание камеры прыгало, и машину на экране дёргало вперёд-назад.
