@@ -6332,3 +6332,6 @@ body #finish-screen.finish-layout-f2 > .f2 { width: min(840px, 100%) !important;
 #game-hud.hud-v2 > :not(.hud-time):not(.hud-crash):not(#infDisplay):not(#metersDisplay):not(#endlessDisplay) { display: none !important; }
 #game-hud.hud-v2 { min-width: 0 !important; }
 #game-hud.hud-v2 #infDisplay, #game-hud.hud-v2 #metersDisplay { font-variant-numeric: tabular-nums; }
+
+/* ===== Свайпы вместо кнопок (Настройки → Управление): руль, газ и тормоз не нужны, пауза и камера остаются ===== */
+body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGas, body.swipe-ctl #mobile-controls #btnBrake { display: none !important; }

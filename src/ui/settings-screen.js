@@ -6,6 +6,10 @@
 import { loadSettings, saveSettings } from '../settings.js';
 import { getCode, normalizeCode, pullSave, pushSave, snapshot, applySnapshot } from '../cloud-save.js';
 
+function controlsNote(v) {
+    return v === 'swipe' ? 'Свайп влево/вправо — полоса, вниз — тормоз, газ жмётся сам' : 'Руль, газ и тормоз — кнопками на экране';
+}
+
 export function openSettingsScreen(deps) {
     const d = deps || {};
     if (document.getElementById('settings-screen')) return;
@@ -39,6 +43,9 @@ export function openSettingsScreen(deps) {
         choice('camera', [[0, 'Сзади'], [1, 'Капот'], [2, 'Салон'], [3, 'Сбоку']]) +
         '<div class="st-group">Язык</div>' +
         choice('lang', [['auto', 'Авто'], ['ru', 'Русский'], ['en', 'English']]) +
+        '<div class="st-group">Управление на телефоне</div>' +
+        choice('controls', [['buttons', '🕹 Кнопки'], ['swipe', '👆 Свайпы']]) +
+        '<small class="sc-note" id="st-controls-note">' + controlsNote(st.controls) + '</small>' +
         '<div class="st-group">Удобство</div>' +
         toggle('shake', 'Тряска камеры при ударах') +
         toggle('vibrate', 'Вибрация телефона при аварии') +
@@ -83,6 +90,7 @@ export function openSettingsScreen(deps) {
             save({ [k]: v });
             if (k === 'quality' && d.onQuality) d.onQuality(v);
             if (k === 'lang' && d.onLang) d.onLang(v);
+            if (k === 'controls') el.querySelector('#st-controls-note').textContent = controlsNote(v);
         });
     });
     el.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
