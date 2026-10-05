@@ -1,13 +1,14 @@
 /**
- * Управление свайпами на телефоне — по желанию («Настройки» → «Управление»), основа — кнопки на экране.
+ * Управление свайпами на телефоне («Настройки» → «Управление»; «Авто» — вертикально).
  * Свайп влево/вправо — в соседнюю полосу, вниз — притормозить; газ жмётся сам.
- * Руль в игре плавный (xVelocity), поэтому свайп задаёт цель — центр полосы, а «кнопки» A/D держатся,
- * пока машина до неё не доедет. Отпускаем заранее: после отпускания машину ещё сносит по инерции.
+ * Полоса меняется сразу и ровно: машину ведём прямо в центр полосы (скорость вбок — от остатка пути, без перелёта),
+ * у цели — точно в центре. Отклик — как только палец сдвинулся на SWIPE_MIN, не дожидаясь, пока его отпустят.
  */
 export const LANE_X = [-2, 0, 2];   // центры полос (TRACK_WIDTH 6, LANE_WIDTH 2)
-export const SWIPE_MIN = 28;        // px: короче — это касание, а не свайп
+export const SWIPE_MIN = 16;        // px: короче — это касание, а не свайп
 export const BRAKE_MS = 450;        // сколько держать тормоз после свайпа вниз
-export const COAST = 1.4;           // путь по инерции ≈ xVelocity × COAST (гашение 0.82 за кадр, xPos += v·15·dt)
+export const SWIPE_V = 0.95;        // предел скорости вбок (xVelocity; клавиши — 0.55): полоса за ~0,2 с
+const SNAP = 0.03;                  // ближе — уже в центре полосы
 
 /** Направление свайпа по смещению пальца (px) или null */
 export function swipeDir(dx, dy) {
@@ -37,18 +38,21 @@ export function createSwipe() {
             if (dir === 'left' || dir === 'right') s.target = laneTarget(x, s.target, dir);
             else if (dir === 'down') s.brakeUntil = now + BRAKE_MS;
         },
-        /** какие «кнопки» держать сейчас: x — положение машины, v — её поперечная скорость */
+        /** Газ и тормоз (руль — step): газ сам, свайп вниз — короткий тормоз */
         keys: function(x, v, now) {
             const brake = now < s.brakeUntil;
-            let a = false, d = false;
-            if (s.target != null) {
-                const left = s.target - x;
-                const coast = Math.max(0, v * Math.sign(left)) * COAST; // сколько ещё проедет к цели по инерции
-                if (Math.abs(left) <= coast + 0.08) s.target = null; // дальше доедет сама
-                else if (left < 0) a = true;
-                else d = true;
-            }
-            return { w: !brake, s: brake, a: a, d: d };
+            return { w: !brake, s: brake, a: false, d: false };
+        },
+        /**
+         * Шаг руля: null — свайпа нет (руль как обычно); иначе { v } — скорость вбок на этот кадр,
+         * { x, v: 0 } — доехали: машина ровно в центре полосы. xPos += v·15·dt (как в src/main.js).
+         */
+        step: function(x, dt) {
+            if (s.target == null) return null;
+            const left = s.target - x;
+            if (Math.abs(left) <= SNAP) { const t = s.target; s.target = null; return { x: t, v: 0 }; }
+            const reach = Math.abs(left) / (15 * Math.max(dt, 1e-3)); // скорость, чтобы доехать ровно за кадр
+            return { v: Math.sign(left) * Math.min(SWIPE_V, reach * 0.6) };
         },
         get target() { return s.target; }
     };
