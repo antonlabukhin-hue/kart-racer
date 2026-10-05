@@ -8,6 +8,7 @@ import { laneOf } from './traffic-lanes.js';
 
 export const LOOK = 40;      // за сколько единиц до помехи машина начинает перестраиваться
 export const JUMP_H = 1.3;   // высота прыжка через разлом
+export const RAMP_START = 5; // прыжок начинается от начала трамплина перед разломом (он стоит на zNear+0.8…+4.8), а не внутри него
 
 /** Свободная соседняя полоса, не busy (средняя — к любой стороне) */
 function otherLane(lane, busy) {
@@ -24,7 +25,7 @@ export function trafficPlan(z, lane, h) {
     (h.gaps || []).forEach(function(g) {
         if (!(z < g.zNear + LOOK && z > g.zFar - 2)) return;
         // в полосу трамплина не перестраиваемся: она — для игрока (иначе попутка встаёт у него на трамплине); перелетаем из своей
-        const a = g.zNear + 3, b = g.zFar - 1;            // от трамплина — через разлом
+        const a = g.zNear + RAMP_START, b = g.zFar - 1;   // от начала трамплина — через разлом: дуга всё время над плитой
         if (z <= a && z >= b) y = Math.sin((a - z) / (a - b) * Math.PI) * JUMP_H;
     });
     if (target == null) (h.works || []).forEach(function(w) {
@@ -36,4 +37,23 @@ export function trafficPlan(z, lane, h) {
         if (laneOf(r.x) === lane) { const l = otherLane(lane, [laneOf(r.x)]); if (l != null) target = l; }
     });
     return { lane: target, y: y };
+}
+
+/**
+ * Куда поставить попутку, которую переносят вперёд (z уменьшается по ходу): не над разломом и не на трамплин в её полосе —
+ * иначе она стоит над провалом или внутри плиты и на следующем кадре «взлетает». Сдвигаем дальше по дороге.
+ */
+export function freeZ(z, lane, h) {
+    for (let guard = 0; guard < 8; guard++) {
+        let moved = false;
+        (h.gaps || []).forEach(function(g) { if (z <= g.zNear + RAMP_START + 1 && z >= g.zFar - 2) { z = g.zFar - 3; moved = true; } });
+        (h.ramps || []).forEach(function(r) { if (laneOf(r.x) === lane && z <= r.z + 3 && z >= r.z - 3) { z = r.z - 4; moved = true; } });
+        if (!moved) break;
+    }
+    return z;
+}
+
+/** Полоса lane занята трамплином или ремонтом впереди — перестраиваться в неё нельзя */
+export function laneBlocked(z, lane, h) {
+    return trafficPlan(z, lane, h).lane != null;
 }
