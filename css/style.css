@@ -6335,3 +6335,6 @@ body #finish-screen.finish-layout-f2 > .f2 { width: min(840px, 100%) !important;
 
 /* ===== Свайпы вместо кнопок (Настройки → Управление): руль, газ и тормоз не нужны, пауза и камера остаются ===== */
 body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGas, body.swipe-ctl #mobile-controls #btnBrake { display: none !important; }
+
+/* ===== Новичку — не всё сразу: «Слово дня», «Рекорды», «Заезд дня», «Тест-драйв» появляются со 2-го дня игры (src/visits.js) ===== */
+#main-menu-screen.mm-fresh .mm-extras { display: none !important; }
