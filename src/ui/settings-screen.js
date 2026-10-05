@@ -48,6 +48,7 @@ export function openSettingsScreen(deps) {
         '<div class="st-group">Управление на телефоне</div>' +
         choice('controls', [['auto', '📱 Авто'], ['buttons', '🕹 Кнопки'], ['swipe', '👆 Свайпы']]) +
         '<small class="sc-note" id="st-controls-note">' + controlsNote(st.controls) + '</small>' +
+        '<small class="sc-note">📱 Заезд идёт и вертикально, и боком — поверни телефон, как удобнее, игра продолжится</small>' +
         '<div class="st-group">Удобство</div>' +
         toggle('shake', 'Тряска камеры при ударах') +
         toggle('vibrate', 'Вибрация телефона при аварии') +
