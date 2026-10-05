@@ -39,3 +39,22 @@ describe('площадка: Яндекс Игры / сайт', () => {
         expect(payHtml([])).toBe('');
     });
 });
+
+describe('язык площадки', () => {
+    it('на Яндексе — из SDK после загрузки (ysdk.environment.i18n.lang), на сайте — нет', async () => {
+        const saved = { document: globalThis.document, window: globalThis.window };
+        globalThis.document = { createElement: () => ({}), head: { appendChild: s => setTimeout(() => s.onload(), 0) }, addEventListener() {} };
+        globalThis.window = { YaGames: { init: () => Promise.resolve({ environment: { i18n: { lang: 'tr' } }, on() {} }) } };
+        try {
+            const pf = createPlatform({ mode: 'yandex', search: '' });
+            expect(pf.lang()).toBe(null); // SDK ещё не загружен
+            await pf.init();
+            expect(pf.lang()).toBe('tr');
+            const web = createPlatform({ mode: 'production', search: '' });
+            await web.init();
+            expect(web.lang()).toBe(null);
+        } finally {
+            globalThis.document = saved.document; globalThis.window = saved.window;
+        }
+    });
+});

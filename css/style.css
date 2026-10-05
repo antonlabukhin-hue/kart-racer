@@ -6327,3 +6327,45 @@ body #finish-screen.finish-layout-f2 > .f2 { width: min(840px, 100%) !important;
 #difficulty-screen .q-btn { padding: 6px 4px !important; font-size: 13px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (min-width: 900px) { body #difficulty-screen .content { width: min(520px, 46vw) !important; max-width: 520px !important; } }
 @media (min-width: 900px) { body #difficulty-screen .content { grid-template-columns: 170px minmax(0, 1fr) !important; } }
+
+/* ===== Плашка заезда слева вверху: только время, сердечки и метры (в «Звериный час» — ещё волна) ===== */
+#game-hud.hud-v2 > :not(.hud-time):not(.hud-crash):not(#infDisplay):not(#metersDisplay):not(#endlessDisplay) { display: none !important; }
+#game-hud.hud-v2 { min-width: 0 !important; }
+#game-hud.hud-v2 #infDisplay, #game-hud.hud-v2 #metersDisplay { font-variant-numeric: tabular-nums; }
+
+/* ===== Свайпы вместо кнопок (Настройки → Управление): руль, газ и тормоз не нужны, пауза и камера остаются ===== */
+body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGas, body.swipe-ctl #mobile-controls #btnBrake { display: none !important; }
+
+/* ===== Новичку — не всё сразу: «Слово дня», «Рекорды», «Заезд дня», «Тест-драйв» появляются со 2-го дня игры (src/visits.js) ===== */
+#main-menu-screen.mm-fresh .mm-extras { display: none !important; }
+
+/* ===== Главный экран телефона: «ПОЕХАЛИ» и 4 кнопки — «Кампания», «Машины», «Гараж», «Подарки» ===== */
+/* «Бесконечная трасса» — это и есть «ПОЕХАЛИ»; «Звериный час» — когда откроется; задания — на итогах заезда; трофеи — в гараже */
+@media (orientation: portrait) and (max-width: 700px) {
+    body #main-menu-screen .mm-modes .menu-infinite,
+    body #main-menu-screen .mm-modes .menu-endless.locked,
+    body #main-menu-screen .mm-missions,
+    body #main-menu-screen .mm-dock .mm-tab[data-menu="trophies"] { display: none !important; }
+    body #main-menu-screen .menu-grid.mm-modes { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important; }
+    body #main-menu-screen .mm-dock { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+
+/* ===== Надписи в заезде — в одном месте сверху, мелко и по одной (src/ui/race-toasts.js помечает их .rt) ===== */
+/* .rt.rt.rt — сильнее прежних правил для каждого вида надписей (в т.ч. html.touch-ui.touch-land … .crash-tag) */
+:root body.race-mode .rt.rt.rt {
+    position: fixed !important; top: calc(env(safe-area-inset-top, 0px) + 64px) !important; left: 50% !important; right: auto !important; bottom: auto !important;
+    transform: translateX(-50%) !important; width: max-content !important; max-width: min(80vw, 460px) !important; min-width: 0 !important; height: auto !important;
+    margin: 0 !important; padding: 4px 12px !important; border-radius: 10px !important; border: 1px solid rgba(255, 221, 0, 0.3) !important;
+    background: rgba(10, 10, 16, 0.8) !important; box-shadow: none !important; backdrop-filter: none !important;
+    font: 700 14px/1.25 system-ui, 'Segoe UI', sans-serif !important; letter-spacing: 0 !important; text-align: center !important; white-space: normal !important;
+    text-shadow: 0 1px 2px #000 !important; z-index: 160 !important; pointer-events: none !important; opacity: 1 !important; animation: rtIn .18s ease-out !important;
+}
+:root body.race-mode .rt.rt.rt * { font-size: inherit !important; line-height: inherit !important; margin: 0 !important; display: inline !important; }
+:root body.race-mode .rt.rt.rt small { font-size: 12px !important; font-weight: 600 !important; opacity: .85; }
+:root body.race-mode .rt.rt.rt small::before { content: ' · '; }
+:root body.race-mode .rt.rt.rt.out { opacity: 0 !important; transition: opacity .3s !important; animation: none !important; }
+@keyframes rtIn { from { opacity: 0; transform: translate(-50%, -6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (max-height: 500px) { /* телефон боком: только заголовок, без пояснения */
+    :root body.race-mode .rt.rt.rt { top: calc(env(safe-area-inset-top, 0px) + 46px) !important; font-size: 12px !important; padding: 3px 10px !important; max-width: 52vw !important; }
+    :root body.race-mode .rt.rt.rt small { display: none !important; }
+}

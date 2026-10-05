@@ -12,7 +12,8 @@ test('бесконечная трасса: пейзажи, «Е», уборка 
     await expect(page.locator('#shop-action')).toContainText('ПОЕХАЛИ');
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await expect(page.locator('#infDisplay')).toContainText('м · Е');
+    await expect(page.locator('#infDisplay')).toHaveText(/^🛣 \d+ м$/);
+    await expect(page.locator('#weatherDisplay')).toBeHidden(); // на плашке — только время, сердечки и метры
     await expect(page.locator('#weatherDisplay')).toContainText('Арсеньев, день');
     // «До соперника N м»: первая цель — ближайший соперник из таблицы
     await expect(page.locator('#chaseDisplay')).toContainText('🎯 До ');
@@ -190,7 +191,7 @@ test('бесконечная трасса: ящик «?» разбивается
 test('первое знакомство: пауза с плашкой перед новым, «Продолжить» — дальше', async ({ page }) => {
     const problems = watchProblems(page);
     await page.addInitScript(() => sessionStorage.setItem('keep_meet', '1'));
-    await login(page);
+    await login(page, 'Тестер', './', { tutorial: true });
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);

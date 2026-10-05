@@ -1,7 +1,7 @@
 /**
  * SoundEngine — Web Audio (двигатель, SFX) + HTML5 (музыка гонки)
  */
-import { loadSettings, saveSettings } from './settings.js';
+import { loadSettings } from './settings.js';
 import { mapAudioTheme, musicRate, startAmbientBed } from './map-audio.js';
 import { engineProfile, targetRpm, stepRpm, createEngineVoice, createSimpleVoice, glide } from './engine-sound.js';
 class SoundEngine {
@@ -71,7 +71,7 @@ class SoundEngine {
             this.enabled = true;
             this.initialized = true;
 
-            this.createVolumeControls();
+            // громкость — в «Настройках»; панели с ползунками на экране заезда больше нет
 
             const resumeAudio = () => {
                 if (this.audioCtx && this.audioCtx.state === 'suspended') {
@@ -122,58 +122,6 @@ class SoundEngine {
         } catch (e) { return null; }
     }
 
-    createVolumeControls() {
-        const old = document.getElementById('volume-controls');
-        if (old) old.remove();
-
-        const controls = document.createElement('div');
-        controls.id = 'volume-controls';
-        
-        const status = this.musicLoaded ? '🎵 MP3' : '⏳ Загрузка...';
-        
-        controls.innerHTML = `
-            <div class="slider-group">
-                <label>🎵 МУЗЫКА</label>
-                <input type="range" id="music-volume" min="0" max="100" value="${Math.round(this.musicVolume * 100)}">
-                <span class="volume-value" id="music-volume-value">${Math.round(this.musicVolume * 100)}%</span>
-                <span id="music-status" style="color:rgba(255,255,255,0.3);font-size:9px;">${status}</span>
-            </div>
-            <div class="slider-group">
-                <label>🏎️ ДВИГАТЕЛЬ</label>
-                <input type="range" id="engine-volume" min="0" max="100" value="${Math.round(this.engineVolumeMultiplier * 100)}">
-                <span class="volume-value" id="engine-volume-value">${Math.round(this.engineVolumeMultiplier * 100)}%</span>
-            </div>
-        `;
-        document.body.appendChild(controls);
-
-        document.getElementById('music-volume').addEventListener('input', (e) => {
-            const val = parseInt(e.target.value) / 100;
-            // Только громкость — НЕ перезапускать трек (иначе двоится)
-            this.setMusicVolume(val);
-            document.getElementById('music-volume-value').textContent = Math.round(val * 100) + '%';
-            saveSettings(Object.assign(loadSettings(), { music: val }));
-            if (this.audioCtx && this.audioCtx.state === 'suspended') {
-                this.audioCtx.resume().catch(function(){});
-            }
-            // Если музыка ещё не играла (первый жест) — один раз запустить
-            if (window.__inRace) {
-                if (!this.isMusicPlaying && !(this.raceAudio && !this.raceAudio.paused)) {
-                    try { this.startMusic(); } catch (err) {}
-                    try { if (this.startRaceMusicHTML) this.startRaceMusicHTML(); } catch (err) {}
-                }
-            } else if (!this.isMusicPlaying && !(this.menuAudio && !this.menuAudio.paused)) {
-                try { this.startMenuMusic(); } catch (err) {}
-            }
-        });
-
-        document.getElementById('engine-volume').addEventListener('input', (e) => {
-            const val = parseInt(e.target.value) / 100;
-            this.engineVolumeMultiplier = val;
-            document.getElementById('engine-volume-value').textContent = Math.round(val * 100) + '%';
-            saveSettings(Object.assign(loadSettings(), { engine: val }));
-        });
-    }
-
     async loadMusic() {
         if (this.musicLoadPromise) return this.musicLoadPromise;
         this.musicLoadPromise = this._loadMusic();
@@ -216,9 +164,6 @@ class SoundEngine {
                 
                 console.log(`✅ MP3 загружен из ${url} (${this.musicBuffer.duration.toFixed(1)} сек)`);
                 
-                const statusEl = document.getElementById('music-status');
-                if (statusEl) statusEl.textContent = '🎵 MP3';
-                
                 if (this.musicStarted && !this.isMusicPlaying) {
                     this.startMusic();
                 }
@@ -233,9 +178,6 @@ class SoundEngine {
         
         this.musicBuffer = null;
         this.musicLoaded = false;
-        
-        const statusEl = document.getElementById('music-status');
-        if (statusEl) statusEl.textContent = this.useProceduralFallback ? '🎹 Procedural' : '❌ Нет MP3';
         
         return false;
     }
@@ -378,12 +320,6 @@ class SoundEngine {
         this.engineVolumeMultiplier = st.engine;
         this.sfxVolume = st.sfx;
         if (this._ambient && this._mapTheme) this._ambient.setVolume(this._mapTheme.gain * st.sfx);
-        [['music-volume', st.music], ['engine-volume', st.engine]].forEach(function(p) {
-            const el = document.getElementById(p[0]);
-            const lbl = document.getElementById(p[0] + '-value');
-            if (el) el.value = String(Math.round(p[1] * 100));
-            if (lbl) lbl.textContent = Math.round(p[1] * 100) + '%';
-        });
     }
     setMusicVolume(v) {
         this.musicVolume = Math.max(0, Math.min(1, v));

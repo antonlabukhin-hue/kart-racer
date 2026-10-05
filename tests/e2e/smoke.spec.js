@@ -139,9 +139,21 @@ test('экраны меню открываются без ошибок', { tag: 
     expect(problems).toEqual([]);
 });
 
-test('первый заезд: «Даю установку:» держит отсчёт до «Погнали», второй раз не показывается', { tag: '@smoke' }, async ({ page }) => {
+test('обучение по умолчанию выключено: первый заезд без «Даю установку:», в настройках — переключатель', { tag: '@smoke' }, async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Новичок', './', { briefing: true });
+    await page.locator('#main-menu-settings').click();
+    await expect(page.locator('#settings-screen input[data-key="tutorial"]')).not.toBeChecked();
+    await page.locator('#settings-close').click();
+    await startFreeRace(page);
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#race-briefing')).toHaveCount(0);
+    expect(problems).toEqual([]);
+});
+
+test('первый заезд: «Даю установку:» держит отсчёт до «Погнали», второй раз не показывается', { tag: '@smoke' }, async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Новичок', './', { briefing: true, tutorial: true });
     await startFreeRace(page);
     const br = page.locator('#race-briefing');
     await expect(br).toBeVisible();

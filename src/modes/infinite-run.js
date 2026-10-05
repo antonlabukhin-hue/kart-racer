@@ -162,8 +162,7 @@ export function createInfiniteRun(ctx) {
             // смена пейзажа
             if (t.theme !== theme) {
                 theme = t.theme;
-                ctx.setTheme(theme);
-                if (d > 50) { try { ctx.story('🗺 ' + theme.name); } catch (e) {} }
+                ctx.setTheme(theme); // без надписи о смене пейзажа и наступлении ночи — их и так видно
                 if (theme === weekTh) { try { ctx.plaque('💰 ПЕЙЗАЖ НЕДЕЛИ', theme.name + ': каждая «Е» за две', 'crate-good'); } catch (e) {} }
             }
             // сложность по километрам

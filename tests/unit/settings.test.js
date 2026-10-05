@@ -13,9 +13,11 @@ describe('настройки', () => {
 
     it('сохраняются и читаются', () => {
         const st = memStorage();
-        saveSettings({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en', curve: false, host: 'text' }, st);
-        expect(loadSettings(st)).toEqual({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en', curve: false, host: 'text', v: 2 });
+        saveSettings({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en', curve: false, host: 'text', controls: 'swipe', tutorial: true }, st);
+        expect(loadSettings(st)).toEqual({ music: 0.2, engine: 0, sfx: 0.5, quality: 'high', camera: 2, shake: false, vibrate: false, ghost: false, lang: 'en', curve: false, host: 'text', controls: 'swipe', tutorial: true, v: 2 });
         expect(normalizeSettings({ host: 'loud' }).host).toBe('voice');
+        expect(normalizeSettings({ controls: 'tilt' }).controls).toBe('buttons'); // основа — кнопки, свайпы по желанию
+        expect(DEFAULT_SETTINGS.tutorial).toBe(false); // обучение в заезде — только по желанию, в «Настройках»
     });
 
     it('кривые значения приводятся к допустимым', () => {
