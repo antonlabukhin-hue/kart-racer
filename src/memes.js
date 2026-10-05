@@ -133,10 +133,10 @@ export const MEMES = [
 ];
 export const MEME_EVERY = [380, 620]; // метров между мем-моментами
 
-/** Следующий мем: взвешенно, не тот же, что прошлый. rnd — генератор 0..1 */
-export function pickMeme(prevId, rnd) {
+/** Следующий мем: взвешенно, не тот же, что прошлый. rnd — генератор 0..1; sideOnly — только обочина (честный заезд: попутки не трогаем) */
+export function pickMeme(prevId, rnd, sideOnly) {
     const r = rnd || Math.random;
-    const list = MEMES.filter(function(m) { return m.id !== prevId; });
+    const list = MEMES.filter(function(m) { return m.id !== prevId && (!sideOnly || m.kind === 'side'); });
     const sum = list.reduce(function(s, m) { return s + m.w; }, 0);
     let t = r() * sum;
     for (let i = 0; i < list.length; i++) { t -= list[i].w; if (t <= 0) return list[i]; }
@@ -156,7 +156,7 @@ export function decorateMemeCar(group, id) {
     group.traverse(function(o) { let v = o.visible; for (let p = o.parent; p && v; p = p.parent) v = p.visible; if (o.isMesh && v) bb.union(tmp.setFromObject(o)); });
     const top = bb.max.y, cz = (bb.min.z + bb.max.z) / 2, len = bb.max.z - bb.min.z;
     const load = id === 'cow_bus' ? createCow() : createWardrobe();
-    if (id === 'cow_bus') load.scale.setScalar(Math.min(1, len * 0.62));
+    if (id === 'cow_bus') load.scale.setScalar(Math.min(1.25, len * 0.8)); // корова крупнее — видно с дороги
     load.position.set(0, top - 0.02, cz - (id === 'cow_bus' ? len * 0.05 : 0));
     load.userData.memeLoad = true;
     group.add(load);
