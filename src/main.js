@@ -50,7 +50,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
@@ -6465,8 +6465,8 @@ function startGaragePreview(carId) {
             if (INF) { maxCars = Math.max(6, maxCars); infCarsBase = maxCars; } // бесконечная трасса: попуток как в обычном заезде, дальше — больше
             for (let i = 0; i < maxCars; i++) {
                 const z = INF ? START_Z - 70 - Math.random() * 300 : -TRACK_LENGTH / 2 + 20 + Math.random() * (TRACK_LENGTH - 60);
-                const lane = Math.floor(Math.random() * 3);
-                cars.push(createOpponentCar(z, lane));
+                const lane = spawnLane(cars, z, Math.floor(Math.random() * 3)); // строго по полосам, одна в ряду всегда свободна (src/traffic-lanes.js)
+                if (lane != null) cars.push(createOpponentCar(z, lane));
             }
 
             // ============================================================
@@ -7102,7 +7102,7 @@ function startGaragePreview(carId) {
                 addNitro: function(sec) { nitroTimer = Math.max(nitroTimer, sec); },
                 setRamp: function(r) { // сложность по километрам; попуток больше — новые далеко впереди
                     infSpeedK = r.speedK; infLaneK = r.laneK; infTrafficK = r.trafficK; animalSpawner.maxAnimals = r.maxAnimals; animalSpawner.speedMul = r.animalSpeed;
-                    if (cars.length < infCarsBase + r.traffic) cars.push(createOpponentCar(zPos - 180 - Math.random() * 200, Math.floor(Math.random() * 3)));
+                    if (cars.length < infCarsBase + r.traffic) { const nz = zPos - 180 - Math.random() * 200, nl = spawnLane(cars, nz, Math.floor(Math.random() * 3)); if (nl != null) cars.push(createOpponentCar(nz, nl)); }
                 },
                 setTheme: function(th) { infTheme = th; animalSpawner.animalPool = th.animals; weatherMode = window.weatherMode = th.night ? 'night' : th.rain ? 'rain' : 'day'; if (snowfall) snowfall.points.visible = !!th.snow; },
                 startLap: function(k, map, diff) { _lapK = k; _lapZ0 = START_Z - k * _trackSpan; return populateLap(map, diff); },
@@ -8805,14 +8805,30 @@ function startGaragePreview(carId) {
                 }
 
                 // Попутные машины
-                const _avoidH = { gaps: gaps, ramps: ramps, works: roadSegments }; /* попутки объезжают трамплины и ремонт, разлом — перепрыгивают (src/traffic-avoid.js) */ cars.forEach(car => {
+                const _avoidH = { gaps: gaps, ramps: ramps, works: roadSegments }; /* попутки объезжают трамплины и ремонт, разлом — перепрыгивают (src/traffic-avoid.js) */
+                {
+                    const wb = wallBreaker(cars, zPos - 2, zPos - 320);
+                    if (wb) {
+                        if (zPos - wb.z > 45) { // в тумане — переставить подальше вперёд
+                            const nz = freeZ(zPos - 200 - Math.random() * 100, wb.lane, _avoidH), nl = spawnLane(cars.filter(function(o) { return o !== wb; }), nz, wb.lane);
+                            wb.z = nz; if (nl != null) { wb.lane = wb.targetLane = nl; wb.isChangingLane = false; wb.x = carX(nl, 0); wb.mesh.position.x = wb.x; } wb.mesh.position.z = wb.z;
+                        } else wb._boost = 1.5; // на виду — передняя резко уходит вперёд, ряд расходится
+                    }
+                    gaps.forEach(function(g) { (g.lanes || []).forEach(function(li) { cars.forEach(function(c) {
+                        if (c.active && (c.lane === li || (c.isChangingLane && c.targetLane === li)) && c.z < g.zNear + 9 && c.z > g.zFar - 2) { // не успела уйти с полосы трамплина
+                            c.z = freeZ(g.zFar - 20 - Math.random() * 20, c.lane, _avoidH); c.mesh.position.z = c.z;
+                        }
+                    }); }); });
+                }
+                cars.forEach(car => {
                     if (!car.active) return;
                     
-                    car.z -= car.speed * 60 * deltaTime;
+                    if (car._boost > 0) car._boost -= deltaTime;
+                    car.z -= car.speed * 60 * deltaTime * (car._boost > 0 ? 5 : 1);
                     if (car.mesh) {
                         car.mesh.matrixAutoUpdate = true;
                         car.mesh.position.z = car.z;
-                        const tp = trafficPlan(car.z, car.isChangingLane ? car.targetLane : car.lane, _avoidH); car.mesh.position.y = 0.1 + tp.y; car.airY = tp.y; if (car._avoidLock > 0) car._avoidLock -= deltaTime; if (tp.lane != null && !car.isChangingLane && car.lane !== tp.lane) { car.targetLane = tp.lane; car.isChangingLane = true; car.laneChangeProgress = 0; car._avoidLock = 3; } else if (tp.lane != null && car.isChangingLane && car.lane !== car.targetLane) { const l0 = car.lane, h0 = car._hug0 != null ? car._hug0 : car.hug; car.lane = car.targetLane; car.targetLane = l0; car._hug0 = car.hug; car.hug = h0; car.laneChangeProgress = 1 - car.laneChangeProgress; car._avoidLock = 3; } /* уже перестраивается в полосу трамплина — плавно назад */
+                        const tp = trafficPlan(car.z, car.isChangingLane ? car.targetLane : car.lane, _avoidH); car.mesh.position.y = 0.1 + tp.y; car.airY = tp.y; if (car._avoidLock > 0) car._avoidLock -= deltaTime; if (tp.lane != null && !car.isChangingLane && car.lane !== tp.lane && canEnterLane(cars, car, tp.lane)) { car.targetLane = tp.lane; car.isChangingLane = true; car.laneChangeProgress = 0; car._avoidLock = 3; } else if (tp.lane != null && car.isChangingLane && car.lane !== car.targetLane) { const l0 = car.lane, h0 = car._hug0 != null ? car._hug0 : car.hug; car.lane = car.targetLane; car.targetLane = l0; car._hug0 = car.hug; car.hug = h0; car.laneChangeProgress = 1 - car.laneChangeProgress; car._avoidLock = 3; } /* уже перестраивается в полосу трамплина — плавно назад */
                     }
                     
                     if (car.isChangingLane) {
@@ -8844,7 +8860,7 @@ function startGaragePreview(carId) {
                             // Машина относительно близко — чаще лезет в полосу игрока
                             const playerLaneApprox = laneOf(xPos);
                             const clampedLane = Math.max(0, Math.min(2, playerLaneApprox));
-                            if (car.lane !== clampedLane && !laneBlocked(car.z, clampedLane, _avoidH) && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK * (ABILITY === 'boss' ? 0.1 : 1)) { car._hug0 = car.hug; car.hug = hugFor(clampedLane); // «Шестисотому» уступают
+                            if (car.lane !== clampedLane && !laneBlocked(car.z, clampedLane, _avoidH) && canEnterLane(cars, car, clampedLane) && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK * (ABILITY === 'boss' ? 0.1 : 1)) { car._hug0 = car.hug; car.hug = hugFor(clampedLane); // «Шестисотому» уступают
                                 car.targetLane = clampedLane;
                                 car.isChangingLane = true;
                                 car.laneChangeProgress = 0;
@@ -8864,7 +8880,7 @@ function startGaragePreview(carId) {
                                 } else {
                                     newLane = Math.floor(Math.random() * 3);
                                 }
-                                if (newLane !== car.lane && !laneBlocked(car.z, newLane, _avoidH)) { // не в полосу трамплина или ремонта впереди
+                                if (newLane !== car.lane && !laneBlocked(car.z, newLane, _avoidH) && canEnterLane(cars, car, newLane)) { // не в полосу трамплина или ремонта впереди
                                     car._hug0 = car.hug; car.hug = hugFor(newLane); car.targetLane = newLane;
                                     car.isChangingLane = true;
                                     car.laneChangeProgress = 0;
@@ -8899,6 +8915,7 @@ function startGaragePreview(carId) {
                         car.z = INF ? zPos - 170 - Math.random() * 220 : TRACK_LENGTH / 2 + 10 + Math.random() * 20;
                         car.lane = Math.floor(Math.random() * 3);
                         car.z = freeZ(car.z, car.lane, _avoidH); // не над разломом и не на трамплин
+                        { const sl = spawnLane(cars.filter(function(o) { return o !== car; }), car.z, car.lane); if (sl != null) car.lane = sl; else car.z -= 40; } // не в «стенку»
                         car.targetLane = car.lane; car.hug = hugFor(car.lane);
                         car.x = carX(car.lane, car.hug);
                         car.mesh.position.set(car.x, 0.1, car.z);
