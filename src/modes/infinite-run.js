@@ -72,8 +72,8 @@ export function createInfiniteRun(ctx) {
     });
     let world = null, theme = null, headShown = false, warmShown = false, feverOn = false;
     let lapK = 0, frame = 0, stage = 0, fresh = [], gen = null, genRnd = null;
-    // мем-моменты 90-х (src/memes.js): попутка с коровой или шкафом, бабка с тележкой, рыбак, гаишник — раз в 380–620 м
-    let nextMeme = 300 + Math.random() * 200, lastMeme = null;
+    // мем-моменты 90-х (src/memes.js): попутка с коровой или шкафом, бабка с тележкой, рыбак, гаишник — раз в 475–775 м
+    let nextMeme = 375 + Math.random() * 250, lastMeme = null;
     const memeWalkers = [];
     function spawnMeme(d, forcedId) {
         const m = (forcedId && MEMES.find(function(x) { return x.id === forcedId; })) || pickMeme(lastMeme, Math.random, !!ctx.fair); lastMeme = m.id;
