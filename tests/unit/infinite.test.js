@@ -158,3 +158,19 @@ describe('горячий старт', () => {
         expect(warm).toBeGreaterThan(cold);
     });
 });
+
+import { planStretch as planE, EMPTY_RUN } from '../../src/infinite.js';
+describe('«Е» на пустых прямых', () => {
+    it('редкие дорожки: участков без «Е» длиннее ~1,5 × EMPTY_RUN почти нет (кроме разломов); в яму «Е» не ведут', () => {
+        let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+        let long = 0, total = 0;
+        for (let k = 0; k < 10; k++) {
+            const items = planE(k * 1200 + 70, (k + 1) * 1200, rnd, { slide: 'oil', nextGap: Infinity }).items;
+            const ds = items.filter(i => i.kind === 'echip' && !i.side).map(i => i.d).sort((a, b) => a - b);
+            for (let i = 1; i < ds.length; i++) { total++; if (ds[i] - ds[i - 1] > EMPTY_RUN * 1.6) long++; }
+            const trail = items.filter(i => i.trail), obs = items.filter(i => i.kind === 'obstacle');
+            trail.forEach(t => expect(obs.some(o => o.lane === t.lane && Math.abs(o.d - t.d) < 6)).toBe(false));
+        }
+        expect(long / total).toBeLessThan(0.01);
+    });
+});
