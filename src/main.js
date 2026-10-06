@@ -7431,7 +7431,7 @@ function startGaragePreview(carId) {
                         }
                     }
                 } catch (e) {}
-                try { showTimePenaltyPopup(0, (text || '🎯 Промах!') + (withRamp ? ' Тарань — или прыгай с трамплина ×3' : ' Тарань, пока открыт')); } catch (e) {}
+                /* «Промах! Тарань…» — не нужно: в центре загорается «БЕЙ!» */
                 // иногда на дороге — кувалда (пробивает броню одним тараном)
                 try {
                     if (!bossHammer && bossPickups.length === 0 && Math.random() < 0.35) spawnHammer();
@@ -7605,7 +7605,7 @@ function startGaragePreview(carId) {
                 try {
                     const line = def.shout || def.name || 'С дороги!';
                     // реплика — в карточке (пузырь над головой наезжал на неё)
-                    showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp, 'images/boss_' + String(bossIdx + 1).padStart(2, '0') + '.jpg'), '', 3000);
+                    void line; /* большой карточки больше нет: закрывала дорогу, прочитать не успевали — имя и здоровье в полоске сверху, дальше одно слово «УВЕРНИСЬ!» / «БЕЙ!» (src/boss-hud.js) */
                 } catch (e) {}
                 try {
                     if (window.soundEngine) {
@@ -7615,9 +7615,7 @@ function startGaragePreview(carId) {
                 } catch (e) {}
                 bossShouted = true;
                 // подсказка механики — не реплика босса
-                setTimeout(function() {
-                    try { if (typeof radioSay === 'function') radioSay('📡 Увернись от атаки — после промаха тарань'); } catch (e) {}
-                }, 3200);
+
                 console.log('🐻 БОСС:', def.name, def.animal, wt, style);
             }
 
@@ -9733,7 +9731,7 @@ function startGaragePreview(carId) {
                     const fph = Math.min(bossMaxPhase, phaseForHp(boss.hp, boss.maxHp));
                     if (fph === 2 && !(boss.fightPhase >= 2) && boss.hp > 0) {
                         boss.fightPhase = 2;
-                        try { showBossCard(bossPhaseHtml({ name: boss.name }, 2), 'phase2', 2200); } catch (e) {}
+                        /* фаза 2 — видно по полоске сверху, без карточки поверх дороги */
                         try { const ar = boss.mesh && boss.mesh.userData.armor; if (ar) shedBossArmor(ar.shoulders); } catch (e) {}
                         try { if (window.soundEngine) window.soundEngine.playSfx('boss', 0.8); } catch (e) {}
                     }
@@ -9743,7 +9741,7 @@ function startGaragePreview(carId) {
                         try { const ar = boss.mesh && boss.mesh.userData.armor; if (ar) shedBossArmor([].concat(ar.shoulders, [ar.chest])); } catch (e) {}
                         boss.speed *= 1.12;
                         try {
-                            showBossCard(bossPhaseHtml({ name: boss.name }, 3), 'phase2', 2200);
+                            /* фаза 3 — видно по полоске сверху */
                             // свои копии материалов (общие лежат в кэше) — пульсируют красным
                             const seen = new Map();
                             boss._rageMats = [];
@@ -9998,7 +9996,7 @@ function startGaragePreview(carId) {
                             try { if (window.soundEngine) { window.soundEngine.playSfx('hit', 0.7); } } catch (e) {}
                             if (boss._armorMsgT <= 0) {
                                 boss._armorMsgT = 2.5;
-                                try { showTimePenaltyPopup(0, '🛡 Броня! Увернись от атаки — после промаха он открыт'); } catch (e) {}
+                                /* подсказка — одно слово «УВЕРНИСЬ!» в центре на замахе */
                             }
                         } else {
                         damageBoss(dmg, { heavy: nitroHit || airborneHit, stomp: airborneHit, contact: true });

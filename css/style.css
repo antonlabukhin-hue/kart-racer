@@ -6405,3 +6405,10 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 .fin-hook[data-go] small::after { content: ' →'; font-weight: 900; }
 .fin-hook[data-go]:active { transform: scale(.98); }
 .gf-card.gf-tap { cursor: pointer; } .gf-card.gf-tap:active { transform: scale(.99); }
+
+/* босс: одно слово по центру — «УВЕРНИСЬ!» (замах) или «БЕЙ!» (открыт); компактнее, чтобы не закрывать дорогу */
+#boss-cue b { font-size: clamp(40px, 9vw, 76px) !important; }
+#boss-cue.dodge b { color: #ffb43c !important; -webkit-text-stroke: 3px #4a1a00 !important; text-shadow: 0 0 22px rgba(255,140,40,.85), 0 5px 0 #4a1a00 !important; }
+#boss-cue small { display: none !important; }
+/* пока босс на экране — надписи ниже его полоски, не поверх */
+:root body.race-mode:has(#boss-hud.on) .rt.rt.rt { top: calc(env(safe-area-inset-top, 0px) + 122px) !important; }

@@ -24,7 +24,8 @@ export function bossHudState(boss, maxPhase) {
         maxHp: maxHp,
         phase: phase,
         label: PHASE_LABELS[phase],
-        open: boss.vulnT > 0
+        open: boss.vulnT > 0,
+        dodge: boss.attackState === 'windup' // замах атаки — «УВЕРНИСЬ!»
     };
 }
 
@@ -38,14 +39,17 @@ let _key = null;
 let _cue = null;
 
 /** Крупное «БЕЙ!» по центру, пока босс открыт: появляется в момент открытия, гаснет с окном */
-function renderCue(open) {
-    if (open) {
+/** Одно слово по центру: «УВЕРНИСЬ!» на замахе атаки, «БЕЙ!» — пока босс открыт; иначе ничего */
+export function cueWord(st) { return !st ? null : st.open ? 'БЕЙ!' : st.dodge ? 'УВЕРНИСЬ!' : null; }
+function renderCue(word) {
+    if (word) {
         if (!_cue || !_cue.isConnected) {
             _cue = document.createElement('div');
             _cue.id = 'boss-cue';
-            _cue.innerHTML = '<b>БЕЙ!</b><small>тарань, пока открыт</small>';
+            _cue.innerHTML = '<b></b>';
             document.body.appendChild(_cue);
         }
+        if (_cue.firstChild.textContent !== word) { _cue.firstChild.textContent = word; _cue.classList.toggle('dodge', word !== 'БЕЙ!'); _cue.classList.remove('on'); }
         if (!_cue.classList.contains('on')) { void _cue.offsetWidth; _cue.classList.add('on'); }
     } else if (_cue) {
         _cue.classList.remove('on');
@@ -65,7 +69,7 @@ function ensureEl() {
 /** Обновить полоску (вызывать каждый кадр); st из bossHudState */
 export function renderBossHud(st) {
     const key = bossHudKey(st);
-    renderCue(!!(st && st.open));
+    renderCue(cueWord(st));
     if (key === _key && (!st || (_el && _el.isConnected))) return;
     if (!st) {
         if (_el) _el.classList.remove('on');
