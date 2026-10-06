@@ -44,3 +44,13 @@ describe('«Заезд дня»', () => {
         expect(placeOf(top, 'Тестер')).toBe(2);
     });
 });
+
+describe('«Заезд дня» — одна попытка', () => {
+    it('«задание дня» в profile.daily больше не затирает отметку о попытке', () => {
+        const p = {};
+        startDaily(p, '2026-10-06');
+        p.daily = { date: '2026-10-06', done: false, contractId: 'x' }; // так пишет getTodayContract в src/main.js
+        expect(canPlayDaily(p, '2026-10-06')).toBe(false);
+        expect(canPlayDaily(p, '2026-10-07')).toBe(true);
+    });
+});

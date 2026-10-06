@@ -2,7 +2,7 @@
  * «Заезд дня» бесконечной трассы: одна попытка в день, у всех одна и та же трасса (сид дня) и одно условие дня,
  * своя дневная таблица (src/daily-board.js). Условия меняются по кругу: «Одна авария», «Ночь и гололёд», «Час пик»…
  * Без бустов, «горячего старта» и «Второго шанса» — у всех равные условия.
- * profile.daily = { day, started, dist, score }. Логика — чистая (с тестами).
+ * profile.dailyRun = { day, started, dist, score }. Логика — чистая (с тестами).
  */
 import { themeIndex } from './infinite.js';
 export const DAILY_RULES = [
@@ -32,17 +32,17 @@ export function ruleOf(day) {
 
 /** Состояние игрока сегодня: { day, started, dist, score } */
 export function dailyState(profile, day) {
-    const d = profile && profile.daily;
+    const d = profile && profile.dailyRun; // не profile.daily: его занимает «задание дня» (getTodayContract) и затирало отметку о попытке
     return d && d.day === day ? d : { day: day, started: false, dist: 0, score: 0 };
 }
 export function canPlayDaily(profile, day) { return !dailyState(profile, day).started; }
 /** Попытка началась (засчитывается сразу: вышел посреди — попытка потрачена) */
-export function startDaily(profile, day) { profile.daily = { day: day, started: true, dist: 0, score: 0 }; }
+export function startDaily(profile, day) { profile.dailyRun = { day: day, started: true, dist: 0, score: 0 }; }
 /** Итог попытки */
 export function finishDaily(profile, day, dist, score) {
     const d = dailyState(profile, day);
-    profile.daily = { day: day, started: true, dist: Math.max(d.dist || 0, Math.round(dist || 0)), score: Math.max(d.score || 0, Math.round(score || 0)) };
-    return profile.daily;
+    profile.dailyRun = { day: day, started: true, dist: Math.max(d.dist || 0, Math.round(dist || 0)), score: Math.max(d.score || 0, Math.round(score || 0)) };
+    return profile.dailyRun;
 }
 
 /** Сид для обычного заезда (вызов другу — тот же сид у друга) */
