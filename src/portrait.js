@@ -12,8 +12,9 @@ const rad = Math.PI / 180;
 /** Камера вертикально: ниже крыши тоннеля (4,6 м), смотрит вперёд — машина у нижнего края, как в горизонтальном режиме */
 export const PORTRAIT_RIG = { dist: 5.2, height: 3.0, lookY: 1.2, lookZoff: -15 }; // машина у низа экрана (~¾ высоты), как боком
 /** Вертикально: камера почти не отстаёт на скорости (боком на телефоне 0.3) и угол на нитро растёт втрое меньше — машина держится у низа экрана */
-export const PORTRAIT_FOLLOW = 1;
-export const PORTRAIT_FOV_K = 0.35;
+export const PORTRAIT_FOLLOW = 0.4; // (не используется для вида сзади вертикально — там PORTRAIT_BOOST_LAG)
+export const PORTRAIT_FOV_K = 0.6;
+export const PORTRAIT_BOOST_LAG = 14; // на скорости выше обычной (нитро, «В УДАРЕ») камера отстаёт — машина немного уезжает вперёд
 
 /** Вертикальный угол камеры: экран боком — как был (base), вертикально — из горизонтального PORTRAIT_HFOV */
 export function fovFor(aspect, base) {
