@@ -13,7 +13,9 @@ const btn = function(pad, i) {
 
 /** Состояние одного геймпада в «клавишах» игры */
 export function readPad(pad) {
-    if (!pad || !pad.connected) return null;
+    // только настоящие геймпады (стандартная раскладка): на части телефонов браузер выдаёт за «геймпад» сканер отпечатка
+    // или кнопки корпуса — их случайные «нажатия» сами переключали камеру и подруливали
+    if (!pad || !pad.connected || pad.mapping !== 'standard') return null;
     const ax = (pad.axes && pad.axes[0]) || 0;
     const ay = (pad.axes && pad.axes[1]) || 0;
     const left = btn(pad, 14) || ax < -DEADZONE;

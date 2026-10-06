@@ -5151,9 +5151,9 @@ function startGaragePreview(carId) {
             window.__renderOpt = {
                 quality: quality,
                 isMob: !!isMob,
-                targetFps: _isLow ? 30 : 60,
+                targetFps: _isLow ? 30 : 60, targetFps0: _isLow ? 30 : 60,
                 dpr: renderer.getPixelRatio(),
-                dprMin: _isLow ? 0.7 : 0.85,
+                dprMin: _isLow ? 0.75 : (isMob ? 1.0 : 0.85), // на телефоне ниже 1 — картинка «мылится» заметно
                 dprMax: Math.min(renderer.getPixelRatio(), _isLow ? 1.0 : (_isMed ? 1.15 : 1.35)),
                 frames: 0,
                 fpsAcc: 0,
@@ -10550,6 +10550,9 @@ function startGaragePreview(carId) {
                             const fps = ro.frames / ro.fpsAcc;
                             ro.frames = 0;
                             ro.fpsAcc = 0;
+                            // телефон в энергосбережении держит ровно 30 к/с — это не «тормоза»: цель — по лучшему FPS за заезд
+                            ro.peak = Math.max(ro.peak || 0, fps); ro.samples = (ro.samples || 0) + 1;
+                            if (ro.samples >= 3) ro.targetFps = Math.min(ro.targetFps0 || ro.targetFps, Math.max(30, ro.peak * 0.97));
                             // ниже цели → снижаем DPR; стабильно высоко 5 с подряд → чуть поднимаем. Каждое изменение —
                             // setSize (новый буфер кадра, сам по себе рывок), поэтому не чаще раза в 4 с и без «качелей»
                             ro.good = fps > ro.targetFps * 0.95 ? (ro.good || 0) + 1 : 0;
@@ -11570,8 +11573,12 @@ function showLoreScreen(quality, difficulty) {
         (function wireMobileCamPause() {
             // Обработчики на #btnCam / #btnPauseMobile через делегирование на document —
             // работает и после пересоздания DOM, без setInterval-опроса каждые 2 секунды.
+            let camAt = 0, touchFrom = null;
+            document.addEventListener('touchstart', function(e) { touchFrom = e.target; }, { passive: true, capture: true });
             function handleCam(e) {
                 if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (err) {} }
+                if (e && e.type === 'touchend' && !hit(touchFrom, 'btnCam')) return; // свайп закончился на кнопке — не нажатие
+                const now = Date.now(); if (now - camAt < 400) return; camAt = now; // касание + click — одно переключение
                 if (typeof window.__cycleCamera === 'function') window.__cycleCamera();
             }
             function handlePause(e) {

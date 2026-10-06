@@ -6,7 +6,7 @@ async function fakeGamepad(page) {
     await page.addInitScript(() => {
         window.__fakePad = { buttons: {}, axes: [0, 0] };
         navigator.getGamepads = () => [{
-            connected: true,
+            connected: true, mapping: 'standard',
             axes: window.__fakePad.axes,
             buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: !!window.__fakePad.buttons[i], value: window.__fakePad.buttons[i] ? 1 : 0 }))
         }];

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readPad, readPads, pressedEdges, nextFocusIndex } from '../../src/gamepad.js';
 
 const pad = (pressed = [], axes = [0, 0], connected = true) => ({
-    connected,
+    connected, mapping: 'standard',
     axes,
     buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: pressed.includes(i), value: pressed.includes(i) ? 1 : 0 }))
 });
@@ -34,5 +34,12 @@ describe('геймпад', () => {
         expect(nextFocusIndex(3, -1, -1)).toBe(2);
         expect(nextFocusIndex(3, 2, 1)).toBe(0);
         expect(nextFocusIndex(0, 0, 1)).toBe(-1);
+    });
+});
+
+describe('не геймпад', () => {
+    it('устройства без стандартной раскладки (сканер отпечатка, кнопки корпуса телефона) — игнорируются', async () => {
+        const { readPad } = await import('../../src/gamepad.js');
+        expect(readPad({ connected: true, mapping: '', axes: [0.9, 0], buttons: [{ pressed: true }, {}, {}, { pressed: true }] })).toBe(null);
     });
 });
