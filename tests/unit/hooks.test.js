@@ -26,10 +26,11 @@ describe('тест-драйвы за вехи', () => {
     });
     it('4000 м, потом +1000 к рекорду, и дальше каждые +1000', () => {
         const p = prof();
-        expect(checkTestDrives(p, S({ infBest: 4200 }), CAR_PRESETS)[0].car).toBe('avenger');
-        expect(checkTestDrives(p, S({ infBest: 5100 }), CAR_PRESETS)).toEqual([]);
-        expect(checkTestDrives(p, S({ infBest: 5200 }), CAR_PRESETS)[0].car).toBe('timecar');
-        const more = checkTestDrives(p, S({ infBest: 6300 }), CAR_PRESETS);
+        const D = 86400000; // билеты — не чаще раза в 3 дня
+        expect(checkTestDrives(p, S({ infBest: 4200 }), CAR_PRESETS, D)[0].car).toBe('avenger');
+        expect(checkTestDrives(p, S({ infBest: 5100 }), CAR_PRESETS, 5 * D)).toEqual([]);
+        expect(checkTestDrives(p, S({ infBest: 5200 }), CAR_PRESETS, 5 * D)[0].car).toBe('timecar');
+        const more = checkTestDrives(p, S({ infBest: 6300 }), CAR_PRESETS, 9 * D);
         expect(more.length).toBe(1);
         expect(p.unlockedCars).not.toContain(more[0].car);
     });
@@ -94,5 +95,22 @@ describe('окно «Привет»', () => {
         const p = prof();
         markSeen(p, 'gift-cars-v1');
         expect(unseenNews(p).map(function(x) { return x.id; })).not.toContain('gift-cars-v1');
+    });
+});
+
+describe('тест-драйвы — раз в 3 дня и без повторов', () => {
+    it('вторая веха в тот же день ждёт очереди и выдаётся через 3 дня; машины в билетах и лестнице разные', async () => {
+        const { checkTestDrives, ladder, tickets, TICKET_EVERY_MS } = await import('../../src/test-drive.js');
+        const p = { unlockedCars: ['cheburashka', 'raketa', 'avenger'], season: { chips: 0 } }; // «Ракета» и «Мститель» уже есть
+        const t0 = 1e12;
+        expect(checkTestDrives(p, { chapters: 2, beastWaves: 3, infBest: 0 }, CAR_PRESETS, t0).length).toBe(1);
+        expect(checkTestDrives(p, { chapters: 2, beastWaves: 3, infBest: 0 }, CAR_PRESETS, t0 + 1000)).toEqual([]);
+        expect(checkTestDrives(p, { chapters: 2, beastWaves: 3, infBest: 0 }, CAR_PRESETS, t0 + TICKET_EVERY_MS).length).toBe(1);
+        const cars = tickets(p).map(k => k.car);
+        expect(new Set(cars).size).toBe(cars.length);
+        const lad = ladder(p, { chapters: 2, beastWaves: 3, infBest: 0 }, CAR_PRESETS).filter(s => !s.done).map(s => s.car);
+        lad.forEach(c => expect(cars).not.toContain(c));
+        expect(new Set(lad).size).toBe(lad.length);
+        lad.forEach(c => expect(p.unlockedCars).not.toContain(c));
     });
 });

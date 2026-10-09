@@ -32,7 +32,7 @@ export function giftsBadge(profile, o) {
 export function giftsHtml(o) {
     const p = o.profile, waits = [], prog = [];
     const card = function(icon, title, text, act, btn, extra, cls) {
-        return '<div class="gf-card' + (cls ? ' ' + cls : '') + '"><i>' + icon + '</i><div><b>' + esc(title) + '</b>' + (text ? '<span>' + esc(text) + '</span>' : '') + (extra || '') + '</div>'
+        return '<div class="gf-card' + (cls ? ' ' + cls : '') + (act ? ' gf-tap' : '') + '"' + (act ? ' data-card-act="' + act + '"' : '') + '><i>' + icon + '</i><div><b>' + esc(title) + '</b>' + (text ? '<span>' + esc(text) + '</span>' : '') + (extra || '') + '</div>'
             + (act ? '<button type="button" class="gf-act" data-act="' + act + '">' + esc(btn) + '</button>' : '') + '</div>';
     };
     // ждут тебя
@@ -45,7 +45,7 @@ export function giftsHtml(o) {
     const w = weekState(p, weekKey(o.now ? new Date(o.now) : new Date()), o.presets, o.isGift);
     if (w.car) prog.push(w.done ? card('🚗', 'Машина недели «' + o.names(w.car) + '» — твоя!', 'Новая — в понедельник', 'week', 'Смотреть')
         : card('🚗', 'Машина недели «' + o.names(w.car) + '»', m(w.dist) + ' / ' + m(w.goal || WEEK_GOAL) + ' м до воскресенья · навсегда, без «Е»', 'week', 'Смотреть', bar(w.dist, w.goal || WEEK_GOAL)));
-    const next = ladder(p, o.stats).filter(function(s) { return !s.done && !s.locked && s.prog; })
+    const next = ladder(p, o.stats, o.presets).filter(function(s) { return !s.done && !s.locked && s.prog; })
         .sort(function(a, b) { return b.prog[0] / b.prog[1] - a.prog[0] / a.prog[1]; })[0];
     prog.push(card('🎟', 'Тест-драйвы', next ? next.icon + ' ' + next.text + ' — «' + o.names(next.car) + '» на 1 заезд' : 'Каждые +1 000 м к рекорду — новая машина на 1 заезд', 'td', 'Все задания', next ? bar(next.prog[0], next.prog[1]) : ''));
     const paints = SECRET_PAINTS.map(function(sp) {
@@ -78,6 +78,10 @@ export function renderGifts(el, o) {
     el.innerHTML = giftsHtml(o);
     NEWS.forEach(function(x) { markSeen(o.profile, x.id); });
     if (o.save) o.save();
+    // вся карточка нажимается, не только кнопка справа (нажимали на светящуюся строку — ничего не происходило)
+    el.querySelectorAll('[data-card-act]').forEach(function(c) {
+        c.addEventListener('click', function(ev) { if (ev.target.closest('[data-act]')) return; const btn = c.querySelector('[data-act]'); if (btn) btn.click(); });
+    });
     el.querySelectorAll('[data-act]').forEach(function(b) {
         b.onclick = function() {
             const a = b.dataset.act;

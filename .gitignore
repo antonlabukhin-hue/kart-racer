@@ -4,9 +4,11 @@ dist/
 test-results/
 playwright-report/
 dist-test/
-release/
+desktop/release/
 dist-art
 dist-new
 dist-yandex
 game-yandex.zip
 dist-portrait
+.claude/tmp/
+.claude/settings.local.json

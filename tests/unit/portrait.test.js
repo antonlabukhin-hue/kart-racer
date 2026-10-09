@@ -11,10 +11,10 @@ describe('заезд вертикально', () => {
         const h = 2 * Math.atan(Math.tan(v * Math.PI / 360) * 390 / 844) * 180 / Math.PI;
         expect(h).toBeGreaterThanOrEqual(Math.min(PORTRAIT_HFOV, 40) - 0.01);
     });
-    it('камера вертикально — выше и смотрит круче вниз, чем боком (как в Subway Surfers)', () => {
+    it('камера вертикально — выше, чем боком, машина у низа экрана, всегда ниже крыши тоннеля (4,6 м)', () => {
         const p = chaseRig('portrait', 0), m = chaseRig('mobile', 0);
-        const pitch = r => Math.atan2(r.height - r.lookY, r.dist - r.lookZoff);
         expect(p.height).toBeGreaterThan(m.height);
-        expect(pitch(p)).toBeGreaterThan(pitch(m) * 2);
+        expect(PORTRAIT_RIG).toEqual({ dist: 5.2, height: 3.0, lookY: 1.2, lookZoff: -15 });
+        for (const k of [0, 0.5, 1]) expect(chaseRig('portrait', k).height + 0.6).toBeLessThan(4.6 - 0.3);
     });
 });

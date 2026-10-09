@@ -29,11 +29,12 @@ test('босс в броне: таран ранит только после пр
     await page.evaluate(() => window.__raceDebug.openBoss());
     await expect(page.locator('#boss-hud')).toHaveClass(/open/);
     await expect(page.locator('#boss-cue')).toHaveClass(/on/);
+    await expect(page.locator('#boss-cue')).toHaveText('БЕЙ!'); // одно слово, без пояснений
     expect(await ram(page)).toBeLessThan(hp0);    // открыт — удар прошёл (на подобранном нитро — двойной)
     expect(await page.evaluate(() => window.__raceDebug.boss.vulnT)).toBeLessThanOrEqual(0); // окно закрылось
     const hp1 = await page.evaluate(() => window.__raceDebug.boss.hp);
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp1);
-    await expect(page.locator('#boss-cue')).not.toHaveClass(/on/); // окно закрыто — «БЕЙ!» погас
+    await expect(page.locator('#boss-cue')).not.toHaveText('БЕЙ!'); // окно закрыто — «БЕЙ!» погас (на замахе — «УВЕРНИСЬ!»)
     expect(problems).toEqual([]);
 });
 

@@ -26,7 +26,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { campFinishHtml } from './ui/finish-ui.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { rollChestLoot, lootText } from './chest-loot.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml, infFinishHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerLevelsFor, powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet, MEET_KEY } from './first-meet.js'; import { createSwipe, swipeDir } from './swipe-control.js'; import { markVisit, newsReady, extrasReady, openAll } from './visits.js'; import { installRaceToasts } from './ui/race-toasts.js'; import { fovFor, chaseRig } from './portrait.js'; import { isFirstRun, firstRunSafe, stageFirstRun } from './first-run.js'; import { nextCarGoal, carGoalHtml } from './car-goal.js'; import { buzz } from './haptics.js'; import { renderArmorBar } from './ui/armor-bar.js'; import { takeRotateHint, rotateHintText, rotatedOnce } from './rotate-hint.js'; import * as Memes from './memes.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf, weekKey } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart, THEMES } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { diagOn, installDiag, setDiagSource } from './ui/diag.js'; import { trafficPlan, laneBlocked, freeZ } from './traffic-avoid.js'; import { wireTrophyTabs } from './ui/trophy-tabs.js'; import { checkComeback } from './comeback.js'; import { checkNamePlate, namePlateOn, applyNamePlate } from './name-plate.js'; import { grantFriendChest } from './friend-chest.js'; import { WEEK_GOAL } from './week-car.js'; import { weekRaceExtra, friendExtra, moreForYou, helloGifts } from './ui/hooks-ui.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); installRaceToasts(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); if (diagOn(location.search)) installDiag({ sound: function() { return window.soundEngine; } }); /* ?diag=1 — счётчики памяти и звука на телефоне (src/ui/diag.js) */ // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerLevelsFor, powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet, MEET_KEY } from './first-meet.js'; import { createSwipe, swipeDir } from './swipe-control.js'; import { markVisit, newsReady, extrasReady, openAll } from './visits.js'; import { installRaceToasts } from './ui/race-toasts.js'; import { fovFor, chaseRig, PORTRAIT_FOLLOW, PORTRAIT_FOV_K, PORTRAIT_BOOST_LAG } from './portrait.js'; import { isFirstRun, firstRunSafe, stageFirstRun } from './first-run.js'; import { nextCarGoal, carGoalHtml } from './car-goal.js'; import { buzz } from './haptics.js'; import { renderArmorBar } from './ui/armor-bar.js'; import { takeRotateHint, rotateHintText, rotatedOnce } from './rotate-hint.js'; import * as Memes from './memes.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf, weekKey } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart, THEMES } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { diagOn, installDiag, setDiagSource } from './ui/diag.js'; import { trafficPlan, laneBlocked, freeZ } from './traffic-avoid.js'; import { wireTrophyTabs } from './ui/trophy-tabs.js'; import { checkComeback } from './comeback.js'; import { checkNamePlate, namePlateOn, applyNamePlate } from './name-plate.js'; import { grantFriendChest } from './friend-chest.js'; import { WEEK_GOAL } from './week-car.js'; import { weekRaceExtra, friendExtra, moreForYou, helloGifts } from './ui/hooks-ui.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); installRaceToasts(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); if (diagOn(location.search)) installDiag({ sound: function() { return window.soundEngine; } }); /* ?diag=1 — счётчики памяти и звука на телефоне (src/ui/diag.js) */ // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI, setSeasonMode } from './ui/season-screens.js'; import { renderGifts, giftsBadge } from './ui/gifts-screen.js'; import { showChest } from './ui/main-menu.js'; import { unclaimedRewards } from './ui/menu-badges.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -644,7 +644,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         const beast = createBeastHour({ player: function() { return currentPlayer; }, save: function() { saveCurrentPlayer(); },
             startRace: function(q, df, car, map, w) { initGame(q, df, car, map, w); }, setMode: function(m) { pendingMode = m; },
             clearCampaign: function() { clearCampaignGlobals(); }, hideMenu: function() { hideMainMenu(); }, online: function() { return onlineBoard(); },
-            quality: function() { return window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium'; } });
+            quality: function() { return window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium'; },
+            toMenu: function() { window.__endless = null; if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false); } });
         function isEndlessMode() { return beast.active(typeof pendingMode !== 'undefined' ? pendingMode : null); }
         /** seed не задан — «Звериный час дня» (сид общий для всех в этот день) */
         function startEndlessRun(seed) { beast.start(seed); }
@@ -1372,11 +1373,11 @@ function createProfile(name) { return Profile.createProfile(name); }
                 if (mm && mm.style.display !== 'none' && mm.getClientRects().length) showNewCarsPop({ tag: NEW_CARS_TAG, names: NEW_CARS.map(function(id) { return (CAR_PRESETS[id] || {}).name || id; }), onOpen: function() { shopBackToGarage = false; openShopScreen(false); } });
             }, 700);
             renderMenuExtras({ word: wordState(currentPlayer, dayKey(new Date())), list: loadBoard(), now: Date.now(), me: currentPlayer.name, fetchOnline: onlineBoard() ? fetchTop : null });
-            menuGiftCars(); renderTdButton(currentPlayer, hookStats(), carName, openTd); renderDailyCard({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onOpen: function() { showDailyPop({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onGo: function() { startInfiniteRun(true, { daily: true }); } }); } }); // «Заезд дня» (src/ui/daily-pop.js)
+            menuGiftCars(); renderTdButton(currentPlayer, hookStats(), carName, openTd, CAR_PRESETS); renderDailyCard({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onOpen: function() { showDailyPop({ profile: currentPlayer, day: dayKey(new Date()), online: onlineBoard(), onGo: function() { startInfiniteRun(true, { daily: true }); } }); } }); // «Заезд дня» (src/ui/daily-pop.js)
         }
         /** Машины в подарок (src/gift-cars.js): проверить серию и прошлую неделю; плашки — по очереди, когда меню свободно */
         let giftPopWait = null;
-        function carName(id) { return (CAR_PRESETS[id] || {}).name || id; } function hookStats() { return { chapters: ((currentPlayer.campaign || {}).completed || []).length, beastWaves: currentPlayer.beastWaves || 0, infBest: (currentPlayer.infinite || {}).best || 0 }; } function openTd() { showTdPop({ profile: currentPlayer, stats: hookStats(), names: carName, onGo: tdRide }); } function tdRide(car) { if (!useTicket(currentPlayer, car)) return; saveCurrentPlayer(); trackEvent('test_drive', { car: car, ticket: true }); pendingTestDrive = tdOffer(car, CAR_PRESETS); pendingBoosts = []; hideMainMenu(); startInfiniteRun(true); } /* тест-драйв по билету — один заезд (src/test-drive.js) */ function forYouRows() { const p = currentPlayer, rows = [], t = dayKey(new Date()); if (canClaimChest(p, t)) rows.push({ icon: '📦', text: 'Сундук дня ждёт — серия ' + ((p.streak && p.streak.count) || 1) + ' дн.', act: 'chest' }); const tk = ((p.testDrives && p.testDrives.tickets) || []).filter(function(k) { return (p.unlockedCars || []).indexOf(k.car) < 0; }); if (tk.length) rows.push({ icon: '🎟', text: 'Билет на тест-драйв «' + carName(tk[0].car) + '»', act: 'td' }); else rows.push({ icon: '🎟', text: 'Задания на тест-драйв — машины и мотоциклы на 1 заезд', act: 'td' }); const st = secretNextText(p, t); if (st) rows.push({ icon: '🔒', text: st, act: 'garage' }); const dr = ruleOf(t); if (dr) rows.push({ icon: '📅', text: 'Заезд дня: ' + dr.icon + ' ' + dr.name + ' — одна попытка, у всех одна трасса', act: 'daily' }); return rows; } function helloAct(a) { if (a === 'gifts') openGiftsScreen(); else if (a === 'td') openTd(); else if (a === 'chest') { const sb = document.getElementById('mm-streak'); if (sb) sb.click(); } else if (a === 'garage') { const g = document.querySelector('.mm-tab[data-menu="garage"]'); if (g) g.click(); } else if (a === 'week') { const w = currentPlayer.weekCar; shopBackToGarage = false; hideMainMenu(); openShopScreen(false, w && w.car); } else if (a === 'daily') { const d = document.getElementById('mm-daily'); if (d) d.click(); } else if (a === 'gift') { shopBackToGarage = false; hideMainMenu(); openShopScreen(false, 'trike'); } } function menuGiftCars() {
+        function carName(id) { return (CAR_PRESETS[id] || {}).name || id; } function hookStats() { return { chapters: ((currentPlayer.campaign || {}).completed || []).length, beastWaves: currentPlayer.beastWaves || 0, infBest: (currentPlayer.infinite || {}).best || 0 }; } function openTd() { showTdPop({ profile: currentPlayer, stats: hookStats(), names: carName, presets: CAR_PRESETS, onGo: tdRide }); } function tdRide(car) { if (!useTicket(currentPlayer, car)) return; saveCurrentPlayer(); trackEvent('test_drive', { car: car, ticket: true }); pendingTestDrive = tdOffer(car, CAR_PRESETS); pendingBoosts = []; hideMainMenu(); startInfiniteRun(true); } /* тест-драйв по билету — один заезд (src/test-drive.js) */ function forYouRows() { const p = currentPlayer, rows = [], t = dayKey(new Date()); if (canClaimChest(p, t)) rows.push({ icon: '📦', text: 'Сундук дня ждёт — серия ' + ((p.streak && p.streak.count) || 1) + ' дн.', act: 'chest' }); const tk = ((p.testDrives && p.testDrives.tickets) || []).filter(function(k) { return (p.unlockedCars || []).indexOf(k.car) < 0; }); if (tk.length) rows.push({ icon: '🎟', text: 'Билет на тест-драйв «' + carName(tk[0].car) + '»', act: 'td' }); else rows.push({ icon: '🎟', text: 'Задания на тест-драйв — машины и мотоциклы на 1 заезд', act: 'td' }); const st = secretNextText(p, t); if (st) rows.push({ icon: '🔒', text: st, act: 'garage' }); const dr = ruleOf(t); if (dr) rows.push({ icon: '📅', text: 'Заезд дня: ' + dr.icon + ' ' + dr.name + ' — одна попытка, у всех одна трасса', act: 'daily' }); return rows; } function helloAct(a) { if (a === 'gifts') openGiftsScreen(); else if (a === 'td') openTd(); else if (a === 'chest') { const sb = document.getElementById('mm-streak'); if (sb) sb.click(); } else if (a === 'garage') { const g = document.querySelector('.mm-tab[data-menu="garage"]'); if (g) g.click(); } else if (a === 'week') { const w = currentPlayer.weekCar; shopBackToGarage = false; hideMainMenu(); openShopScreen(false, w && w.car); } else if (a === 'daily') { const d = document.getElementById('mm-daily'); if (d) d.click(); } else if (a === 'gift') { shopBackToGarage = false; hideMainMenu(); openShopScreen(false, 'trike'); } } function menuGiftCars() {
             if (!currentPlayer || giftPopWait) return;
             if (checkGiftCars(currentPlayer, { now: Date.now(), board: loadBoard() }).length) saveCurrentPlayer();
             const nameOf = function(id) { return (CAR_PRESETS[id] || {}).name || id; };
@@ -4304,7 +4305,7 @@ function startGaragePreview(carId) {
                 // счётчик железных «Е» — крупно, в любом заезде
                 document.querySelectorAll('#e-counter').forEach(function(n) { n.remove(); });
                 const ec = document.createElement('div');
-                ec.id = 'e-counter'; ec.innerHTML = '<i>Е</i><b>0</b>';
+                ec.id = 'e-counter'; ec.innerHTML = '<i>Е</i><b>0</b><em class="ec-m"></em>'; /* em — метры: вертикально «Е» и метры в одной плашке */
                 document.body.appendChild(ec);
                 // спидометр-циферблат: дуга 270°, стрелка, цифры, передача и нитро
                 document.querySelectorAll('#hud-speedo').forEach(function(n) { n.remove(); });
@@ -4457,6 +4458,7 @@ function startGaragePreview(carId) {
                 try {
                     const eb = document.querySelector('#e-counter b'), ev = String(stats.eChips || 0);
                     if (eb && eb.textContent !== ev) { eb.textContent = ev; const ecEl = eb.parentNode; ecEl.classList.remove('pop'); void ecEl.offsetWidth; ecEl.classList.add('pop'); }
+                    const ecm = document.querySelector('#e-counter .ec-m'), msrc = document.getElementById('infDisplay') || document.getElementById('metersDisplay'); if (ecm && msrc && ecm.textContent !== msrc.textContent) ecm.textContent = msrc.textContent;
                 } catch (e) {}
                 if (weatherEl) {
                     let wtxt = '☀ ДЕНЬ', wcol = '#88ccff';
@@ -4783,7 +4785,7 @@ function startGaragePreview(carId) {
                 }
                 bindFinishBtn('finish-restart-btn', goRestart); bindFinishKeys(screen); // Enter — главная кнопка, R — «Повторить»
                 bindFinishBtn('finish-menu-btn', goMenu);
-                bindFinishBtn('finish-buy-car', function() { const td = testDrive; if (!td) return; const r = buyCarOfDay(currentPlayer, td.car, td.price); if (r.ok) { saveCurrentPlayer(); testDrive = null; trackEvent('buy', { item: 'car', id: td.car, price: r.cost, day: true }); try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.8); } catch (e) {} const b = document.getElementById('finish-buy-car'); if (b) { b.disabled = true; b.textContent = '✅ «' + ((CAR_PRESETS[td.car] || {}).name || td.car) + '» — твоя!'; } } else Notify.warn('Не хватает «Е»', 'Нужно ' + r.cost + ' Е — машина дня со скидкой до полуночи'); }); bindFinishBtn('finish-garage-btn', goGarage); bindFinishBtn('finish-gift-btn', function(ev) { const gb = document.getElementById('finish-gift-btn'); try { setPendingGift(JSON.parse(gb.dataset.gift)); } catch (e) {} goGarage(ev); });
+                bindFinishBtn('finish-buy-car', function() { const td = testDrive; if (!td) return; const r = buyCarOfDay(currentPlayer, td.car, td.price); if (r.ok) { saveCurrentPlayer(); testDrive = null; trackEvent('buy', { item: 'car', id: td.car, price: r.cost, day: true }); try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.8); } catch (e) {} const b = document.getElementById('finish-buy-car'); if (b) { b.disabled = true; b.textContent = '✅ «' + ((CAR_PRESETS[td.car] || {}).name || td.car) + '» — твоя!'; } } else Notify.warn('Не хватает «Е»', 'Нужно ' + r.cost + ' Е — машина дня со скидкой до полуночи'); }); bindFinishBtn('finish-garage-btn', goGarage); /* плашки «Секретная краска» и «Тест-драйв» — нажимаются: краска — в гараж на «Тюнинг», билет — в меню к «Тест-драйву» */ screen.querySelectorAll('.fin-hook[data-go]').forEach(function(el) { const go = function(ev) { if (ev && ev.type === 'touchend' && tapMoved(ev)) return; if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} } if (el.dataset.go === 'paint') { goGarage(); setTimeout(function() { const pt = document.querySelector('.garage-tab[data-gtab="parts"]'); if (pt) pt.click(); }, 350); } else { goMenu(); setTimeout(function() { try { openTd(); } catch (e) {} }, 350); } }; el.onclick = go; el.addEventListener('touchend', go, { passive: false }); }); bindFinishBtn('finish-gift-btn', function(ev) { const gb = document.getElementById('finish-gift-btn'); try { setPendingGift(JSON.parse(gb.dataset.gift)); } catch (e) {} goGarage(ev); });
                 // «Вызвать друга»: ссылка с сидом и счётом — через «Поделиться» телефона или в буфер обмена
                 bindFinishBtn('finish-challenge-btn', function() {
                     const ch = INF && infRunOpts ? { url: challengeUrl(location.origin + location.pathname, { seed: infRunOpts.seed, score: infWorld ? infWorld.dist : 0, name: currentPlayer.name, mode: 'inf' }), text: 'Побей мой заезд: ' + Math.round(infWorld ? infWorld.dist : 0) + ' м по той же трассе!' } : beast.challenge(location.origin + location.pathname);
@@ -5151,9 +5153,9 @@ function startGaragePreview(carId) {
             window.__renderOpt = {
                 quality: quality,
                 isMob: !!isMob,
-                targetFps: _isLow ? 30 : 60,
+                targetFps: _isLow ? 30 : 60, targetFps0: _isLow ? 30 : 60,
                 dpr: renderer.getPixelRatio(),
-                dprMin: _isLow ? 0.7 : 0.85,
+                dprMin: _isLow ? 0.75 : (isMob ? 1.0 : 0.85), // на телефоне ниже 1 — картинка «мылится» заметно
                 dprMax: Math.min(renderer.getPixelRatio(), _isLow ? 1.0 : (_isMed ? 1.15 : 1.35)),
                 frames: 0,
                 fpsAcc: 0,
@@ -7431,7 +7433,7 @@ function startGaragePreview(carId) {
                         }
                     }
                 } catch (e) {}
-                try { showTimePenaltyPopup(0, (text || '🎯 Промах!') + (withRamp ? ' Тарань — или прыгай с трамплина ×3' : ' Тарань, пока открыт')); } catch (e) {}
+                /* «Промах! Тарань…» — не нужно: в центре загорается «БЕЙ!» */
                 // иногда на дороге — кувалда (пробивает броню одним тараном)
                 try {
                     if (!bossHammer && bossPickups.length === 0 && Math.random() < 0.35) spawnHammer();
@@ -7605,7 +7607,7 @@ function startGaragePreview(carId) {
                 try {
                     const line = def.shout || def.name || 'С дороги!';
                     // реплика — в карточке (пузырь над головой наезжал на неё)
-                    showBossCard(bossIntroHtml(def, window.__campaignTrackId ? bossIdx + 1 : 0, chapterHp, 'images/boss_' + String(bossIdx + 1).padStart(2, '0') + '.jpg'), '', 3000);
+                    void line; /* большой карточки больше нет: закрывала дорогу, прочитать не успевали — имя и здоровье в полоске сверху, дальше одно слово «УВЕРНИСЬ!» / «БЕЙ!» (src/boss-hud.js) */
                 } catch (e) {}
                 try {
                     if (window.soundEngine) {
@@ -7615,9 +7617,7 @@ function startGaragePreview(carId) {
                 } catch (e) {}
                 bossShouted = true;
                 // подсказка механики — не реплика босса
-                setTimeout(function() {
-                    try { if (typeof radioSay === 'function') radioSay('📡 Увернись от атаки — после промаха тарань'); } catch (e) {}
-                }, 3200);
+
                 console.log('🐻 БОСС:', def.name, def.animal, wt, style);
             }
 
@@ -8372,9 +8372,9 @@ function startGaragePreview(carId) {
                         }
                     } catch (e) {}
                 }
-                const spFov = INF ? speedFov(speed / MAX_SPEED, nitroTimer > 0) : 0; /* бесконечная: на скорости камера шире (src/juice.js) */ if (fovPunch > 0) {
+                const spFov = (INF ? speedFov(speed / MAX_SPEED, nitroTimer > 0) : 0) * (camera.aspect < 1 ? PORTRAIT_FOV_K : 1); /* бесконечная: на скорости камера шире (src/juice.js) */ if (fovPunch > 0) {
                     fovPunch = Math.max(0, fovPunch - deltaTime * 12);
-                    camera.fov = baseFov() + spFov + fovPunch;
+                    camera.fov = baseFov() + spFov + fovPunch * (camera.aspect < 1 ? PORTRAIT_FOV_K : 1);
                     camera.updateProjectionMatrix();
                 } else if (Math.abs(camera.fov - baseFov() - spFov) > 0.1) {
                     camera.fov += (baseFov() + spFov - camera.fov) * 0.1;
@@ -8446,9 +8446,12 @@ function startGaragePreview(carId) {
 
                 const onOil = (typeof oilSlideTimer !== 'undefined' && oilSlideTimer > 0);
                 const steerMul = onOil ? (0.35 * (typeof OIL_GRIP !== 'undefined' ? OIL_GRIP : 1)) : 1.0;
+                const swStep = swipeOn() ? swipeCtl.step(xPos, deltaTime) : null; // свайп — машину ведём прямо в центр полосы (src/swipe-control.js)
                 const dampMul = onOil ? 0.97 : DRY_DAMPING; // на масле почти не гасится — сносит
                 
-                if (currentKeys.a) {
+                if (swStep) {
+                    if (swStep.x != null) { xPos = swStep.x; xVelocity = 0; } else xVelocity = swStep.v;
+                } else if (currentKeys.a) {
                     xVelocity = Math.max(xVelocity - DRY_STEER * steerMul * deltaTime, -MAX_X_SPEED * (onOil ? 1.3 : 1));
                 } else if (currentKeys.d) {
                     xVelocity = Math.min(xVelocity + DRY_STEER * steerMul * deltaTime, MAX_X_SPEED * (onOil ? 1.3 : 1));
@@ -9730,7 +9733,7 @@ function startGaragePreview(carId) {
                     const fph = Math.min(bossMaxPhase, phaseForHp(boss.hp, boss.maxHp));
                     if (fph === 2 && !(boss.fightPhase >= 2) && boss.hp > 0) {
                         boss.fightPhase = 2;
-                        try { showBossCard(bossPhaseHtml({ name: boss.name }, 2), 'phase2', 2200); } catch (e) {}
+                        /* фаза 2 — видно по полоске сверху, без карточки поверх дороги */
                         try { const ar = boss.mesh && boss.mesh.userData.armor; if (ar) shedBossArmor(ar.shoulders); } catch (e) {}
                         try { if (window.soundEngine) window.soundEngine.playSfx('boss', 0.8); } catch (e) {}
                     }
@@ -9740,7 +9743,7 @@ function startGaragePreview(carId) {
                         try { const ar = boss.mesh && boss.mesh.userData.armor; if (ar) shedBossArmor([].concat(ar.shoulders, [ar.chest])); } catch (e) {}
                         boss.speed *= 1.12;
                         try {
-                            showBossCard(bossPhaseHtml({ name: boss.name }, 3), 'phase2', 2200);
+                            /* фаза 3 — видно по полоске сверху */
                             // свои копии материалов (общие лежат в кэше) — пульсируют красным
                             const seen = new Map();
                             boss._rageMats = [];
@@ -9995,7 +9998,7 @@ function startGaragePreview(carId) {
                             try { if (window.soundEngine) { window.soundEngine.playSfx('hit', 0.7); } } catch (e) {}
                             if (boss._armorMsgT <= 0) {
                                 boss._armorMsgT = 2.5;
-                                try { showTimePenaltyPopup(0, '🛡 Броня! Увернись от атаки — после промаха он открыт'); } catch (e) {}
+                                /* подсказка — одно слово «УВЕРНИСЬ!» в центре на замахе */
                             }
                         } else {
                         damageBoss(dmg, { heavy: nitroHit || airborneHit, stomp: airborneHit, contact: true });
@@ -10309,17 +10312,17 @@ function startGaragePreview(carId) {
                 // при неровных кадрах отставание камеры прыгало, и машину на экране дёргало вперёд-назад.
                 // Теперь вдоль дороги камера держит дистанцию точно (с тем же отставанием, что было при
                 // ровных 60 к/с: speed · 0.84/0.16), а поперёк и по высоте сглаживается по времени.
-                const follow = (camMode === 0 ? (isMobile ? 0.3 : 0.16) : 0.22); // на телефоне отставание на скорости вдвое меньше — машина не «уезжает»
+                const follow = (camMode === 0 ? (camera.aspect < 1 ? PORTRAIT_FOLLOW : isMobile ? 0.3 : 0.16) : 0.22); /* вертикально — камера почти без отставания: на нитро и «В УДАРЕ» машина не уезжает вперёд */ // на телефоне отставание на скорости вдвое меньше — машина не «уезжает»
                 const kFollow = 1 - Math.pow(1 - follow, deltaTime * 60);
                 const kLook = 1 - Math.pow(1 - 0.22, deltaTime * 60);
                 camera.position.x += (targetX - camera.position.x) * kFollow;
                 if (camMode !== 0) targetY += carYOffset; /* капот, салон, сбоку — камера поднимается с машиной в прыжке (иначе оказывается внутри кузова) */ camera.position.y = (camMode === 1 || camMode === 2) ? targetY : camera.position.y + (targetY - camera.position.y) * kFollow; // из кабины — без запаздывания
-                camera.position.z = targetZ + camSpeed * (1 - follow) / follow;
+                camera.position.z = targetZ + (camMode === 0 && camera.aspect < 1 ? Math.max(0, camSpeed - MAX_SPEED) * PORTRAIT_BOOST_LAG /* вертикально: обычный вид неподвижен, на нитро и «В УДАРЕ» машина чуть уезжает вперёд */ : camSpeed * (1 - follow) / follow);
                 if (!_v.look) _v.look = new THREE.Vector3(xPos * 0.5, lookY, zPos + lookZoff);
                 // смотрим ближе к машине — она не уезжает под нижний край
                 _v.look.x += (xPos * 0.5 - _v.look.x) * kLook;
                 _v.look.y += (lookY + (camMode !== 0 ? carYOffset : 0) - _v.look.y) * kLook;
-                _v.look.z = zPos + lookZoff + camSpeed * (1 - 0.22) / 0.22;
+                _v.look.z = zPos + lookZoff + (camera.aspect < 1 ? 0 : camSpeed * (1 - 0.22) / 0.22); /* вертикально — без отставания взгляда: машина не «уезжает» */
                 camera.lookAt(_v.look);
                 if (camMode === 0) { camRoll += (-xVelocity * 0.11 - camRoll) * (1 - Math.exp(-deltaTime / 0.12)); camera.rotateZ(camRoll); } // крен на смене полосы — до ~3.5°
                 // тень следует за игроком (узкий frustum)
@@ -10549,6 +10552,9 @@ function startGaragePreview(carId) {
                             const fps = ro.frames / ro.fpsAcc;
                             ro.frames = 0;
                             ro.fpsAcc = 0;
+                            // телефон в энергосбережении держит ровно 30 к/с — это не «тормоза»: цель — по лучшему FPS за заезд
+                            ro.peak = Math.max(ro.peak || 0, fps); ro.samples = (ro.samples || 0) + 1;
+                            if (ro.samples >= 3) ro.targetFps = Math.min(ro.targetFps0 || ro.targetFps, Math.max(30, ro.peak * 0.97));
                             // ниже цели → снижаем DPR; стабильно высоко 5 с подряд → чуть поднимаем. Каждое изменение —
                             // setSize (новый буфер кадра, сам по себе рывок), поэтому не чаще раза в 4 с и без «качелей»
                             ro.good = fps > ro.targetFps * 0.95 ? (ro.good || 0) + 1 : 0;
@@ -11569,8 +11575,12 @@ function showLoreScreen(quality, difficulty) {
         (function wireMobileCamPause() {
             // Обработчики на #btnCam / #btnPauseMobile через делегирование на document —
             // работает и после пересоздания DOM, без setInterval-опроса каждые 2 секунды.
+            let camAt = 0, touchFrom = null;
+            document.addEventListener('touchstart', function(e) { touchFrom = e.target; }, { passive: true, capture: true });
             function handleCam(e) {
                 if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (err) {} }
+                if (e && e.type === 'touchend' && !hit(touchFrom, 'btnCam')) return; // свайп закончился на кнопке — не нажатие
+                const now = Date.now(); if (now - camAt < 400) return; camAt = now; // касание + click — одно переключение
                 if (typeof window.__cycleCamera === 'function') window.__cycleCamera();
             }
             function handlePause(e) {

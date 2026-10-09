@@ -41,3 +41,19 @@ test('Звериный час: волны идут подряд, конец за
     await expect(page.locator('#menu-endless-best')).toContainText('сегодня #1'); // «Звериный час дня» — в дневной таблице
     expect(problems).toEqual([]);
 });
+
+test('Звериный час: «В меню» на карточке волны — выход из забега в меню', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?start=0.99');
+    await unlockBeastHour(page);
+    await page.locator('.menu-card[data-menu="endless"]').click();
+    await waitRacing(page);
+    await page.keyboard.down('w');
+    await expect(page.locator('#endless-wave-card')).toContainText('ВОЛНА 2', { timeout: 60_000 });
+    await page.keyboard.up('w');
+    await page.locator('#endless-wave-card .ew-menu').click();
+    await expect(page.locator('#endless-wave-card')).toHaveCount(0);
+    await expect(page.locator('#main-menu-screen')).toBeVisible();
+    expect(await page.evaluate(() => [window.__inRace, !!window.__endless])).toEqual([false, false]);
+    expect(problems).toEqual([]);
+});

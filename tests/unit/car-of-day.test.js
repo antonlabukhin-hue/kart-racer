@@ -20,12 +20,13 @@ describe('машина дня', () => {
         expect(dayPrice(4500)).toBe(3150);
         expect(dayPrice(8500)).toBe(5950);
     });
-    it('тест-драйв — раз в день', () => {
+    it('тест-драйв — раз в 3 дня', () => {
         const p = {};
         expect(canTestDrive(p, '2026-10-03')).toBe(true);
         markTestDrive(p, '2026-10-03');
         expect(canTestDrive(p, '2026-10-03')).toBe(false);
-        expect(canTestDrive(p, '2026-10-04')).toBe(true);
+        expect(canTestDrive(p, '2026-10-05')).toBe(false);
+        expect(canTestDrive(p, '2026-10-06')).toBe(true);
     });
     it('покупка со скидкой', () => {
         const p = { unlockedCars: ['cheburashka'], season: { chips: 3000 } };
@@ -34,5 +35,15 @@ describe('машина дня', () => {
         expect(buyCarOfDay(p, 'turbo', 4500)).toEqual({ ok: true, cost: 3150 });
         expect(p).toMatchObject({ preferredCar: 'turbo', season: { chips: 850 } });
         expect(buyCarOfDay(p, 'turbo', 4500).reason).toBe('owned');
+    });
+});
+
+describe('машина дня — без повторов в соседние дни', () => {
+    it('три дня подряд — три разные машины', async () => {
+        const { carOfDay } = await import('../../src/car-of-day.js');
+        const presets = { a: { priceChips: 100 }, b: { priceChips: 200 }, c: { priceChips: 300 }, d: { priceChips: 400 } };
+        const p = { name: 'Антон', unlockedCars: [] };
+        const cars = ['2026-10-07', '2026-10-08', '2026-10-09'].map(d => carOfDay(p, d, ['a', 'b', 'c', 'd'], presets));
+        expect(new Set(cars).size).toBe(3);
     });
 });

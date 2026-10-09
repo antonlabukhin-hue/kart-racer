@@ -8,7 +8,7 @@ test('выход в меню посреди боя: интерфейс гонк�
     await startFreeRace(page, 'easy');
     await waitRacing(page);
     await page.evaluate(() => window.__raceDebug.spawnBossNow());
-    await expect(page.locator('#boss-intro')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#boss-hud')).toHaveClass(/on/, { timeout: 5000 }); // большой карточки босса больше нет — полоска сверху
     await page.keyboard.press('Escape');
     await page.locator('#pause-menu').click();
     await expect(page.locator('#main-menu-screen')).toBeVisible();

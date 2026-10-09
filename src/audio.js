@@ -2,6 +2,9 @@
  * SoundEngine — Web Audio (двигатель, SFX) + HTML5 (музыка гонки)
  */
 import { loadSettings } from './settings.js';
+
+// музыка заставки и меню — на 30% тише прежнего (было ×0.85 от громкости музыки): на старте игры не оглушает
+export const MENU_MUSIC_K = 0.6;
 import { mapAudioTheme, musicRate, startAmbientBed } from './map-audio.js';
 import { engineProfile, targetRpm, stepRpm, createEngineVoice, createSimpleVoice, glide } from './engine-sound.js';
 class SoundEngine {
@@ -196,7 +199,7 @@ class SoundEngine {
             this.menuAudio = new Audio();
             this.menuAudio.loop = true;
             this.menuAudio.preload = 'auto';
-            this.menuAudio.volume = Math.max(0, Math.min(1, (this.musicVolume || 0.55) * 0.85));
+            this.menuAudio.volume = Math.max(0, Math.min(1, (this.musicVolume || 0.55) * MENU_MUSIC_K));
             this.menuAudio.src = this.menuMusicUrl;
             this.menuAudio.addEventListener('error', () => {
                 console.warn('⚠ menu-music.mp3 не найден:', this.menuMusicUrl);
@@ -205,7 +208,7 @@ class SoundEngine {
         }
         if (this.menuMusicPlaying && !this.menuAudio.paused) return;
         const play = () => {
-            this.menuAudio.volume = Math.max(0, Math.min(1, (this.musicVolume || 0.55) * 0.85));
+            this.menuAudio.volume = Math.max(0, Math.min(1, (this.musicVolume || 0.55) * MENU_MUSIC_K));
             const p = this.menuAudio.play();
             if (p && p.then) {
                 p.then(() => {
@@ -324,7 +327,7 @@ class SoundEngine {
     setMusicVolume(v) {
         this.musicVolume = Math.max(0, Math.min(1, v));
         if (this.musicGain) this.musicGain.gain.value = this.musicVolume;
-        if (this.menuAudio) this.menuAudio.volume = this.musicVolume * 0.85;
+        if (this.menuAudio) this.menuAudio.volume = this.musicVolume * MENU_MUSIC_K;
         if (this.raceAudio) this.raceAudio.volume = this.musicVolume;
         // Не перезапускать трек — только громкость
     }
