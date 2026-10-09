@@ -4,6 +4,7 @@
       "Bash(curl -s https://api.github.com/repos/antonlabukhin-hue/kart-racer/*)",
       "Bash(curl -s \"https://api.github.com/repos/antonlabukhin-hue/kart-racer/*)",
       "Bash(npx vitest run)",
+      "Bash(npx vitest related:*)",
       "Bash(npm run test:unit)",
       "mcp__Claude_Browser__read_console_messages",
       "mcp__Claude_Browser__tabs_context",
@@ -14,7 +15,27 @@
       "mcp__Claude_Browser__preview_logs",
       "mcp__Claude_Browser__read_page",
       "mcp__terminal__read_terminal",
-      "mcp__ccd_session__read_widget_context"
+      "mcp__ccd_session__read_widget_context",
+      "mcp__context7"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/push-guard.mjs\"", "timeout": 20 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/main-lines.mjs\"", "timeout": 10 },
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/related-tests.mjs\"", "timeout": 120 }
+        ]
+      }
     ]
   }
 }
