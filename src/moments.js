@@ -124,11 +124,11 @@ export function createMoments(ctx) {
                 const ahead = zPos - m.z; // >0 — момент впереди
                 if (m.state === 'done') return;
                 if (m.state === 'wait') {
-                    const trigger = m.id === 'zapor_nitro' ? 0 : m.id === 'wheelie' ? 150 : m.id === 'ufo' ? 170 : 130;
+                    const trigger = m.id === 'zapor_nitro' ? 0 : m.id === 'wheelie' ? 150 : m.id === 'ufo' ? 170 : m.id === 'granny_cross' ? 85 : 130; // бабушка: перебегает, пока до неё 85 → 25 ед. — успевает уйти
                     if (ahead > trigger) return;
                     m.state = 'on';
                     let g;
-                    if (m.id === 'granny_cross') { g = granny(); g.position.set(-m.side * (W / 2 + 2), 0, m.z); g.rotation.y = m.side > 0 ? -Math.PI / 2 : Math.PI / 2; }
+                    if (m.id === 'granny_cross') { g = granny(); g.position.set(-m.side * (W / 2 + 2), 0, m.z); g.rotation.y = m.side > 0 ? -Math.PI / 2 : Math.PI / 2; g.scale.setScalar(1.5); }
                     else if (m.id === 'zapor_nitro') { g = zapor(); g.position.set(m.side * 2, 0, zPos + 14); }
                     else if (m.id === 'hedgehog') { g = hedgehog(); g.position.set(m.side * (W / 2 + 1.6), 0, m.z); g.rotation.y = m.side > 0 ? Math.PI / 2 : -Math.PI / 2; g.scale.setScalar(1.4); }
                     else if (m.id === 'ufo') { g = ufo(); g.position.set(m.side * 16, 11, m.z); }
