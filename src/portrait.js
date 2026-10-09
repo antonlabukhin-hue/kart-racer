@@ -42,6 +42,13 @@ export function dollyK(baseFov, fov) {
     return Math.tan(baseFov * rad / 2) / Math.tan(fov * rad / 2);
 }
 
+/**
+ * Степени «долли» подобраны замером (низ машины в кадре на базе / нитро / «В УДАРЕ»: 0.880 / 0.875 / 0.872):
+ * камера приближается полностью, точка взгляда — на месте. Машина на нитро чуть крупнее (~13%), но не сдвигается.
+ */
+export const DOLLY_POW = 1;
+export const DOLLY_LOOK = 0;
+
 /** Отставание камеры вдоль дороги — постоянное, как на базовой скорости: нитро, «В УДАРЕ» и рост скорости машину не отодвигают */
 export function chaseLag(maxSpeed, follow) {
     return follow > 0 ? maxSpeed * (1 - follow) / follow : 0;
