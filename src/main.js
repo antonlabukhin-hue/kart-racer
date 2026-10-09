@@ -6822,7 +6822,7 @@ function startGaragePreview(carId) {
                 else showBigPlaque(isMobile ? '⬇ СВАЙП ВНИЗ — ПОДНЫР' : '⬇ SHIFT — ПОДНЫР', 'Нырни под него или объедь', 'landing');
             }
             function placeHurdles(dA, dB) {
-                planHurdles(dA, dB).forEach(function(p) {
+                planHurdles(dA, dB, seededRnd(((infRunOpts && infRunOpts.seed) || 7) ^ Math.round(dA))).forEach(function(p) { // свой генератор: общий не сдвигается — трасса по сиду (вызов другу) та же
                     const z = START_Z - p.d;
                     if (infBusy.some(function(b) { return z >= b[0] - 6 && z <= b[1] + 6; })) return; // не на разломе, трамплине, событии
                     const g = createHurdle(p.kind, p.lanes, _rampLaneXs, z, 2);
