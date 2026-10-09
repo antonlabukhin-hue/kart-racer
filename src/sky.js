@@ -211,7 +211,7 @@ function cloudTexture() {
 // своя проекция без «кривого мира» (src/curved-world.js ищет строку с mvPosition — её здесь нет)
 const VS_DOME = 'varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * (modelViewMatrix * vec4(position, 1.0)); }';
 const FS_DOME = `
-uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uSunDir; uniform vec3 uSun; uniform float uNight;
+uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uSunDir; uniform vec3 uSun; uniform float uNight; uniform float uFlash;
 varying vec3 vDir;
 float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453); }
 void main() {
@@ -226,6 +226,7 @@ void main() {
         float st = step(0.9965, hash(q)) * smoothstep(0.04, 0.3, h);
         col += vec3(st * 0.85 * uNight);
     }
+    col += vec3(0.75, 0.8, 0.95) * uFlash * (0.5 + 0.5 * smoothstep(0.0, 0.4, h)); // молния: небо озаряется
     gl_FragColor = vec4(col, 1.0);
 }`;
 const VS_BAND = 'uniform vec2 uRep; uniform float uOff; varying vec2 vUv; void main() { vUv = vec2(uv.x * uRep.x + uOff, uv.y); gl_Position = projectionMatrix * (modelViewMatrix * vec4(position, 1.0)); }';
@@ -271,7 +272,7 @@ export function createSky(scene, o) {
     const group = new THREE.Group();
     const c = function(hex) { return new THREE.Color(hex); };
     const dome = new THREE.Mesh(new THREE.SphereGeometry(SKY_R, 32, 16), noBend(new THREE.ShaderMaterial({
-        uniforms: { uTop: { value: c(0x4a78c0) }, uHorizon: { value: c(0xe0c090) }, uSunDir: { value: new THREE.Vector3(0.22, 0.16, -1).normalize() }, uSun: { value: c(0xfff0c0) }, uNight: { value: 0 } },
+        uniforms: { uTop: { value: c(0x4a78c0) }, uHorizon: { value: c(0xe0c090) }, uSunDir: { value: new THREE.Vector3(0.22, 0.16, -1).normalize() }, uSun: { value: c(0xfff0c0) }, uNight: { value: 0 }, uFlash: { value: 0 } },
         vertexShader: VS_DOME, fragmentShader: FS_DOME, side: THREE.BackSide, depthWrite: false, fog: false,
         // рисуется после дороги и домов (в прозрачном проходе, с проверкой глубины): шейдер неба считается только там, где видно небо
         transparent: true
@@ -338,7 +339,7 @@ export function createSky(scene, o) {
         m.visible = op > 0.01;
     };
 
-    let drift = 0;
+    let drift = 0, storm = 0, flashT = 6 + Math.random() * 8, flash = 0, flash2 = 0;
     return {
         group: group,
         /** a, b — пейзажи (src/infinite.js THEMES), k — доля второго; fog — текущий цвет тумана */
@@ -362,11 +363,16 @@ export function createSky(scene, o) {
             cu.uTint.value.setHex(night > 0.5 ? 0x2a3044 : mixHex(0xffffff, fogHex, 0.25));
             const rain = (a.rain ? 1 - k : 0) + (b.rain ? k : 0);
             cu.uOpacity.value = 0.92 + rain * 0.08 - night * 0.45;
+            storm = rain;
         },
         /** облака медленно плывут */
         tick: function(dt) {
             drift = (drift + dt * 0.004) % 1;
             cloudMat.uniforms.uOff.value = drift;
+            // молнии в дождь: изредка двойная вспышка над горизонтом
+            if (storm > 0.5 && (flashT -= dt) <= 0) { flash = 1; flash2 = Math.random() < 0.6 ? 0.18 : 0; flashT = 6 + Math.random() * 9; }
+            if (flash > 0) { flash = Math.max(0, flash - dt * 5); if (flash < 0.4 && flash2 > 0) { flash = 0.8; flash2 = 0; } }
+            dome.material.uniforms.uFlash.value = flash * flash * 0.55;
             if (flock.on) {
                 flock.t += dt;
                 if (flock.t >= flock.dur) { flock.on = false; flock.wait = 18 + Math.random() * 22; }

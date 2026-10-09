@@ -37,6 +37,26 @@ export function pickSetpieces(mapId, rnd, n) {
     return { events: ev.slice(0, cnt), landmarks: lm.slice(0, mapId === 'all' ? 3 : 2) };
 }
 
+/**
+ * Бесконечная трасса: что ставить в этом месте — по стилю пейзажа (src/infinite.js THEMES[].style),
+ * а не из общего набора (градирня в зоопарке, магнитный кран в деревне). null — в этом пейзаже такого нет.
+ */
+export const STYLE_EVENTS = {
+    arsenev: ['tractor', 'bus', 'oncoming'], city: ['bus', 'oncoming'], village: ['tractor'],
+    industrial: ['crane'], junk: ['magnet', 'dozer'], forest: ['oncoming']
+};
+export const STYLE_LANDMARKS = {
+    arsenev: ['waterTower', 'stele', 'gasStation', 'busStop'], city: ['stele', 'gasStation', 'busStop'], village: ['waterTower', 'busStop'],
+    industrial: ['coolingTower', 'gasHolder', 'waterTower', 'gasStation'], junk: ['planeWreck', 'tireMountain'], forest: ['stele', 'gasStation']
+};
+export function pickForStyle(style, kind, rnd, avoid) {
+    const pool = (kind === 'event' ? STYLE_EVENTS : STYLE_LANDMARKS)[style];
+    if (!pool || !pool.length) return null;
+    const free = pool.filter(function(k) { return !avoid || avoid.indexOf(k) < 0; });
+    const from = free.length ? free : pool;
+    return from[Math.floor((rnd || Math.random)() * from.length)];
+}
+
 /** Доли трассы для n событий: вне арены босса, подальше от занятого (busy) и друг от друга */
 export function placeFracs(n, busy, rnd, lo, hi) {
     const r = rnd || Math.random;
