@@ -182,6 +182,48 @@ const snowPineT = function() { return template('snowpine', function(b) {
     cyl(b, 0, 0, 0, 0.12, 0.08, 1.4, 6, null, 0x6a3a1c);
     [0, 1, 2, 3].forEach(function(i) { cyl(b, 0, 1.0 + i * 0.5, 0, 0.85 - i * 0.16, 0, 0.95 - i * 0.1, 7, null, 0x2a5030); cyl(b, 0, 1.38 + i * 0.5, 0, 0.42 - i * 0.08, 0, 0.55 - i * 0.06, 7, null, 0xf2f6fa); });
 }); };
+/* ---- тайга: брёвна, лесовоз, рыбаки; зоопарк: вольеры, жирафы, фламинго, валуны ---- */
+const logPileT = function() { return template('logpile', function(b) {
+    for (let l = 0; l < 3; l++) for (let k = 0; k < 4 - l; k++) { const zz = -0.6 + k * 0.42 + l * 0.21, yy = 0.22 + l * 0.38; box(b, 0, yy, zz, 3.2, 0.36, 0.36, null, [0x8a6a42, 0x7a5a36][(k + l) % 2]); box(b, 1.61, yy, zz, 0.02, 0.26, 0.26, null, 0xc8a878); box(b, -1.61, yy, zz, 0.02, 0.26, 0.26, null, 0xc8a878); } // брёвна и светлые торцы
+    box(b, -1.5, 0.3, 0, 0.12, 0.6, 1.8, null, 0x5a4026); box(b, 1.5, 0.3, 0, 0.12, 0.6, 1.8, null, 0x5a4026);
+}); };
+const lesovozT = function() { return template('lesovoz', function(b) {
+    box(b, 0, 0.75, -1.6, 1.0, 0.9, 1.0, null, 0x3a6a8a); box(b, 0, 0.95, -1.95, 0.9, 0.4, 0.06, null, 0x1c2a36); // кабина и стекло
+    box(b, 0, 0.35, 0.3, 0.9, 0.2, 3.6, null, 0x2a2a2a); // рама
+    for (let k = 0; k < 6; k++) box(b, -0.3 + (k % 3) * 0.3, 0.62 + Math.floor(k / 3) * 0.28, 0.6, 0.27, 0.27, 3.0, null, [0x8a6a42, 0x7a5a36][k % 2]);
+    [-0.9, 0.8].forEach(function(z) { box(b, -0.5, 0.75, z, 0.06, 0.9, 0.06, null, 0x2a2a2a); box(b, 0.5, 0.75, z, 0.06, 0.9, 0.06, null, 0x2a2a2a); }); // стойки
+    [-1.6, 0.0, 1.4].forEach(function(z) { box(b, -0.5, 0.3, z, 0.22, 0.6, 0.6, null, 0x161616); box(b, 0.5, 0.3, z, 0.22, 0.6, 0.6, null, 0x161616); }); // колёса
+}); };
+const fisherT = function() { return template('fisher', function(b) {
+    box(b, 0, 0.18, 0, 0.35, 0.3, 0.3, null, 0x3a6a8a);                       // ящик-сиденье
+    cyl(b, 0, 0.35, 0, 0.2, 0.24, 0.55, 7, null, [0x5a4a3a, 0x3a4a3a][0]);     // тулуп
+    cyl(b, 0, 0.98, 0, 0.11, 0.11, 0.2, 8, null, 0xe8b898, true);             // голова
+    cyl(b, 0, 1.12, 0, 0.13, 0.12, 0.1, 8, null, 0x7a2a2a, true);             // шапка
+    box(b, 0.25, 0.62, -0.32, 0.02, 0.02, 0.6, null, 0x2a2a2a);              // удочка
+    cyl(b, 0.3, 0.02, -0.62, 0.14, 0.14, 0.02, 10, null, 0x1a2a3a, true);     // лунка
+}); };
+const zooFenceT = function() { return template('zoofence', function(b) {
+    for (let k = 0; k <= 10; k++) box(b, 0, 0.75, -3 + k * 0.6, 0.06, 1.5, 0.06, null, 0x3a3a40); // прутья
+    box(b, 0, 1.52, 0, 0.1, 0.08, 6.1, null, 0x3a3a40); box(b, 0, 0.1, 0, 0.12, 0.2, 6.1, null, 0x5a5a5a);
+}); };
+const zooSignT = function(col) { return template('zoosign_' + col, function(b) {
+    box(b, 0, 0.7, -0.7, 0.08, 1.4, 0.08, null, 0x5a4026); box(b, 0, 0.7, 0.7, 0.08, 1.4, 0.08, null, 0x5a4026);
+    box(b, 0, 1.45, 0, 0.06, 0.55, 1.7, null, col); box(b, 0.035, 1.45, 0, 0.01, 0.12, 1.2, null, 0xf4f0e4);
+}); };
+const giraffeT = function() { return template('giraffe', function(b) {
+    box(b, 0, 1.55, 0, 0.5, 0.55, 1.2, null, 0xd8a840);                        // туловище
+    [[-0.18, -0.45], [0.18, -0.45], [-0.18, 0.45], [0.18, 0.45]].forEach(function(p) { box(b, p[0], 0.65, p[1], 0.1, 1.3, 0.1, null, 0xc89838); });
+    box(b, 0, 2.55, -0.5, 0.18, 1.6, 0.2, null, 0xd8a840);                      // шея
+    box(b, 0, 3.35, -0.62, 0.22, 0.25, 0.45, null, 0xd8a840);                   // голова
+    box(b, 0.26, 1.6, -0.2, 0.02, 0.2, 0.25, null, 0x8a5a20); box(b, -0.26, 1.5, 0.25, 0.02, 0.25, 0.2, null, 0x8a5a20); // пятна
+}); };
+const flamingoT = function() { return template('flamingo', function(b) {
+    box(b, 0, 0.45, 0, 0.03, 0.9, 0.03, null, 0xe86a8a);                       // нога
+    box(b, 0, 1.0, 0, 0.22, 0.25, 0.42, null, 0xf08aa8);                        // тело
+    box(b, 0, 1.35, -0.2, 0.05, 0.5, 0.05, null, 0xf08aa8);                     // шея
+    box(b, 0, 1.6, -0.26, 0.09, 0.09, 0.16, null, 0xf08aa8); box(b, 0, 1.58, -0.37, 0.04, 0.04, 0.08, null, 0x2a2a2a);
+}); };
+const boulderT = function() { return template('boulder', function(b) { cyl(b, 0, -0.1, 0, 0.9, 1.2, 1.1, 7, null, 0x7a7468, true); cyl(b, 0.5, -0.1, 0.4, 0.5, 0.7, 0.7, 6, null, 0x8a8478, true); }); };
 const driftT = function() { return template('drift', function(b) { cyl(b, 0, -0.3, 0, 1.6, 0.5, 0.75, 9, null, 0xf4f7fb, true); }); };
 const junkHillT = function(col) { return template('junkhill_' + col, function(b) {
     cyl(b, 0, -0.3, 0, 4.2, 0.6, 3.2, 9, null, col, true);
@@ -338,7 +380,9 @@ function lake(o, side, snow) {
     const y = Math.min(o.groundAt(x, z, rad, rad), 0.4);
     cyl(o.b, x, y - 0.3, z, rad + 1.4, rad + 0.6, 0.36, 18, null, snow ? 0xf2f4f8 : 0xc8b888, true); // берег
     cyl(o.wb, x, y + 0.04, z, rad, rad, 0.02, 20, null, 0xffffff, true);
-    if (snow) cyl(o.b, x, y + 0.08, z, rad * 0.98, rad * 0.98, 0.01, 20, null, 0xd8eaf6, true); // лёд
+    if (snow) { cyl(o.b, x, y + 0.08, z, rad * 0.98, rad * 0.98, 0.01, 20, null, 0xd8eaf6, true); // лёд
+        for (let k = 0; k < 2 + Math.floor(r() * 3); k++) { const a = r() * Math.PI * 2, d = r() * rad * 0.6; place(o.b, fisherT(), x + Math.cos(a) * d, y + 0.09, z + Math.sin(a) * d, Math.floor(r() * 4)); } // рыбаки у лунок
+    }
     else {
         for (let i = 0; i < 6; i++) { const a = r() * Math.PI * 2; place(o.b, reedT(), x + Math.cos(a) * rad * 0.92, y, z + Math.sin(a) * rad * 0.92, 0, 0.8 + r() * 0.5); }
         if (r() < 0.5) place(o.b, boatT(), x + side * -rad * 0.4, y + 0.05, z, 1);
@@ -376,9 +420,9 @@ function junkStretch(o, W) {
 }
 
 function forestStretch(o, W, snow) {
-    const r = o.r, n = o.noTrees ? 0 : o.lite ? 34 : 72; // кампания: лес уже стоит инстансами (src/biomes.js) — второй лес не нужен
+    const r = o.r, n = o.noTrees ? 0 : o.lite ? 52 : 90; // кампания: лес уже стоит инстансами (src/biomes.js) — второй лес не нужен; на телефоне тоже густо
     for (let i = 0; i < n; i++) {
-        const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 3.2 + Math.pow(r(), 1.3) * 42), z = o.z0 - r() * o.len; // гуще у дороги
+        const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 3.2 + Math.pow(r(), 1.7) * 38), z = o.z0 - r() * o.len; // гуще у дороги — виден сквозь туман
         const q = r();
         const t = o.jungle ? (q < 0.45 ? palmT() : roundTreeT([0x1e5a24, 0x2a6a2a, 0x245a1e][Math.floor(r() * 3)])) : snow ? (q < 0.8 ? snowPineT() : birchT()) : (q < 0.62 ? pineT() : birchT());
         place(o.b, t, x, o.groundAt(x, z, 1, 1), z, Math.floor(r() * 4), (o.jungle ? 1.1 : 0.8) + r() * 0.8);
@@ -386,6 +430,30 @@ function forestStretch(o, W, snow) {
     scatter(o, o.lite ? 6 : 14, W / 2 + 2.4, W / 2 + 9, function() { return snow ? { t: driftT(), s: 0.6 + r() * 0.8 } : { t: bushT(o.jungle ? 0x1e6a2a : [0x3a6a2a, 0x4a7a30][Math.floor(r() * 2)]), s: 0.6 + r() * 0.7 }; });
     scatter(o, o.lite ? 4 : 8, W / 2 + 2.5, W / 2 + 12, function() { return r() < 0.5 ? { t: stumpT() } : { t: mushT(), s: 1 + r() }; });
     if (o.i % 4 === 1) lake(o, r() < 0.5 ? -1 : 1, snow);
+    if (snow) taigaExtras(o, W); else if (o.jungle) zooExtras(o, W);
+}
+
+/** Тайга: штабели брёвен у обочины, изредка — лесовоз на стоянке */
+function taigaExtras(o, W) {
+    const r = o.r;
+    if (o.i % 3 === 0) { const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 4 + r() * 2), z = o.z0 - 10 - r() * 40; place(o.b, logPileT(), x, o.groundAt(x, z, 3, 2), z, 0); }
+    if (o.i % 5 === 2) { const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 4.2), z = o.z0 - 15 - r() * 30; place(o.b, lesovozT(), x, o.groundAt(x, z, 1.2, 4), z, 0); }
+}
+/** Зоопарк: вольеры с решёткой и табличкой вдоль дороги, за ними жирафы или фламинго, валуны */
+function zooExtras(o, W) {
+    const r = o.r;
+    [-1, 1].forEach(function(side) {
+        if (r() < 0.35) return;
+        const xF = side * (W / 2 + 5.5), zs = o.z0 - 6 - r() * 10, n = 3 + Math.floor(r() * 3);
+        for (let k = 0; k < n; k++) { const z = zs - 3 - k * 6.1; place(o.b, zooFenceT(), xF, o.groundAt(xF, z, 0.2, 6), z, 0); }
+        const kind = r(), zc = zs - n * 3;
+        place(o.b, zooSignT([0x2a7a3a, 0x3a5aa8, 0xc8642a][Math.floor(r() * 3)]), side * (W / 2 + 4.6), o.groundAt(side * (W / 2 + 4.6), zs, 0.2, 2), zs, 0);
+        for (let k = 0; k < (kind < 0.5 ? 2 : 5); k++) {
+            const x = side * (W / 2 + 8.5 + r() * 5), z = zs - 4 - r() * (n * 6.1 - 8);
+            place(o.b, kind < 0.5 ? giraffeT() : flamingoT(), x, o.groundAt(x, z, 1, 1), z, Math.floor(r() * 4), 0.9 + r() * 0.3);
+        }
+        const xb = side * (W / 2 + 10 + r() * 4), zb = zc + (r() - 0.5) * 8; place(o.b, boulderT(), xb, o.groundAt(xb, zb, 2, 2), zb, Math.floor(r() * 4), 0.8 + r() * 0.6);
+    });
 }
 
 /** Окраина города (день, ночь, дождь): дальний ряд пятиэтажек, гаражи, киоски, остановки, столбы с проводами */

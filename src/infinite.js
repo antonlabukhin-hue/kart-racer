@@ -13,7 +13,7 @@ export const THEMES = [
         animals: ['CHICKEN', 'DOG', 'CAT', 'BOAR', 'FOX', 'DEER'] },
     { id: 'promzona', name: 'Промзона', style: 'industrial', sky: 0x9a8a78, zenith: 0x5c6378, fog: 0x8a7a68, fogNear: 40, fogFar: 170, ground: 0x7a7468, light: 0.9, slide: 'acid',
         animals: ['CROC', 'RHINO', 'DINO', 'PEACOCK', 'DOG'] },
-    { id: 'snow', name: 'Снежная тайга', style: 'forest', snow: true, sky: 0xc8d4e0, zenith: 0x7fa3d6, fog: 0xd0dae4, fogNear: 35, fogFar: 160, ground: 0xe8f0f8, light: 1.05, slide: 'ice',
+    { id: 'snow', name: 'Снежная тайга', style: 'forest', snow: true, sky: 0xc8d4e0, zenith: 0x7fa3d6, fog: 0xd0dae4, fogNear: 50, fogFar: 195, ground: 0xe8f0f8, light: 1.05, slide: 'ice',
         animals: ['BEAR', 'FOX', 'DEER', 'BOAR'] },
     { id: 'city', name: 'Микрорайон', style: 'city', sky: 0xdcc8a8, zenith: 0x6690d0, fog: 0xd4c0a0, fogNear: 50, fogFar: 190, ground: 0x8a8a78, light: 0.95, slide: 'oil',
         animals: ['DOG', 'CAT', 'HUMAN', 'CHICKEN'] },
