@@ -7,7 +7,8 @@ import { createMoments, planMoments, momentOfWeek } from './moments.js';
 import { rollArtifact, grantArtifact, createArtifactToken, artifactsHtml, ARTIFACT_CHANCE } from './artifacts.js';
 import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
-import { createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle } from './hop-duck.js';
+import { liftCar } from './suspension.js';
+import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle } from './hop-duck.js';
 import { RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
@@ -4043,7 +4044,7 @@ function startGaragePreview(carId) {
         }
         window.createAnimalMesh = createAnimalMesh;
         // только тестовая сборка: набор для рендера картинок игры (tools/art)
-        if (import.meta.env.MODE === 'test') window.__artKit = { memes: Memes, renderDiorama: renderDiorama, lanes: ART_LANES, tracks: CAMPAIGN_TRACKS, buildCar: buildShowroomCar, mergeCar: mergeCarParts, landmark: createLandmark,
+        if (import.meta.env.MODE === 'test') window.__artKit = { liftCar: liftCar, THREE: THREE, memes: Memes, renderDiorama: renderDiorama, lanes: ART_LANES, tracks: CAMPAIGN_TRACKS, buildCar: buildShowroomCar, mergeCar: mergeCarParts, landmark: createLandmark,
             bossHeight: function(idx) { const b = new THREE.Box3().setFromObject(createArcadeBossMesh(CAMPAIGN_BOSSES[idx % CAMPAIGN_BOSSES.length])); return (b.max.y - b.min.y) * 1.5; } };
 
 
@@ -6206,6 +6207,7 @@ function startGaragePreview(carId) {
             // пламя нитро из выхлопа (видно на ускорении), вмятины и дым после аварий
             let nitroFlames = null;
             try { if (playerCar) nitroFlames = addNitroFlames(playerCar); } catch (e) { nitroFlames = null; }
+            let susp = null; try { susp = liftCar(playerCar, raceWheelR); } catch (e) { susp = null; } // высокая подвеска: кузов над колёсами, в подныре опускается (src/suspension.js)
             const photoBook = window.__photoBook = createPhotoBook(); // «Фото на память» — лучший момент заезда (src/photo.js)
             let moments = null; /* src/moments.js */ const funEvent = function(ev) { if (ev === 'late_train') photoBook.request('Под самым поездом!', 9); try { recordFun(currentPlayer, ev).forEach(function(id) { unlockAchievement(id); }); } catch (e) {} }; // достижения-шутки (src/fun-achievements.js)
             let carTrail = null; try { carTrail = createCarTrail(scene, { lite: isMobile || quality === 'low' }); } catch (e) { carTrail = null; } // выхлоп и пыль из-под колёс (src/car-trail.js)
@@ -8712,7 +8714,7 @@ function startGaragePreview(carId) {
                     rideSmokeT -= deltaTime;
                     if (rideSmokeT <= 0 && particleSystem && particleSystem.smoke) { rideSmokeT = 0.07; rideModel.userData.exhaust.forEach(function(p) { _v.rs = (_v.rs || new THREE.Vector3()).set(p.x, p.y, p.z); rideModel.localToWorld(_v.rs); particleSystem.smoke(_v.rs, ride.id === 'plane' ? 0.2 : 0.85); }); }
                 }
-                tickMoves(moves, deltaTime); playerCar.scale.y = RACE_CAR_SCALE * duckScale(moves); // подныр — машина «приседает»
+                tickMoves(moves, deltaTime); { const ds = duckScale(moves); if (susp && !susp.fallback) susp.setDuck((1 - ds) / (1 - DUCK_SCALE)); else playerCar.scale.y = RACE_CAR_SCALE * ds; } // подныр — кузов опускается к колёсам
                 playerCar.position.set(xPos, carYOffset + suspY + rideLift(ride), zPos);
                 // лёгкий self-light кузова ночью
                 if (isNight && playerCar.userData && !playerCar.userData._nightEmissive) {
