@@ -547,7 +547,7 @@ test('заезд дня: одна попытка, результат и мест
     await expect(page.locator('.daily-modal .dl-rule')).toBeVisible();
     await page.locator('.daily-modal .dl-go').click();
     await waitRacing(page);
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].daily.started)).toBe(true);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].dailyRun.started)).toBe(true); // попытка — в dailyRun (daily занято «заданием дня»)
     await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 250); });
     await page.waitForTimeout(300);
     await page.evaluate(() => window.__raceDebug.end('crash'));
