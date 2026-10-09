@@ -309,10 +309,11 @@ export function createSky(scene, o) {
     const flock = { on: false, t: 0, dur: 14, wait: 7 + Math.random() * 6, x0: 0, dir: 1, y: 24, z: -110, n: 6, offs: flockOffsets(7) };
     for (let i = 0; i < 7; i++) {
         const b = new THREE.Mesh(birdGeo, birdMat);
-        b.frustumCulled = false; b.matrixAutoUpdate = false; b.visible = false;
+        b.frustumCulled = false; b.matrixAutoUpdate = false; // всегда рисуется (вне стаи — нулевого размера): шейдер собирается на старте, без рывка
         b.userData.k = i; b.userData.ph = Math.random() * 6;
         const p = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
         b.onBeforeRender = function(r, s2, cam) {
+            if (!flock.on || b.userData.k >= flock.n) { b.matrixWorld.makeScale(0, 0, 0); return; }
             const o = flock.offs[b.userData.k], u = flock.t / flock.dur;
             p.set(cam.position.x + flock.x0 + flock.dir * (u * 170 - o.back), cam.position.y + flock.y + o.y, cam.position.z + flock.z + o.side);
             const flap = Math.sin(flock.t * 9 + b.userData.ph);
@@ -366,12 +367,11 @@ export function createSky(scene, o) {
             cloudMat.uniforms.uOff.value = drift;
             if (flock.on) {
                 flock.t += dt;
-                if (flock.t >= flock.dur) { flock.on = false; flock.wait = 18 + Math.random() * 22; birds.forEach(function(b) { b.visible = false; }); }
+                if (flock.t >= flock.dur) { flock.on = false; flock.wait = 18 + Math.random() * 22; }
             } else if ((flock.wait -= dt) <= 0 && flock.allowed !== false) {
                 // летят поперёк дороги впереди и чуть выше горизонта
                 flock.on = true; flock.t = 0; flock.dir = Math.random() < 0.5 ? 1 : -1; flock.x0 = -flock.dir * 80;
                 flock.y = 13 + Math.random() * 9; flock.z = -62 - Math.random() * 22; flock.n = 4 + Math.floor(Math.random() * 4);
-                birds.forEach(function(b, i) { b.visible = i < flock.n; });
             }
         },
         dispose: function() {

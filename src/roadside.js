@@ -2,7 +2,8 @@
  * Детали у самой обочины бесконечной трассы: советская остановка с мозаикой, ларёк с вывеской,
  * ржавая горбатая машина на кирпичах, бабушка с семечками и банкой огурцов, синий указатель «город, км».
  * pickRoadside — чистая логика (с тестами): что и где поставить на участке; строители — меши.
- * Материалы общие (по цвету) — участок склеивается в несколько мешей (src/merge-static.js).
+ * Все сплошные детали — один материал с цветом в вершинах: участок склеивается в один меш (src/merge-static.js)
+ * и шейдер собирается один раз на старте, без рывка посреди заезда.
  */
 import * as THREE from 'three';
 
@@ -49,19 +50,26 @@ export function sideGap(kind) { return { sign: 1.3, granny: 1.5, stop: 2.1, kios
 /* ---------- меши ---------- */
 
 const mats = {};
-function M(hex, o) {
-    const k = hex + (o ? JSON.stringify(o) : '');
-    if (!mats[k]) mats[k] = new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: 0.9, metalness: 0 }, o || {}));
-    return mats[k];
+let vcMat = null;
+/** «Краска» детали: цвет вершин (второй аргумент — прежние свойства материала, больше не нужны) */
+function M(hex) { return { paint: hex }; }
+const _c = new THREE.Color();
+function mesh(geo, p) {
+    _c.setHex(p.paint);
+    const n = geo.attributes.position.count, col = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { col[i * 3] = _c.r; col[i * 3 + 1] = _c.g; col[i * 3 + 2] = _c.b; }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    if (!vcMat) vcMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 });
+    return new THREE.Mesh(geo, vcMat);
 }
 function box(g, w, h, d, mat, x, y, z) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    const m = mesh(new THREE.BoxGeometry(w, h, d), mat);
     m.position.set(x, y, z);
     g.add(m);
     return m;
 }
 function cyl(g, r0, r1, h, mat, x, y, z, seg) {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg || 8), mat);
+    const m = mesh(new THREE.CylinderGeometry(r0, r1, h, seg || 8), mat);
     m.position.set(x, y, z);
     g.add(m);
     return m;
@@ -162,8 +170,8 @@ export function createGranny(rnd) {
     [[-0.15, -0.15], [0.15, -0.15], [-0.15, 0.15], [0.15, 0.15]].forEach(function(p) { box(g, 0.05, 0.45, 0.05, M(0x7a5030), p[0], 0.22, p[1]); });
     cyl(g, 0.16, 0.3, 0.75, coat, 0, 0.85, 0);                            // пальто
     cyl(g, 0.3, 0.3, 0.3, coat, 0, 0.4, 0.12);                             // подол до земли
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), M(0xe8b898)); head.position.set(0, 1.35, 0); g.add(head);
-    const scarf = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.6), M([0xc0392b, 0x2e86c1, 0xd4ac0d][Math.floor(rnd() * 3)]));
+    const head = mesh(new THREE.SphereGeometry(0.13, 10, 8), M(0xe8b898)); head.position.set(0, 1.35, 0); g.add(head);
+    const scarf = mesh(new THREE.SphereGeometry(0.15, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.6), M([0xc0392b, 0x2e86c1, 0xd4ac0d][Math.floor(rnd() * 3)]));
     scarf.position.set(0, 1.37, -0.02); g.add(scarf);
     cyl(g, 0.15, 0.12, 0.3, M(0x8a8a90, { metalness: 0.5, roughness: 0.5 }), 0.42, 0.15, 0.25); // ведро
     cyl(g, 0.14, 0.14, 0.02, M(0x2a2620), 0.42, 0.3, 0.25);               // семечки
