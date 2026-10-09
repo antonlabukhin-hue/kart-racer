@@ -11,7 +11,7 @@
  * высота — по холмам обочин (heightAt), фундамент уходит в землю — дома не висят над склоном.
  */
 import * as THREE from 'three';
-import { cellRect as R, box, cyl, gable, template, place, createBatch, batchMesh, kitMaterial, waterMaterial, setKitGlow } from './scenery-kit.js';
+import { cellRect as R, box, cyl, gable, template, place, createBatch, batchMesh, kitMaterial, waterMaterial, setKitGlow, keptOut } from './scenery-kit.js';
 
 const C = function(h) { return new THREE.Color(h); };
 const FACADES = { k5: 'k5', k5b: 'k5b', brick5: 'brick5', stalin: 'stalin', p9: 'p9', p9b: 'p9b' };
@@ -224,6 +224,7 @@ const flamingoT = function() { return template('flamingo', function(b) {
     box(b, 0, 1.6, -0.26, 0.09, 0.09, 0.16, null, 0xf08aa8); box(b, 0, 1.58, -0.37, 0.04, 0.04, 0.08, null, 0x2a2a2a);
 }); };
 const boulderT = function() { return template('boulder', function(b) { cyl(b, 0, -0.1, 0, 0.9, 1.2, 1.1, 7, null, 0x7a7468, true); cyl(b, 0.5, -0.1, 0.4, 0.5, 0.7, 0.7, 6, null, 0x8a8478, true); }); };
+const barrelT = function() { return template('barrel', function(b) { cyl(b, 0, 0, 0, 0.32, 0.32, 0.85, 10, null, 0x6a3a1e, true); cyl(b, 0, 0.3, 0, 0.335, 0.335, 0.06, 10, null, 0x4a2a14); cyl(b, 0, 0.82, 0, 0.26, 0.05, 0.22, 7, null, 0xff8a1a); }); };
 const driftT = function() { return template('drift', function(b) { cyl(b, 0, -0.3, 0, 1.6, 0.5, 0.75, 9, null, 0xf4f7fb, true); }); };
 const junkHillT = function(col) { return template('junkhill_' + col, function(b) {
     cyl(b, 0, -0.3, 0, 4.2, 0.6, 3.2, 9, null, col, true);
@@ -272,6 +273,7 @@ function fillBand(o, side, x0, x1, pick, gap) {
         const x = side * (x0 + depth / 2 + o.r() * Math.max(0, x1 - x0 - depth));
         const y = it.y != null ? it.y : o.groundAt(x, zc, depth, span);
         place(o.b, it.t, x, y, zc, side < 0 ? (it.rot || 0) : (it.rot || 0) + 2, it.s, it.tint);
+        if (it.smoke && o.smoke && !keptOut(x, zc)) o.smoke.push({ x: x, y: y + it.smoke * (it.s || 1), z: zc, size: 1.6, dark: !!it.dark }); // дым из трубы (src/smoke.js)
         z -= span + (gap != null ? gap : 1) + o.r() * (it.gapR || 2);
     }
 }
@@ -415,6 +417,7 @@ function junkStretch(o, W) {
         fillBand(o, side, W / 2 + 16, W / 2 + 34, function() {
             return pickW(r, [[2, function() { return { t: junkHillT([0x6a5a3a, 0x5a4a32, 0x7a6a4a][Math.floor(r() * 3)]), span: 8.6, depth: 8.6, s: 0.8 + r() * 0.5 }; }], [0.6, function() { return null; }]]);
         }, 2);
+        if (r() < 0.45) { const x = side * (W / 2 + 3.4 + r() * 1.2), z = o.z0 - 5 - r() * (o.len - 10); if (!keptOut(x, z)) { place(o.b, barrelT(), x, o.groundAt(x, z, 0.7, 0.7), z, 0); if (o.smoke) o.smoke.push({ x: x, y: o.groundAt(x, z, 0.7, 0.7) + 1.0, z: z, size: 0.7, dark: true }); } } // горящая бочка: огонь и чёрный дым
         if (r() < 0.5) { const x = side * (W / 2 + 15), from = o.z0 - r() * 20; for (let i = 0; i < 4 + Math.floor(r() * 4); i++) { const z = from - 2 - i * 4; place(o.b, po2T(), x, o.groundAt(x, z, 0.2, 4), z, 0); } }
     });
 }
@@ -483,7 +486,7 @@ function industrialStretch(o, W) {
     const r = o.r;
     [-1, 1].forEach(function(side) {
         fillBand(o, side, W / 2 + 22, W / 2 + 40, function() {
-            return pickW(r, [[1.2, function() { return { t: chimneyT(), span: 2.4, depth: 2.4 }; }], [1.2, function() { return { t: gasT(), span: 6.6, depth: 6.6 }; }],
+            return pickW(r, [[1.2, function() { return { t: chimneyT(), span: 2.4, depth: 2.4, smoke: 16.4 }; }], [1.2, function() { return { t: gasT(), span: 6.6, depth: 6.6 }; }],
                 [0.9, function() { return { t: craneT(), span: 3, depth: 3 }; }], [1.5, function() { return null; }]]);
         }, 6);
         fillBand(o, side, W / 2 + 6, W / 2 + 16, function() { // середина: склады, эстакады труб, контейнеры, трансформаторы
@@ -509,7 +512,7 @@ function industrialStretch(o, W) {
  * Возвращает [меш набора, меш воды] (null — пусто) и что сделано (для тестов и отладки).
  */
 export function buildScenery(o) {
-    const st = { b: createBatch(), wb: createBatch(), r: o.rnd || Math.random, z0: o.z0, len: o.len, W: o.W, i: o.i, lite: !!o.lite, jungle: !!o.jungle, noTrees: !!o.noTrees };
+    const st = { smoke: [], b: createBatch(), wb: createBatch(), r: o.rnd || Math.random, z0: o.z0, len: o.len, W: o.W, i: o.i, lite: !!o.lite, jungle: !!o.jungle, noTrees: !!o.noTrees };
     st.groundAt = function(x, z, w, d) {
         if (!o.heightAt) return 0;
         const hw = (w || 1) / 2, hd = (d || 1) / 2;
@@ -523,7 +526,7 @@ export function buildScenery(o) {
     else if (s === 'industrial') industrialStretch(st, o.W);
     else if (s === 'junk') junkStretch(st, o.W);
     const mesh = batchMesh(st.b, kitMaterial(o.lite)), water = batchMesh(st.wb, waterMaterial());
-    return { mesh: mesh, water: water, verts: st.b.p.length / 3 };
+    return { mesh: mesh, water: water, verts: st.b.p.length / 3, smoke: st.smoke };
 }
 
 /**
