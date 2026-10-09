@@ -18,6 +18,8 @@ describe('прыжок и подныр', () => {
     });
     it('труба — перепрыгнуть, шлагбаум — только поднырнуть', () => {
         expect(hurdleHit('lowbar', 0.8, false)).toBe('over');
+        ['pipe', 'log', 'jersey', 'tires'].forEach(function(k) { expect(hurdleHit(k, 0.8, false)).toBe('over'); expect(hurdleHit(k, 0, true)).toBe('hit'); });
+        ['barrier', 'gantry', 'pipeline'].forEach(function(k) { expect(hurdleHit(k, 0, true)).toBe('under'); expect(hurdleHit(k, 1.1, false)).toBe('hit'); });
         expect(hurdleHit('lowbar', 0, true)).toBe('hit');
         expect(hurdleHit('highbar', 0, true)).toBe('under');
         expect(hurdleHit('highbar', 0.9, false)).toBe('hit');

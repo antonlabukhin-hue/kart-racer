@@ -8,7 +8,7 @@ import { rollArtifact, grantArtifact, createArtifactToken, artifactsHtml, ARTIFA
 import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
-import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle } from './hop-duck.js';
+import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf } from './hop-duck.js';
 import { RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
@@ -6794,13 +6794,23 @@ function startGaragePreview(carId) {
                 if (gameState !== 'racing') return;
                 if (duck(moves, carAirborne)) try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.45); } catch (e) {}
             }
+            const ARROW_RUNS = 3; // первые заезды — стрелки на экране (как в Subway Surfers)
+            const showArrows = (currentPlayer && currentPlayer.infinite ? currentPlayer.infinite.runs || 0 : 0) < ARROW_RUNS || (import.meta.env.MODE === 'test' && window.__forceArrows);
+            let arrowEl = null, arrowAct = null;
+            function moveArrow(act) { // act: 'jump' | 'duck' | null
+                if (act === arrowAct) return;
+                arrowAct = act;
+                if (!arrowEl) { arrowEl = document.createElement('div'); arrowEl.id = 'move-arrow'; arrowEl.innerHTML = '<i></i><b></b>'; document.body.appendChild(arrowEl); }
+                arrowEl.className = act ? 'on ' + act : '';
+                arrowEl.lastChild.textContent = act === 'jump' ? (isMobile ? 'СВАЙП ВВЕРХ' : 'ПРОБЕЛ / ↑') : act === 'duck' ? (isMobile ? 'СВАЙП ВНИЗ' : 'S / ↓') : '';
+            }
             const HURDLE_HINT = 'road_racing_hurdle_hint_v1';
             function hurdleHint(kind) { // первые три встречи каждого вида — подсказка, как пройти
                 let seen = {}; try { seen = JSON.parse(localStorage.getItem(HURDLE_HINT) || '{}'); } catch (e) {}
-                if ((seen[kind] || 0) >= 3) return;
+                if ((seen[kind] || 0) >= 3) return; // kind — 'jump' | 'duck'
                 seen[kind] = (seen[kind] || 0) + 1; try { localStorage.setItem(HURDLE_HINT, JSON.stringify(seen)); } catch (e) {}
-                if (kind === 'lowbar') showBigPlaque(isMobile ? '⬆ СВАЙП ВВЕРХ — ПРЫЖОК' : '⬆ ПРОБЕЛ — ПРЫЖОК', 'Перепрыгни трубу или объедь', 'landing');
-                else showBigPlaque(isMobile ? '⬇ СВАЙП ВНИЗ — ПОДНЫР' : '⬇ SHIFT — ПОДНЫР', 'Нырни под шлагбаум или объедь', 'landing');
+                if (actOf(kind) === 'jump') showBigPlaque(isMobile ? '⬆ СВАЙП ВВЕРХ — ПРЫЖОК' : '⬆ ПРОБЕЛ — ПРЫЖОК', 'Перепрыгни или объедь', 'landing');
+                else showBigPlaque(isMobile ? '⬇ СВАЙП ВНИЗ — ПОДНЫР' : '⬇ SHIFT — ПОДНЫР', 'Нырни под него или объедь', 'landing');
             }
             function placeHurdles(dA, dB) {
                 planHurdles(dA, dB).forEach(function(p) {
@@ -6810,7 +6820,7 @@ function startGaragePreview(carId) {
                     scene.add(g);
                     hurdles.push({ mesh: g, kind: p.kind, z: z, x0: g.userData.x0, x1: g.userData.x1, done: false });
                     // «Е» над трубой — в прыжке, под шлагбаумом — низко
-                    collectibles.forEach(function(c) { if (c.type === 'echip' && Math.abs(c.z - z) < 1.2 && c.x > g.userData.x0 - 0.5 && c.x < g.userData.x1 + 0.5 && c.baseY < 0.9) c.baseY = p.kind === 'lowbar' ? 1.05 : 0.45; });
+                    collectibles.forEach(function(c) { if (c.type === 'echip' && Math.abs(c.z - z) < 1.2 && c.x > g.userData.x0 - 0.5 && c.x < g.userData.x1 + 0.5 && c.baseY < 0.9) c.baseY = actOf(p.kind) === 'jump' ? 1.05 : 0.45; });
                 });
                 for (let i = hurdles.length - 1; i >= 0; i--) if (hurdles[i].z > zPos + 40) hurdles.splice(i, 1);
             }
@@ -8922,11 +8932,13 @@ function startGaragePreview(carId) {
 
 
                 // Трубы и шлагбаумы (src/hop-duck.js): перепрыгнуть, поднырнуть или объехать
+                let arrowFor = null; // ближайшее препятствие впереди на полосе игрока — для стрелки-подсказки
                 for (let hi = 0; hi < hurdles.length; hi++) {
                     const h = hurdles[hi];
-                    if (h.kind === 'highbar') blinkHurdle(h.mesh, raceTime);
+                    if (showArrows && !h.done && zPos - h.z > 3 && zPos - h.z < 30 && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && !arrowFor) arrowFor = actOf(h.kind);
+                    blinkHurdle(h.mesh, raceTime);
                     if (h.done) { if (h.z > zPos + 0.6 && h.mesh.visible) h.mesh.visible = false; continue; } // проехал — не закрывает камеру
-                    if (!h.hintShown && h.z < zPos && zPos - h.z < 38) { h.hintShown = true; hurdleHint(h.kind); }
+                    if (!h.hintShown && h.z < zPos && zPos - h.z < 38) { h.hintShown = true; hurdleHint(actOf(h.kind)); }
                     if (!sweptZ(h.z, 0.35) || xPos < h.x0 - 0.25 || xPos > h.x1 + 0.25) { if (h.z > zPos + 1) h.done = true; continue; } // объехал — тоже позади
                     h.done = true;
                     const res = (rideOn(ride) || risk.fever > 0) ? 'smash' : hurdleHit(h.kind, carYOffset, ducking(moves));
@@ -8941,6 +8953,7 @@ function startGaragePreview(carId) {
                         photoBook.request(res === 'under' ? 'Под шлагбаумом!' : 'Через трубу!', res === 'under' ? 5 : 4);
                     }
                 }
+                if (showArrows) moveArrow(gameState === 'racing' && !(ducking(moves) && arrowFor === 'duck') && !(carAirborne && arrowFor === 'jump') ? arrowFor : null); // выполнил — стрелка гаснет
                 // Препятствия (ямы, кочки, масло)
                 if (oilSlideTimer > 0) oilSlideTimer -= deltaTime;
                 
