@@ -7,8 +7,8 @@ import { loadSettings, saveSettings } from '../settings.js';
 import { getCode, normalizeCode, pullSave, pushSave, snapshot, applySnapshot } from '../cloud-save.js';
 
 function controlsNote(v) {
-    return v === 'swipe' ? 'Свайп влево/вправо — полоса, вниз — тормоз, газ жмётся сам'
-        : v === 'buttons' ? 'Руль, газ и тормоз — кнопками на экране'
+    return v === 'swipe' ? 'Свайп влево/вправо — полоса, вверх — прыжок, вниз — подныр; машина едет сама'
+        : v === 'buttons' ? 'Полосы, прыжок и подныр — кнопками на экране; машина едет сама'
         : 'Телефон вертикально — свайпы, боком — кнопки';
 }
 

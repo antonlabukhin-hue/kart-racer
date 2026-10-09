@@ -2659,8 +2659,8 @@ function startGaragePreview(carId) {
             if (!el) return;
             const mobile = !!(window.__isMobile || window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
             el.innerHTML = mobile
-                ? '<b>Как играть</b><div class="ob-keys">Кнопки внизу — газ и полосы<br>Не больше <b>5 аварий</b> · собирай нитро</div>'
-                : '<b>Как играть</b><div class="ob-keys"><span>W</span>/<span>↑</span> газ · <span>A</span><span>D</span> полосы<br><span>P</span> пауза · <span>C</span> камера<br>Лимит: <b>5 аварий</b> · нитро ускоряет</div>';
+                ? '<b>Как играть</b><div class="ob-keys">Машина едет сама · ◀▶ — полосы<br>▲ — прыжок · ▼ — подныр<br>Не больше <b>5 аварий</b> · собирай нитро</div>'
+                : '<b>Как играть</b><div class="ob-keys">Машина едет сама · <span>A</span><span>D</span> полосы<br><span>W</span>/<span>↑</span>/<span>Пробел</span> прыжок · <span>S</span>/<span>↓</span> подныр<br><span>P</span> пауза · <span>C</span> камера<br>Лимит: <b>5 аварий</b> · нитро ускоряет</div>';
             el.classList.add('show');
             if (window.__onboardStop) window.__onboardStop();
             // снять таймеры и слушатели; teardownRaceUI зовёт это при выходе из заезда
@@ -2694,8 +2694,8 @@ function startGaragePreview(carId) {
             try { if (localStorage.getItem(BRIEFING_KEY) === '1') return false; } catch (e) {}
             const mobile = !!(window.__isMobile || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches));
             const controls = mobile
-                ? '<div class="br-keys"><span>▲</span> газ <span>▼</span> тормоз <span>◀</span><span>▶</span> полосы <span>⏸</span> пауза <span>📷</span> камера</div>'
-                : '<div class="br-keys"><span>W</span>/<span>↑</span> газ · <span>S</span>/<span>↓</span> тормоз · <span>A</span><span>D</span>/<span>←</span><span>→</span> полосы<br><span>P</span>/<span>Esc</span> пауза · <span>C</span> камера</div>';
+                ? '<div class="br-keys"><span>▲</span> прыжок <span>▼</span> подныр <span>◀</span><span>▶</span> полосы <span>⏸</span> пауза <span>📷</span> камера</div>'
+                : '<div class="br-keys"><span>W</span>/<span>↑</span> прыжок · <span>S</span>/<span>↓</span> подныр · <span>A</span><span>D</span>/<span>←</span><span>→</span> полосы<br><span>P</span>/<span>Esc</span> пауза · <span>C</span> камера</div>';
             const el = document.createElement('div');
             el.id = 'race-briefing';
             el.setAttribute('role', 'dialog');
@@ -7719,14 +7719,9 @@ function startGaragePreview(carId) {
                 }, { passive: true, signal });
             }
 
-            setupMobileButton(btnGas, 
-                () => { mobileKeys.w = true; },
-                () => { mobileKeys.w = false; }
-            );
-            setupMobileButton(btnBrake,
-                () => { mobileKeys.s = true; },
-                () => { mobileKeys.s = false; }
-            );
+            // ▲ — прыжок, ▼ — подныр (газ жмётся сам)
+            setupMobileButton(btnGas, () => { doHop(); }, () => {});
+            setupMobileButton(btnBrake, () => { doDuck(); }, () => {});
             setupMobileButton(btnLeft,
                 () => { mobileKeys.a = true; },
                 () => { mobileKeys.a = false; }
@@ -7851,7 +7846,8 @@ function startGaragePreview(carId) {
                 oil: ['Масло! Руль лёгкий, как обещания депутата.']
             };
 
-            function getKeys() {
+            function getKeys() { const k = rawKeys(); return { w: true, s: false, a: k.a, d: k.d }; } // газ жмётся сам, тормоза и заднего хода нет: ▲/▼ — прыжок и подныр (src/hop-duck.js)
+            function rawKeys() {
                 const pk = window.__padKeys; // геймпад (src/gamepad.js)
                 if (swipeOn()) { const sk = swipeCtl.keys(xPos, xVelocity, performance.now()); return { w: keys.w || sk.w, s: keys.s || sk.s, a: keys.a || sk.a, d: keys.d || sk.d }; }
                 if (isMobile || pk) {
@@ -7868,8 +7864,8 @@ function startGaragePreview(carId) {
 
             const keydownHandler = (e) => {
                 const k = e.key.toLowerCase();
-                if (k === 'w' || k === 'ц' || k === 'arrowup') { keys.w = true; e.preventDefault(); }
-                if (k === 's' || k === 'ы' || k === 'arrowdown') { keys.s = true; e.preventDefault(); }
+                if ((k === 'w' || k === 'ц' || k === 'arrowup') && !e.repeat) { doHop(); e.preventDefault(); } // вверх — прыжок
+                if ((k === 's' || k === 'ы' || k === 'arrowdown') && !e.repeat) { doDuck(); e.preventDefault(); } // вниз — подныр
                 if (k === 'a' || k === 'ф' || k === 'arrowleft') { keys.a = true; e.preventDefault(); }
                 if (k === 'd' || k === 'в' || k === 'arrowright') { keys.d = true; e.preventDefault(); }
                 if (e.code === 'Space' && !e.repeat) { doHop(); e.preventDefault(); } // пробел — прыжок
