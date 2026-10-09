@@ -6802,10 +6802,12 @@ function startGaragePreview(carId) {
                 arrowAct = act;
                 if (!arrowEl) { arrowEl = document.createElement('div'); arrowEl.id = 'move-arrow'; arrowEl.innerHTML = '<i></i><b></b>'; document.body.appendChild(arrowEl); }
                 arrowEl.className = act ? 'on ' + act : '';
-                arrowEl.lastChild.textContent = act === 'jump' ? (isMobile ? 'СВАЙП ВВЕРХ' : 'ПРОБЕЛ / ↑') : act === 'duck' ? (isMobile ? 'СВАЙП ВНИЗ' : 'S / ↓') : '';
+                const btns = isMobile && !_portraitNow; // боком на телефоне — ещё и кнопки ▲ ▼
+                arrowEl.lastChild.textContent = act === 'jump' ? (btns ? '▲ ИЛИ СВАЙП ВВЕРХ' : isMobile ? 'СВАЙП ВВЕРХ' : 'ПРОБЕЛ / ↑') : act === 'duck' ? (btns ? '▼ ИЛИ СВАЙП ВНИЗ' : isMobile ? 'СВАЙП ВНИЗ' : 'S / ↓') : '';
             }
             const HURDLE_HINT = 'road_racing_hurdle_hint_v1';
             function hurdleHint(kind) { // первые три встречи каждого вида — подсказка, как пройти
+                if (showArrows) return; // в первых заездах подсказывают стрелки на экране
                 let seen = {}; try { seen = JSON.parse(localStorage.getItem(HURDLE_HINT) || '{}'); } catch (e) {}
                 if ((seen[kind] || 0) >= 3) return; // kind — 'jump' | 'duck'
                 seen[kind] = (seen[kind] || 0) + 1; try { localStorage.setItem(HURDLE_HINT, JSON.stringify(seen)); } catch (e) {}
