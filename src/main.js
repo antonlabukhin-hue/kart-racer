@@ -1,5 +1,6 @@
 
 import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowTheme } from './snow.js';
+import { createSky } from './sky.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
         import { AnimalSpawner } from './animals.js';
@@ -10707,7 +10708,7 @@ function startGaragePreview(carId) {
             })();
             let chunkCull = null, _cullN = 0; try { chunkCull = buildChunks(scene); } catch (e) { console.warn('chunks', e); }
             if (INF) {
-                infWorld = inf.startWorld({ rig: roadRig, ground: ground, hills: infHills, lite: isMobile || quality === 'low' }); // мир вокруг дороги (src/inf-world.js)
+                infWorld = inf.startWorld({ rig: roadRig, ground: ground, hills: infHills, lite: isMobile || quality === 'low', sky: createSky(scene) }); // мир вокруг дороги (src/inf-world.js)
             } // участки трассы: дальнее не обходится (src/chunk-cull.js)
 
             console.log('🏁 Игра запущена!');

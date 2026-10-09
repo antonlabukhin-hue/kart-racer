@@ -49,7 +49,7 @@ function lamp(g, x, z) {
 }
 
 /**
- * o: { scene, startZ, trackWidth, rig (группа дороги), ground, hills (холмы обочин), lights: { ambient, hemi, sun }, lite (мобильный/низкое качество) }
+ * o: { scene, startZ, trackWidth, rig (группа дороги), ground, hills (холмы обочин), lights: { ambient, hemi, sun }, lite (мобильный/низкое качество), sky (src/sky.js) }
  * tick(zPos) → { dist, theme, next, k } — каждый кадр: дорога, участки обочин, небо и свет
  */
 export function createInfWorld(o) {
@@ -145,6 +145,7 @@ export function createInfWorld(o) {
         o.lights.hemi.intensity = base.hemi * L;
         o.lights.sun.intensity = base.sun * L;
         setKitGlow((1 - L) * 1.7); // ночью и в дождь окна и вывески светятся
+        if (o.sky) { o.sky.setTheme(a, b, k, mixHex(a.fog, b.fog, k)); o.sky.tick(1 / 60); } // небо и силуэты на горизонте (src/sky.js)
         return t;
     }
 

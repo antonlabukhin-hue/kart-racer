@@ -7,23 +7,23 @@ import { pickPattern, expandPattern, patternSpan, patternGap } from './patterns.
 
 /** Пейзажи идут по кругу; у каждого — стиль декора (src/decor.js), небо/туман/земля, скользкое пятно, звери */
 export const THEMES = [
-    { id: 'day', name: 'Арсеньев, день', style: 'arsenev', sky: 0xe8c898, fog: 0xe0c090, fogNear: 55, fogFar: 200, ground: 0xa08866, light: 1, slide: 'oil',
+    { id: 'day', name: 'Арсеньев, день', style: 'arsenev', sky: 0xe8c898, zenith: 0x5b8ad0, fog: 0xe0c090, fogNear: 55, fogFar: 200, ground: 0xa08866, light: 1, slide: 'oil',
         animals: ['DOG', 'CAT', 'DEER', 'BOAR', 'FOX', 'HUMAN', 'CHICKEN'] },
-    { id: 'village', name: 'Деревня', style: 'village', sky: 0xd4e2ea, fog: 0xcad8d4, fogNear: 55, fogFar: 200, ground: 0x7e9a52, light: 1.05, slide: 'oil',
+    { id: 'village', name: 'Деревня', style: 'village', sky: 0xd4e2ea, zenith: 0x4f8fe0, fog: 0xcad8d4, fogNear: 55, fogFar: 200, ground: 0x7e9a52, light: 1.05, slide: 'oil',
         animals: ['CHICKEN', 'DOG', 'CAT', 'BOAR', 'FOX', 'DEER'] },
-    { id: 'promzona', name: 'Промзона', style: 'industrial', sky: 0x9a8a78, fog: 0x8a7a68, fogNear: 40, fogFar: 170, ground: 0x7a7468, light: 0.9, slide: 'acid',
+    { id: 'promzona', name: 'Промзона', style: 'industrial', sky: 0x9a8a78, zenith: 0x5c6378, fog: 0x8a7a68, fogNear: 40, fogFar: 170, ground: 0x7a7468, light: 0.9, slide: 'acid',
         animals: ['CROC', 'RHINO', 'DINO', 'PEACOCK', 'DOG'] },
-    { id: 'snow', name: 'Снежная тайга', style: 'forest', snow: true, sky: 0xc8d4e0, fog: 0xd0dae4, fogNear: 35, fogFar: 160, ground: 0xe8f0f8, light: 1.05, slide: 'ice',
+    { id: 'snow', name: 'Снежная тайга', style: 'forest', snow: true, sky: 0xc8d4e0, zenith: 0x7fa3d6, fog: 0xd0dae4, fogNear: 35, fogFar: 160, ground: 0xe8f0f8, light: 1.05, slide: 'ice',
         animals: ['BEAR', 'FOX', 'DEER', 'BOAR'] },
-    { id: 'city', name: 'Микрорайон', style: 'city', sky: 0xdcc8a8, fog: 0xd4c0a0, fogNear: 50, fogFar: 190, ground: 0x8a8a78, light: 0.95, slide: 'oil',
+    { id: 'city', name: 'Микрорайон', style: 'city', sky: 0xdcc8a8, zenith: 0x6690d0, fog: 0xd4c0a0, fogNear: 50, fogFar: 190, ground: 0x8a8a78, light: 0.95, slide: 'oil',
         animals: ['DOG', 'CAT', 'HUMAN', 'CHICKEN'] },
-    { id: 'night', name: 'Ночная трасса', style: 'arsenev', night: true, sky: 0x0a1020, fog: 0x12182a, fogNear: 22, fogFar: 120, ground: 0x3a4458, light: 0.45, slide: 'oil',
+    { id: 'night', name: 'Ночная трасса', style: 'arsenev', night: true, sky: 0x0a1020, zenith: 0x03050e, fog: 0x12182a, fogNear: 22, fogFar: 120, ground: 0x3a4458, light: 0.45, slide: 'oil',
         animals: ['BEAR', 'BOAR', 'DOG', 'CAT', 'FOX', 'DEER'] },
-    { id: 'svalka', name: 'Свалка «Надежда»', style: 'junk', sky: 0xb0a080, fog: 0xa89878, fogNear: 45, fogFar: 180, ground: 0x8a7650, light: 0.95, slide: 'tar',
+    { id: 'svalka', name: 'Свалка «Надежда»', style: 'junk', sky: 0xb0a080, zenith: 0x7488aa, fog: 0xa89878, fogNear: 45, fogFar: 180, ground: 0x8a7650, light: 0.95, slide: 'tar',
         animals: ['LION', 'MONKEY', 'ZEBRA', 'HIPPO', 'GIRAFFE'] },
-    { id: 'rain', name: 'Дождь на трассе', style: 'arsenev', rain: true, sky: 0x6a7a88, fog: 0x6a7a88, fogNear: 25, fogFar: 110, ground: 0x66727c, light: 0.75, slide: 'oil',
+    { id: 'rain', name: 'Дождь на трассе', style: 'arsenev', rain: true, sky: 0x6a7a88, zenith: 0x3b4552, fog: 0x6a7a88, fogNear: 25, fogFar: 110, ground: 0x66727c, light: 0.75, slide: 'oil',
         animals: ['DOG', 'DEER', 'FOX', 'CAT', 'HUMAN', 'BOAR'] },
-    { id: 'jungle', name: 'Джунгли-зоопарк', style: 'forest', sky: 0x4a6a40, fog: 0x3d5a38, fogNear: 30, fogFar: 140, ground: 0x5a7a40, light: 0.9, slide: 'tar',
+    { id: 'jungle', name: 'Джунгли-зоопарк', style: 'forest', sky: 0x4a6a40, zenith: 0x2f5a4a, fog: 0x3d5a38, fogNear: 30, fogFar: 140, ground: 0x5a7a40, light: 0.9, slide: 'tar',
         animals: ['CROC', 'ELEPHANT', 'RHINO', 'LION', 'MONKEY'] }
 ];
 /** Номер пейзажа по id (для setThemeStart) */
