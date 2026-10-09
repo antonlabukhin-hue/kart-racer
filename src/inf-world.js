@@ -180,7 +180,7 @@ export function createInfWorld(o) {
             if (sc.smoke && sc.smoke.length) addMover(i, createSmoke(scene, sc.smoke)); // дым из труб и бочек (src/smoke.js)
         } catch (e) { console.warn('scenery', e); }
         setKeepOut(null);
-        if (bridgeZ != null) { g.add(createBridge(bridgeZ, W)); addMover(i, createBridgeTrain(scene, bridgeZ)); }
+        if (bridgeZ != null) { g.add(createBridge(bridgeZ, W)); addMover(i, createBridgeTrain(scene, bridgeZ, null, o.onEvent)); }
         freezeStatic(g);
         return g;
     }

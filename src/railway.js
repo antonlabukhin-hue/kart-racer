@@ -132,7 +132,7 @@ export function createTrain(kind, rnd) {
  * и проходит над дорогой, когда игрок под мостом. Вне моста состав не рисуется.
  */
 export const TRIGGER = 170;
-export function createBridgeTrain(scene, z, rnd) {
+export function createBridgeTrain(scene, z, rnd, onEvent) {
     const r = rnd || Math.random;
     const kind = r() < 0.55 ? 'elektrichka' : 'freight';
     const train = createTrain(kind, r);
@@ -157,6 +157,8 @@ export function createBridgeTrain(scene, z, rnd) {
             const tail = head - dir * L;
             train.position.x = head;
             train.visible = Math.max(head, tail) > -BRIDGE_SPAN && Math.min(head, tail) < BRIDGE_SPAN;
+            // игрок под мостом, а над дорогой — вагоны: «Опоздал на электричку» (src/fun-achievements.js)
+            if (!this._under && Math.abs(dist) < 2.5 && Math.min(head, tail) < 2 && Math.max(head, tail) > -2) { this._under = true; if (onEvent) onEvent('late_train'); }
             if (dir * tail > BRIDGE_SPAN + 5) { state = 'done'; train.visible = false; }
         },
         dispose: function() { scene.remove(train); }
