@@ -173,3 +173,22 @@ export function createHurdle(kind, lanes, laneXs, z, laneW) {
 export function blinkHurdle(g, t) {
     (g.userData.lamps || []).forEach(function(m, i) { m.emissiveIntensity = Math.sin(t * 9 + i * Math.PI) > 0 ? 1.8 : 0.15; });
 }
+
+/**
+ * Подсказка полосы (стрелки ← → в первых заездах): впереди на полосе игрока помеха — куда уйти.
+ * threats — [{ x, z }] попутки и препятствия; машина едет к −z. Возвращает 'left' | 'right' | null.
+ * Свободная соседняя полоса — без помех рядом; обе свободны — ближе к середине дороги.
+ */
+export function laneAdvice(x, z, threats, laneW) {
+    const W = laneW || 2, ahead = function(t) { return z - t.z; };
+    const inLane = function(lx, t, lo, hi) { const a = ahead(t); return Math.abs(t.x - lx) < W * 0.5 && a > lo && a < hi; };
+    const blocked = threats.some(function(t) { return inLane(x, t, 6, 26); });
+    if (!blocked) return null;
+    const free = [-1, 1].filter(function(s) {
+        const lx = x + s * W;
+        return Math.abs(lx) <= W * 1.05 && !threats.some(function(t) { return inLane(lx, t, -3, 30); });
+    });
+    if (!free.length) return null;
+    if (free.length === 2) return x > 0.1 ? 'left' : x < -0.1 ? 'right' : 'left';
+    return free[0] < 0 ? 'left' : 'right';
+}

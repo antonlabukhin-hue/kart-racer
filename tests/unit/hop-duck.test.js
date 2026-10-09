@@ -35,3 +35,15 @@ describe('прыжок и подныр', () => {
         }
     });
 });
+
+import { laneAdvice } from '../../src/hop-duck.js';
+describe('подсказка полосы', () => {
+    it('помеха впереди на моей полосе — в свободную соседнюю', () => {
+        expect(laneAdvice(0, 100, [])).toBe(null);
+        expect(laneAdvice(0, 100, [{ x: 0, z: 85 }])).toBe('left');                    // обе свободны
+        expect(laneAdvice(0, 100, [{ x: 0, z: 85 }, { x: -2, z: 90 }])).toBe('right');  // слева тоже занято
+        expect(laneAdvice(-2, 100, [{ x: -2, z: 85 }])).toBe('right');                 // у края — только к середине
+        expect(laneAdvice(0, 100, [{ x: 0, z: 85 }, { x: -2, z: 88 }, { x: 2, z: 92 }])).toBe(null); // некуда
+        expect(laneAdvice(0, 100, [{ x: 0, z: 60 }])).toBe(null);                       // далеко
+    });
+});

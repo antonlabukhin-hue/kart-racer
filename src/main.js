@@ -8,7 +8,7 @@ import { rollArtifact, grantArtifact, createArtifactToken, artifactsHtml, ARTIFA
 import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
-import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf } from './hop-duck.js';
+import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice } from './hop-duck.js';
 import { RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
@@ -6797,13 +6797,15 @@ function startGaragePreview(carId) {
             const ARROW_RUNS = 3; // первые заезды — стрелки на экране (как в Subway Surfers)
             const showArrows = (currentPlayer && currentPlayer.infinite ? currentPlayer.infinite.runs || 0 : 0) < ARROW_RUNS || (import.meta.env.MODE === 'test' && window.__forceArrows);
             let arrowEl = null, arrowAct = null;
-            function moveArrow(act) { // act: 'jump' | 'duck' | null
+            function moveArrow(act) { // act: 'jump' | 'duck' | 'left' | 'right' | null
                 if (act === arrowAct) return;
                 arrowAct = act;
                 if (!arrowEl) { arrowEl = document.createElement('div'); arrowEl.id = 'move-arrow'; arrowEl.innerHTML = '<i></i><b></b>'; document.body.appendChild(arrowEl); }
                 arrowEl.className = act ? 'on ' + act : '';
-                const btns = isMobile && !_portraitNow; // боком на телефоне — ещё и кнопки ▲ ▼
-                arrowEl.lastChild.textContent = act === 'jump' ? (btns ? '▲ ИЛИ СВАЙП ВВЕРХ' : isMobile ? 'СВАЙП ВВЕРХ' : 'ПРОБЕЛ / ↑') : act === 'duck' ? (btns ? '▼ ИЛИ СВАЙП ВНИЗ' : isMobile ? 'СВАЙП ВНИЗ' : 'S / ↓') : '';
+                const btns = isMobile && !_portraitNow; // боком на телефоне — кнопки ▲ ▼ ◀ ▶; полосы свайпом — только вертикально
+                const T = { jump: btns ? '▲ ИЛИ СВАЙП ВВЕРХ' : isMobile ? 'СВАЙП ВВЕРХ' : 'ПРОБЕЛ / ↑', duck: btns ? '▼ ИЛИ СВАЙП ВНИЗ' : isMobile ? 'СВАЙП ВНИЗ' : 'S / ↓',
+                    left: btns ? '◀ ВЛЕВО' : isMobile ? 'СВАЙП ВЛЕВО' : 'A / ←', right: btns ? '▶ ВПРАВО' : isMobile ? 'СВАЙП ВПРАВО' : 'D / →' };
+                arrowEl.lastChild.textContent = T[act] || '';
             }
             const HURDLE_HINT = 'road_racing_hurdle_hint_v1';
             function hurdleHint(kind) { // первые три встречи каждого вида — подсказка, как пройти
@@ -8955,6 +8957,7 @@ function startGaragePreview(carId) {
                         photoBook.request(res === 'under' ? 'Под шлагбаумом!' : 'Через трубу!', res === 'under' ? 5 : 4);
                     }
                 }
+                if (showArrows && !arrowFor) { const th = []; cars.forEach(function(c) { if (c.active !== false && c.mesh && c.mesh.visible !== false) th.push(c); }); obstacles.forEach(function(o) { if (o.active) th.push(o); }); arrowFor = laneAdvice(xPos, zPos, th); } // впереди помеха на полосе — стрелка ← / →
                 if (showArrows) moveArrow(gameState === 'racing' && !(ducking(moves) && arrowFor === 'duck') && !(carAirborne && arrowFor === 'jump') ? arrowFor : null); // выполнил — стрелка гаснет
                 // Препятствия (ямы, кочки, масло)
                 if (oilSlideTimer > 0) oilSlideTimer -= deltaTime;
