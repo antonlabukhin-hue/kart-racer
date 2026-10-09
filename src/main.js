@@ -10182,7 +10182,7 @@ function startGaragePreview(carId) {
                 camSpeed += (speed - camSpeed) * (1 - Math.exp(-deltaTime / 0.25));
                 const spdK = Math.min(1, Math.abs(camSpeed) / (MAX_SPEED || 0.35));
                 const camMode = (typeof window.__camMode === 'number') ? window.__camMode : 0;
-                let targetX, targetY, targetZ, lookY, lookZoff;
+                let targetX, targetY, targetZ, lookY, lookZoff, dk = 1, dl = 1;
                 if (camMode === 1) {
                     targetX = xPos; targetY = 1.35; targetZ = zPos - 0.2;
                     lookY = 0.9; lookZoff = -14;
@@ -10198,7 +10198,7 @@ function startGaragePreview(carId) {
                     const rig = chaseRig(camera.aspect < 1 ? 'portrait' : isMobile ? 'mobile' : 'desktop', spdK);
                     targetX = xPos * (camera.aspect < 1 ? 0.3 : 0.15);
                     // угол на скорости шире — камера ближе во столько же раз (src/portrait.js dollyK): машина в кадре не уменьшается и не уезжает
-                    const dk0 = dollyK(baseFov(), camera.fov), dk = Math.pow(dk0, DOLLY_POW), dl = Math.pow(dk0, DOLLY_LOOK), cy = 0.3;
+                    const dk0 = dollyK(baseFov(), camera.fov); dk = Math.pow(dk0, DOLLY_POW); dl = Math.pow(dk0, DOLLY_LOOK); const cy = 0.3;
                     targetY = cy + (rig.height - cy) * dk;
                     targetZ = zPos + rig.dist * dk;
                     lookY = cy + (rig.lookY - cy) * dl;
@@ -10213,12 +10213,12 @@ function startGaragePreview(carId) {
                 const kLook = 1 - Math.pow(1 - 0.22, deltaTime * 60);
                 camera.position.x += (targetX - camera.position.x) * kFollow;
                 if (camMode !== 0) targetY += carYOffset; /* капот, салон, сбоку — камера поднимается с машиной в прыжке (иначе оказывается внутри кузова) */ camera.position.y = (camMode === 1 || camMode === 2) ? targetY : camera.position.y + (targetY - camera.position.y) * kFollow; // из кабины — без запаздывания
-                camera.position.z = targetZ + (camMode === 0 ? (camera.aspect < 1 ? 0 : chaseLag(MAX_SPEED, follow)) /* постоянное отставание: на нитро, «В УДАРЕ» и с ростом скорости машина в кадре на месте */ : camSpeed * (1 - follow) / follow);
+                camera.position.z = targetZ + (camMode === 0 ? (camera.aspect < 1 ? 0 : chaseLag(MAX_SPEED, follow) * dk) /* постоянное отставание: на нитро, «В УДАРЕ» и с ростом скорости машина в кадре на месте */ : camSpeed * (1 - follow) / follow);
                 if (!_v.look) _v.look = new THREE.Vector3(xPos * 0.5, lookY, zPos + lookZoff);
                 // смотрим ближе к машине — она не уезжает под нижний край
                 _v.look.x += (xPos * 0.5 - _v.look.x) * kLook;
                 _v.look.y += (lookY + (camMode !== 0 ? carYOffset : 0) - _v.look.y) * kLook;
-                _v.look.z = zPos + lookZoff + (camera.aspect < 1 ? 0 : camMode === 0 ? chaseLag(MAX_SPEED, 0.22) : camSpeed * (1 - 0.22) / 0.22); /* взгляд — с тем же постоянным отставанием */
+                _v.look.z = zPos + lookZoff + (camera.aspect < 1 ? 0 : camMode === 0 ? chaseLag(MAX_SPEED, 0.22) * dl : camSpeed * (1 - 0.22) / 0.22); /* взгляд — с тем же постоянным отставанием */
                 camera.lookAt(_v.look);
                 if (camMode === 0) { camRoll += (-xVelocity * 0.11 - camRoll) * (1 - Math.exp(-deltaTime / 0.12)); camera.rotateZ(camRoll); } // крен на смене полосы — до ~3.5°
                 // тень следует за игроком (узкий frustum)
