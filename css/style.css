@@ -6452,3 +6452,10 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 #main-menu-screen .mm-top > .mm-wallet { align-items: stretch !important; }
 #main-menu-screen .mm-top > .mm-icon { flex: 0 0 var(--mm-top-h) !important; width: var(--mm-top-h) !important; justify-content: center; }
 #main-menu-screen .mm-top .mm-ava { width: calc(var(--mm-top-h) - 10px) !important; height: calc(var(--mm-top-h) - 10px) !important; }
+
+/* ===== Горизонтальный режим: множитель риска «×N» — сверху, справа от «Е» (внизу по центру он лез под машину);
+   шкала брони — у самого низа, ниже «В УДАРЕ»: с бронёй машина у низа экрана, и шкала её не закрывает ===== */
+@media (orientation: landscape) {
+    :root body.race-mode #risk-hud#risk-hud { left: calc(50% + 62px) !important; right: auto !important; bottom: auto !important; top: max(4px, env(safe-area-inset-top)) !important; transform: none !important; } /* в верхней строке, справа от «Е» */
+    :root body.race-mode #armor-bar#armor-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important; }
+}
