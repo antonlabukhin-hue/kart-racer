@@ -93,7 +93,7 @@ test('отбитый на нитро снаряд ранит босса скво
         const f = () => { d.giveNitro(); if (++n < 150 && d.boss.hp >= 7) requestAnimationFrame(f); else res(); };
         f();
     }));
-    expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBe(6);
+    expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBeLessThan(7); // газ жмётся сам — машина может пройти сквозь залп и отбить больше одного
 
     // кувалда: подбираем, таран по броне проходит
     await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.spawnHammer(); const pk = d.bossPickups[0]; d.setX(pk.x); });
