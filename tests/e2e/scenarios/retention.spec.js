@@ -86,7 +86,7 @@ test('«Привет» с новостями, машины в подарок: в
     const hello = page.locator('.hello-modal');
     await expect(hello).toContainText('Тестер', { timeout: 15_000 });
     await expect(hello.locator('.hn-item.new')).toHaveCount(4); // новых — не больше 4, остальные — в «Ранее»
-    await expect(hello.locator('.hn-item.new').first()).toContainText('Машина недели');
+    await expect(hello.locator('.hn-item.new', { hasText: 'Машина недели' })).toHaveCount(1); // первой может стоять «Мем недели» (src/moments.js)
     await expect(hello.locator('.hn-old')).toContainText('Машины в подарок'); // старые новости — свёрнуты в «Ранее»
     await expect(hello.locator('.hn-row[data-act="week"]')).toContainText(/\/ \d+\s000 м/);
     await hello.locator('.hn-go').click();
