@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { themeAt, mixHex } from './infinite.js';
+import { themeAt, mixHex, duskAt, accentCss } from './infinite.js';
 import * as Decor from './decor.js';
 import { createRock, createLog, createForestInstanced } from './biomes.js';
 import { createSpruce, createSnowBank, createSnowman } from './snow.js';
@@ -206,12 +206,15 @@ export function createInfWorld(o) {
         return true;
     }
 
+    let lastAccent = '';
     function atmosphere(d) {
         const t = themeAt(d), a = t.theme, b = t.next, k = t.k;
         const lerp = function(x, y) { return x + (y - x) * k; };
+        const dusk = duskAt(a, b, k); // закат перед ночью и рассвет после неё (src/infinite.js)
+        const fogHex = dusk ? mixHex(mixHex(a.fog, b.fog, k), dusk.fog, dusk.k * 0.7) : mixHex(a.fog, b.fog, k);
         if (scene.background && scene.background.isColor) scene.background.setHex(mixHex(a.sky, b.sky, k));
         if (scene.fog) {
-            scene.fog.color.setHex(mixHex(a.fog, b.fog, k));
+            scene.fog.color.setHex(fogHex);
             scene.fog.near = lerp(a.fogNear, b.fogNear);
             scene.fog.far = lerp(a.fogFar, b.fogFar);
         }
@@ -223,7 +226,10 @@ export function createInfWorld(o) {
         o.lights.hemi.intensity = base.hemi * L;
         o.lights.sun.intensity = base.sun * L;
         setKitGlow((1 - L) * 1.7); // ночью и в дождь окна и вывески светятся
-        if (o.sky) { o.sky.setTheme(a, b, k, mixHex(a.fog, b.fog, k)); o.sky.tick(1 / 60); } // небо и силуэты на горизонте (src/sky.js)
+        if (o.sky) { o.sky.setTheme(a, b, k, fogHex, dusk); o.sky.tick(1 / 60); }
+        // фирменный цвет пейзажа — рамки плашек заезда (css --zone-accent); шагами по 0.1, а не каждый кадр
+        const acc = accentCss(a, b, Math.round(k * 10) / 10);
+        if (acc !== lastAccent && typeof document !== 'undefined') { lastAccent = acc; try { document.documentElement.style.setProperty('--zone-accent', acc); } catch (e) {} } // небо и силуэты на горизонте (src/sky.js)
         return t;
     }
 

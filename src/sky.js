@@ -343,13 +343,14 @@ export function createSky(scene, o) {
     return {
         group: group,
         /** a, b — пейзажи (src/infinite.js THEMES), k — доля второго; fog — текущий цвет тумана */
-        setTheme: function(a, b, k, fogHex) {
+        setTheme: function(a, b, k, fogHex, dusk) {
             const night = (a.night ? 1 - k : 0) + (b.night ? k : 0);
             const du = dome.material.uniforms;
-            du.uTop.value.setHex(mixHex(zenithFor(a), zenithFor(b), k));
-            du.uHorizon.value.setHex(fogHex);
+            const top = mixHex(zenithFor(a), zenithFor(b), k);
+            du.uTop.value.setHex(dusk ? mixHex(top, dusk.zenith, dusk.k * 0.75) : top);
+            du.uHorizon.value.setHex(dusk ? mixHex(fogHex, dusk.horizon, dusk.k * 0.6) : fogHex); // закат: горизонт оранжевый, зенит лиловый
             du.uNight.value = night;
-            du.uSun.value.setHex(night > 0.5 ? 0xb8c8e8 : 0xfff0c0);
+            du.uSun.value.setHex(night > 0.5 ? 0xb8c8e8 : dusk ? mixHex(0xfff0c0, 0xff7a3a, dusk.k * 0.8) : 0xfff0c0);
             const dark = night > 0.5 ? 0x020306 : 0x3c4250;
             // дальний хребет почти растворён в дымке, ближний слой — заметнее
             setLayer(far, null, mixHex(fogHex, dark, 0.06), mixHex(fogHex, dark, 0.2), 0, 1);

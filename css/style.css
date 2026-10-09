@@ -6468,3 +6468,10 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
     background: linear-gradient(180deg, rgba(30, 20, 0, 0.46), rgba(14, 8, 0, 0.52)) !important; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18) !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.5); }
 :root body.race-mode #mobile-controls .mc-cam .cam-btn, :root body.race-mode #hud-pause-btn { background: rgba(14, 10, 0, 0.42) !important; }
+
+/* ===== Фирменный цвет пейзажа (src/infinite.js accent → --zone-accent): рамки плашек заезда ===== */
+:root body.race-mode #game-hud.hud-v2#game-hud, :root body.race-mode #hud-menu-btn#hud-menu-btn, :root body.race-mode #e-counter#e-counter,
+:root body.race-mode #mobile-controls .mc-cam .cam-btn {
+    border-color: color-mix(in srgb, var(--zone-accent, #ffd23c) 75%, transparent) !important;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--zone-accent, #ffd23c) 25%, transparent), 0 2px 10px rgba(0, 0, 0, 0.18) !important;
+    transition: border-color 1.2s, box-shadow 1.2s; }
