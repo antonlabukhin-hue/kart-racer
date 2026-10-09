@@ -19,10 +19,13 @@ describe('безумный транспорт', () => {
         tickRide(st, 6.8); expect(rideLift(st)).toBeLessThan(0.6);
         const tr = createRideState(); startRide(tr, 'tractor'); tickRide(tr, 3); expect(rideLift(tr)).toBe(0);
     });
-    it('у каждого своя модель; жетон редкий — на 3000 м не больше трёх', () => {
+    it('у каждого своя модель; жетон — не чаще одного на 4000 м, как бы ни резали трассу', () => {
         RIDE_IDS.forEach(function(id) { expect(createRideModel(id).children.length).toBeGreaterThan(0); expect(RIDES[id].name).toBeTruthy(); });
-        const items = planStretch(0, 3000, Math.random, { slide: 'slide', nextGap: Infinity }).items.filter(function(i) { return i.kind === 'ride'; });
-        expect(items.length).toBeGreaterThanOrEqual(1);
-        expect(items.length).toBeLessThanOrEqual(3);
+        const ds = [];
+        for (let a = 0; a < 20000; a += 1300) planStretch(a, a + 1300, Math.random, { slide: 'slide', nextGap: Infinity }).items.filter(function(i) { return i.kind === 'ride'; }).forEach(function(i) { ds.push(i.d); });
+        ds.sort(function(a, b) { return a - b; });
+        expect(ds.length).toBeGreaterThanOrEqual(3);
+        for (let i = 1; i < ds.length; i++) expect(Math.floor(ds[i] / 4000)).not.toBe(Math.floor(ds[i - 1] / 4000));
+        expect(ds[0]).toBeGreaterThanOrEqual(1500);
     });
 });
