@@ -4,6 +4,7 @@ import { createSky } from './sky.js';
 import { addBlobShadow } from './ground-shadow.js';
 import { createCarTrail } from './car-trail.js';
 import { createMoments, planMoments, momentOfWeek } from './moments.js';
+import { rollArtifact, grantArtifact, createArtifactToken, artifactsHtml, ARTIFACT_CHANCE } from './artifacts.js';
 import { record as recordFun } from './fun-achievements.js';
 import { buildTraffic, KINDS as TRAFFIC_KINDS } from './traffic-cars.js';
         import * as THREE from 'three';
@@ -2120,7 +2121,7 @@ function renderGaragePartsPanel() {
             const grid = document.getElementById('trophy-grid');
             if (!grid || !currentPlayer) return;
             ensureProfileFields(currentPlayer);
-            const bs = document.getElementById('badge-set'); if (bs) { if (backfillStickers(currentPlayer)) saveCurrentPlayer(); bs.innerHTML = badgesHtml(currentPlayer); const ss = document.getElementById('sticker-set'); if (ss) ss.innerHTML = stickersHtml(currentPlayer); wireTrophyTabs(); /* три вкладки: значки, наклейки, кубки (src/ui/trophy-tabs.js) */ (ss || bs).querySelectorAll('[data-sticker]').forEach(function(el) { el.onclick = function() { const lo = (ss || bs).querySelector('.sticker-lore'); lo.hidden = false; lo.textContent = el.title; }; }); } // значки 90-х и наклейки «Досье курьера»
+            const bs = document.getElementById('badge-set'); if (bs) { if (backfillStickers(currentPlayer)) saveCurrentPlayer(); bs.innerHTML = badgesHtml(currentPlayer); { const as = document.getElementById('artifact-set'); if (as) as.innerHTML = artifactsHtml(currentPlayer); } /* альбом «Артефакты 90-х» (src/artifacts.js) */ const ss = document.getElementById('sticker-set'); if (ss) ss.innerHTML = stickersHtml(currentPlayer); wireTrophyTabs(); /* три вкладки: значки, наклейки, кубки (src/ui/trophy-tabs.js) */ (ss || bs).querySelectorAll('[data-sticker]').forEach(function(el) { el.onclick = function() { const lo = (ss || bs).querySelector('.sticker-lore'); lo.hidden = false; lo.textContent = el.title; }; }); } // значки 90-х и наклейки «Досье курьера»
             grid.innerHTML = TROPHIES.map(t => {
                 const on = !!currentPlayer.trophies[t.id];
                 return '<div class="trophy-slot' + (on?'':' locked') + '" data-trophy="' + t.id + '">' +
@@ -6761,6 +6762,12 @@ function startGaragePreview(carId) {
                 scene.add(m);
                 return { mesh: m, x: x, z: z, type: 'power', power: type, active: true, bob: Math.random() * 6, radius: type === 'shield' ? 0.8 : 0.7, baseY: 0.8 };
             }
+            function createArtifactItem(x, z) { // артефакт 90-х (src/artifacts.js): светится, висит над дорогой
+                const a = rollArtifact(currentPlayer), m = createArtifactToken(a);
+                m.position.set(x, 1.0, z);
+                scene.add(m);
+                return { mesh: m, x: x, z: z, type: 'artifact', art: a, active: true, bob: Math.random() * 6, radius: 0.75, baseY: 1.0 };
+            }
             function createVhsItem(x, y, z) {
                 const m = createCassette();
                 m.position.set(x, y, z);
@@ -6909,6 +6916,7 @@ function startGaragePreview(carId) {
                         setFracs.push(fr[i]);
                         scene.add(createRoadSign(EVENT_SIGNS[kind], TRACK_WIDTH / 2 + 1.8, ez + 55, { big: true }));
                     });
+                    if (INF && Math.random() < ARTIFACT_CHANCE) { const az = _zAt(0.25 + Math.random() * 0.5), al = Math.floor(Math.random() * 3); collectibles.push(createArtifactItem(_rampLaneXs[al], az)); } // артефакт 90-х — примерно раз на круг
                     pick.landmarks.forEach(function(kind, i) {
                         const side = Math.random() < 0.5 ? -1 : 1;
                         const lz = _zAt(0.12 + i * 0.4 + Math.random() * 0.25);
@@ -9089,7 +9097,7 @@ function startGaragePreview(carId) {
                         c.bob += deltaTime * 3;
                         c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.07;
                         c.mesh.rotation.y += deltaTime * 3.2;
-                    } else if (c.type === 'power' || c.type === 'letter') {
+                    } else if (c.type === 'power' || c.type === 'letter' || c.type === 'artifact') {
                         c.bob += deltaTime * 3;
                         c.mesh.position.y = c.baseY + Math.sin(c.bob) * 0.1;
                     } else if (c.type === 'vhs') {
@@ -9125,6 +9133,10 @@ function startGaragePreview(carId) {
                             try { if (window.soundEngine) window.soundEngine.playSfx('ring', 1, ringPitch(ringChain, performance.now() / 1000)); } catch (e) {} // «колечко», как в 16-битных играх; в цепочке — всё выше (src/juice.js)
                         } else if (c.type === 'power') {
                             grabPower(c.power);
+                        } else if (c.type === 'artifact') {
+                            const ga = grantArtifact(currentPlayer, c.art); saveCurrentPlayer();
+                            try { showBigPlaque(c.art.icon + ' ' + (ga.setDone ? 'АЛЬБОМ СОБРАН!' : ga.isNew ? c.art.name.toUpperCase() : 'УЖЕ ЕСТЬ: +' + ga.chips + ' Е'), ga.isNew ? c.art.memo + ' · +' + ga.chips + ' Е' : 'Повтор — в альбоме уже есть', 'armor'); } catch (e) {}
+                            try { if (window.soundEngine) window.soundEngine.playSfx('vhs', 1); } catch (e) {}
                         } else if (c.type === 'letter') {
                             const w = pickupLetter(currentPlayer, dayKey(new Date()), collectibles.filter(function(o) { return o.type === 'letter' && o.active; }));
                             if (w) { saveCurrentPlayer(); showBigPlaque(w.title, w.sub, w.done ? 'crate-good' : 'armor'); try { soundEngine.playSfx(w.done ? 'vhs' : 'ring', 1.3); } catch (e) {} }

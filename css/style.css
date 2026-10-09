@@ -6475,3 +6475,12 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
     border-color: color-mix(in srgb, var(--zone-accent, #ffd23c) 75%, transparent) !important;
     box-shadow: 0 0 10px color-mix(in srgb, var(--zone-accent, #ffd23c) 25%, transparent), 0 2px 10px rgba(0, 0, 0, 0.18) !important;
     transition: border-color 1.2s, box-shadow 1.2s; }
+
+/* ===== Альбом «Артефакты 90-х» (src/artifacts.js) ===== */
+#artifact-set .art-head { margin: 6px 0 10px; font: 800 14px system-ui, sans-serif; color: #ffe08a; }
+#artifact-set .art-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+#artifact-set .art-card { padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.15); color: #aaa; text-align: center; }
+#artifact-set .art-card.on { background: linear-gradient(180deg, rgba(255,210,60,0.14), rgba(255,160,40,0.06)); border: 1px solid rgba(255,210,60,0.5); color: #fff; }
+#artifact-set .art-card i { display: block; font-style: normal; font-size: 30px; line-height: 1.2; }
+#artifact-set .art-card b { display: block; font-size: 13px; margin: 2px 0; }
+#artifact-set .art-card small { display: block; font-size: 11px; color: #e8d8b0; line-height: 1.3; }
