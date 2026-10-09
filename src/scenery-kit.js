@@ -225,12 +225,12 @@ export function template(name, fn) {
 }
 
 /** Поставить шаблон: сдвиг (x, y, z), поворот rot четвертями оборота (0..3), масштаб s, оттенок tint (умножается на цвет) */
-/** Запретные полосы поперёк обочины (мост над дорогой): [{ z0, z1, minX }] — туда застройка не ставится */
+/** Запретные полосы обочины (мост над дорогой, поле у деревни): [{ z0, z1, minX, maxX?, side? }] — туда застройка не ставится */
 let KEEP = null;
 export function setKeepOut(list) { KEEP = list && list.length ? list : null; }
 export function keptOut(x, z) {
     if (!KEEP) return false;
-    for (let i = 0; i < KEEP.length; i++) { const q = KEEP[i]; if (z <= q.z0 && z >= q.z1 && Math.abs(x) > q.minX) return true; }
+    for (let i = 0; i < KEEP.length; i++) { const q = KEEP[i]; if (z <= q.z0 && z >= q.z1 && Math.abs(x) > q.minX && (!q.side || Math.sign(x) === q.side) && (q.maxX == null || Math.abs(x) < q.maxX)) return true; }
     return false;
 }
 export function place(b, t, x, y, z, rot, s, tint) {
