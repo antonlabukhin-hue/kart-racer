@@ -5233,21 +5233,16 @@ function startGaragePreview(carId) {
             }
 
             function createAsphaltTexture() {
-                const size = window._texSizeForQuality ? window._texSizeForQuality(64) : 64;
+                const size = window._texSizeForQuality ? window._texSizeForQuality(128) : 128;
                 const canvas = window._acquireTexCanvas ? window._acquireTexCanvas(size, size) : document.createElement('canvas');
                 canvas.width = size; canvas.height = size;
                 const ctx = canvas.getContext('2d', { willReadFrequently: false, alpha: false });
-                ctx.fillStyle = '#444455';
+                ctx.fillStyle = '#45454f';
                 ctx.fillRect(0, 0, size, size);
-                const dots = size <= 48 ? 40 : 80;
-                for (let i = 0; i < dots; i++) {
-                    const x = Math.random() * size;
-                    const y = Math.random() * size;
-                    const sz = 1 + Math.random() * 2;
-                    const shade = 50 + Math.random() * 80;
-                    ctx.fillStyle = 'rgb(' + shade + ',' + shade + ',' + (shade + 10) + ')';
-                    ctx.fillRect(x, y, sz, sz);
-                }
+                // плитка растянута на всю ширину дороги — только мелкое зерно, без клякс; накатанные колеи по полосам
+                for (let i = 0; i < size * 6; i++) { const sh = 62 + Math.random() * 16; ctx.fillStyle = 'rgb(' + sh + ',' + sh + ',' + (sh + 8) + ')'; ctx.fillRect(Math.random() * size, Math.random() * size, 1, 1); }
+                ctx.fillStyle = 'rgba(20,20,28,0.16)';
+                [1, 3, 5].forEach(function(l) { [-0.075, 0.075].forEach(function(o) { ctx.fillRect((l / 6 + o) * size - size * 0.018, 0, size * 0.036, size); }); });
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(1, 120);
