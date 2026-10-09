@@ -1082,6 +1082,7 @@ function createProfile(name) { return Profile.createProfile(name); }
             const id = (a && a.id) ? a.id : '';
             const list = [];
             if (a && a.img) list.push(a.img);
+            if (a && a.fun) return list; // шуточные (src/fun-achievements.js) — без картинок: сразу эмодзи, без запросов в никуда
             list.push('images/ach_' + id + '.png');
             list.push('images/achievement_' + id + '.png');
             list.push('images/' + id + '.png');
