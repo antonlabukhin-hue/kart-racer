@@ -272,7 +272,9 @@ export function createSky(scene, o) {
     const c = function(hex) { return new THREE.Color(hex); };
     const dome = new THREE.Mesh(new THREE.SphereGeometry(SKY_R, 32, 16), noBend(new THREE.ShaderMaterial({
         uniforms: { uTop: { value: c(0x4a78c0) }, uHorizon: { value: c(0xe0c090) }, uSunDir: { value: new THREE.Vector3(0.22, 0.16, -1).normalize() }, uSun: { value: c(0xfff0c0) }, uNight: { value: 0 } },
-        vertexShader: VS_DOME, fragmentShader: FS_DOME, side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false
+        vertexShader: VS_DOME, fragmentShader: FS_DOME, side: THREE.BackSide, depthWrite: false, fog: false,
+        // рисуется после дороги и домов (в прозрачном проходе, с проверкой глубины): шейдер неба считается только там, где видно небо
+        transparent: true
     })));
     dome.renderOrder = -20;
     followCamera(dome, 0);
