@@ -24,6 +24,19 @@ export function skylineKind(style) {
     return { arsenev: 'town', city: 'city', village: 'village', forest: 'forest', industrial: 'industrial', junk: 'junk' }[style] || 'town';
 }
 
+/** Стая птиц: строй «галочкой» — смещения n птиц от вожака (back — отстаёт по ходу полёта, side — вглубь, y — вниз) */
+export function flockOffsets(n) {
+    const out = [{ back: 0, side: 0, y: 0 }];
+    for (let i = 1; i < n; i++) {
+        const row = Math.ceil(i / 2), side = i % 2 ? -1 : 1;
+        out.push({ back: row * 4.5, side: side * row * 5, y: -row * 0.9 });
+    }
+    return out;
+}
+
+/** Летать ли птицам: не ночью и не в дождь */
+export function birdsAllowed(night, rain) { return night < 0.4 && rain < 0.4; }
+
 function rng(seed) {
     let s = seed >>> 0;
     return function() { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
@@ -288,6 +301,27 @@ export function createSky(scene, o) {
     followCamera(clouds, 0);
     group.add(clouds);
 
+    // птицы: «галочки» машут крыльями, стая изредка пересекает небо
+    const birdGeo = new THREE.BufferGeometry();
+    birdGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, -0.1, 0, -1, 0.35, 0.2, -0.3, 0.12, 0, 0, -0.1, 0, 0.3, 0.12, 0, 1, 0.35, 0.2], 3));
+    const birdMat = noBend(new THREE.MeshBasicMaterial({ color: 0x3a3a44, side: THREE.DoubleSide, fog: false }));
+    const birds = [];
+    const flock = { on: false, t: 0, dur: 14, wait: 7 + Math.random() * 6, x0: 0, dir: 1, y: 24, z: -110, n: 6, offs: flockOffsets(7) };
+    for (let i = 0; i < 7; i++) {
+        const b = new THREE.Mesh(birdGeo, birdMat);
+        b.frustumCulled = false; b.matrixAutoUpdate = false; b.visible = false;
+        b.userData.k = i; b.userData.ph = Math.random() * 6;
+        const p = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
+        b.onBeforeRender = function(r, s2, cam) {
+            const o = flock.offs[b.userData.k], u = flock.t / flock.dur;
+            p.set(cam.position.x + flock.x0 + flock.dir * (u * 170 - o.back), cam.position.y + flock.y + o.y, cam.position.z + flock.z + o.side);
+            const flap = Math.sin(flock.t * 9 + b.userData.ph);
+            sc.set(2.6, flap * 2.4, 2.6);
+            b.matrixWorld.compose(p, q, sc);
+        };
+        birds.push(b);
+        group.add(b);
+    }
     group.renderOrder = -20;
     scene.add(group);
     // на телефоне сортировка выключена (renderer.sortObjects) — порядок = порядок в сцене: небо первым
@@ -319,6 +353,8 @@ export function createSky(scene, o) {
             const tint = mixHex(fogHex, dark, 0.5);
             if (ka === kb) { setLayer(nearA, ka, fogHex, tint, night, 1); setLayer(nearB, null, fogHex, tint, 0, 0); }
             else { setLayer(nearA, ka, fogHex, tint, night, 1 - k); setLayer(nearB, kb, fogHex, tint, night, k); }
+            birdMat.color.setHex(mixHex(fogHex, 0x1c1c24, 0.75));
+            flock.allowed = birdsAllowed(night, (a.rain ? 1 - k : 0) + (b.rain ? k : 0));
             const cu = cloudMat.uniforms;
             cu.uTint.value.setHex(night > 0.5 ? 0x2a3044 : mixHex(0xffffff, fogHex, 0.25));
             const rain = (a.rain ? 1 - k : 0) + (b.rain ? k : 0);
@@ -328,6 +364,15 @@ export function createSky(scene, o) {
         tick: function(dt) {
             drift = (drift + dt * 0.004) % 1;
             cloudMat.uniforms.uOff.value = drift;
+            if (flock.on) {
+                flock.t += dt;
+                if (flock.t >= flock.dur) { flock.on = false; flock.wait = 18 + Math.random() * 22; birds.forEach(function(b) { b.visible = false; }); }
+            } else if ((flock.wait -= dt) <= 0 && flock.allowed !== false) {
+                // летят поперёк дороги впереди и чуть выше горизонта
+                flock.on = true; flock.t = 0; flock.dir = Math.random() < 0.5 ? 1 : -1; flock.x0 = -flock.dir * 80;
+                flock.y = 13 + Math.random() * 9; flock.z = -62 - Math.random() * 22; flock.n = 4 + Math.floor(Math.random() * 4);
+                birds.forEach(function(b, i) { b.visible = i < flock.n; });
+            }
         },
         dispose: function() {
             scene.remove(group);
