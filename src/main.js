@@ -8,6 +8,7 @@ import { rollArtifact, grantArtifact, createArtifactToken, artifactsHtml, ARTIFA
 import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
+const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
 import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice } from './hop-duck.js';
 import { RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
@@ -1721,13 +1722,16 @@ function createProfile(name) { return Profile.createProfile(name); }
                             const presetCol = (CAR_PRESETS[carId] && CAR_PRESETS[carId].color) || 0xff2200;
                             built.group.traverse(function(o) { if (o.isMesh && o.userData && o.userData.bodyPaint && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.setHex(presetCol); } });
                         }
-                        fitShowroom(built.group); scene.add(built.group); // крупные модели — меньше, чтобы не уходили за край
+                        try { liftCar(built.group, built.upgrades && built.upgrades.wheelR); } catch (e) {} // высокая подвеска, как на трассе (src/suspension.js)
+                        scene.add(built.group);
+                        const shopFrame = showroomFrame(built.group); // кадр по габаритам: сфера вокруг машины целиком в кадре при любом повороте
                         let rot = 0.5;
                         const tick = () => {
                             shopRaf = requestAnimationFrame(tick);
                             rot += 0.012;
                             built.group.rotation.y = rot;
                             fitPreview(renderer, camera, wrap);
+                            frameShowroom(camera, shopFrame, SHOWROOM_MARGIN);
                             renderer.render(scene, camera);
                         };
                         tick();
@@ -2417,6 +2421,7 @@ function startGaragePreview(carId) {
                         ground.rotation.x = -Math.PI / 2; scene.add(ground);
 
                         const built = _buildShowroomCar(carId || 'cheburashka');
+                        try { liftCar(built.group, built.upgrades && built.upgrades.wheelR); } catch (e) {} // высокая подвеска, как на трассе (src/suspension.js)
                         scene.add(built.group);
                         window.__garageCar = built.group;
                         window.__garageParts = built.parts;
@@ -2454,7 +2459,7 @@ function startGaragePreview(carId) {
                             built.group.rotation.y = rotY;
                             fitPreview(renderer, camera, wrap);
                             if (++gFrameT % 30 === 0) { const ry = built.group.rotation.y; built.group.rotation.y = 0; gFrame = showroomFrame(built.group); built.group.rotation.y = ry; } // примерили деталь — кадр подстроится
-                            frameShowroom(camera, gFrame);
+                            frameShowroom(camera, gFrame, SHOWROOM_MARGIN);
                             renderer.render(scene, camera);
                         };
                         tick();
@@ -4044,7 +4049,7 @@ function startGaragePreview(carId) {
         }
         window.createAnimalMesh = createAnimalMesh;
         // только тестовая сборка: набор для рендера картинок игры (tools/art)
-        if (import.meta.env.MODE === 'test') window.__artKit = { liftCar: liftCar, THREE: THREE, memes: Memes, renderDiorama: renderDiorama, lanes: ART_LANES, tracks: CAMPAIGN_TRACKS, buildCar: buildShowroomCar, mergeCar: mergeCarParts, landmark: createLandmark,
+        if (import.meta.env.MODE === 'test') window.__artKit = { garage: function(id) { startGaragePreview(id); }, shop: function(id) { startShopPreview(id); }, liftCar: liftCar, THREE: THREE, memes: Memes, renderDiorama: renderDiorama, lanes: ART_LANES, tracks: CAMPAIGN_TRACKS, buildCar: buildShowroomCar, mergeCar: mergeCarParts, landmark: createLandmark,
             bossHeight: function(idx) { const b = new THREE.Box3().setFromObject(createArcadeBossMesh(CAMPAIGN_BOSSES[idx % CAMPAIGN_BOSSES.length])); return (b.max.y - b.min.y) * 1.5; } };
 
 
