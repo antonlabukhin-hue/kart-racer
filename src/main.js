@@ -7723,7 +7723,8 @@ function startGaragePreview(carId) {
             // свайпы вместо кнопок — если выбраны в «Настройках» (src/swipe-control.js); кнопки руля, газа и тормоза прячутся
             // «Авто»: телефон вертикально — свайпы, боком — кнопки; повернули посреди заезда — управление меняется следом
             const swipeCtl = isMobile && _settings.controls !== 'buttons' ? createSwipe() : null;
-            const swipeOn = function() { return !!swipeCtl && (_settings.controls === 'swipe' || window.innerHeight > window.innerWidth); };
+            let _portraitNow = window.innerHeight > window.innerWidth; /* ориентация — по событию, а не чтением размеров окна дважды за кадр (это пересчитывало вёрстку) */ window.addEventListener('resize', function() { _portraitNow = window.innerHeight > window.innerWidth; }, { signal: mobileAbort.signal });
+            const swipeOn = function() { return !!swipeCtl && (_settings.controls === 'swipe' || _portraitNow); };
             let _wasPortrait = window.innerHeight > window.innerWidth;
             const syncSwipeUi = function() {
                 document.body.classList.toggle('swipe-ctl', swipeOn());
