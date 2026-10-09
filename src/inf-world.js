@@ -18,6 +18,7 @@ import { placeRoadside } from './roadside.js';
 import { hasBridge, createBridge, createBridgeTrain } from './railway.js';
 import { createSmoke } from './smoke.js';
 import { hasGulls, createGulls } from './gulls.js';
+import { createNyTree, createGarland, garlandTick } from './newyear.js';
 import { hasField, fieldSide, fieldKind, createField, createFarmWork, FIELD_X0, FIELD_X1 } from './farm.js';
 
 export const RIG_STEP = 180;
@@ -167,6 +168,12 @@ export function createInfWorld(o) {
             g.add(createField(fs, z0, STRETCH, W, fk, heightAt));
             addMover(i, createFarmWork(scene, fs, z0, STRETCH, W, fk, heightAt));
         }
+        if (th.newyear) { // «Новогодний Арсеньев»: ёлки с игрушками, гирлянда над трассой, снеговик (src/newyear.js)
+            for (let k = 0; k < 2; k++) { const sd = k ? 1 : -1, x = sd * (W / 2 + 3 + r() * 3), z = z0 - 8 - r() * 44; if (free(x, z)) { const t = createNyTree(0.8 + r() * 0.4); t.position.set(x, heightAt(x, z), z); g.add(t); } }
+            if (bridgeZ == null) g.add(createGarland(W, z0 - 30));
+            { const sd = r() < 0.5 ? -1 : 1, x = sd * (W / 2 + 2.4), z = z0 - 10 - r() * 40; if (free(x, z)) createSnowman(g, x, z, 0.9 + r() * 0.3); }
+            hasNewYear = true;
+        }
         if (hasGulls(i, th.style)) { const sd = r() < 0.5 ? -1 : 1; addMover(i, createGulls(scene, sd * (W / 2 + 20 + r() * 8), z0 - STRETCH / 2, 4 + Math.floor(r() * 4))); } // чайки над кучами (src/gulls.js)
         if (bridgeZ == null) try { placeRoadside(g, { style: th.style, i: i, z0: z0, len: STRETCH, W: W, rnd: r, heightAt: heightAt, night: !!th.night, snow: !!th.snow }); } catch (e) { console.warn('roadside', e); } // остановки, ларьки, бабушки, указатели (src/roadside.js)
         yield;
@@ -206,7 +213,7 @@ export function createInfWorld(o) {
         return true;
     }
 
-    let lastAccent = '';
+    let lastAccent = '', hasNewYear = false;
     function atmosphere(d) {
         const t = themeAt(d), a = t.theme, b = t.next, k = t.k;
         const lerp = function(x, y) { return x + (y - x) * k; };
@@ -253,6 +260,7 @@ export function createInfWorld(o) {
                 if (!prefill) break;
             }
             const now = performance.now();
+            if (hasNewYear) garlandTick(now); // гирлянды мигают
             movers.forEach(function(list) { list.forEach(function(m) { m.update(zPos, now); }); });
             stretches.forEach(function(g, i) {
                 if (i >= lo) return;

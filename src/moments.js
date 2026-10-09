@@ -124,12 +124,13 @@ export function createMoments(ctx) {
                 const ahead = zPos - m.z; // >0 — момент впереди
                 if (m.state === 'done') return;
                 if (m.state === 'wait') {
-                    const trigger = m.id === 'zapor_nitro' ? 0 : m.id === 'wheelie' ? 150 : m.id === 'ufo' ? 170 : m.id === 'granny_cross' ? 85 : 130; // бабушка: перебегает, пока до неё 85 → 25 ед. — успевает уйти
+                    const trigger = m.id === 'zapor_nitro' || m.id === 'ded_moroz' ? 0 : m.id === 'wheelie' ? 150 : m.id === 'ufo' ? 170 : m.id === 'granny_cross' ? 85 : 130; // бабушка: перебегает, пока до неё 85 → 25 ед. — успевает уйти
                     if (ahead > trigger) return;
                     m.state = 'on';
                     let g;
                     if (m.id === 'granny_cross') { g = granny(); g.position.set(-m.side * (W / 2 + 2), 0, m.z); g.rotation.y = m.side > 0 ? -Math.PI / 2 : Math.PI / 2; g.scale.setScalar(1.5); }
                     else if (m.id === 'zapor_nitro') { g = zapor(); g.position.set(m.side * 2, 0, zPos + 14); }
+                    else if (m.id === 'ded_moroz') { g = ctx.buildDedMoroz(); g.position.set(m.side * 2, 0, zPos + 14); }
                     else if (m.id === 'hedgehog') { g = hedgehog(); g.position.set(m.side * (W / 2 + 1.6), 0, m.z); g.rotation.y = m.side > 0 ? Math.PI / 2 : -Math.PI / 2; g.scale.setScalar(1.4); }
                     else if (m.id === 'ufo') { g = ufo(); g.position.set(m.side * 13, 11, m.z); g.scale.setScalar(1.5); }
                     else if (m.id === 'wheelie') { g = wheelie(ctx.buildMoto()); g.position.set(m.side * 2, 0, zPos - 150); }
@@ -147,16 +148,19 @@ export function createMoments(ctx) {
                     g.position.z -= (v + 9) * dt;
                     g.userData.flame.scale.set(1, 0.8 + Math.random() * 0.5, 1);
                     m.z = g.position.z;
+                } else if (m.id === 'ded_moroz') { // Дед Мороз на «буханке» обгоняет и машет
+                    g.position.z -= (v + 5) * dt; m.z = g.position.z;
+                    if (g.userData.arm) g.userData.arm.rotation.z = -1.2 + Math.sin(m.t * 7) * 0.6;
                 } else if (m.id === 'wheelie') { g.position.z -= v * 0.55 * dt; m.z = g.position.z; g.children[0].rotation.x = -0.5 + Math.sin(m.t * 3) * 0.06; }
                 else if (m.id === 'ufo') { g.rotation.y += dt * 1.5; g.position.y = 11 + Math.sin(m.t * 1.4) * 0.6; if (ahead < -10) g.position.y += m.t * dt * 4; g.userData.beam.material.opacity = 0.18 + Math.sin(m.t * 6) * 0.06; }
                 else if (m.id === 'cow') { const head = g.children[0]; head.rotation.x = Math.sin(m.t * 1.6) * 0.04; }
                 // хорошо видно впереди — снимок «Фото на память» (src/photo.js): НЛО — издалека, «Запорожец» — когда обогнал
-                const nearOk = m.id === 'zapor_nitro' ? zPos - g.position.z > 9 : ahead > 6 && ahead < (m.id === 'ufo' ? 75 : 38);
+                const nearOk = m.id === 'zapor_nitro' || m.id === 'ded_moroz' ? zPos - g.position.z > 9 : ahead > 6 && ahead < (m.id === 'ufo' ? 75 : 38);
                 if (!m.near && nearOk) { m.near = true; if (ctx.onNear) ctx.onNear(m.id); }
                 // проехал мимо — засчитать и убрать подальше позади
-                if (!m.seen && ahead < -2 && m.id !== 'zapor_nitro') { m.seen = true; if (ctx.onSeen) ctx.onSeen(m.id); }
-                if (m.id === 'zapor_nitro' && !m.seen && zPos - g.position.z > 20) { m.seen = true; if (ctx.onSeen) ctx.onSeen(m.id); }
-                if (ahead < -60 || (m.id === 'zapor_nitro' && zPos - g.position.z > 180)) { ctx.scene.remove(g); m.state = 'done'; }
+                if (!m.seen && ahead < -2 && m.id !== 'zapor_nitro' && m.id !== 'ded_moroz') { m.seen = true; if (ctx.onSeen) ctx.onSeen(m.id); }
+                if ((m.id === 'zapor_nitro' || m.id === 'ded_moroz') && !m.seen && zPos - g.position.z > 20) { m.seen = true; if (ctx.onSeen) ctx.onSeen(m.id); }
+                if (ahead < -60 || ((m.id === 'zapor_nitro' || m.id === 'ded_moroz') && zPos - g.position.z > 180)) { ctx.scene.remove(g); m.state = 'done'; }
             });
         },
         get active() { return list.filter(function(m) { return m.state === 'on'; }).map(function(m) { return m.id; }); },

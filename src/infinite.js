@@ -36,12 +36,29 @@ let themeStart = 0;
 export function setThemeStart(i) { themeStart = ((Math.floor(i) || 0) % THEMES.length + THEMES.length) % THEMES.length; }
 export function getThemeStart() { return themeStart; }
 
+/**
+ * Сезонная зона: с 15 декабря по 15 января дневной Арсеньев — «Новогодний Арсеньев» (снег, ёлки с игрушками,
+ * гирлянды над трассой, Дед Мороз на «буханке»). Число пейзажей не меняется — сиды «Заезда дня» и вызовов прежние.
+ */
+export const NEWYEAR = { id: 'newyear', base: 'day', name: 'Новогодний Арсеньев', style: 'arsenev', snow: true, newyear: true,
+    sky: 0xc8d8ec, zenith: 0x5a84c8, fog: 0xdce6f0, fogNear: 50, fogFar: 195, ground: 0xeef4fa, light: 1.05, slide: 'ice', accent: 0xff3a4a,
+    animals: ['FOX', 'DEER', 'DOG', 'CAT'] };
+export function seasonFor(date) {
+    if (!date) return null;
+    const m = date.getMonth(), d = date.getDate();
+    return (m === 11 && d >= 15) || (m === 0 && d <= 15) ? 'newyear' : null;
+}
+let season = null;
+/** Включить сезон (main.js — по дате при старте; тестовая сборка — window.__forceSeason) */
+export function setSeason(s) { season = s || null; }
+function seasonal(th) { return season === 'newyear' && th.id === NEWYEAR.base ? NEWYEAR : th; }
+
 /** Какой пейзаж на расстоянии dist: { theme, next, k } — k 0..1 — доля перехода в следующий */
 export function themeAt(dist) {
     const d = Math.max(0, dist || 0) + themeStart * THEME_LEN;
     const i = Math.floor(d / THEME_LEN);
     const into = d - i * THEME_LEN;
-    const theme = THEMES[i % THEMES.length], next = THEMES[(i + 1) % THEMES.length];
+    const theme = seasonal(THEMES[i % THEMES.length]), next = seasonal(THEMES[(i + 1) % THEMES.length]);
     const k = Math.max(0, Math.min(1, (into - (THEME_LEN - BLEND_LEN)) / BLEND_LEN));
     return { index: i, theme: theme, next: next, k: k };
 }
