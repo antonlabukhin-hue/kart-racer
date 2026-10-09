@@ -4304,7 +4304,7 @@ function startGaragePreview(carId) {
                 // счётчик железных «Е» — крупно, в любом заезде
                 document.querySelectorAll('#e-counter').forEach(function(n) { n.remove(); });
                 const ec = document.createElement('div');
-                ec.id = 'e-counter'; ec.innerHTML = '<i>Е</i><b>0</b>';
+                ec.id = 'e-counter'; ec.innerHTML = '<i>Е</i><b>0</b><em class="ec-m"></em>'; /* em — метры: вертикально «Е» и метры в одной плашке */
                 document.body.appendChild(ec);
                 // спидометр-циферблат: дуга 270°, стрелка, цифры, передача и нитро
                 document.querySelectorAll('#hud-speedo').forEach(function(n) { n.remove(); });
@@ -4457,6 +4457,7 @@ function startGaragePreview(carId) {
                 try {
                     const eb = document.querySelector('#e-counter b'), ev = String(stats.eChips || 0);
                     if (eb && eb.textContent !== ev) { eb.textContent = ev; const ecEl = eb.parentNode; ecEl.classList.remove('pop'); void ecEl.offsetWidth; ecEl.classList.add('pop'); }
+                    const ecm = document.querySelector('#e-counter .ec-m'), msrc = document.getElementById('infDisplay') || document.getElementById('metersDisplay'); if (ecm && msrc && ecm.textContent !== msrc.textContent) ecm.textContent = msrc.textContent;
                 } catch (e) {}
                 if (weatherEl) {
                     let wtxt = '☀ ДЕНЬ', wcol = '#88ccff';

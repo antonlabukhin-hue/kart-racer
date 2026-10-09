@@ -6412,3 +6412,33 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 #boss-cue small { display: none !important; }
 /* пока босс на экране — надписи ниже его полоски, не поверх */
 :root body.race-mode:has(#boss-hud.on) .rt.rt.rt { top: calc(env(safe-area-inset-top, 0px) + 122px) !important; }
+
+/* ===== Заезд вертикально: плашки сверху — крупнее, в одном стиле =====
+   слева — время и сердечки (вдвое крупнее), справа — «☰ Меню» (крупнее), под ней камера; ниже по центру — «Е» и метры одной плашкой */
+#e-counter .ec-m { display: none; }
+@media (orientation: portrait) {
+    :root body.race-mode #game-hud.hud-v2#game-hud { font-size: 20px !important; padding: 10px 16px 10px 14px !important; max-width: 62vw !important; min-width: 0 !important;
+        border-radius: 16px !important; border: 2px solid rgba(255, 210, 60, 0.55) !important; background: linear-gradient(180deg, rgba(40, 26, 0, 0.82), rgba(20, 12, 0, 0.82)) !important; }
+    :root body.race-mode #game-hud.hud-v2 .hud-big { font-size: 2em !important; }
+    :root body.race-mode #game-hud.hud-v2 .hud-hearts i { font-size: 1.15em !important; }
+    :root body.race-mode #game-hud.hud-v2 #infDisplay, :root body.race-mode #game-hud.hud-v2 #metersDisplay { display: none !important; } /* метры — в плашке «Е» */
+    :root body.race-mode #e-counter#e-counter { top: calc(max(10px, env(safe-area-inset-top)) + 128px) !important; flex-wrap: wrap; justify-content: center; row-gap: 0;
+        padding: 6px 18px 6px 12px !important; border-radius: 16px !important; min-width: 120px; }
+    :root body.race-mode #e-counter i, :root body.race-mode #e-counter b { font-size: 30px !important; }
+    :root body.race-mode #e-counter .ec-m { display: block; flex-basis: 100%; text-align: center; font: 800 17px/1.2 system-ui, 'Segoe UI', sans-serif; color: #ffe9a8; font-style: normal; font-variant-numeric: tabular-nums; }
+    :root body.race-mode #hud-menu-btn#hud-menu-btn { top: max(10px, env(safe-area-inset-top)) !important; right: max(10px, env(safe-area-inset-right)) !important; left: auto !important;
+        min-height: 54px; padding: 12px 18px !important; font-size: 20px !important; border-radius: 16px !important; border: 2px solid rgba(255, 210, 60, 0.55) !important;
+        background: linear-gradient(180deg, rgba(40, 26, 0, 0.82), rgba(20, 12, 0, 0.82)) !important; }
+    :root body.race-mode #mobile-controls .mc-cam { position: fixed !important; top: calc(max(10px, env(safe-area-inset-top)) + 66px) !important; right: max(10px, env(safe-area-inset-right)) !important; left: auto !important; bottom: auto !important; }
+    :root body.race-mode #mobile-controls .mc-cam .cam-btn { width: 54px !important; height: 54px !important; border-radius: 16px !important; border: 2px solid rgba(255, 210, 60, 0.55) !important; }
+    :root body.race-mode #hud-speedo#hud-speedo { transform: scale(.95) !important; }
+    :root body.race-mode .rt.rt.rt { top: calc(max(10px, env(safe-area-inset-top)) + 206px) !important; }
+}
+@media (orientation: portrait) {
+    /* две колонки: слева — время, «Е» с метрами, множитель; справа — меню, камера, погоня ГАИ; надписи — ниже, по центру */
+    :root body.race-mode #e-counter#e-counter { left: max(10px, env(safe-area-inset-left)) !important; right: auto !important; transform: none !important; top: calc(max(10px, env(safe-area-inset-top)) + 118px) !important; }
+    :root body.race-mode #e-counter.pop { animation: none !important; }
+    :root body.race-mode .police-hud.police-hud { top: calc(max(10px, env(safe-area-inset-top)) + 132px) !important; right: max(10px, env(safe-area-inset-right)) !important; left: auto !important; }
+    :root body.race-mode #risk-hud#risk-hud { top: calc(max(10px, env(safe-area-inset-top)) + 206px) !important; left: max(10px, env(safe-area-inset-left)) !important; right: auto !important; }
+    :root body.race-mode .rt.rt.rt { top: calc(max(10px, env(safe-area-inset-top)) + 280px) !important; }
+}
