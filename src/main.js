@@ -3,6 +3,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
 import { createSky } from './sky.js';
 import { addBlobShadow } from './ground-shadow.js';
 import { createCarTrail } from './car-trail.js';
+import { buildTraffic, KINDS as TRAFFIC_KINDS } from './traffic-cars.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
         import { AnimalSpawner } from './animals.js';
@@ -6308,121 +6309,15 @@ function startGaragePreview(carId) {
             function createOpponentCar(z, lane) {
                 const car = new THREE.Group();
                 const color = carColors[Math.floor(Math.random() * carColors.length)];
-                const types = ['sedan', 'sedan', 'truck', 'bus', 'moto', 'van', 'suv'];
+                const types = TRAFFIC_KINDS;
                 const kind = types[Math.floor(Math.random() * types.length)];
-                const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.35, metalness: 0.45 }); if (kind === 'moto' && (color === 0xff33cc || color === 0xcc00ff)) bodyMat.color.setHex(0x3366ff); /* мотоцикл не розовый — не спутать с сердечком */
-                const glassMat = new THREE.MeshStandardMaterial({ color: 0x88aacc, transparent: true, opacity: 0.55, roughness: 0.1, metalness: 0.3 }); const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
-                const chromeMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.85, roughness: 0.25 });
-
-                let hitW = 0.75, hitL = 1.4;
-
-                if (kind === 'moto') {
-                    hitW = 0.44; hitL = 1.21; car.scale.setScalar(1.1); // мотоциклы — на 10% крупнее, заметнее
-                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 1.0), bodyMat);
-                    body.position.y = 0.28; body.castShadow = true; car.add(body);
-                    const tank = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), bodyMat);
-                    tank.scale.set(1, 0.7, 1.4); tank.position.set(0, 0.38, 0.1); car.add(tank);
-                    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.35), new THREE.MeshStandardMaterial({ color: 0x222222 }));
-                    seat.position.set(0, 0.36, -0.2); car.add(seat);
-                    [[0, 0.12, 0.38], [0, 0.12, -0.4]].forEach(p => {
-                        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.08, 10), tireMat);
-                        w.rotation.z = Math.PI/2; w.position.set(p[0], p[1], p[2]); car.add(w);
-                    });
-                } else if (kind === 'truck') {
-                    hitW = 0.95; hitL = 2.2;
-                    const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.55, 0.7), bodyMat);
-                    cabin.position.set(0, 0.45, -0.7); cabin.castShadow = true; car.add(cabin);
-                    const win = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.28, 0.08), glassMat);
-                    win.position.set(0, 0.55, -1.05); car.add(win);
-                    const bed = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.45, 1.3), new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.8 }));
-                    bed.position.set(0, 0.4, 0.35); bed.castShadow = true; car.add(bed);
-                    [[-0.4,0.14,0.7],[0.4,0.14,0.7],[-0.4,0.14,-0.5],[0.4,0.14,-0.5],[-0.4,0.14,0.1],[0.4,0.14,0.1]].forEach(p => {
-                        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.12, 10), tireMat);
-                        w.rotation.z = Math.PI/2; w.position.set(...p); car.add(w);
-                    });
-                } else if (kind === 'bus') {
-                    hitW = 1.0; hitL = 2.6;
-                    const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.85, 2.5), bodyMat);
-                    body.position.y = 0.55; body.castShadow = true; car.add(body);
-                    for (let i = 0; i < 4; i++) {
-                        const win = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.28, 0.35), glassMat);
-                        win.position.set(0.51, 0.65, -0.8 + i * 0.5); car.add(win);
-                        const win2 = win.clone(); win2.position.x = -0.51; car.add(win2);
-                    }
-                    const frontWin = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.35, 0.08), glassMat);
-                    frontWin.position.set(0, 0.7, -1.26); car.add(frontWin);
-                    [[-0.4,0.14,0.9],[0.4,0.14,0.9],[-0.4,0.14,-0.9],[0.4,0.14,-0.9]].forEach(p => {
-                        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.12, 10), tireMat);
-                        w.rotation.z = Math.PI/2; w.position.set(...p); car.add(w);
-                    });
-                } else if (kind === 'van') {
-                    hitW = 0.85; hitL = 1.7;
-                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.7, 1.6), bodyMat);
-                    body.position.y = 0.48; body.castShadow = true; car.add(body);
-                    const win = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.3, 0.08), glassMat);
-                    win.position.set(0, 0.6, -0.8); car.add(win);
-                    [[-0.35,0.12,0.55],[0.35,0.12,0.55],[-0.35,0.12,-0.55],[0.35,0.12,-0.55]].forEach(p => {
-                        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1, 10), tireMat);
-                        w.rotation.z = Math.PI/2; w.position.set(...p); car.add(w);
-                    });
-                } else if (kind === 'suv') {
-                    hitW = 0.9; hitL = 1.6;
-                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.4, 1.5), bodyMat);
-                    body.position.y = 0.35; body.castShadow = true; car.add(body);
-                    const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 0.9), bodyMat);
-                    cabin.position.set(0, 0.65, -0.1); car.add(cabin);
-                    const win = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.25, 0.08), glassMat);
-                    win.position.set(0, 0.7, -0.55); car.add(win);
-                    [[-0.4,0.14,0.55],[0.4,0.14,0.55],[-0.4,0.14,-0.55],[0.4,0.14,-0.55]].forEach(p => {
-                        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.11, 10), tireMat);
-                        w.rotation.z = Math.PI/2; w.position.set(...p); car.add(w);
-                    });
-                } else {
-                    // sedan
-                    hitW = 0.8; hitL = 1.45;
-                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.22, 1.4), bodyMat);
-                    body.position.y = 0.22; body.castShadow = true; car.add(body);
-                    const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.2, 0.55), glassMat);
-                    cabin.position.set(0, 0.42, 0.05); car.add(cabin);
-                    const hood = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.08, 0.35), bodyMat);
-                    hood.position.set(0, 0.28, -0.5); car.add(hood);
-                    [[-0.38,0.09,0.5],[0.38,0.09,0.5],[-0.38,0.09,-0.5],[0.38,0.09,-0.5]].forEach(p => {
-                        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 10), tireMat);
-                        w.rotation.z = Math.PI/2; w.position.set(...p); car.add(w);
-                    });
-                    const light = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.05), new THREE.MeshStandardMaterial({ color: 0xffffcc, emissive: 0xffffaa, emissiveIntensity: 0.5 }));
-                    light.position.set(-0.25, 0.2, -0.72); car.add(light);
-                    const light2 = light.clone(); light2.position.x = 0.25; car.add(light2);
-                }
-
-                // Стоп-сигналы (всегда) + фары ночью
+                let paint = color; if (kind === 'moto' && (color === 0xff33cc || color === 0xcc00ff)) paint = 0x3366ff; /* мотоцикл не розовый */
                 const isNight = (typeof weatherMode !== 'undefined' && weatherMode === 'night') || window.weatherMode === 'night';
                 const isDark = isNight || (typeof weatherMode !== 'undefined' && weatherMode === 'rain') || window.weatherMode === 'rain';
-                
-                // Задние стоп-сигналы — яркие красные у всех
-                const brakeMat = new THREE.MeshBasicMaterial({ color: 0xff1100 });
-                const brakeW = kind === 'moto' ? 0.08 : 0.14;
-                const brakeH = kind === 'moto' ? 0.06 : 0.09;
-                const rl = new THREE.Mesh(new THREE.BoxGeometry(brakeW, brakeH, 0.05), brakeMat);
-                const rr = new THREE.Mesh(new THREE.BoxGeometry(brakeW, brakeH, 0.05), brakeMat);
-                const rearZ = hitL * 0.48;
-                const rearY = kind === 'moto' ? 0.35 : 0.28;
-                rl.position.set(-hitW * 0.32, rearY, rearZ);
-                rr.position.set(hitW * 0.32, rearY, rearZ);
-                car.add(rl); car.add(rr);
-                // Центр стоп для мото / машин
-                const rc = new THREE.Mesh(new THREE.BoxGeometry(kind === 'moto' ? 0.1 : 0.2, brakeH * 0.8, 0.05), brakeMat);
-                rc.position.set(0, rearY, rearZ);
-                car.add(rc);
-
-                // Передние фары (ночь и дождь — яркие)
-                const frontMat = new THREE.MeshBasicMaterial({ color: isDark ? 0xffffee : 0x888866 });
-                const fl = new THREE.Mesh(new THREE.BoxGeometry(kind === 'moto' ? 0.1 : 0.12, 0.08, 0.06), frontMat);
-                const fr = fl.clone();
-                const frontZ = -hitL * 0.48;
-                fl.position.set(-hitW * 0.32, rearY, frontZ);
-                fr.position.set(hitW * 0.32, rearY, frontZ);
-                car.add(fl); car.add(fr);
+                // модель — src/traffic-cars.js: сзади два стоп-сигнала (у мотоцикла — один), номер, бампер; фары ночью ярче
+                const tb = buildTraffic(kind, paint, { dark: isDark });
+                car.add(tb.group);
+                const hitW = tb.hitW, hitL = tb.hitL, frontZ = -hitL * 0.48;
 
                 // Реальный SpotLight только у части машин (лимит FPS ночью)
                 if (isNight && !INF && (typeof window.__nightSpots !== 'number' || window.__nightSpots < 6)) { // бесконечная: попутки без настоящего света — новая попутка с ним пересобирала все шейдеры (рывок на секунду)
@@ -7988,6 +7883,7 @@ function startGaragePreview(carId) {
             };
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;
+                if (obs && String(obs.cause || '').indexOf('car') === 0) try { if (window.soundEngine) window.soundEngine.playSfx('crash'); } catch (e) {} // авария с машиной — хруст металла (src/sfx-kit.js), при любом исходе
                 _nmBlock = 2; /* любой удар — даже не засчитанный («Разгон», «В ударе», начало первого заезда, броня) — 2 с «на волоске» не считается: проезд сквозь машину — не риск */
                 if ((headstartTo && infWorld && infWorld.dist < headstartTo) || risk.fever > 0 || firstRunSafe(FIRST_RUN, raceTime)) return; // «Разгон», «В ударе» и начало первого заезда: удары не считаются
                 if (ABILITY === 'rewind' && !rewindUsed) { rewindUsed = true; speed *= 0.8; try { showBigPlaque('⏪ ОТМОТКА ВРЕМЕНИ', 'Этой аварии не было — один раз за заезд', 'armor'); } catch (e) {} return; } // «Машина времени»
@@ -8912,7 +8808,7 @@ function startGaragePreview(carId) {
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && ((ABILITY === 'avenger' && (stats.rams || 0) < AVENGER_RAMS) || risk.fever > 0)) {
                         // «Ночной мститель» и «В ударе» — таран: попутку отбрасывает вперёд, аварии нет («В ударе» — ещё и «Е»)
                         car.hitCooldown = 1.2; car.z = freeZ(zPos - 60 - Math.random() * 40, car.lane, _avoidH); car.mesh.position.z = car.z; speed *= risk.fever > 0 ? 1 : 0.9; shakeTime = 0.15; if (risk.fever > 0) stats.eChips = (stats.eChips || 0) + FEVER_RAM_E;
-                        _nmBlock = 2; if (!(risk.fever > 0)) stats.rams = (stats.rams || 0) + 1; // «Ночной мститель»: таранов — AVENGER_RAMS за заезд, дальше — как все
+                        _nmBlock = 2; try { if (window.soundEngine) window.soundEngine.playSfx('crash', 0.8); } catch (e) {} if (!(risk.fever > 0)) stats.rams = (stats.rams || 0) + 1; // «Ночной мститель»: таранов — AVENGER_RAMS за заезд, дальше — как все
                         try { showTimePenaltyPopup(0, risk.fever > 0 ? '💥 Снёс! +' + FEVER_RAM_E + ' Е' : stats.rams >= AVENGER_RAMS ? '🦇 Последний таран!' : '🦇 Таран ' + stats.rams + '/' + AVENGER_RAMS); } catch (e) {}
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl))) {
                         car.hitCooldown = 1.2;
@@ -9243,7 +9139,7 @@ function startGaragePreview(carId) {
                                 else if (o.id === 'slow') speed *= 0.55;
                                 else if (o.id === 'oil') { oilSlideTimer = 1.4; speed *= 0.85; xVelocity += (Math.random() < 0.5 ? -1 : 1) * 0.9; }
                                 try { showBigPlaque(o.icon + ' ' + o.title, o.sub, o.good ? 'crate-good' : 'crate-bad'); } catch (e) {}
-                                try { if (window.soundEngine) window.soundEngine.playSfx(o.good ? 'pickup_nitro' : 'bump', 1); } catch (e) {}
+                                try { if (window.soundEngine) window.soundEngine.playSfx('crate', 1); } catch (e) {} // треск досок; хороший приз — ещё и свой звук (grabPower)
                             }
                         } else if (c.type === 'vhs') {
                             stats.vhs = (stats.vhs || 0) + 1;
@@ -9269,7 +9165,7 @@ function startGaragePreview(carId) {
                             nitroTimer = NITRO_TIME;
                             fovPunch = 14; buzz('nitro', _settings.vibrate);
                             stats.nitroPicked++;
-                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup_nitro', 1.1); } catch (e) {}
+                            try { if (window.soundEngine) window.soundEngine.playSfx('nitro_pick', 1); } catch (e) {}
                             try {
                                 const fl = document.createElement('div');
                                 fl.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:130;background:radial-gradient(circle,rgba(50,255,120,0.35),transparent 60%);opacity:1;transition:opacity 0.4s';

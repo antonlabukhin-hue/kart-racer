@@ -2,6 +2,7 @@
  * SoundEngine — Web Audio (двигатель, SFX) + HTML5 (музыка гонки)
  */
 import { loadSettings } from './settings.js';
+import { playKit, makeNoise } from './sfx-kit.js';
 
 // музыка заставки и меню — на 30% тише прежнего (было ×0.85 от громкости музыки): на старте игры не оглушает
 export const MENU_MUSIC_K = 0.6;
@@ -730,6 +731,9 @@ class SoundEngine {
             if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
             const t0 = this.audioCtx.currentTime;
             const vs = (volScale != null ? volScale : 1) * 0.9 * (this.sfxVolume != null ? this.sfxVolume : 1);
+            // звуки событий заезда — свои для каждого, громкость как у «Е» (src/sfx-kit.js)
+            const kit = { crash: 'crash', crate: 'crate', heart: 'heart', armor: 'shield', nitro_pick: 'nitro' }[type];
+            if (kit) { this._kitNoise = this._kitNoise || makeNoise(this.audioCtx); playKit(kit, this.audioCtx, this.audioCtx.destination, t0, vs, this._kitNoise, pitch); return; }
             const mk = (wave, freq, dur, peak, slide) => {
                 const o = this.audioCtx.createOscillator();
                 const g = this.audioCtx.createGain();
