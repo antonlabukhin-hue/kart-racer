@@ -14,6 +14,7 @@ import { createSpruce, createSnowBank, createSnowman } from './snow.js';
 import { mergeStaticMeshes } from './merge-static.js';
 import { buildScenery } from './scenery.js';
 import { setKitGlow } from './scenery-kit.js';
+import { placeRoadside } from './roadside.js';
 
 export const RIG_STEP = 180;
 export const STRETCH = 60;
@@ -118,6 +119,7 @@ export function createInfWorld(o) {
         }
         if (th.night && th.style === 'city') { /* в городе свои фонари */ } else if (th.night) lamp(g, (i % 2 ? 1 : -1) * (W / 2 + 1.8), z0 - STRETCH / 2);
         else if (i % 3 === 0) g.add(Decor.createCinemaBanner((i % 2 ? 1 : -1) * (W / 2 + 5 + r() * 4), zr(), BANNERS[i % BANNERS.length]));
+        try { placeRoadside(g, { style: th.style, i: i, z0: z0, len: STRETCH, W: W, rnd: r, heightAt: heightAt, night: !!th.night, snow: !!th.snow }); } catch (e) { console.warn('roadside', e); } // остановки, ларьки, бабушки, указатели (src/roadside.js)
         try { mergeStaticMeshes(g.children.slice(), g); } catch (e) { /* склейка — только ради скорости */ }
         try { // насыщенные обочины: дома, избы, лес, озёра — один меш на участок (src/scenery.js)
             const sc = buildScenery({ style: th.style, jungle: th.id === 'jungle', snow: !!th.snow, night: !!th.night, i: i, z0: z0, len: STRETCH, W: W, lite: o.lite, rnd: r, heightAt: heightAt });
