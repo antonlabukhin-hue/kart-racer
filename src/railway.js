@@ -65,6 +65,7 @@ export function createBridge(z, W) {
     box(g, L, 0.03, 0.03, dark, 0, DECK_Y + 3.0, z);                       // провод
     // таблички «Ж/Д» на пролёте над дорогой
     [-1, 1].forEach(function(s) { box(g, 1.6, 0.36, 0.04, M(0xf0f0e8), 0, DECK_Y + 0.3, z + s * 1.62); });
+    try { mergeCarParts(g, { all: true }); } catch (e) {} // ~300 шпал, опор и консолей → несколько мешей по материалам
     return g;
 }
 
