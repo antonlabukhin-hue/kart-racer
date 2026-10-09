@@ -10088,7 +10088,7 @@ function startGaragePreview(carId) {
                     pk.t += deltaTime;
                     pk.mesh.rotation.y += deltaTime * 2.5;
                     pk.mesh.position.y = 0.2 + Math.sin(pk.t * 4) * 0.12;
-                    if (Math.abs(zPos - pk.z) < 1.2 && Math.abs(xPos - pk.x) < 1.0) {
+                    if (sweptZ(pk.z, 1.2) && Math.abs(xPos - pk.x) < 1.0) { // отрезком за кадр: на скорости и нитро машина иначе «перескакивает» кувалду
                         bossHammer = true;
                         try { showTimePenaltyPopup(0, '🔨 Кувалда! Следующий таран пробьёт броню'); } catch (e) {}
                         try { if (window.soundEngine) window.soundEngine.playSfx('pickup', 1.1); } catch (e) {}
