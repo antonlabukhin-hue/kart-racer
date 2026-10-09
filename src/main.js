@@ -1,5 +1,8 @@
 
 import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowTheme } from './snow.js';
+import { createSky } from './sky.js';
+import { addBlobShadow } from './ground-shadow.js';
+import { createCarTrail } from './car-trail.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
         import { AnimalSpawner } from './animals.js';
@@ -26,7 +29,7 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { campFinishHtml } from './ui/finish-ui.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { rollChestLoot, lootText } from './chest-loot.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml, infFinishHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow } from './echip.js'; import { createCassette } from './cassette.js'; import { powerLevelsFor, powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet, MEET_KEY } from './first-meet.js'; import { createSwipe, swipeDir } from './swipe-control.js'; import { markVisit, newsReady, extrasReady, openAll } from './visits.js'; import { installRaceToasts } from './ui/race-toasts.js'; import { fovFor, chaseRig, PORTRAIT_FOLLOW, PORTRAIT_FOV_K, PORTRAIT_BOOST_LAG } from './portrait.js'; import { isFirstRun, firstRunSafe, stageFirstRun } from './first-run.js'; import { nextCarGoal, carGoalHtml } from './car-goal.js'; import { buzz } from './haptics.js'; import { renderArmorBar } from './ui/armor-bar.js'; import { takeRotateHint, rotateHintText, rotatedOnce } from './rotate-hint.js'; import * as Memes from './memes.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf, weekKey } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart, THEMES } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { diagOn, installDiag, setDiagSource } from './ui/diag.js'; import { trafficPlan, laneBlocked, freeZ } from './traffic-avoid.js'; import { wireTrophyTabs } from './ui/trophy-tabs.js'; import { checkComeback } from './comeback.js'; import { checkNamePlate, namePlateOn, applyNamePlate } from './name-plate.js'; import { grantFriendChest } from './friend-chest.js'; import { WEEK_GOAL } from './week-car.js'; import { weekRaceExtra, friendExtra, moreForYou, helloGifts } from './ui/hooks-ui.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); installRaceToasts(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); if (diagOn(location.search)) installDiag({ sound: function() { return window.soundEngine; } }); /* ?diag=1 — счётчики памяти и звука на телефоне (src/ui/diag.js) */ // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts, shareMaterials } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow, createEChipBatch } from './echip.js'; import { createCassette } from './cassette.js'; import { powerLevelsFor, powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet, MEET_KEY } from './first-meet.js'; import { createSwipe, swipeDir } from './swipe-control.js'; import { markVisit, newsReady, extrasReady, openAll } from './visits.js'; import { installRaceToasts } from './ui/race-toasts.js'; import { fovFor, chaseRig, PORTRAIT_FOLLOW, PORTRAIT_FOV_K, PORTRAIT_BOOST_LAG } from './portrait.js'; import { isFirstRun, firstRunSafe, stageFirstRun } from './first-run.js'; import { nextCarGoal, carGoalHtml } from './car-goal.js'; import { buzz } from './haptics.js'; import { renderArmorBar } from './ui/armor-bar.js'; import { takeRotateHint, rotateHintText, rotatedOnce } from './rotate-hint.js'; import * as Memes from './memes.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf, weekKey } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart, THEMES } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { diagOn, installDiag, setDiagSource } from './ui/diag.js'; import { trafficPlan, laneBlocked, freeZ } from './traffic-avoid.js'; import { wireTrophyTabs } from './ui/trophy-tabs.js'; import { checkComeback } from './comeback.js'; import { checkNamePlate, namePlateOn, applyNamePlate } from './name-plate.js'; import { grantFriendChest } from './friend-chest.js'; import { WEEK_GOAL } from './week-car.js'; import { weekRaceExtra, friendExtra, moreForYou, helloGifts } from './ui/hooks-ui.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); installRaceToasts(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); if (diagOn(location.search)) installDiag({ sound: function() { return window.soundEngine; } }); /* ?diag=1 — счётчики памяти и звука на телефоне (src/ui/diag.js) */ // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI, setSeasonMode } from './ui/season-screens.js'; import { renderGifts, giftsBadge } from './ui/gifts-screen.js'; import { showChest } from './ui/main-menu.js'; import { unclaimedRewards } from './ui/menu-badges.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -5231,21 +5234,16 @@ function startGaragePreview(carId) {
             }
 
             function createAsphaltTexture() {
-                const size = window._texSizeForQuality ? window._texSizeForQuality(64) : 64;
+                const size = window._texSizeForQuality ? window._texSizeForQuality(128) : 128;
                 const canvas = window._acquireTexCanvas ? window._acquireTexCanvas(size, size) : document.createElement('canvas');
                 canvas.width = size; canvas.height = size;
                 const ctx = canvas.getContext('2d', { willReadFrequently: false, alpha: false });
-                ctx.fillStyle = '#444455';
+                ctx.fillStyle = '#45454f';
                 ctx.fillRect(0, 0, size, size);
-                const dots = size <= 48 ? 40 : 80;
-                for (let i = 0; i < dots; i++) {
-                    const x = Math.random() * size;
-                    const y = Math.random() * size;
-                    const sz = 1 + Math.random() * 2;
-                    const shade = 50 + Math.random() * 80;
-                    ctx.fillStyle = 'rgb(' + shade + ',' + shade + ',' + (shade + 10) + ')';
-                    ctx.fillRect(x, y, sz, sz);
-                }
+                // плитка растянута на всю ширину дороги — только мелкое зерно, без клякс; накатанные колеи по полосам
+                for (let i = 0; i < size * 6; i++) { const sh = 62 + Math.random() * 16; ctx.fillStyle = 'rgb(' + sh + ',' + sh + ',' + (sh + 8) + ')'; ctx.fillRect(Math.random() * size, Math.random() * size, 1, 1); }
+                ctx.fillStyle = 'rgba(20,20,28,0.16)';
+                [1, 3, 5].forEach(function(l) { [-0.075, 0.075].forEach(function(o) { ctx.fillRect((l / 6 + o) * size - size * 0.018, 0, size * 0.036, size); }); });
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(1, 120);
@@ -6033,13 +6031,8 @@ function startGaragePreview(carId) {
                 tl2.position.x = bodyW * 0.32;
                 car.add(tl2);
 
-                // Тень
-                const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32 });
-                const shadowGeo = new THREE.PlaneGeometry(bodyW * 1.15, bodyL * 1.1);
-                const fakeShadow = new THREE.Mesh(shadowGeo, shadowMat);
-                fakeShadow.rotation.x = -Math.PI / 2;
-                fakeShadow.position.y = 0.015;
-                car.add(fakeShadow);
+                // Тень — мягкое пятно (src/ground-shadow.js)
+                addBlobShadow(car, bodyW, bodyL, 0.015);
 
                 // Колёса
                 const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
@@ -6123,14 +6116,14 @@ function startGaragePreview(carId) {
             
             // Силуэты на горизонте
             const horizonMat = new THREE.MeshBasicMaterial({ color: 0x2a2218, transparent: true, opacity: 0.55 });
-            for (let i = 0; i < 14; i++) {
+            const silGeos = []; // в бесконечной трассе их нет — там настоящий силуэт на горизонте (src/sky.js); в кампании — одним мешем
+            for (let i = 0; i < (INF ? 0 : 14); i++) {
                 const h = 4 + Math.random() * 10;
                 const w = 3 + Math.random() * 6;
-                const sil = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.5), horizonMat);
                 const side = i % 2 === 0 ? -1 : 1;
-                sil.position.set(side * (25 + Math.random() * 30), h * 0.45, -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH);
-                roadRig.add(sil);
+                silGeos.push(new THREE.BoxGeometry(w, h, 1.5).translate(side * (25 + Math.random() * 30), h * 0.45, -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH));
             }
+            if (silGeos.length) roadRig.add(new THREE.Mesh(mergeGeometries(silGeos), horizonMat));
 
             const carStyle = carId === 'kirpich' ? 'jeep' : (carId === 'turbo' ? 'racer' : 'sedan');
             
@@ -6203,6 +6196,7 @@ function startGaragePreview(carId) {
             // пламя нитро из выхлопа (видно на ускорении), вмятины и дым после аварий
             let nitroFlames = null;
             try { if (playerCar) nitroFlames = addNitroFlames(playerCar); } catch (e) { nitroFlames = null; }
+            let carTrail = null; try { carTrail = createCarTrail(scene, { lite: isMobile || quality === 'low' }); } catch (e) { carTrail = null; } // выхлоп и пыль из-под колёс (src/car-trail.js)
             let dentsShown = 0, smokeAcc = 0, prevSpeedForPitch = 0;
             function addDent() {
                 try {
@@ -6443,6 +6437,8 @@ function startGaragePreview(carId) {
                 }
 
                 try { mergeCarParts(car, { all: true }); } catch (e) {} // 10–19 деталей → 5–6 (колёса не крутятся, перекраски нет)
+                try { shareMaterials(car); } catch (e) {} // общие материалы на все попутки (src/merge-static.js)
+                addBlobShadow(car, hitW, hitL, -0.08); // мягкая тень на асфальте (src/ground-shadow.js)
                 const hug = hugFor(lane), x = carX(lane, hug); // по центру полосы или вплотную к обочине (src/traffic-lanes.js)
                 car.position.set(x, 0.1, z);
                 scene.add(car);
@@ -6847,15 +6843,15 @@ function startGaragePreview(carId) {
             const setEvents = []; // трактор, ПАЗик, кран, магнит, бульдозер — по карте, случайно (src/landmarks.js)
             let mapEvent = null; // сцена карты: переезд / пар / горящие шины (src/mapevents.js)
             // бывшая «звезда» за нитро-прыжок — большая золотая «Е» (src/echip.js), даёт 5 «Е»
-            function createStar(x, z) {
+            const eBatch = createEChipBatch(scene); /* все «Е» — одним вызовом отрисовки (src/echip.js) */ function createStar(x, z) {
                 const g = new THREE.Group();
-                g.add(createEChip(true), eGlow());
+                g.add(eBatch.chip(true), eGlow());
                 g.position.set(x, 1.4, z);
                 scene.add(g);
                 return { mesh: g, x: x, z: z, type: 'star', active: true, bob: 0, radius: 1.05, airOnly: true, minY: 1.05, baseY: 1.4 };
             }
             function createEChipItem(x, y, z) {
-                const m = createEChip(false);
+                const m = eBatch.chip(false);
                 m.position.set(x, y, z);
                 scene.add(m);
                 return { mesh: m, x: x, z: z, type: 'echip', active: true, bob: Math.random() * 6, radius: 0.6, baseY: y, airOnly: y > 1.05, minY: y - 0.7 };
@@ -7727,7 +7723,8 @@ function startGaragePreview(carId) {
             // свайпы вместо кнопок — если выбраны в «Настройках» (src/swipe-control.js); кнопки руля, газа и тормоза прячутся
             // «Авто»: телефон вертикально — свайпы, боком — кнопки; повернули посреди заезда — управление меняется следом
             const swipeCtl = isMobile && _settings.controls !== 'buttons' ? createSwipe() : null;
-            const swipeOn = function() { return !!swipeCtl && (_settings.controls === 'swipe' || window.innerHeight > window.innerWidth); };
+            let _portraitNow = window.innerHeight > window.innerWidth; /* ориентация — по событию, а не чтением размеров окна дважды за кадр (это пересчитывало вёрстку) */ window.addEventListener('resize', function() { _portraitNow = window.innerHeight > window.innerWidth; }, { signal: mobileAbort.signal });
+            const swipeOn = function() { return !!swipeCtl && (_settings.controls === 'swipe' || _portraitNow); };
             let _wasPortrait = window.innerHeight > window.innerWidth;
             const syncSwipeUi = function() {
                 document.body.classList.toggle('swipe-ctl', swipeOn());
@@ -8082,7 +8079,7 @@ function startGaragePreview(carId) {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
                     get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, get hammer() { return bossHammer; }, spawnHammer: function() { spawnHammer(); }, bossPickups: bossPickups, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, riskEvent: function(k) { return riskEvent(risk, k); }, get goals() { return roadGoals ? roadGoals.count : 0; }, get renderer() { return renderer; }, buildCar: buildShowroomCar, smashBoards: smashBoards, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get chunks() { return chunkCull; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, get inf() { return infWorld; }, spawnMeme: function(id, ahead) { return inf ? inf.spawnMeme(id, ahead) : null; }, powers: powers, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
-                    get raceTime() { return raceTime; },
+                    get raceTime() { return raceTime; }, get infWorld() { return infWorld; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
                 };
@@ -8756,6 +8753,7 @@ function startGaragePreview(carId) {
                     playerCar.rotation.x = lerp(playerCar.rotation.x, pitchTarget, 1 - Math.pow(0.85, deltaTime * 60));
                 }
                 if (nitroFlames) nitroFlames.update(raceTime, nitroTimer > 0);
+                if (carTrail) carTrail.update(deltaTime, { x: playerCar.position.x, y: playerCar.position.y, z: playerCar.position.z, vz: -speed * 60, speedK: speed / MAX_SPEED, nitro: nitroTimer > 0, offroad: Math.abs(xPos) > TRACK_WIDTH / 2 - 0.3, airborne: carAirborne, theme: INF ? infTheme : null, len: 1.5, w: 0.85 });
                 // колёса: путь за кадр / радиус (модель в заезде уменьшена — радиус тоже); перёд к −z → вращение «−x»
                 if (raceWheels.length) {
                     const ang = (speed * 60 * deltaTime) / (raceWheelR * RACE_CAR_SCALE);
@@ -10707,7 +10705,7 @@ function startGaragePreview(carId) {
             })();
             let chunkCull = null, _cullN = 0; try { chunkCull = buildChunks(scene); } catch (e) { console.warn('chunks', e); }
             if (INF) {
-                infWorld = inf.startWorld({ rig: roadRig, ground: ground, hills: infHills, lite: isMobile || quality === 'low' }); // мир вокруг дороги (src/inf-world.js)
+                infWorld = inf.startWorld({ rig: roadRig, ground: ground, hills: infHills, lite: isMobile || quality === 'low', sky: createSky(scene) }); // мир вокруг дороги (src/inf-world.js)
             } // участки трассы: дальнее не обходится (src/chunk-cull.js)
 
             console.log('🏁 Игра запущена!');

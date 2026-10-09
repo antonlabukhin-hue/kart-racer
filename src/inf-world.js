@@ -11,12 +11,14 @@ import { themeAt, mixHex } from './infinite.js';
 import * as Decor from './decor.js';
 import { createRock, createLog, createForestInstanced } from './biomes.js';
 import { createSpruce, createSnowBank, createSnowman } from './snow.js';
-import { mergeStaticMeshes } from './merge-static.js';
+import { mergeStaticMeshes, shareMaterials } from './merge-static.js';
 import { buildScenery } from './scenery.js';
 import { setKitGlow } from './scenery-kit.js';
+import { placeRoadside } from './roadside.js';
 
 export const RIG_STEP = 180;
 export const STRETCH = 60;
+const BUILD_BUDGET = 4; // мс на постройку участка за кадр
 const AHEAD = 280, BEHIND = 60;
 const BANNERS = ['ВИДЕОПРОКАТ 24Ч', 'ТУРБО-ЖУЙ', 'ПРИСТАВКА 16 БИТ', 'VHS ONLY', 'ЛИМОНАД «ЁЛОЧКА»', 'КИНОЗАЛ «ОКТЯБРЬ»', 'ДЕМБЕЛЬ-97', 'ШИНОМОНТАЖ 24Ч'];
 
@@ -34,6 +36,21 @@ export function disposeTree(o) {
     });
 }
 
+/**
+ * Участок неподвижен: убрать пустые группы, оставшиеся после склейки, посчитать матрицы один раз
+ * и не пересчитывать их каждый кадр (scene.updateMatrixWorld обходит участок стороной).
+ */
+export function freezeStatic(g) {
+    const empty = [];
+    g.traverse(function(o) { if (o !== g && !o.isMesh && !o.isLight && !o.isPoints && !o.isSprite && !o.isLine && o.children.length === 0) empty.push(o); });
+    empty.forEach(function(o) { if (o.parent) o.parent.remove(o); });
+    shareMaterials(g);
+    g.updateMatrixWorld(true);
+    g.traverse(function(o) { o.matrixAutoUpdate = false; });
+    g.matrixWorldAutoUpdate = false;
+    return empty.length;
+}
+
 /** Пейзаж участка: в зоне перехода — уже следующий */
 export function stretchTheme(i) {
     const t = themeAt(i * STRETCH + STRETCH / 2);
@@ -49,7 +66,7 @@ function lamp(g, x, z) {
 }
 
 /**
- * o: { scene, startZ, trackWidth, rig (группа дороги), ground, hills (холмы обочин), lights: { ambient, hemi, sun }, lite (мобильный/низкое качество) }
+ * o: { scene, startZ, trackWidth, rig (группа дороги), ground, hills (холмы обочин), lights: { ambient, hemi, sun }, lite (мобильный/низкое качество), sky (src/sky.js) }
  * tick(zPos) → { dist, theme, next, k } — каждый кадр: дорога, участки обочин, небо и свет
  */
 export function createInfWorld(o) {
@@ -77,7 +94,13 @@ export function createInfWorld(o) {
         return y + h.position.y;
     }
 
-    function build(i) {
+    const buildMs = []; // самый долгий шаг постройки участка, мс (последние 30) — для замеров рывков
+    /**
+     * Постройка участка по шагам (генератор): декор, деревья, детали у обочины, склейка, дома.
+     * Между шагами — yield: tick() выполняет шаги, пока не выйдет бюджет кадра, и продолжает в следующем —
+     * постройка целиком за один кадр давала рывок ~30–50 мс на каждые 60 м пути.
+     */
+    function* buildSteps(i) {
         const th = stretchTheme(i);
         const z0 = o.startZ - i * STRETCH;
         const r = Math.random;
@@ -92,6 +115,7 @@ export function createInfWorld(o) {
             if (b) { const d = b(x, z, s); d.position.y = heightAt(x, z) - 0.05; g.add(d); } // по холму, а не в воздухе
             else (r() < 0.57 ? createRock : createLog)(g, x, z, s);
         }
+        yield;
         // мелочь у самой обочины
         if (!own) {
             const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 1.4 + r() * 1.6), z = zr();
@@ -116,16 +140,39 @@ export function createInfWorld(o) {
             }
             createForestInstanced(g, trees, mergeGeometries);
         }
+        yield;
         if (th.night && th.style === 'city') { /* в городе свои фонари */ } else if (th.night) lamp(g, (i % 2 ? 1 : -1) * (W / 2 + 1.8), z0 - STRETCH / 2);
         else if (i % 3 === 0) g.add(Decor.createCinemaBanner((i % 2 ? 1 : -1) * (W / 2 + 5 + r() * 4), zr(), BANNERS[i % BANNERS.length]));
+        try { placeRoadside(g, { style: th.style, i: i, z0: z0, len: STRETCH, W: W, rnd: r, heightAt: heightAt, night: !!th.night, snow: !!th.snow }); } catch (e) { console.warn('roadside', e); } // остановки, ларьки, бабушки, указатели (src/roadside.js)
+        yield;
         try { mergeStaticMeshes(g.children.slice(), g); } catch (e) { /* склейка — только ради скорости */ }
+        yield;
         try { // насыщенные обочины: дома, избы, лес, озёра — один меш на участок (src/scenery.js)
             const sc = buildScenery({ style: th.style, jungle: th.id === 'jungle', snow: !!th.snow, night: !!th.night, i: i, z0: z0, len: STRETCH, W: W, lite: o.lite, rnd: r, heightAt: heightAt });
             if (sc.mesh) g.add(sc.mesh);
             if (sc.water) g.add(sc.water);
         } catch (e) { console.warn('scenery', e); }
-        scene.add(g);
-        stretches.set(i, g);
+        freezeStatic(g);
+        return g;
+    }
+
+    let pending = null; // участок, который строится по шагам: { i, it, g, worst }
+    /** Выполнять шаги постройки, пока не выйдет budget мс (null — до конца). true — участок готов */
+    function runPending(budget) {
+        const t0 = performance.now();
+        while (pending) {
+            const ts = performance.now();
+            const r = pending.it.next();
+            pending.worst = Math.max(pending.worst, performance.now() - ts);
+            if (r.done) {
+                if (r.value) { scene.add(r.value); stretches.set(pending.i, r.value); }
+                buildMs.push(Math.round(pending.worst * 10) / 10); if (buildMs.length > 30) buildMs.shift();
+                pending = null;
+                return true;
+            }
+            if (budget != null && performance.now() - t0 >= budget) return false;
+        }
+        return true;
     }
 
     function atmosphere(d) {
@@ -145,22 +192,27 @@ export function createInfWorld(o) {
         o.lights.hemi.intensity = base.hemi * L;
         o.lights.sun.intensity = base.sun * L;
         setKitGlow((1 - L) * 1.7); // ночью и в дождь окна и вывески светятся
+        if (o.sky) { o.sky.setTheme(a, b, k, mixHex(a.fog, b.fog, k)); o.sky.tick(1 / 60); } // небо и силуэты на горизонте (src/sky.js)
         return t;
     }
 
     const world = {
         dist: 0,
         get stretches() { return stretches.size; },
+        buildMs: buildMs,
         heightAt: heightAt,
         tick: function(zPos, prefill) {
             const d = Math.max(0, o.startZ - zPos);
             world.dist = Math.max(world.dist, d);
             if (o.rig) o.rig.position.z = -rigShift(d);
             const lo = Math.floor((d - BEHIND) / STRETCH), hi = Math.floor((d + AHEAD) / STRETCH);
-            // впереди — не больше одного участка за кадр (кроме старта): стройка не даёт рывков
-            for (let i = Math.max(0, lo); i <= hi; i++) {
+            // впереди — по шагам, не больше BUILD_BUDGET мс за кадр (на старте — всё сразу): стройка не даёт рывков
+            if (pending && pending.i < lo) pending = null; // уже проехали — недостроенный участок не нужен
+            if (pending) runPending(prefill ? null : BUILD_BUDGET);
+            for (let i = Math.max(0, lo); i <= hi && !pending; i++) {
                 if (stretches.has(i)) continue;
-                build(i);
+                pending = { i: i, it: buildSteps(i), worst: 0 };
+                runPending(prefill ? null : BUILD_BUDGET);
                 if (!prefill) break;
             }
             stretches.forEach(function(g, i) {

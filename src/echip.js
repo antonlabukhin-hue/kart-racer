@@ -45,7 +45,60 @@ export function eGlow() {
 
 export function createEChip(big) {
     const m = new THREE.Mesh(eGeometry(), eMaterial(big));
-    m.scale.setScalar((big ? 1.7 : 1.15) * 0.9); // на 10% меньше прежнего — не загораживают дорогу
+    m.scale.setScalar(chipScale(big)); // на 10% меньше прежнего — не загораживают дорогу
     m.castShadow = false;
     return m;
+}
+
+/** Масштаб фишки (как у createEChip) */
+export function chipScale(big) { return (big ? 1.7 : 1.15) * 0.9; }
+
+/**
+ * Все «Е» заезда — одним вызовом отрисовки (InstancedMesh) вместо сотни: на трассе их 200+, каждая была своим мешем.
+ * chip(big) → «держатель» (Object3D без отрисовки): логика двигает, крутит и прячет его как раньше,
+ * а перед каждым кадром (scene.onBeforeRender — уже после пересчёта матриц) видимые держатели копируются в экземпляры.
+ * Держатель, убранный из сцены, забывается сам.
+ */
+export function createEChipBatch(scene, cap) {
+    cap = cap || 700;
+    const kinds = [false, true].map(function(big) {
+        const im = new THREE.InstancedMesh(eGeometry(), eMaterial(big), big ? 64 : cap);
+        im.frustumCulled = false; // экземпляры по всей трассе — одна общая проверка не нужна
+        im.count = 0;
+        im.userData.dynamic = true;
+        im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(im);
+        return { im: im, max: big ? 64 : cap, set: new Set() };
+    });
+    function inScene(o) {
+        let x = o;
+        while (x) { if (!x.visible) return 0; if (x === scene) return 1; x = x.parent; }
+        return -1; // вне сцены
+    }
+    function sync() {
+        kinds.forEach(function(k) {
+            let n = 0;
+            k.set.forEach(function(o) {
+                const s = inScene(o);
+                if (s < 0) { if (o.userData.seen) k.set.delete(o); return; }
+                o.userData.seen = true;
+                if (s && n < k.max) k.im.setMatrixAt(n++, o.matrixWorld);
+            });
+            k.im.count = n;
+            k.im.instanceMatrix.needsUpdate = true;
+        });
+    }
+    const prev = scene.onBeforeRender;
+    scene.onBeforeRender = function(r, s, c, t) { if (prev) prev.call(this, r, s, c, t); sync(); };
+    return {
+        chip: function(big) {
+            const o = new THREE.Object3D();
+            o.scale.setScalar(chipScale(big));
+            o.userData.noCull = true; // не уносить в участки src/chunk-cull.js — у держателя нет геометрии
+            kinds[big ? 1 : 0].set.add(o);
+            return o;
+        },
+        sync: sync,
+        get count() { return kinds[0].im.count + kinds[1].im.count; }
+    };
 }

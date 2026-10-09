@@ -6461,3 +6461,10 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 }
 #endless-wave-card .ew-menu { display: block; width: 100%; max-width: 340px; margin: 4px auto; min-height: 42px; border-radius: 12px; cursor: pointer;
     border: 2px solid rgba(255,255,255,0.35); background: rgba(0,0,0,0.45); color: #fff; font: 800 16px system-ui, 'Segoe UI', sans-serif; }
+
+/* ===== Плашки заезда — полупрозрачные: сквозь них видно небо и горизонт (src/sky.js).
+   Без backdrop-filter — размытие поверх 3D тормозит на слабых телефонах; читаемость держит тень текста ===== */
+:root body.race-mode #game-hud.hud-v2#game-hud, :root body.race-mode #hud-menu-btn#hud-menu-btn, :root body.race-mode #e-counter#e-counter {
+    background: linear-gradient(180deg, rgba(30, 20, 0, 0.46), rgba(14, 8, 0, 0.52)) !important; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.5); }
+:root body.race-mode #mobile-controls .mc-cam .cam-btn, :root body.race-mode #hud-pause-btn { background: rgba(14, 10, 0, 0.42) !important; }

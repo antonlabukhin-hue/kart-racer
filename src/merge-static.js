@@ -141,3 +141,37 @@ export function mergeCarParts(car, opts) {
     });
     return { before: before, after: after };
 }
+
+/**
+ * Один экземпляр материала на каждый «вид»: попутки и участки обочин создают по новому материалу
+ * на каждую деталь (сотни одинаковых), и каждый новый экземпляр при первом показе заново подбирает
+ * параметры шейдера — лишняя работа в кадре. Светящиеся (их меняют по ссылке) и с подписями — как есть.
+ */
+const CANON = new Map();
+export function shareKey(m) {
+    if (!m || m.isShaderMaterial || m.userData.noShare) return null;
+    if (m.emissive && (m.emissive.r || m.emissive.g || m.emissive.b)) return null;
+    if (m.map && m.map.isCanvasTexture && !(m.map.userData && m.map.userData.keep)) return null;
+    const hex = function(c) { return c ? c.getHexString() : ''; };
+    return [m.type, hex(m.color), m.roughness, m.metalness, m.flatShading, m.side, m.vertexColors, m.map ? m.map.uuid : '',
+        m.transparent, m.opacity, m.depthWrite, m.depthTest, m.blending, m.fog, m.wireframe, m.alphaTest].join('|');
+}
+export function shareMaterial(m) {
+    const k = shareKey(m);
+    if (k == null) return m;
+    const c = CANON.get(k);
+    if (c) return c;
+    if (CANON.size > 2000) CANON.clear(); // на всякий случай — не копить без конца
+    CANON.set(k, m);
+    return m;
+}
+/** Заменить материалы всех мешей объекта на общие экземпляры. Возвращает, сколько заменено */
+export function shareMaterials(root) {
+    let n = 0;
+    root.traverse(function(o) {
+        if (!o.isMesh || Array.isArray(o.material)) return;
+        const s = shareMaterial(o.material);
+        if (s !== o.material) { o.material = s; n++; }
+    });
+    return n;
+}
