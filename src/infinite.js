@@ -212,6 +212,8 @@ export function planStretch(d0, d1, rnd, opts) {
     const eDs = out.filter(function(i) { return i.kind === 'echip'; }).map(function(i) { return i.d; });
     const clearOfE = function(dd) { return !nearGap(dd) && eDs.every(function(e) { return Math.abs(e - dd) > 18; }); };
     const spot = function(dd) { for (let k = 0; k < 12 && !clearOfE(dd); k++) dd += 20; return clearOfE(dd) && dd < d1 ? dd : null; };
+    // безумный транспорт (src/rides.js) — редко: трактор-таран, самосвал, «кукурузник»
+    for (let dd = d0 + 700 + r() * 600; dd < d1; dd += 1400 + r() * 800) { const at = spot(dd); if (at != null) out.push({ kind: 'ride', d: at, lane: lane() }); }
     // усиления: магнит, ×2, броня — раз в 450–750 м
     for (let dd = d0 + 150 + r() * 250; dd < d1; dd += POWER_EVERY[0] + r() * (POWER_EVERY[1] - POWER_EVERY[0])) {
         const at = spot(dd);
