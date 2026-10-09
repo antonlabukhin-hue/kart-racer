@@ -1,3 +1,4 @@
+import { FUN_ACHIEVEMENTS } from './fun-achievements.js';
 /**
  * Контент мета-игры: карты, реплики злодея, достижения, трофеи, детали и краски,
  * награды сезона, ежедневные контракты, выкрики зверей. Только данные — без логики.
@@ -49,7 +50,9 @@ export const ACHIEVEMENTS = [
     { id: 'bear_friend', name: 'Друг медведя', desc: '5 ударов по зверям за заезд', img: 'images/trophy_bear_friend.png' },
     { id: 'season5', name: 'Смена открыта', desc: '5 уровень сезона', img: 'images/trophy_season5.png' },
     { id: 'races10', name: 'Стахановец', desc: '10 заездов', img: 'images/trophy_races10.png' },
-    { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/trophy_wins5.png' }
+    { id: 'wins5', name: 'Надёжный курьер', desc: '5 побед', img: 'images/trophy_wins5.png' },
+    // шуточные (src/fun-achievements.js) — без картинок
+    ...FUN_ACHIEVEMENTS.map(function(a) { return { id: a.id, name: a.name, desc: a.desc, fun: true }; })
 ];
 
 export const CAR_SHOP_ORDER = ['cheburashka', 'kirpich', 'gorbaty', 'turbo', 'pirozhok', 'buhanka', 'rafik', 'saray', 'gazel', 'shestisot', 'raketa', 'thief', 'trike', 'neon', 'bull', 'ghostcar', 'cyborg', 'avenger', 'zubilo', 'mechta', 'moped', 'chariot', 'timecar', 'carpet'];

@@ -3,6 +3,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
 import { createSky } from './sky.js';
 import { addBlobShadow } from './ground-shadow.js';
 import { createCarTrail } from './car-trail.js';
+import { createMoments, planMoments, momentOfWeek } from './moments.js';
+import { record as recordFun } from './fun-achievements.js';
 import { buildTraffic, KINDS as TRAFFIC_KINDS } from './traffic-cars.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
@@ -6197,6 +6199,7 @@ function startGaragePreview(carId) {
             // пламя нитро из выхлопа (видно на ускорении), вмятины и дым после аварий
             let nitroFlames = null;
             try { if (playerCar) nitroFlames = addNitroFlames(playerCar); } catch (e) { nitroFlames = null; }
+            let moments = null; /* src/moments.js */ const funEvent = function(ev) { try { recordFun(currentPlayer, ev).forEach(function(id) { unlockAchievement(id); }); } catch (e) {} }; // достижения-шутки (src/fun-achievements.js)
             let carTrail = null; try { carTrail = createCarTrail(scene, { lite: isMobile || quality === 'low' }); } catch (e) { carTrail = null; } // выхлоп и пыль из-под колёс (src/car-trail.js)
             let dentsShown = 0, smokeAcc = 0, prevSpeedForPitch = 0;
             function addDent() {
@@ -8509,7 +8512,7 @@ function startGaragePreview(carId) {
                         speed *= 0.9;
                         shakeTime = Math.max(shakeTime, 0.12);
                         fovPunch = Math.max(fovPunch || 0, 6); buzz('board', _settings.vibrate);
-                        try { showBigPlaque('💥 РЕКЛАМА СНЕСЕНА!' + (stats.billboards > 1 ? ' ×' + stats.billboards : ''), '+' + SMASH_CHIPS + ' Е и очки стиля', 'smash'); } catch (e) {}
+                        funEvent('board'); try { showBigPlaque('💥 РЕКЛАМА СНЕСЕНА!' + (stats.billboards > 1 ? ' ×' + stats.billboards : ''), '+' + SMASH_CHIPS + ' Е и очки стиля', 'smash'); } catch (e) {}
                         try { if (window.soundEngine) { window.soundEngine.playSfx('bump', 1.2); window.soundEngine.playSfx('explode', 0.35); } } catch (e) {}
                     }
                 }
@@ -8651,6 +8654,7 @@ function startGaragePreview(carId) {
                     playerCar.rotation.x = lerp(playerCar.rotation.x, pitchTarget, 1 - Math.pow(0.85, deltaTime * 60));
                 }
                 if (nitroFlames) nitroFlames.update(raceTime, nitroTimer > 0);
+                if (moments) moments.update(deltaTime, zPos, Math.abs(speed) * 60);
                 if (carTrail) carTrail.update(deltaTime, { x: playerCar.position.x, y: playerCar.position.y, z: playerCar.position.z, vz: -speed * 60, speedK: speed / MAX_SPEED, nitro: nitroTimer > 0, offroad: Math.abs(xPos) > TRACK_WIDTH / 2 - 0.3, airborne: carAirborne, theme: INF ? infTheme : null, len: 1.5, w: 0.85 });
                 // колёса: путь за кадр / радиус (модель в заезде уменьшена — радиус тоже); перёд к −z → вращение «−x»
                 if (raceWheels.length) {
@@ -10605,7 +10609,9 @@ function startGaragePreview(carId) {
             })();
             let chunkCull = null, _cullN = 0; try { chunkCull = buildChunks(scene); } catch (e) { console.warn('chunks', e); }
             if (INF) {
-                infWorld = inf.startWorld({ rig: roadRig, ground: ground, hills: infHills, lite: isMobile || quality === 'low', sky: createSky(scene) }); // мир вокруг дороги (src/inf-world.js)
+                infWorld = inf.startWorld({ rig: roadRig, ground: ground, hills: infHills, lite: isMobile || quality === 'low', sky: createSky(scene), onEvent: funEvent });
+                moments = createMoments({ scene: scene, startZ: START_Z, W: TRACK_WIDTH, buildMoto: function() { return buildTraffic('moto', 0xc83a2a).group; }, buildCow: Memes.createCow, onSeen: function(id) { funEvent('m_' + id); if (id === momentOfWeek(new Date()).id) funEvent('meme_week'); } }); // редкие сценки и «мем недели» (src/moments.js)
+                ((import.meta.env.MODE === 'test' && window.__forceMoments) || planMoments(new Date(), Math.random, function(d) { return themeAt(d).theme; })).forEach(function(p) { moments.add(p.id, p.at); }); // тестовая сборка: window.__forceMoments = [{ id, at }] // мир вокруг дороги (src/inf-world.js)
             } // участки трассы: дальнее не обходится (src/chunk-cull.js)
 
             console.log('🏁 Игра запущена!');
