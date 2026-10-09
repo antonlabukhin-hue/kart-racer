@@ -6116,14 +6116,14 @@ function startGaragePreview(carId) {
             
             // Силуэты на горизонте
             const horizonMat = new THREE.MeshBasicMaterial({ color: 0x2a2218, transparent: true, opacity: 0.55 });
-            for (let i = 0; i < 14; i++) {
+            const silGeos = []; // в бесконечной трассе их нет — там настоящий силуэт на горизонте (src/sky.js); в кампании — одним мешем
+            for (let i = 0; i < (INF ? 0 : 14); i++) {
                 const h = 4 + Math.random() * 10;
                 const w = 3 + Math.random() * 6;
-                const sil = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.5), horizonMat);
                 const side = i % 2 === 0 ? -1 : 1;
-                sil.position.set(side * (25 + Math.random() * 30), h * 0.45, -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH);
-                roadRig.add(sil);
+                silGeos.push(new THREE.BoxGeometry(w, h, 1.5).translate(side * (25 + Math.random() * 30), h * 0.45, -TRACK_LENGTH / 2 + Math.random() * TRACK_LENGTH));
             }
+            if (silGeos.length) roadRig.add(new THREE.Mesh(mergeGeometries(silGeos), horizonMat));
 
             const carStyle = carId === 'kirpich' ? 'jeep' : (carId === 'turbo' ? 'racer' : 'sedan');
             
