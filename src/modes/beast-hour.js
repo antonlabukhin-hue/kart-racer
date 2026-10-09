@@ -28,6 +28,7 @@ export function waveCardHtml(run, gained) {
         + CHOICES.map(function(c) { return '<button type="button" class="ew-pick" data-choice="' + c.id + '"' + (c.id === 'heart' && !(run.strikes > 0) ? ' disabled' : '') + '><i>' + c.icon + '</i><b>' + c.name + '</b><small>' + c.desc + '</small></button>'; }).join('')
         + '</div>'
         + '<button type="button" class="ew-go" disabled>2. ▶ ПОЕХАЛИ</button>'
+        + '<button type="button" class="ew-menu">🏠 В меню</button>'
         + '<div class="ew-seed">' + (run.daily ? 'Звериный час дня · ' : 'Сид ') + seedCode(run.seed) + '</div>';
 }
 
@@ -136,6 +137,16 @@ export function createBeastHour(d) {
                 t = setInterval(function() { left--; const l = el.querySelector('.ew-left'); if (l) l.textContent = String(left); if (left <= 0) pick(defaultChoice(run)); }, 1000);
                 el.querySelectorAll('.ew-pick').forEach(function(b) { b.onclick = function() { pick(b.dataset.choice); }; });
                 if (goBtn) goBtn.onclick = start;
+                // «В меню» — закончить забег между волнами: счёт волн уже засчитан (settleWave)
+                const menuBtn = el.querySelector('.ew-menu');
+                if (menuBtn) menuBtn.onclick = function() {
+                    if (started) return;
+                    started = true; clearInterval(t);
+                    document.removeEventListener('keydown', onKey);
+                    try { el.remove(); } catch (e) {}
+                    try { d.save(); } catch (e) {}
+                    if (d.toMenu) d.toMenu();
+                };
                 return true;
             }
             if (run.daily && run.score > 0) { // «Звериный час дня» — в дневную таблицу (src/daily-board.js)

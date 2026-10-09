@@ -644,7 +644,8 @@ import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowThem
         const beast = createBeastHour({ player: function() { return currentPlayer; }, save: function() { saveCurrentPlayer(); },
             startRace: function(q, df, car, map, w) { initGame(q, df, car, map, w); }, setMode: function(m) { pendingMode = m; },
             clearCampaign: function() { clearCampaignGlobals(); }, hideMenu: function() { hideMainMenu(); }, online: function() { return onlineBoard(); },
-            quality: function() { return window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium'; } });
+            quality: function() { return window.__lastQuality || (typeof pendingQuality !== 'undefined' && pendingQuality) || 'medium'; },
+            toMenu: function() { window.__endless = null; if (typeof window.exitRaceToMenu === 'function') window.exitRaceToMenu(false); } });
         function isEndlessMode() { return beast.active(typeof pendingMode !== 'undefined' ? pendingMode : null); }
         /** seed не задан — «Звериный час дня» (сид общий для всех в этот день) */
         function startEndlessRun(seed) { beast.start(seed); }

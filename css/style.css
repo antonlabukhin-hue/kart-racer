@@ -6459,3 +6459,5 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
     :root body.race-mode #risk-hud#risk-hud { left: calc(50% + 62px) !important; right: auto !important; bottom: auto !important; top: max(4px, env(safe-area-inset-top)) !important; transform: none !important; } /* в верхней строке, справа от «Е» */
     :root body.race-mode #armor-bar#armor-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important; }
 }
+#endless-wave-card .ew-menu { display: block; width: 100%; max-width: 340px; margin: 4px auto; min-height: 42px; border-radius: 12px; cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.35); background: rgba(0,0,0,0.45); color: #fff; font: 800 16px system-ui, 'Segoe UI', sans-serif; }
