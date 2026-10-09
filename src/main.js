@@ -7883,6 +7883,7 @@ function startGaragePreview(carId) {
             };
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;
+                if (obs && String(obs.cause || '').indexOf('car') === 0) try { if (window.soundEngine) window.soundEngine.playSfx('crash'); } catch (e) {} // авария с машиной — хруст металла (src/sfx-kit.js), при любом исходе
                 _nmBlock = 2; /* любой удар — даже не засчитанный («Разгон», «В ударе», начало первого заезда, броня) — 2 с «на волоске» не считается: проезд сквозь машину — не риск */
                 if ((headstartTo && infWorld && infWorld.dist < headstartTo) || risk.fever > 0 || firstRunSafe(FIRST_RUN, raceTime)) return; // «Разгон», «В ударе» и начало первого заезда: удары не считаются
                 if (ABILITY === 'rewind' && !rewindUsed) { rewindUsed = true; speed *= 0.8; try { showBigPlaque('⏪ ОТМОТКА ВРЕМЕНИ', 'Этой аварии не было — один раз за заезд', 'armor'); } catch (e) {} return; } // «Машина времени»
@@ -8807,7 +8808,7 @@ function startGaragePreview(carId) {
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && ((ABILITY === 'avenger' && (stats.rams || 0) < AVENGER_RAMS) || risk.fever > 0)) {
                         // «Ночной мститель» и «В ударе» — таран: попутку отбрасывает вперёд, аварии нет («В ударе» — ещё и «Е»)
                         car.hitCooldown = 1.2; car.z = freeZ(zPos - 60 - Math.random() * 40, car.lane, _avoidH); car.mesh.position.z = car.z; speed *= risk.fever > 0 ? 1 : 0.9; shakeTime = 0.15; if (risk.fever > 0) stats.eChips = (stats.eChips || 0) + FEVER_RAM_E;
-                        _nmBlock = 2; if (!(risk.fever > 0)) stats.rams = (stats.rams || 0) + 1; // «Ночной мститель»: таранов — AVENGER_RAMS за заезд, дальше — как все
+                        _nmBlock = 2; try { if (window.soundEngine) window.soundEngine.playSfx('crash', 0.8); } catch (e) {} if (!(risk.fever > 0)) stats.rams = (stats.rams || 0) + 1; // «Ночной мститель»: таранов — AVENGER_RAMS за заезд, дальше — как все
                         try { showTimePenaltyPopup(0, risk.fever > 0 ? '💥 Снёс! +' + FEVER_RAM_E + ' Е' : stats.rams >= AVENGER_RAMS ? '🦇 Последний таран!' : '🦇 Таран ' + stats.rams + '/' + AVENGER_RAMS); } catch (e) {}
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl))) {
                         car.hitCooldown = 1.2;
@@ -9138,7 +9139,7 @@ function startGaragePreview(carId) {
                                 else if (o.id === 'slow') speed *= 0.55;
                                 else if (o.id === 'oil') { oilSlideTimer = 1.4; speed *= 0.85; xVelocity += (Math.random() < 0.5 ? -1 : 1) * 0.9; }
                                 try { showBigPlaque(o.icon + ' ' + o.title, o.sub, o.good ? 'crate-good' : 'crate-bad'); } catch (e) {}
-                                try { if (window.soundEngine) window.soundEngine.playSfx(o.good ? 'pickup_nitro' : 'bump', 1); } catch (e) {}
+                                try { if (window.soundEngine) window.soundEngine.playSfx('crate', 1); } catch (e) {} // треск досок; хороший приз — ещё и свой звук (grabPower)
                             }
                         } else if (c.type === 'vhs') {
                             stats.vhs = (stats.vhs || 0) + 1;
@@ -9164,7 +9165,7 @@ function startGaragePreview(carId) {
                             nitroTimer = NITRO_TIME;
                             fovPunch = 14; buzz('nitro', _settings.vibrate);
                             stats.nitroPicked++;
-                            try { if (window.soundEngine) window.soundEngine.playSfx('pickup_nitro', 1.1); } catch (e) {}
+                            try { if (window.soundEngine) window.soundEngine.playSfx('nitro_pick', 1); } catch (e) {}
                             try {
                                 const fl = document.createElement('div');
                                 fl.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:130;background:radial-gradient(circle,rgba(50,255,120,0.35),transparent 60%);opacity:1;transition:opacity 0.4s';
