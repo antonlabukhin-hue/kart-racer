@@ -225,7 +225,16 @@ export function template(name, fn) {
 }
 
 /** Поставить шаблон: сдвиг (x, y, z), поворот rot четвертями оборота (0..3), масштаб s, оттенок tint (умножается на цвет) */
+/** Запретные полосы поперёк обочины (мост над дорогой): [{ z0, z1, minX }] — туда застройка не ставится */
+let KEEP = null;
+export function setKeepOut(list) { KEEP = list && list.length ? list : null; }
+export function keptOut(x, z) {
+    if (!KEEP) return false;
+    for (let i = 0; i < KEEP.length; i++) { const q = KEEP[i]; if (z <= q.z0 && z >= q.z1 && Math.abs(x) > q.minX) return true; }
+    return false;
+}
 export function place(b, t, x, y, z, rot, s, tint) {
+    if (KEEP && keptOut(x, z)) return;
     const k = ((rot | 0) % 4 + 4) % 4, S = s || 1;
     const cos = [1, 0, -1, 0][k], sin = [0, 1, 0, -1][k];
     const tr = tint != null ? (tint.isColor ? tint : new THREE.Color(tint)) : null;

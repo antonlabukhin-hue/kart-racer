@@ -13,8 +13,9 @@ import { createRock, createLog, createForestInstanced } from './biomes.js';
 import { createSpruce, createSnowBank, createSnowman } from './snow.js';
 import { mergeStaticMeshes, shareMaterials } from './merge-static.js';
 import { buildScenery } from './scenery.js';
-import { setKitGlow } from './scenery-kit.js';
+import { setKitGlow, setKeepOut } from './scenery-kit.js';
 import { placeRoadside } from './roadside.js';
+import { hasBridge, createBridge, createBridgeTrain } from './railway.js';
 
 export const RIG_STEP = 180;
 export const STRETCH = 60;
@@ -49,6 +50,12 @@ export function freezeStatic(g) {
     g.traverse(function(o) { o.matrixAutoUpdate = false; });
     g.matrixWorldAutoUpdate = false;
     return empty.length;
+}
+
+/** Попадает ли точка в запретную полосу keep (как keptOut в src/scenery-kit.js, но со своим списком) */
+function keptOutAt(keep, x, z) {
+    for (let i = 0; i < keep.length; i++) { const q = keep[i]; if (z <= q.z0 && z >= q.z1 && Math.abs(x) > q.minX) return true; }
+    return false;
 }
 
 /** Пейзаж участка: в зоне перехода — уже следующий */
@@ -104,6 +111,10 @@ export function createInfWorld(o) {
         const th = stretchTheme(i);
         const z0 = o.startZ - i * STRETCH;
         const r = Math.random;
+        // мост над дорогой с поездом (src/railway.js): под ним — запретная полоса, обочину не застраиваем
+        const bridgeZ = hasBridge(i, th.style) ? z0 - STRETCH / 2 : null;
+        const keep = bridgeZ != null ? [{ z0: bridgeZ + 10, z1: bridgeZ - 10, minX: W / 2 + 0.8 }] : null;
+        const free = function(x, z) { return !keep || keptOutAt(keep, x, z) === false; };
         const zr = function() { return z0 - r() * STRETCH; };
         const g = new THREE.Group();
         g.name = 'inf_' + i;
@@ -112,13 +123,14 @@ export function createInfWorld(o) {
         for (let n = 0; n < (own ? 0 : envK); n++) {
             const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 3.5 + r() * 14), z = zr(), s = 0.7 + r() * 1.1;
             const b = Decor.decorFor(th.style, r());
+            if (!free(x, z)) continue;
             if (b) { const d = b(x, z, s); d.position.y = heightAt(x, z) - 0.05; g.add(d); } // по холму, а не в воздухе
             else (r() < 0.57 ? createRock : createLog)(g, x, z, s);
         }
         yield;
         // мелочь у самой обочины
         if (!own) {
-            const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 1.4 + r() * 1.6), z = zr();
+            const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 1.4 + r() * 1.6), z = bridgeZ != null ? bridgeZ + 14 : zr();
             if (th.style === 'forest') (r() < 0.5 ? createRock : createLog)(g, x, z, 0.5 + r() * 0.3);
             else if (th.style === 'junk') g.add(Decor.createScrapPile(x, z, 0.5 + r() * 0.4));
             else if (th.style === 'industrial') g.add(Decor.createPipeStack(x, z, 0.5 + r() * 0.4));
@@ -127,6 +139,7 @@ export function createInfWorld(o) {
         if (th.snow) {
             for (let n = 0; n < (o.lite ? 4 : 7); n++) {
                 const side = r() < 0.5 ? -1 : 1, x = side * (W / 2 + 2.6 + r() * 16), z = zr(), q = r();
+                if (!free(x, z)) continue;
                 if (q < 0.6) createSpruce(g, x, z, 0.9 + r() * 0.6);
                 else if (q < 0.88) createSnowBank(g, x, z, 1 + r() * 0.6);
                 else createSnowman(g, x, z, 0.85 + r() * 0.4);
@@ -138,24 +151,28 @@ export function createInfWorld(o) {
                 const side = r() < 0.5 ? -1 : 1;
                 trees.push({ x: side * (W / 2 + (th.style === 'arsenev' ? 23 + r() * 14 : 7 + r() * 16)), z: zr(), s: 0.8 + r() * 0.7, kind: r() < 0.55 ? 'birch' : 'pine', rot: r() * Math.PI * 2 });
             }
-            createForestInstanced(g, trees, mergeGeometries);
+            createForestInstanced(g, trees.filter(function(t) { return free(t.x, t.z); }), mergeGeometries);
         }
         yield;
-        if (th.night && th.style === 'city') { /* в городе свои фонари */ } else if (th.night) lamp(g, (i % 2 ? 1 : -1) * (W / 2 + 1.8), z0 - STRETCH / 2);
-        else if (i % 3 === 0) g.add(Decor.createCinemaBanner((i % 2 ? 1 : -1) * (W / 2 + 5 + r() * 4), zr(), BANNERS[i % BANNERS.length]));
-        try { placeRoadside(g, { style: th.style, i: i, z0: z0, len: STRETCH, W: W, rnd: r, heightAt: heightAt, night: !!th.night, snow: !!th.snow }); } catch (e) { console.warn('roadside', e); } // остановки, ларьки, бабушки, указатели (src/roadside.js)
+        if (th.night && th.style === 'city') { /* в городе свои фонари */ } else if (th.night && bridgeZ == null) lamp(g, (i % 2 ? 1 : -1) * (W / 2 + 1.8), z0 - STRETCH / 2);
+        else if (i % 3 === 0 && bridgeZ == null) g.add(Decor.createCinemaBanner((i % 2 ? 1 : -1) * (W / 2 + 5 + r() * 4), zr(), BANNERS[i % BANNERS.length]));
+        if (bridgeZ == null) try { placeRoadside(g, { style: th.style, i: i, z0: z0, len: STRETCH, W: W, rnd: r, heightAt: heightAt, night: !!th.night, snow: !!th.snow }); } catch (e) { console.warn('roadside', e); } // остановки, ларьки, бабушки, указатели (src/roadside.js)
         yield;
         try { mergeStaticMeshes(g.children.slice(), g); } catch (e) { /* склейка — только ради скорости */ }
         yield;
         try { // насыщенные обочины: дома, избы, лес, озёра — один меш на участок (src/scenery.js)
+            setKeepOut(keep);
             const sc = buildScenery({ style: th.style, jungle: th.id === 'jungle', snow: !!th.snow, night: !!th.night, i: i, z0: z0, len: STRETCH, W: W, lite: o.lite, rnd: r, heightAt: heightAt });
             if (sc.mesh) g.add(sc.mesh);
             if (sc.water) g.add(sc.water);
         } catch (e) { console.warn('scenery', e); }
+        setKeepOut(null);
+        if (bridgeZ != null) { g.add(createBridge(bridgeZ, W)); trains.set(i, createBridgeTrain(scene, bridgeZ)); }
         freezeStatic(g);
         return g;
     }
 
+    const trains = new Map(); // поезда на мостах по номеру участка
     let pending = null; // участок, который строится по шагам: { i, it, g, worst }
     /** Выполнять шаги постройки, пока не выйдет budget мс (null — до конца). true — участок готов */
     function runPending(budget) {
@@ -215,8 +232,11 @@ export function createInfWorld(o) {
                 runPending(prefill ? null : BUILD_BUDGET);
                 if (!prefill) break;
             }
+            const now = performance.now();
+            trains.forEach(function(t) { t.update(zPos, now); });
             stretches.forEach(function(g, i) {
                 if (i >= lo) return;
+                if (trains.has(i)) { trains.get(i).dispose(); trains.delete(i); }
                 scene.remove(g);
                 disposeTree(g);
                 stretches.delete(i);
