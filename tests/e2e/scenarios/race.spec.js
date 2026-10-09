@@ -13,12 +13,12 @@ test('босс появляется после 42% трассы', async ({ page 
     await startFreeRace(page, 'easy');
     await waitRacing(page);
     const boss =page.waitForEvent('console', { predicate: m => m.text().startsWith('🐻 БОСС:'), timeout: 60_000 });
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await boss;
     // появился на пороге, а не сразу со старта на 40%
     expect(await progress(page)).toBeGreaterThanOrEqual(41.5);
     await page.waitForTimeout(5000);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -27,11 +27,11 @@ test('победа в свободном заезде засчитывается
     await login(page, 'Тестер', './?start=0.99');
     await startFreeRace(page, 'easy');
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect(page.locator('#finish-screen')).toContainText(/ФИНИШ|ИДЕАЛЬНЫЙ ЗАЕЗД/, { timeout: 150_000 });
     // ранг D–S — у свободного заезда есть, у кампании нет (там звёзды)
     await expect(page.locator('#finish-screen .finish-rank .fr-letter')).toHaveText(/^[DCBAS]$/);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     const p = await profile(page);
     expect(p.stats.wins).toBe(1);
     expect(p.stats.totalRaces).toBe(1);
@@ -45,9 +45,9 @@ test('кампания: победа на 1-й трассе — «Заново»
     await login(page, 'Тестер', './?start=0.99');
     await startCampaign(page);
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect(page.locator('#finish-screen')).toContainText('ГЛАВА 1 ПРОЙДЕНА', { timeout: 150_000 });
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     // за победу минимум одна звезда
     await expect(page.locator('#finish-screen .finish-stars span.on').first()).toBeVisible();
     await expect(page.locator('#finish-screen .finish-rank')).toHaveCount(0);
@@ -90,9 +90,9 @@ test('кампания: подарок за главу ведёт в гараж 
     await login(page, 'Тестер', './?start=0.99');
     await startCampaign(page);
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect(page.locator('#finish-screen')).toContainText('ГЛАВА 1 ПРОЙДЕНА', { timeout: 150_000 });
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     // ★★★ без аварий — наклейка «Досье курьера» с куском истории (src/stickers.js)
     await expect(page.locator('#finish-screen .fin-sticker')).toContainText('Наклейка «Выезд»');
     await page.locator('#finish-gift-btn').click();

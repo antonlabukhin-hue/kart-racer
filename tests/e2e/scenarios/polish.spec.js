@@ -9,10 +9,10 @@ test('колёса крутятся на ходу; на финише машин�
     await startFreeRace(page, 'easy');
     await waitRacing(page);
     const a0 = await wheelAngle(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => wheelAngle(page).then(a => Math.abs(a - a0)), { timeout: 10_000 }).toBeGreaterThan(3);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.state), { timeout: 60_000 }).toBe('win');
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     const r1 = await page.evaluate(() => window.__raceDebug.car.rotation.y);
     await page.waitForTimeout(1500);
     const r2 = await page.evaluate(() => window.__raceDebug.car.rotation.y);

@@ -11,7 +11,7 @@ test('участки трассы: в закрытую полосу ремонт
     expect(segs.map(s => s.t)).toEqual(['roadworks', 'tunnel']);
     const s0 = await page.evaluate(() => window.__raceDebug.strikes);
     // держим машину в закрытой полосе до удара
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.evaluate(x => new Promise(res => {
         const d = window.__raceDebug; const st = d.strikes; const t0 = performance.now();
         const f = () => { if (d.strikes > st || performance.now() - t0 > 15000) res(); else { d.setX(x); requestAnimationFrame(f); } };
@@ -20,7 +20,7 @@ test('участки трассы: в закрытую полосу ремонт
     expect(await page.evaluate(() => window.__raceDebug.strikes)).toBeGreaterThan(s0);
     // тоннель: темнота нарастает
     await expect.poll(() => page.evaluate(() => window.__raceDebug.tunnel), { timeout: 30_000 }).toBeGreaterThan(0.5);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -33,7 +33,7 @@ test('бонусы с риском: жвачка под каждой аркой 
     expect(risk.filter(r => r.risk === 'arch')).toHaveLength(3);
     const dark = risk.find(r => r.risk === 'tunnel');
     expect(dark).toBeTruthy();
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     const got = await page.evaluate(({ x, z }) => new Promise(res => {
         const d = window.__raceDebug; const g0 = d.stats.gumPicked || 0; const t0 = performance.now();
         const f = () => {
@@ -43,7 +43,7 @@ test('бонусы с риском: жвачка под каждой аркой 
         };
         f();
     }), { x: dark.x, z: dark.z });
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(got).toBeGreaterThanOrEqual(1);
     expect(problems).toEqual([]);
 });

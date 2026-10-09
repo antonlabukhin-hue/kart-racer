@@ -17,11 +17,11 @@ test('чистый отрезок: 10 с без ударов — щит на м�
             if (n.classList && n.classList.contains('big-plaque')) window.__plaques.push(n.className + ': ' + n.textContent);
         }))).observe(document.body, { childList: true });
     });
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__raceDebug.cleanRun.progress), { timeout: 8_000 }).toBeGreaterThan(0.2);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.cleanRun.shield), { timeout: 25_000 }).toBe(true);
     await expect(page.locator('#cleanDisplay')).toHaveClass(/shield/);
     await expect.poll(() => page.evaluate(() => window.__plaques.find(t => t.includes('armor')) || '')).toContain('БРОНЯ');
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });

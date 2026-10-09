@@ -13,7 +13,7 @@ test('слово дня и таблица рекордов', async ({ page }) =>
 
     await page.locator('#main-menu-play').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     // ближайшая буква впереди — машину на неё
     await expect.poll(() => page.evaluate(() => window.__raceDebug.collectibles.some(c => c.type === 'letter' && c.active)), { timeout: 20_000 }).toBe(true);
     // плашку «БУКВА» на медленной машине может сразу сменить другая — запоминаем сам факт появления
@@ -26,7 +26,7 @@ test('слово дня и таблица рекордов', async ({ page }) =>
     });
     expect(got).toBe(1);
     await expect.poll(() => page.evaluate(() => window.__sawLetter)).toBe(true);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await expect(page.locator('#finish-screen')).toContainText('Место на неделе: #', { timeout: 20_000 });
     expect(problems).toEqual([]);

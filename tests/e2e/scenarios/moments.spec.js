@@ -27,12 +27,12 @@ test('рекламный щит в полосе: снёс — не авария,
     }, 30));
     // плашка «Реклама снесена!» живёт ~2 с — запоминаем сам факт появления (на медленной машине проверка могла опоздать)
     await page.evaluate(() => { window.__sawSmash = false; new MutationObserver(() => { if (document.querySelector('.big-plaque.smash')) window.__sawSmash = true; }).observe(document.body, { childList: true }); });
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.billboards || 0), { timeout: 30_000 }).toBeGreaterThanOrEqual(1);
     // подсказка «рекламу можно сносить» — часть обучения, по умолчанию его нет; после удара — плашка с бонусом
     expect(await page.evaluate(() => Number(localStorage.getItem('road_racing_hint_board') || 0))).toBe(0);
     await expect.poll(() => page.evaluate(() => window.__sawSmash), { timeout: 5_000 }).toBe(true);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
     expect(problems).toEqual([]);
 });
@@ -59,10 +59,10 @@ test('промзона: труба рушится с эстакады попер
     expect(pipe).toBeTruthy();
     // по свободной полосе
     await page.evaluate((free) => setInterval(() => window.__raceDebug.setX([-2, 0, 2][free] * window.__raceDebug.trackWidth / 8), 30), pipe.free);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__raceDebug.pipeDrop.debug.state), { timeout: 40_000 }).toBe('down');
     await expect.poll(() => page.evaluate((z) => window.__raceDebug.z < z - 5, pipe.z), { timeout: 20_000 }).toBe(true);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(await page.evaluate(() => window.__raceDebug.hitLog.filter(h => h.cause === 'pipe').length)).toBe(0);
     expect(problems).toEqual([]);
 });
@@ -90,9 +90,9 @@ for (const map of ['arsenev', 'promzona', 'svalka']) {
         // проехать сквозь первое событие: оно срабатывает (двигается/падает) и не ломает заезд
         await noAnimals(page);
         await page.evaluate((z) => window.__raceDebug.setZ(z + 70), evs[0].z);
-        await page.keyboard.down('w');
+        /* газ жмётся сам (W — прыжок) */
         await expect.poll(() => page.evaluate((z) => window.__raceDebug.z < z - 5, evs[0].z), { timeout: 60_000 }).toBe(true);
-        await page.keyboard.up('w');
+        /* газ жмётся сам (W — прыжок) */
         expect(await page.evaluate(() => { const s = window.__raceDebug.setEvents[0].debug; return s.state || 'swing'; })).not.toBe('wait');
         expect(problems).toEqual([]);
     });

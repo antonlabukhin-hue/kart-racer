@@ -30,9 +30,9 @@ test('«Сразу в путь» из «Заезда» открывает зае
     await page.locator('#main-menu-quick-race').click();
     await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#difficulty-screen')).toBeHidden();
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -42,10 +42,10 @@ test('свободный заезд: машина едет, звери крич�
     await countShouts(page);
     await login(page);
     await startFreeRace(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
     await expect.poll(() => page.evaluate(() => window.__testShouts), { timeout: 60_000 }).toBeGreaterThan(0);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -63,9 +63,9 @@ test('пауза и выход в меню посреди заезда', async (
     const problems = watchProblems(page);
     await login(page);
     await startFreeRace(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
 
     await page.keyboard.press('Escape');
     await expect(page.locator('#pause-overlay')).toBeVisible();
@@ -103,9 +103,9 @@ test('сборка для сайта не знает про ?start тестов�
     await startFreeRace(page);
     // полоска прогресса обновляется только после отсчёта: ждём GO и немного едем
     await expect(page.locator('#race-countdown')).toHaveCount(0, { timeout: 30_000 });
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(0);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(await progress(page)).toBeLessThan(20);
     expect(problems).toEqual([]);
 });
@@ -165,9 +165,9 @@ test('первый заезд: «Даю установку:» держит от�
     expect(await progress(page)).toBeLessThan(1);
     await page.locator('#race-briefing-go').click();
     await expect(br).toHaveCount(0);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => progress(page), { timeout: 30_000 }).toBeGreaterThan(1);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     // второй заезд — без плашки
     await page.keyboard.press('Escape');
     await page.locator('#pause-menu').click();
@@ -254,19 +254,19 @@ for (const mode of ['free']) {
         await login(page);
         // сложный режим: машин и зверей много, 5 аварий набираются быстро
         await startFreeRace(page, 'hard');
-        await page.keyboard.down('w');
+        /* газ жмётся сам (W — прыжок) */
         // без своего лимита: ждём, сколько позволяет лимит теста (на медленном сервере игра идёт медленнее)
         await expect(page.locator('#finish-restart-btn')).toBeVisible({ timeout: 0 });
-        await page.keyboard.up('w');
+        /* газ жмётся сам (W — прыжок) */
         await page.locator('#finish-restart-btn').click();
 
         await expect(page.locator('#game-hud')).toBeVisible({ timeout: 20_000 });
         await expect(page.locator('#profile-screen')).toBeHidden();
         await expect(page.locator('#hud-pause-btn')).toBeVisible();
         // новый заезд начинается с 0: достаточно, что машина снова поехала
-        await page.keyboard.down('w');
+        /* газ жмётся сам (W — прыжок) */
         await expect.poll(() => progress(page), { timeout: 60_000 }).toBeGreaterThan(0);
-        await page.keyboard.up('w');
+        /* газ жмётся сам (W — прыжок) */
         expect(problems).toEqual([]);
     });
 }
