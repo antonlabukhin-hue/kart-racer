@@ -1,6 +1,7 @@
 
 import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowTheme } from './snow.js';
 import { createSky } from './sky.js';
+import { addBlobShadow } from './ground-shadow.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
         import { AnimalSpawner } from './animals.js';
@@ -6034,13 +6035,8 @@ function startGaragePreview(carId) {
                 tl2.position.x = bodyW * 0.32;
                 car.add(tl2);
 
-                // Тень
-                const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32 });
-                const shadowGeo = new THREE.PlaneGeometry(bodyW * 1.15, bodyL * 1.1);
-                const fakeShadow = new THREE.Mesh(shadowGeo, shadowMat);
-                fakeShadow.rotation.x = -Math.PI / 2;
-                fakeShadow.position.y = 0.015;
-                car.add(fakeShadow);
+                // Тень — мягкое пятно (src/ground-shadow.js)
+                addBlobShadow(car, bodyW, bodyL, 0.015);
 
                 // Колёса
                 const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
@@ -6444,6 +6440,7 @@ function startGaragePreview(carId) {
                 }
 
                 try { mergeCarParts(car, { all: true }); } catch (e) {} // 10–19 деталей → 5–6 (колёса не крутятся, перекраски нет)
+                addBlobShadow(car, hitW, hitL, -0.08); // мягкая тень на асфальте (src/ground-shadow.js)
                 const hug = hugFor(lane), x = carX(lane, hug); // по центру полосы или вплотную к обочине (src/traffic-lanes.js)
                 car.position.set(x, 0.1, z);
                 scene.add(car);
