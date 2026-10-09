@@ -66,7 +66,7 @@ export function createDedMoroz(van) {
     const arm = new THREE.Group(); const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.4, 6), coat); sleeve.position.y = 0.2; arm.add(sleeve);
     arm.position.set(0.24, 0.6, 0); d.add(arm);
     const sack = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), M(0x8a5a2a)); sack.position.set(-0.35, 0.25, 0.25); sack.scale.y = 1.2; d.add(sack);
-    d.position.set(0, 1.0, 0); d.rotation.y = Math.PI; // лицом назад — к игроку, которого обгоняет
+    d.position.set(0, 0.9, 0.1); d.scale.setScalar(0.55); d.rotation.y = Math.PI; // на крыше «буханки», в масштабе машины; лицом назад — к игроку, которого обгоняет
     g.add(d);
     g.userData.arm = arm;
     return g;
