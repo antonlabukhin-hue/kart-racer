@@ -6442,3 +6442,13 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
     :root body.race-mode #risk-hud#risk-hud { top: calc(max(10px, env(safe-area-inset-top)) + 206px) !important; left: max(10px, env(safe-area-inset-left)) !important; right: auto !important; }
     :root body.race-mode .rt.rt.rt { top: calc(max(10px, env(safe-area-inset-top)) + 280px) !important; }
 }
+
+/* ===== Верхняя строка меню: профиль, серия, кошелёк и настройки — одной высоты ===== */
+#main-menu-screen .mm-top { --mm-top-h: 46px; align-items: stretch !important; }
+#main-menu-screen .mm-top > .mm-profile, #main-menu-screen .mm-top > .mm-streak, #main-menu-screen .mm-top > .mm-icon,
+#main-menu-screen .mm-top > .mm-wallet > span {
+    box-sizing: border-box !important; height: var(--mm-top-h) !important; min-height: var(--mm-top-h) !important; max-height: var(--mm-top-h) !important;
+    padding-top: 0 !important; padding-bottom: 0 !important; display: flex !important; align-items: center !important; }
+#main-menu-screen .mm-top > .mm-wallet { align-items: stretch !important; }
+#main-menu-screen .mm-top > .mm-icon { flex: 0 0 var(--mm-top-h) !important; width: var(--mm-top-h) !important; justify-content: center; }
+#main-menu-screen .mm-top .mm-ava { width: calc(var(--mm-top-h) - 10px) !important; height: calc(var(--mm-top-h) - 10px) !important; }
