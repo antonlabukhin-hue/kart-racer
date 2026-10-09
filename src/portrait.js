@@ -14,7 +14,6 @@ export const PORTRAIT_RIG = { dist: 5.2, height: 3.0, lookY: 1.2, lookZoff: -15 
 /** Вертикально: камера почти не отстаёт на скорости (боком на телефоне 0.3) и угол на нитро растёт втрое меньше — машина держится у низа экрана */
 export const PORTRAIT_FOLLOW = 0.4; // (не используется для вида сзади вертикально — там PORTRAIT_BOOST_LAG)
 export const PORTRAIT_FOV_K = 0.6;
-export const PORTRAIT_BOOST_LAG = 14; // на скорости выше обычной (нитро, «В УДАРЕ») камера отстаёт — машина немного уезжает вперёд
 
 /** Вертикальный угол камеры: экран боком — как был (base), вертикально — из горизонтального PORTRAIT_HFOV */
 export function fovFor(aspect, base) {
@@ -31,4 +30,19 @@ export function chaseRig(view, spdK) {
     }
     if (view === 'mobile') return { dist: 5.0 - spdK * 0.3, height: 2.2 - spdK * 0.15, lookY: 1.15, lookZoff: -11 };
     return { dist: 6.8 - spdK * 0.6, height: 2.7 - spdK * 0.15, lookY: 0.7, lookZoff: -5.8 };
+}
+
+/**
+ * «Долли-зум»: угол обзора на скорости шире — камера во столько же раз ближе к машине.
+ * Машина остаётся того же размера и на том же месте в кадре, а мир по краям «летит».
+ * Возвращает множитель расстояния камеры (1 — угол базовый, <1 — шире, камера ближе).
+ */
+export function dollyK(baseFov, fov) {
+    if (!(baseFov > 0) || !(fov > 0)) return 1;
+    return Math.tan(baseFov * rad / 2) / Math.tan(fov * rad / 2);
+}
+
+/** Отставание камеры вдоль дороги — постоянное, как на базовой скорости: нитро, «В УДАРЕ» и рост скорости машину не отодвигают */
+export function chaseLag(maxSpeed, follow) {
+    return follow > 0 ? maxSpeed * (1 - follow) / follow : 0;
 }
