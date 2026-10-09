@@ -45,7 +45,7 @@ export function giftsHtml(o) {
     const w = weekState(p, weekKey(o.now ? new Date(o.now) : new Date()), o.presets, o.isGift);
     if (w.car) prog.push(w.done ? card('🚗', 'Машина недели «' + o.names(w.car) + '» — твоя!', 'Новая — в понедельник', 'week', 'Смотреть')
         : card('🚗', 'Машина недели «' + o.names(w.car) + '»', m(w.dist) + ' / ' + m(w.goal || WEEK_GOAL) + ' м до воскресенья · навсегда, без «Е»', 'week', 'Смотреть', bar(w.dist, w.goal || WEEK_GOAL)));
-    const next = ladder(p, o.stats).filter(function(s) { return !s.done && !s.locked && s.prog; })
+    const next = ladder(p, o.stats, o.presets).filter(function(s) { return !s.done && !s.locked && s.prog; })
         .sort(function(a, b) { return b.prog[0] / b.prog[1] - a.prog[0] / a.prog[1]; })[0];
     prog.push(card('🎟', 'Тест-драйвы', next ? next.icon + ' ' + next.text + ' — «' + o.names(next.car) + '» на 1 заезд' : 'Каждые +1 000 м к рекорду — новая машина на 1 заезд', 'td', 'Все задания', next ? bar(next.prog[0], next.prog[1]) : ''));
     const paints = SECRET_PAINTS.map(function(sp) {

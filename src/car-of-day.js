@@ -4,7 +4,10 @@
  * её можно один раз бесплатно прокатить (тест-драйв, бесконечная трасса) и весь день купить на DISCOUNT дешевле.
  * profile.carDay = { day: 'ГГГГ-ММ-ДД', tried: bool }. Логика — чистая (с тестами).
  */
+import { daysBetween } from './streak.js';
+
 export const DISCOUNT = 0.3;
+export const TRY_EVERY_DAYS = 3; // бесплатный тест-драйв машины дня — раз в 3 дня
 
 function hash(s) {
     let h = 2166136261;
@@ -15,6 +18,7 @@ function hash(s) {
 /**
  * Машина дня: order — порядок витрины, presets — CAR_PRESETS, isGift(id) — подарочная (не продаётся).
  * Только за «Е» (не за кассеты), не подарочная, ещё не купленная. null — покупать нечего.
+ * Машины идут по кругу (сдвиг — от имени игрока): в соседние дни — разные, пока есть из чего выбирать.
  */
 export function carOfDay(profile, day, order, presets, isGift) {
     const owned = (profile && profile.unlockedCars) || [];
@@ -23,7 +27,8 @@ export function carOfDay(profile, day, order, presets, isGift) {
         return p && p.priceChips > 0 && !p.priceVhs && !(isGift && isGift(id)) && owned.indexOf(id) < 0;
     });
     if (!list.length) return null;
-    return list[hash(day + '|' + ((profile && profile.name) || '')) % list.length];
+    const dayN = Math.round(Date.parse(day + 'T12:00:00Z') / 86400000);
+    return list[(dayN + hash((profile && profile.name) || '')) % list.length];
 }
 
 /** Цена со скидкой, круглая (до 50 «Е») */
@@ -31,12 +36,12 @@ export function dayPrice(price) {
     return Math.max(50, Math.round(price * (1 - DISCOUNT) / 50) * 50);
 }
 
-/** Можно ли сегодня прокатиться бесплатно */
+/** Можно ли сегодня прокатиться бесплатно: раз в TRY_EVERY_DAYS дня */
 export function canTestDrive(profile, day) {
     const c = profile && profile.carDay;
-    return !(c && c.day === day && c.tried);
+    return !(c && c.tried && daysBetween(c.day, day) < TRY_EVERY_DAYS);
 }
-/** Тест-драйв начат (одна попытка в день) */
+/** Тест-драйв начат (дальше — через TRY_EVERY_DAYS дня) */
 export function markTestDrive(profile, day) {
     profile.carDay = { day: day, tried: true };
 }

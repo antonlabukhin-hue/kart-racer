@@ -42,14 +42,14 @@ export function hooksFinishHtml(paints, tks, names) {
 }
 
 /** Кнопка билета в меню (#mm-td): есть билет — «🎟 Тест-драйв: Машина», нет — прогресс ближайшей вехи */
-export function renderTdButton(profile, s, names, onOpen) {
+export function renderTdButton(profile, s, names, onOpen, presets) {
     const btn = document.getElementById('mm-td'), t = document.getElementById('mm-td-text');
     if (!btn || !t || !profile) return;
     const tk = tickets(profile);
     btn.classList.toggle('has', tk.length > 0);
     btn.onclick = onOpen;
     if (tk.length) { t.textContent = '🎟 «' + names(tk[0].car) + '»' + (tk.length > 1 ? ' +' + (tk.length - 1) : ''); return; }
-    const next = ladder(profile, s).filter(function(m) { return !m.done && !m.locked && m.prog; })
+    const next = ladder(profile, s, presets).filter(function(m) { return !m.done && !m.locked && m.prog; })
         .sort(function(a, b) { return b.prog[0] / b.prog[1] - a.prog[0] / a.prog[1]; })[0];
     t.textContent = next ? next.icon + ' ' + Math.round(next.prog[0] / next.prog[1] * 100) + '% до билета' : 'новые машины — на 1 заезд';
 }
@@ -57,7 +57,7 @@ export function renderTdButton(profile, s, names, onOpen) {
 /** Окно «Тест-драйвы»: билеты (поехать) и лестница вех. o — { profile, stats, names(id), onGo(car) } */
 export function showTdPop(o) {
     document.querySelectorAll('.td-modal').forEach(function(n) { n.remove(); });
-    const tk = tickets(o.profile), lad = ladder(o.profile, o.stats);
+    const tk = tickets(o.profile), lad = ladder(o.profile, o.stats, o.presets);
     const m = document.createElement('div');
     m.className = 'td-modal';
     const fmt = function(n) { return Math.round(n).toLocaleString('ru-RU'); };

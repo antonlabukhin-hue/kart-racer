@@ -9,7 +9,9 @@
  *   🏆 побей свой рекорд на +1 000 м (от рекорда на момент вехи 4 000 м) → «Машина времени»
  *   🔁 и каждые следующие +1 000 м к рекорду — тест-драйв случайной машины, которой у тебя ещё нет.
  * Машина уже есть — берётся самая дорогая из тех, что нет. Всё есть — вехи без билета (отметка остаётся).
- * profile.testDrives = { got: { id: время }, tickets: [{ car, why }], base: рекорд при 4000 м, next: следующая цель рекорда }
+ * Билеты — не чаще раза в TICKET_EVERY_MS (≈3 дня): выполненные вехи ждут в очереди (queue). Машины в билетах и в лестнице
+ * не повторяются: уже купленную веху заменяет другая машина, которой нет ни в билетах, ни у соседних вех.
+ * profile.testDrives = { got: { id: время }, tickets: [{ car, why }], queue: [{ id, icon, why, want }], lastAt, base, next }
  * Логика — чистая (с тестами).
  */
 import { GIFT_CARS } from './gift-cars.js';
@@ -21,18 +23,20 @@ export const TD_MILESTONES = [
     { id: 'rec1000', icon: '🏆', text: 'Побей свой рекорд на 1 000 м', car: 'timecar', after: 'inf4000' }
 ];
 export const REPEAT_STEP = 1000;
+export const TICKET_EVERY_MS = 3 * 86400000;
 
 function state(p) {
-    const t = p.testDrives = Object.assign({ got: {}, tickets: [], base: 0, next: 0 }, p.testDrives);
+    const t = p.testDrives = Object.assign({ got: {}, tickets: [], queue: [], lastAt: 0, base: 0, next: 0 }, p.testDrives);
     if (!Array.isArray(t.tickets)) t.tickets = [];
+    if (!Array.isArray(t.queue)) t.queue = [];
     return t;
 }
 
-/** Машина для билета: своя у вехи, если её нет; иначе самая дорогая из отсутствующих (за «Е», не за кассеты) */
-export function pickCar(profile, want, presets) {
-    const own = profile.unlockedCars || [];
-    if (want && own.indexOf(want) < 0) return want;
-    const list = Object.keys(presets).filter(function(id) { const q = presets[id]; return own.indexOf(id) < 0 && q.priceChips > 0 && !q.priceVhs; })
+/** Машина для билета: своя у вехи, если её нет; иначе самая дорогая из отсутствующих (за «Е», не за кассеты); exclude — уже занятые */
+export function pickCar(profile, want, presets, exclude) {
+    const own = profile.unlockedCars || [], ex = exclude || [];
+    if (want && own.indexOf(want) < 0 && ex.indexOf(want) < 0) return want;
+    const list = Object.keys(presets).filter(function(id) { const q = presets[id]; return own.indexOf(id) < 0 && ex.indexOf(id) < 0 && q.priceChips > 0 && !q.priceVhs; })
         .sort(function(a, b) { return presets[b].priceChips - presets[a].priceChips; });
     return list[0] || null;
 }
@@ -43,13 +47,19 @@ export function pickCar(profile, want, presets) {
  */
 export function checkTestDrives(profile, s, presets, now) {
     const t = state(profile), out = [], at = now != null ? now : Date.now();
+    const issue = function(q) {
+        const car = pickCar(profile, q.want, presets, t.tickets.map(function(k) { return k.car; }));
+        if (!car) return;
+        const tk = { car: car, why: q.why, icon: q.icon };
+        t.tickets.push(tk); out.push(tk); t.lastAt = at;
+    };
+    const ready = function() { return !(t.lastAt > 0) || at - t.lastAt >= TICKET_EVERY_MS; };
     const give = function(id, icon, why, want) {
         t.got[id] = at;
-        const car = pickCar(profile, want, presets);
-        if (!car) return;
-        const tk = { car: car, why: why, icon: icon };
-        t.tickets.push(tk); out.push(tk);
+        const q = { id: id, icon: icon, why: why, want: want || null };
+        if (ready()) issue(q); else t.queue.push(q); // раньше 3 дней — ждёт своей очереди
     };
+    if (t.queue.length && ready()) issue(t.queue.shift());
     TD_MILESTONES.forEach(function(m) {
         if (t.got[m.id] || !m.need || !m.need(s)) return;
         if (m.id === 'inf4000') { t.base = s.infBest; t.next = s.infBest + REPEAT_STEP; }
@@ -78,13 +88,24 @@ export function useTicket(profile, car) {
     return true;
 }
 
-/** Лестница вех для окна: [{ icon, text, car, done, prog: [a, b] | null }] */
-export function ladder(profile, s) {
-    const t = state(profile);
+/** Машины у невыполненных вех — без повторов: купленную заменяет другая, не занятая билетами и соседними вехами */
+export function ladderCars(profile, presets) {
+    const t = state(profile), used = t.tickets.map(function(k) { return k.car; }), out = {};
+    TD_MILESTONES.forEach(function(m) {
+        if (t.got[m.id]) return;
+        const car = presets ? pickCar(profile, m.car, presets, used) : m.car;
+        if (car) { out[m.id] = car; used.push(car); }
+    });
+    return out;
+}
+
+/** Лестница вех для окна: [{ icon, text, car, done, prog: [a, b] | null }]; presets — подобрать машины без повторов */
+export function ladder(profile, s, presets) {
+    const t = state(profile), cars = ladderCars(profile, presets);
     return TD_MILESTONES.map(function(m) {
         let prog = m.prog ? m.prog(s) : null;
         if (m.id === 'rec1000') prog = t.got.inf4000 ? [Math.max(0, Math.min(REPEAT_STEP, s.infBest - t.base)), REPEAT_STEP] : null;
-        return { id: m.id, icon: m.icon, text: m.text, car: m.car, done: !!t.got[m.id], prog: prog, locked: !!(m.after && !t.got[m.after]) };
+        return { id: m.id, icon: m.icon, text: m.text, car: cars[m.id] || m.car, done: !!t.got[m.id], prog: prog, locked: !!(m.after && !t.got[m.after]) };
     });
 }
 
