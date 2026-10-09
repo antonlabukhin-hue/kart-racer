@@ -6490,3 +6490,7 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 .fin-photo img { width: 100%; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.55); transform: rotate(-2deg); }
 .fin-photo-share { margin-top: 8px; min-height: 40px; padding: 0 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; font: 800 15px system-ui, sans-serif; cursor: pointer; }
 @media (max-height: 560px) { .fin-photo { max-width: 160px; margin-top: 4px; } }
+
+/* ===== Безумный транспорт: вспышка при появлении (src/rides.js) ===== */
+.ride-flash { position: fixed; inset: 0; z-index: 140; pointer-events: none; background: radial-gradient(circle at 50% 70%, rgba(255,240,200,0.85), rgba(255,140,40,0.35) 45%, rgba(255,120,0,0) 75%); animation: rideFlash .65s ease-out forwards; }
+@keyframes rideFlash { from { opacity: 1; } to { opacity: 0; } }

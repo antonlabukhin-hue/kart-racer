@@ -6777,7 +6777,7 @@ function startGaragePreview(carId) {
                 const m = createRideToken(); m.position.set(x, 0.95, z); scene.add(m);
                 return { mesh: m, x: x, z: z, type: 'ride', active: true, bob: Math.random() * 6, radius: 0.8, baseY: 0.95 };
             }
-            const ride = createRideState(); let rideModel = null; // трактор, самосвал, «кукурузник» на 10 с
+            const ride = createRideState(); let rideModel = null, rideSmokeT = 0; // трактор, самосвал, «кукурузник» на 10 с
             function setRideModel(id) {
                 if (rideModel) { playerCar.remove(rideModel); rideModel = null; }
                 playerCar.children.forEach(function(c) { if (!c.userData.blob && !c.userData.ride) { if (c.userData._rideVis == null) c.userData._rideVis = c.visible; c.visible = id ? false : c.userData._rideVis; if (!id) delete c.userData._rideVis; } });
@@ -6786,6 +6786,10 @@ function startGaragePreview(carId) {
             function startRideNow() {
                 const id = pickRide(Math.random, ride.last), info = startRide(ride, id);
                 setRideModel(id);
+                // «вау»: вспышка, взрыв частиц, рывок камеры
+                try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: xPos, y: 0.8, z: zPos }, 1.4); } catch (e) {}
+                fovPunch = Math.max(fovPunch || 0, 16); shakeTime = Math.max(shakeTime, 0.3);
+                try { const fl = document.createElement('div'); fl.className = 'ride-flash'; document.body.appendChild(fl); setTimeout(function() { fl.remove(); }, 700); } catch (e) {}
                 try { showBigPlaque(info.icon + ' ' + info.name, info.sub + ' · 10 с', 'smash'); } catch (e) {}
                 try { if (window.soundEngine) window.soundEngine.playSfx('nitro_pick', 1); } catch (e) {}
                 photoBook.request(info.icon + ' ' + (id === 'plane' ? 'Полёт на кукурузнике!' : id === 'dumper' ? 'Самосвал в деле!' : 'Трактор-таран!'), 6);
@@ -8665,7 +8669,11 @@ function startGaragePreview(carId) {
                     if (playerCar.userData._suspensionKick < 0.008) playerCar.userData._suspensionKick = 0;
                 }
                 if (tickRide(ride, deltaTime)) { setRideModel(null); try { showBigPlaque('🏁 ПРИЕХАЛИ', 'Снова на своей машине', 'armor'); } catch (e) {} }
-                if (rideModel && rideModel.userData.prop) rideModel.userData.prop.rotation.z += deltaTime * 40; // винт кукурузника
+                if (rideModel) { // маячки мигают, винт крутится, из труб — чёрный дым (src/ride-models.js)
+                    if (rideModel.userData.anim) rideModel.userData.anim(deltaTime);
+                    rideSmokeT -= deltaTime;
+                    if (rideSmokeT <= 0 && particleSystem && particleSystem.smoke) { rideSmokeT = 0.07; rideModel.userData.exhaust.forEach(function(p) { _v.rs = (_v.rs || new THREE.Vector3()).set(p.x, p.y, p.z); rideModel.localToWorld(_v.rs); particleSystem.smoke(_v.rs, ride.id === 'plane' ? 0.2 : 0.85); }); }
+                }
                 playerCar.position.set(xPos, carYOffset + suspY + rideLift(ride), zPos);
                 // лёгкий self-light кузова ночью
                 if (isNight && playerCar.userData && !playerCar.userData._nightEmissive) {
