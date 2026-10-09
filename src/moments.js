@@ -111,7 +111,7 @@ function wheelie(moto) {
 function cow(cowModel) { const g = new THREE.Group(); g.add(cowModel); return g; }
 
 /**
- * Сценки в сцене. ctx: { scene, startZ, W, buildMoto() → модель мотоцикла, buildCow() → модель коровы, onSeen(id) }.
+ * Сценки в сцене. ctx: { scene, startZ, W, buildMoto() → модель мотоцикла, buildCow() → модель коровы, onNear(id) — хорошо видно, onSeen(id) — проехал }.
  * add(id, at) — поставить по плану; update(dt, zPos, speedUps) — каждый кадр (speedUps — скорость игрока, ед./с).
  */
 export function createMoments(ctx) {
@@ -131,7 +131,7 @@ export function createMoments(ctx) {
                     if (m.id === 'granny_cross') { g = granny(); g.position.set(-m.side * (W / 2 + 2), 0, m.z); g.rotation.y = m.side > 0 ? -Math.PI / 2 : Math.PI / 2; g.scale.setScalar(1.5); }
                     else if (m.id === 'zapor_nitro') { g = zapor(); g.position.set(m.side * 2, 0, zPos + 14); }
                     else if (m.id === 'hedgehog') { g = hedgehog(); g.position.set(m.side * (W / 2 + 1.6), 0, m.z); g.rotation.y = m.side > 0 ? Math.PI / 2 : -Math.PI / 2; g.scale.setScalar(1.4); }
-                    else if (m.id === 'ufo') { g = ufo(); g.position.set(m.side * 16, 11, m.z); }
+                    else if (m.id === 'ufo') { g = ufo(); g.position.set(m.side * 13, 11, m.z); g.scale.setScalar(1.5); }
                     else if (m.id === 'wheelie') { g = wheelie(ctx.buildMoto()); g.position.set(m.side * 2, 0, zPos - 150); }
                     else { g = cow(ctx.buildCow()); g.position.set(m.side * (W / 2 + 2.4), 0, m.z); g.rotation.y = m.side > 0 ? Math.PI / 2 : -Math.PI / 2; g.scale.setScalar(1.3); }
                     g.userData.dynamic = true;
@@ -150,6 +150,9 @@ export function createMoments(ctx) {
                 } else if (m.id === 'wheelie') { g.position.z -= v * 0.55 * dt; m.z = g.position.z; g.children[0].rotation.x = -0.5 + Math.sin(m.t * 3) * 0.06; }
                 else if (m.id === 'ufo') { g.rotation.y += dt * 1.5; g.position.y = 11 + Math.sin(m.t * 1.4) * 0.6; if (ahead < -10) g.position.y += m.t * dt * 4; g.userData.beam.material.opacity = 0.18 + Math.sin(m.t * 6) * 0.06; }
                 else if (m.id === 'cow') { const head = g.children[0]; head.rotation.x = Math.sin(m.t * 1.6) * 0.04; }
+                // хорошо видно впереди — снимок «Фото на память» (src/photo.js): НЛО — издалека, «Запорожец» — когда обогнал
+                const nearOk = m.id === 'zapor_nitro' ? zPos - g.position.z > 9 : ahead > 6 && ahead < (m.id === 'ufo' ? 75 : 38);
+                if (!m.near && nearOk) { m.near = true; if (ctx.onNear) ctx.onNear(m.id); }
                 // проехал мимо — засчитать и убрать подальше позади
                 if (!m.seen && ahead < -2 && m.id !== 'zapor_nitro') { m.seen = true; if (ctx.onSeen) ctx.onSeen(m.id); }
                 if (m.id === 'zapor_nitro' && !m.seen && zPos - g.position.z > 20) { m.seen = true; if (ctx.onSeen) ctx.onSeen(m.id); }

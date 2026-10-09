@@ -5,6 +5,8 @@ import { addBlobShadow } from './ground-shadow.js';
 import { createCarTrail } from './car-trail.js';
 import { createMoments, planMoments, momentOfWeek } from './moments.js';
 import { rollArtifact, grantArtifact, createArtifactToken, artifactsHtml, ARTIFACT_CHANCE } from './artifacts.js';
+import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
+const MOMENT_CAPTIONS = { granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
 import { buildTraffic, KINDS as TRAFFIC_KINDS } from './traffic-cars.js';
         import * as THREE from 'three';
@@ -4685,7 +4687,7 @@ function startGaragePreview(carId) {
                                 + (rk.tip ? '<span class="fr-tip">' + escapeHtml(rk.tip) + '</span>' : '<span class="fr-tip">Лучше не бывает</span>') + '</span></div>';
                         }
                     } catch (eR) { console.warn('rank', eR); }
-                    if (infHero) { screen.classList.add('finish-layout-f2'); screen.innerHTML = infFinishHtml({ title: '🛣 ЗАЕЗД ОКОНЧЕН', hero: infHero, chips: rewardChipsHtml(rewards, currentPlayer && currentPlayer.season), tiles: statTilesHtml(finStats), feed: carGoalHtml(nextCarGoal({ owned: currentPlayer && currentPlayer.unlockedCars, chips: currentPlayer && currentPlayer.season.chips, presets: CAR_PRESETS, order: shopOrder(), isGift: isGiftCar })) /* «ещё N Е — и машина твоя» (src/car-goal.js) */ + nearHtml + rankHtml + retentionHtml(rewards) + takeHooksHtml(carName), buttons: finishButtonsHtml({ state: state, endless: !(infRunOpts && infRunOpts.daily), canUpgrade: canUpgradeNow() }) }); } else
+                    if (infHero) { screen.classList.add('finish-layout-f2'); const _ph = window.__photoBook && window.__photoBook.best; screen.innerHTML = infFinishHtml({ title: '🛣 ЗАЕЗД ОКОНЧЕН', photo: photoHtml(_ph), hero: infHero, chips: rewardChipsHtml(rewards, currentPlayer && currentPlayer.season), tiles: statTilesHtml(finStats), feed: carGoalHtml(nextCarGoal({ owned: currentPlayer && currentPlayer.unlockedCars, chips: currentPlayer && currentPlayer.season.chips, presets: CAR_PRESETS, order: shopOrder(), isGift: isGiftCar })) /* «ещё N Е — и машина твоя» (src/car-goal.js) */ + nearHtml + rankHtml + retentionHtml(rewards) + takeHooksHtml(carName), buttons: finishButtonsHtml({ state: state, endless: !(infRunOpts && infRunOpts.daily), canUpgrade: canUpgradeNow() }) }); } else
                     screen.innerHTML = (
                         '<div class="finish-inner" style="background:rgba(0,0,0,0.95);padding:18px 16px 20px;border-radius:16px;border:2px solid ' + color + ';text-align:center;max-width:400px;width:100%;box-sizing:border-box;box-shadow:0 20px 80px rgba(0,0,0,0.9);">'
                         + (imgHtml || '')
@@ -4792,7 +4794,7 @@ function startGaragePreview(carId) {
                 }
                 bindFinishBtn('finish-restart-btn', goRestart); bindFinishKeys(screen); // Enter — главная кнопка, R — «Повторить»
                 bindFinishBtn('finish-menu-btn', goMenu);
-                bindFinishBtn('finish-buy-car', function() { const td = testDrive; if (!td) return; const r = buyCarOfDay(currentPlayer, td.car, td.price); if (r.ok) { saveCurrentPlayer(); testDrive = null; trackEvent('buy', { item: 'car', id: td.car, price: r.cost, day: true }); try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.8); } catch (e) {} const b = document.getElementById('finish-buy-car'); if (b) { b.disabled = true; b.textContent = '✅ «' + ((CAR_PRESETS[td.car] || {}).name || td.car) + '» — твоя!'; } } else Notify.warn('Не хватает «Е»', 'Нужно ' + r.cost + ' Е — машина дня со скидкой до полуночи'); }); bindFinishBtn('finish-garage-btn', goGarage); /* плашки «Секретная краска» и «Тест-драйв» — нажимаются: краска — в гараж на «Тюнинг», билет — в меню к «Тест-драйву» */ screen.querySelectorAll('.fin-hook[data-go]').forEach(function(el) { const go = function(ev) { if (ev && ev.type === 'touchend' && tapMoved(ev)) return; if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} } if (el.dataset.go === 'paint') { goGarage(); setTimeout(function() { const pt = document.querySelector('.garage-tab[data-gtab="parts"]'); if (pt) pt.click(); }, 350); } else { goMenu(); setTimeout(function() { try { openTd(); } catch (e) {} }, 350); } }; el.onclick = go; el.addEventListener('touchend', go, { passive: false }); }); bindFinishBtn('finish-gift-btn', function(ev) { const gb = document.getElementById('finish-gift-btn'); try { setPendingGift(JSON.parse(gb.dataset.gift)); } catch (e) {} goGarage(ev); });
+                bindFinishBtn('finish-buy-car', function() { const td = testDrive; if (!td) return; const r = buyCarOfDay(currentPlayer, td.car, td.price); if (r.ok) { saveCurrentPlayer(); testDrive = null; trackEvent('buy', { item: 'car', id: td.car, price: r.cost, day: true }); try { if (window.soundEngine) window.soundEngine.playSfx('fanfare', 0.8); } catch (e) {} const b = document.getElementById('finish-buy-car'); if (b) { b.disabled = true; b.textContent = '✅ «' + ((CAR_PRESETS[td.car] || {}).name || td.car) + '» — твоя!'; } } else Notify.warn('Не хватает «Е»', 'Нужно ' + r.cost + ' Е — машина дня со скидкой до полуночи'); }); bindFinishBtn('finish-garage-btn', goGarage); try { bindPhoto(screen, window.__photoBook && window.__photoBook.best); } catch (eP) {} /* «Фото на память» — сохранить или поделиться */ /* плашки «Секретная краска» и «Тест-драйв» — нажимаются: краска — в гараж на «Тюнинг», билет — в меню к «Тест-драйву» */ screen.querySelectorAll('.fin-hook[data-go]').forEach(function(el) { const go = function(ev) { if (ev && ev.type === 'touchend' && tapMoved(ev)) return; if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} } if (el.dataset.go === 'paint') { goGarage(); setTimeout(function() { const pt = document.querySelector('.garage-tab[data-gtab="parts"]'); if (pt) pt.click(); }, 350); } else { goMenu(); setTimeout(function() { try { openTd(); } catch (e) {} }, 350); } }; el.onclick = go; el.addEventListener('touchend', go, { passive: false }); }); bindFinishBtn('finish-gift-btn', function(ev) { const gb = document.getElementById('finish-gift-btn'); try { setPendingGift(JSON.parse(gb.dataset.gift)); } catch (e) {} goGarage(ev); });
                 // «Вызвать друга»: ссылка с сидом и счётом — через «Поделиться» телефона или в буфер обмена
                 bindFinishBtn('finish-challenge-btn', function() {
                     const ch = INF && infRunOpts ? { url: challengeUrl(location.origin + location.pathname, { seed: infRunOpts.seed, score: infWorld ? infWorld.dist : 0, name: currentPlayer.name, mode: 'inf' }), text: 'Побей мой заезд: ' + Math.round(infWorld ? infWorld.dist : 0) + ' м по той же трассе!' } : beast.challenge(location.origin + location.pathname);
@@ -6200,7 +6202,8 @@ function startGaragePreview(carId) {
             // пламя нитро из выхлопа (видно на ускорении), вмятины и дым после аварий
             let nitroFlames = null;
             try { if (playerCar) nitroFlames = addNitroFlames(playerCar); } catch (e) { nitroFlames = null; }
-            let moments = null; /* src/moments.js */ const funEvent = function(ev) { try { recordFun(currentPlayer, ev).forEach(function(id) { unlockAchievement(id); }); } catch (e) {} }; // достижения-шутки (src/fun-achievements.js)
+            const photoBook = window.__photoBook = createPhotoBook(); // «Фото на память» — лучший момент заезда (src/photo.js)
+            let moments = null; /* src/moments.js */ const funEvent = function(ev) { if (ev === 'late_train') photoBook.request('Под самым поездом!', 9); try { recordFun(currentPlayer, ev).forEach(function(id) { unlockAchievement(id); }); } catch (e) {} }; // достижения-шутки (src/fun-achievements.js)
             let carTrail = null; try { carTrail = createCarTrail(scene, { lite: isMobile || quality === 'low' }); } catch (e) { carTrail = null; } // выхлоп и пыль из-под колёс (src/car-trail.js)
             let dentsShown = 0, smokeAcc = 0, prevSpeedForPitch = 0;
             function addDent() {
@@ -8663,6 +8666,7 @@ function startGaragePreview(carId) {
                 }
                 if (nitroFlames) nitroFlames.update(raceTime, nitroTimer > 0);
                 if (moments) moments.update(deltaTime, zPos, Math.abs(speed) * 60);
+                if (carAirborne && carYOffset > 1.8) photoBook.request('Полёт над трассой!', 4);
                 if (carTrail) carTrail.update(deltaTime, { x: playerCar.position.x, y: playerCar.position.y, z: playerCar.position.z, vz: -speed * 60, speedK: speed / MAX_SPEED, nitro: nitroTimer > 0, offroad: Math.abs(xPos) > TRACK_WIDTH / 2 - 0.3, airborne: carAirborne, theme: INF ? infTheme : null, len: 1.5, w: 0.85 });
                 // колёса: путь за кадр / радиус (модель в заезде уменьшена — радиус тоже); перёд к −z → вращение «−x»
                 if (raceWheels.length) {
@@ -8822,7 +8826,7 @@ function startGaragePreview(carId) {
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && ((ABILITY === 'avenger' && (stats.rams || 0) < AVENGER_RAMS) || risk.fever > 0)) {
                         // «Ночной мститель» и «В ударе» — таран: попутку отбрасывает вперёд, аварии нет («В ударе» — ещё и «Е»)
                         car.hitCooldown = 1.2; car.z = freeZ(zPos - 60 - Math.random() * 40, car.lane, _avoidH); car.mesh.position.z = car.z; speed *= risk.fever > 0 ? 1 : 0.9; shakeTime = 0.15; if (risk.fever > 0) stats.eChips = (stats.eChips || 0) + FEVER_RAM_E;
-                        _nmBlock = 2; try { if (window.soundEngine) window.soundEngine.playSfx('crash', 0.8); } catch (e) {} if (!(risk.fever > 0)) stats.rams = (stats.rams || 0) + 1; // «Ночной мститель»: таранов — AVENGER_RAMS за заезд, дальше — как все
+                        _nmBlock = 2; try { if (window.soundEngine) window.soundEngine.playSfx('crash', 0.8); } catch (e) {} if (risk.fever > 0) photoBook.request('Снёс в «УДАРЕ»!', 5); if (!(risk.fever > 0)) stats.rams = (stats.rams || 0) + 1; // «Ночной мститель»: таранов — AVENGER_RAMS за заезд, дальше — как все
                         try { showTimePenaltyPopup(0, risk.fever > 0 ? '💥 Снёс! +' + FEVER_RAM_E + ' Е' : stats.rams >= AVENGER_RAMS ? '🦇 Последний таран!' : '🦇 Таран ' + stats.rams + '/' + AVENGER_RAMS); } catch (e) {}
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl))) {
                         car.hitCooldown = 1.2;
@@ -10505,6 +10509,7 @@ function startGaragePreview(carId) {
                 }
                 try {
                     renderer.render(scene, camera);
+                    photoBook.afterRender(renderer.domElement); // кадр WebGL читается только сразу после отрисовки
                 } catch (e) {}
             }
 
@@ -10622,7 +10627,7 @@ function startGaragePreview(carId) {
             let chunkCull = null, _cullN = 0; try { chunkCull = buildChunks(scene); } catch (e) { console.warn('chunks', e); }
             if (INF) {
                 infWorld = inf.startWorld({ rig: roadRig, ground: ground, hills: infHills, lite: isMobile || quality === 'low', sky: createSky(scene), onEvent: funEvent });
-                moments = createMoments({ scene: scene, startZ: START_Z, W: TRACK_WIDTH, buildMoto: function() { return buildTraffic('moto', 0xc83a2a).group; }, buildCow: Memes.createCow, onSeen: function(id) { funEvent('m_' + id); if (id === momentOfWeek(new Date()).id) funEvent('meme_week'); } }); // редкие сценки и «мем недели» (src/moments.js)
+                moments = createMoments({ scene: scene, startZ: START_Z, W: TRACK_WIDTH, buildMoto: function() { return buildTraffic('moto', 0xc83a2a).group; }, buildCow: Memes.createCow, onNear: function(id) { photoBook.request(MOMENT_CAPTIONS[id] || 'Вот это встреча!', 7); }, onSeen: function(id) { funEvent('m_' + id); if (id === momentOfWeek(new Date()).id) funEvent('meme_week'); } }); // редкие сценки и «мем недели» (src/moments.js)
                 ((import.meta.env.MODE === 'test' && window.__forceMoments) || planMoments(new Date(), Math.random, function(d) { return themeAt(d).theme; })).forEach(function(p) { moments.add(p.id, p.at); }); // тестовая сборка: window.__forceMoments = [{ id, at }] // мир вокруг дороги (src/inf-world.js)
             } // участки трассы: дальнее не обходится (src/chunk-cull.js)
 
