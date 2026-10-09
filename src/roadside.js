@@ -8,14 +8,14 @@
 import * as THREE from 'three';
 
 export const CITIES = ['ВЛАДИВОСТОК', 'АРСЕНЬЕВ', 'УССУРИЙСК', 'НАХОДКА', 'ДАЛЬНЕГОРСК', 'СПАССК'];
-export const KIOSK_SIGNS = ['ПИВО-ВОДЫ', 'ГАЗЕТЫ', 'ЦВЕТЫ', 'ВИДЕО', 'ПРОДУКТЫ', 'ШАУРМА'];
+export const KIOSK_SIGNS = ['ПИВО-ВОДЫ', 'ГАЗЕТЫ', 'ЦВЕТЫ', 'ВИДЕО', 'ПРОДУКТЫ', 'ШАУРМА', 'ВИНО-ВОДКА', 'ЖВАЧКА·КАССЕТЫ', 'ПЕЙДЖЕРЫ'];
 const SIGN_EVERY = 8; // указатель — каждые 8 участков (480 м)
 
 /** Вес каждой детали по стилю участка: остановка, ларёк, бабушка, ржавая машина */
 const WEIGHTS = {
-    arsenev: { stop: 0.22, kiosk: 0.22, granny: 0.14, wreck: 0.12 },
-    city: { stop: 0.26, kiosk: 0.28, granny: 0.1, wreck: 0.08 },
-    village: { stop: 0.18, kiosk: 0.08, granny: 0.34, wreck: 0.18 },
+    arsenev: { stop: 0.22, kiosk: 0.22, granny: 0.14, wreck: 0.12, bazaar: 0.1, video: 0.08 },
+    city: { stop: 0.26, kiosk: 0.28, granny: 0.1, wreck: 0.08, bazaar: 0.12, video: 0.1 },
+    village: { stop: 0.18, kiosk: 0.08, granny: 0.34, wreck: 0.18, bazaar: 0.06 },
     industrial: { stop: 0.16, kiosk: 0.1, granny: 0.04, wreck: 0.34 },
     junk: { stop: 0.04, kiosk: 0.04, granny: 0.04, wreck: 0.6 },
     forest: { stop: 0.1, kiosk: 0.03, granny: 0.08, wreck: 0.14 }
@@ -32,20 +32,26 @@ export function pickRoadside(style, i, rnd, o) {
     o = o || {};
     const w = WEIGHTS[style] || WEIGHTS.arsenev, out = [];
     if (i > 0 && i % SIGN_EVERY === SIGN_EVERY / 2) out.push({ kind: 'sign', side: 1, dz: 0.5, text: CITIES[Math.floor(i / SIGN_EVERY) % CITIES.length] + ' ' + signKm(i) });
-    ['stop', 'kiosk', 'granny', 'wreck'].forEach(function(k) {
-        if (k === 'granny' && o.night) return;
-        if (k === 'kiosk' && o.snow) return;
-        if (rnd() < w[k]) out.push({ kind: k, side: rnd() < 0.5 ? -1 : 1, dz: rnd() });
+    ['stop', 'kiosk', 'granny', 'wreck', 'bazaar', 'video'].forEach(function(k) {
+        if ((k === 'granny' || k === 'bazaar') && o.night) return;
+        if ((k === 'kiosk' || k === 'bazaar') && o.snow) return;
+        if (rnd() < (w[k] || 0)) out.push({ kind: k, side: rnd() < 0.5 ? -1 : 1, dz: rnd() });
     });
-    // одна деталь на сторону рядом: разводим вдоль участка
-    for (let a = 0; a < out.length; a++) for (let b = a + 1; b < out.length; b++) {
-        if (out[a].side === out[b].side && Math.abs(out[a].dz - out[b].dz) < 0.25) out[b].dz = (out[a].dz + 0.5) % 1;
-    }
-    return out;
+    // вдоль участка на каждой стороне — 4 места через 0.25: деталь занимает ближайшее свободное, лишние не ставятся
+    const res = out.filter(function(it) { return it.kind === 'sign'; });
+    [-1, 1].forEach(function(side) {
+        const used = res.filter(function(it) { return it.side === side; }).map(function(it) { return Math.round(it.dz * 4) % 4; });
+        out.forEach(function(it) {
+            if (it.kind === 'sign' || it.side !== side) return;
+            const want = Math.round(it.dz * 4) % 4;
+            for (let d = 0; d < 4; d++) { const s = (want + d) % 4; if (used.indexOf(s) < 0) { used.push(s); it.dz = s * 0.25 + 0.05; res.push(it); return; } }
+        });
+    });
+    return res;
 }
 
 /** Отступ от края дороги (м): ближе всех бабушка и указатель, дальше — ларёк и ржавая машина */
-export function sideGap(kind) { return { sign: 1.3, granny: 1.5, stop: 2.1, kiosk: 3.2, wreck: 3.4 }[kind] || 2.5; }
+export function sideGap(kind) { return { sign: 1.3, granny: 1.5, stop: 2.1, kiosk: 3.2, wreck: 3.4, bazaar: 3.0, video: 3.6 }[kind] || 2.5; }
 
 /* ---------- меши ---------- */
 
@@ -76,7 +82,7 @@ function cyl(g, r0, r1, h, mat, x, y, z, seg) {
 }
 
 const texCache = {};
-function labelTex(text, bg, fg, w, h, once) {
+function labelTex(text, bg, fg, w, h, once, poster) {
     const k = text + bg + fg;
     if (!once && texCache[k]) return texCache[k];
     const cv = document.createElement('canvas');
@@ -86,7 +92,11 @@ function labelTex(text, bg, fg, w, h, once) {
     c.strokeStyle = fg; c.lineWidth = 4; c.strokeRect(5, 5, w - 10, h - 10);
     c.fillStyle = fg; c.textAlign = 'center'; c.textBaseline = 'middle';
     const parts = text.split(' ');
-    if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 1])) { // «ГОРОД 245» — две строки, км крупнее
+    if (poster) { // афиша: строки через «·», крупно
+        const lines = text.split(' · ');
+        c.font = 'bold ' + Math.round(h / (lines.length + 1)) + 'px Arial';
+        lines.forEach(function(l, i) { c.fillText(l, w / 2, h * (i + 1) / (lines.length + 1), w - 16); });
+    } else if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 1])) { // «ГОРОД 245» — две строки, км крупнее
         c.font = 'bold ' + Math.round(h * 0.26) + 'px Arial'; c.fillText(parts.slice(0, -1).join(' '), w / 2, h * 0.34, w - 28); // длинный город — ужимается по ширине
         c.font = 'bold ' + Math.round(h * 0.34) + 'px Arial'; c.fillText(parts[parts.length - 1] + ' км', w / 2, h * 0.7);
     } else {
@@ -98,9 +108,9 @@ function labelTex(text, bg, fg, w, h, once) {
     texCache[k] = t;
     return t;
 }
-function label(g, text, bg, fg, w, h, x, y, z, pw, ph, once) {
+function label(g, text, bg, fg, w, h, x, y, z, pw, ph, once, poster) {
     const k = 'lbl' + text + bg + fg;
-    const mat = once ? new THREE.MeshBasicMaterial({ map: labelTex(text, bg, fg, w, h, true) }) : (mats[k] || (mats[k] = new THREE.MeshBasicMaterial({ map: labelTex(text, bg, fg, w, h) })));
+    const mat = once ? new THREE.MeshBasicMaterial({ map: labelTex(text, bg, fg, w, h, true) }) : (mats[k] || (mats[k] = new THREE.MeshBasicMaterial({ map: labelTex(text, bg, fg, w, h, false, poster) })));
     const m = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), mat);
     m.position.set(x, y, z);
     g.add(m);
@@ -180,6 +190,33 @@ export function createGranny(rnd) {
     return g;
 }
 
+/** Вещевой рынок: навес на стойках, прилавок, клетчатые сумки-«челночницы» */
+export function createBazaar(rnd) {
+    const g = new THREE.Group(), pole = M(0x6a6a70);
+    [[-1.1, -0.8], [1.1, -0.8], [-1.1, 0.8], [1.1, 0.8]].forEach(function(p) { box(g, 0.06, 2.0, 0.06, pole, p[0], 1.0, p[1]); });
+    const tent = [0xc83a2a, 0x2a6ac8, 0x3a9a5a][Math.floor(rnd() * 3)];
+    box(g, 2.5, 0.06, 1.9, M(tent), 0, 2.02, 0);
+    for (let k = 0; k < 5; k++) box(g, 0.48, 0.12, 0.04, M(k % 2 ? 0xf2f0e8 : tent), -1.0 + k * 0.5, 1.94, 0.96); // фестон
+    box(g, 2.2, 0.08, 0.7, M(0x8a6a42), 0, 0.85, 0.35); box(g, 2.2, 0.8, 0.06, M(0x7a5a36), 0, 0.42, 0.68); // прилавок
+    // клетчатые сумки: полосы красный-синий-белый
+    const bag = function(x, y, z, s) { const cols = [0xc83a2a, 0xf2f0e8, 0x2a5ab8, 0xf2f0e8, 0xc83a2a]; for (let k = 0; k < 5; k++) box(g, 0.7 * s, 0.6 * s, 0.11 * s, M(cols[k]), x, y, z - 0.22 * s + k * 0.11 * s); box(g, 0.5 * s, 0.05 * s, 0.05 * s, M(0x1a1a1a), x, y + 0.33 * s, z); };
+    bag(-0.7, 0.32, -0.35, 1); bag(0.2, 0.32, -0.45, 0.9); bag(0.75, 0.3, 0.15, 0.8); bag(-0.6, 1.2, 0.3, 0.6);
+    [0x2a8ac8, 0xd8c040, 0xc84a8a].forEach(function(c, k) { box(g, 0.32, 0.22, 0.25, M(c), -0.6 + k * 0.6, 1.0, 0.35); }); // товар на прилавке
+    return g;
+}
+
+/** Видеосалон: павильон и афиша «СЕГОДНЯ: КАРАТЭ-БОЕВИК» */
+export function createVideoSalon() {
+    const g = new THREE.Group();
+    box(g, 2.6, 2.2, 2.0, M(0x5a6a7a), 0, 1.1, 0);
+    box(g, 2.8, 0.15, 2.2, M(0x3a3a40), 0, 2.27, 0);
+    box(g, 0.9, 1.7, 0.04, M(0x1a2a34), 0.6, 0.85, 1.01);                    // дверь со стеклом
+    label(g, 'ВИДЕОСАЛОН', '#1a1020', '#ff4ad8', 256, 64, 0, 2.6, 0.2, 2.4, 0.6); // неоновая вывеска на крыше
+    box(g, 2.4, 0.06, 0.06, M(0x2a2a2a), 0, 2.32, 0.2);
+    label(g, 'СЕГОДНЯ · КАРАТЭ-БОЕВИК · 19:00', '#f2e8c8', '#b81c1c', 256, 128, -0.65, 1.25, 1.02, 1.0, 1.15, false, true);
+    return g;
+}
+
 /** Синий указатель «ГОРОД N км» на двух столбах */
 export function createKmSign(text) {
     const g = new THREE.Group(), pole = M(0x9a9aa0, { metalness: 0.4, roughness: 0.5 });
@@ -202,6 +239,8 @@ export function placeRoadside(g, o) {
         else if (it.kind === 'kiosk') m = createKiosk(o.rnd);
         else if (it.kind === 'wreck') m = createWreck(o.rnd);
         else if (it.kind === 'granny') m = createGranny(o.rnd);
+        else if (it.kind === 'bazaar') m = createBazaar(o.rnd);
+        else if (it.kind === 'video') m = createVideoSalon();
         else m = createKmSign(it.text);
         const x = it.side * (o.W / 2 + sideGap(it.kind)), z = o.z0 - (0.1 + it.dz * 0.8) * o.len;
         m.position.set(x, (o.heightAt ? o.heightAt(x, z) : 0) - 0.03, z);
