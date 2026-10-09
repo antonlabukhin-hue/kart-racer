@@ -77,14 +77,14 @@ export function mixHex(a, b, k) {
  *   traffic — сколько попуток добавить (0 → +8), trafficSpeed — их скорость (×1 → ×1.5).
  * density — плотность препятствий на участке (0.3 → 1.3)
  */
-export const RAMP_LEN = 8000;
+export const RAMP_LEN = 10800; // на 35% длиннее прежних 8000: скорость и сложность растут медленнее — успеваешь насладиться трассой
 // скорость машины: на старте на 10% тише прежнего (0.85 → 0.765) — успеваешь освоиться; к ~8 км плавно до 1.3
 export const SPEED_RANGE = [0.765, 1.3];
 export function rampAt(dist, warm) {
     dist = (dist || 0) + (warm || 0); // warm — «горячий старт» (warmStart)
     const t = Math.max(0, Math.min(1, (dist || 0) / RAMP_LEN));
     const e = t * t * (3 - 2 * t); // медленно в начале, быстрее в середине, мягко к потолку
-    const a = Math.max(0, Math.min(1, ((dist || 0) - 1000) / (RAMP_LEN - 1000))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1000 м
+    const a = Math.max(0, Math.min(1, ((dist || 0) - 1350) / (RAMP_LEN - 1350))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1350 м
     return { t: t, speed: SPEED_RANGE[0] + (SPEED_RANGE[1] - SPEED_RANGE[0]) * e, density: 0.3 + e,
         animals: 0.55 + 2.05 * ea, maxAnimals: Math.round(6 + 10 * ea), animalSpeed: 1 + 0.6 * ea,
         traffic: Math.round(8 * ea), trafficSpeed: 1 + 0.5 * ea };
