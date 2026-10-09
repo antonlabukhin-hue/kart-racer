@@ -16,6 +16,8 @@ import { buildScenery } from './scenery.js';
 import { setKitGlow, setKeepOut } from './scenery-kit.js';
 import { placeRoadside } from './roadside.js';
 import { hasBridge, createBridge, createBridgeTrain } from './railway.js';
+import { createSmoke } from './smoke.js';
+import { hasGulls, createGulls } from './gulls.js';
 import { hasField, fieldSide, fieldKind, createField, createFarmWork, FIELD_X0, FIELD_X1 } from './farm.js';
 
 export const RIG_STEP = 180;
@@ -165,6 +167,7 @@ export function createInfWorld(o) {
             g.add(createField(fs, z0, STRETCH, W, fk, heightAt));
             addMover(i, createFarmWork(scene, fs, z0, STRETCH, W, fk, heightAt));
         }
+        if (hasGulls(i, th.style)) { const sd = r() < 0.5 ? -1 : 1; addMover(i, createGulls(scene, sd * (W / 2 + 20 + r() * 8), z0 - STRETCH / 2, 4 + Math.floor(r() * 4))); } // чайки над кучами (src/gulls.js)
         if (bridgeZ == null) try { placeRoadside(g, { style: th.style, i: i, z0: z0, len: STRETCH, W: W, rnd: r, heightAt: heightAt, night: !!th.night, snow: !!th.snow }); } catch (e) { console.warn('roadside', e); } // остановки, ларьки, бабушки, указатели (src/roadside.js)
         yield;
         try { mergeStaticMeshes(g.children.slice(), g); } catch (e) { /* склейка — только ради скорости */ }
@@ -174,6 +177,7 @@ export function createInfWorld(o) {
             const sc = buildScenery({ style: th.style, jungle: th.id === 'jungle', snow: !!th.snow, night: !!th.night, i: i, z0: z0, len: STRETCH, W: W, lite: o.lite, rnd: r, heightAt: heightAt });
             if (sc.mesh) g.add(sc.mesh);
             if (sc.water) g.add(sc.water);
+            if (sc.smoke && sc.smoke.length) addMover(i, createSmoke(scene, sc.smoke)); // дым из труб и бочек (src/smoke.js)
         } catch (e) { console.warn('scenery', e); }
         setKeepOut(null);
         if (bridgeZ != null) { g.add(createBridge(bridgeZ, W)); addMover(i, createBridgeTrain(scene, bridgeZ)); }
