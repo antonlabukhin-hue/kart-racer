@@ -1,5 +1,5 @@
 /**
- * «Трофеи»: три вкладки — 🎖 значки, ⭐ наклейки «Досье курьера», 🏆 кубки. Страница всегда открывается сверху
+ * «Трофеи»: вкладки — 🎖 значки, ⭐ наклейки «Досье курьера», 📼 артефакты 90-х, 🏆 кубки. Страница всегда открывается сверху
  * (раньше одним длинным списком — открывалась на середине). В подписи вкладки — сколько собрано.
  */
 export function wireTrophyTabs() {
@@ -8,6 +8,7 @@ export function wireTrophyTabs() {
     const tabs = panel.querySelectorAll('.tro-tab');
     const count = function(pane) {
         if (pane === 'badges') { const h = panel.querySelector('#badge-set .bs-head b'); return h ? h.textContent : ''; }
+        if (pane === 'artifacts') { const h = panel.querySelector('#artifact-set .art-head'); const m = h && h.textContent.match(/(d+) из (d+)/); return m ? m[1] + ' / ' + m[2] : ''; }
         if (pane === 'stickers') { const h = panel.querySelector('#sticker-set .bs-head b'); return h ? h.textContent : ''; }
         const all = panel.querySelectorAll('#trophy-grid .trophy-slot').length, got = panel.querySelectorAll('#trophy-grid .trophy-slot:not(.locked)').length;
         return all ? got + ' / ' + all : '';

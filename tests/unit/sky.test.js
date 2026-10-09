@@ -34,3 +34,24 @@ describe('тень-пятно под машиной', () => {
         expect(s.l).toBeGreaterThan(2);
     });
 });
+
+import { duskAt } from '../../src/infinite.js';
+describe('закат и рассвет', () => {
+    it('только на стыке с ночью, сильнее всего посередине перехода', () => {
+        const day = THEMES.find(function(t) { return !t.night; }), night = THEMES.find(function(t) { return t.night; });
+        expect(duskAt(day, day, 0.5)).toBe(null);
+        expect(duskAt(day, night, 0.5).k).toBeCloseTo(1);
+        expect(duskAt(day, night, 0.1).k).toBeLessThan(0.5);
+        expect(duskAt(day, night, 0.5).horizon).not.toBe(duskAt(night, day, 0.5).horizon); // закат ≠ рассвет
+    });
+});
+
+import { accentCss } from '../../src/infinite.js';
+describe('фирменный цвет пейзажа', () => {
+    it('у каждого пейзажа свой, между ними — плавно', () => {
+        const set = new Set(THEMES.map(function(t) { return accentCss(t); }));
+        expect(set.size).toBe(THEMES.length);
+        expect(accentCss(THEMES[0], THEMES[1], 0)).toBe(accentCss(THEMES[0]));
+        expect(accentCss(THEMES[0], THEMES[1], 1)).toBe(accentCss(THEMES[1]));
+    });
+});

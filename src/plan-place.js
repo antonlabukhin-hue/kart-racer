@@ -21,6 +21,7 @@ export function placePlan(items, env) {
         if (it.kind === 'echip') { L.collectibles.push(make.eChip(it.x != null ? it.x : LX[it.lane], it.y, z)); return; }
         if (it.kind === 'vhs') { L.collectibles.push(make.vhs(LX[it.lane], 0.75, z)); return; }
         if (it.kind === 'power') { L.collectibles.push(make.power(LX[it.lane], z, it.type)); return; }
+        if (it.kind === 'ride') { if (make.ride) L.collectibles.push(make.ride(LX[it.lane], z)); return; }
         if (it.kind === 'letter') {
             const next = env.letter ? env.letter() : null;
             if (!next) return;

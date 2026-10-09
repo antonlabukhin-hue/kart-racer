@@ -145,7 +145,7 @@ export function createInfiniteRun(ctx) {
         firstLap: function(m0) { planLap(0); track(scene.children.slice(m0)); },
         /** Мир вокруг дороги (src/inf-world.js): o — { rig, ground, hills, lite } */
         startWorld: function(o) {
-            world = createInfWorld({ scene: scene, startZ: START_Z, trackWidth: ctx.TRACK_WIDTH, rig: o.rig, ground: o.ground, hills: o.hills, lights: ctx.lights, lite: o.lite, sky: o.sky });
+            world = createInfWorld({ scene: scene, startZ: START_Z, trackWidth: ctx.TRACK_WIDTH, rig: o.rig, ground: o.ground, hills: o.hills, lights: ctx.lights, lite: o.lite, sky: o.sky, onEvent: o.onEvent });
             world.tick(ctx.z, true);
             return world;
         },

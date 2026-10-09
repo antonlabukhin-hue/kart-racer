@@ -7,23 +7,23 @@ import { pickPattern, expandPattern, patternSpan, patternGap } from './patterns.
 
 /** Пейзажи идут по кругу; у каждого — стиль декора (src/decor.js), небо/туман/земля, скользкое пятно, звери */
 export const THEMES = [
-    { id: 'day', name: 'Арсеньев, день', style: 'arsenev', sky: 0xe8c898, zenith: 0x5b8ad0, fog: 0xe0c090, fogNear: 55, fogFar: 200, ground: 0xa08866, light: 1, slide: 'oil',
+    { id: 'day', name: 'Арсеньев, день', style: 'arsenev', accent: 0xffc83c, sky: 0xe8c898, zenith: 0x5b8ad0, fog: 0xe0c090, fogNear: 55, fogFar: 200, ground: 0xa08866, light: 1, slide: 'oil',
         animals: ['DOG', 'CAT', 'DEER', 'BOAR', 'FOX', 'HUMAN', 'CHICKEN'] },
-    { id: 'village', name: 'Деревня', style: 'village', sky: 0xd4e2ea, zenith: 0x4f8fe0, fog: 0xcad8d4, fogNear: 55, fogFar: 200, ground: 0x7e9a52, light: 1.05, slide: 'oil',
+    { id: 'village', name: 'Деревня', style: 'village', accent: 0x8ad84a, sky: 0xd4e2ea, zenith: 0x4f8fe0, fog: 0xcad8d4, fogNear: 55, fogFar: 200, ground: 0x7e9a52, light: 1.05, slide: 'oil',
         animals: ['CHICKEN', 'DOG', 'CAT', 'BOAR', 'FOX', 'DEER'] },
-    { id: 'promzona', name: 'Промзона', style: 'industrial', sky: 0x9a8a78, zenith: 0x5c6378, fog: 0x8a7a68, fogNear: 40, fogFar: 170, ground: 0x7a7468, light: 0.9, slide: 'acid',
+    { id: 'promzona', name: 'Промзона', style: 'industrial', accent: 0xff4a3a, sky: 0x9a8a78, zenith: 0x5c6378, fog: 0x8a7a68, fogNear: 40, fogFar: 170, ground: 0x7a7468, light: 0.9, slide: 'acid',
         animals: ['CROC', 'RHINO', 'DINO', 'PEACOCK', 'DOG'] },
-    { id: 'snow', name: 'Снежная тайга', style: 'forest', snow: true, sky: 0xc8d4e0, zenith: 0x7fa3d6, fog: 0xd0dae4, fogNear: 50, fogFar: 195, ground: 0xe8f0f8, light: 1.05, slide: 'ice',
+    { id: 'snow', name: 'Снежная тайга', style: 'forest', accent: 0x8ad8ff, snow: true, sky: 0xc8d4e0, zenith: 0x7fa3d6, fog: 0xd0dae4, fogNear: 50, fogFar: 195, ground: 0xe8f0f8, light: 1.05, slide: 'ice',
         animals: ['BEAR', 'FOX', 'DEER', 'BOAR'] },
-    { id: 'city', name: 'Микрорайон', style: 'city', sky: 0xdcc8a8, zenith: 0x6690d0, fog: 0xd4c0a0, fogNear: 50, fogFar: 190, ground: 0x8a8a78, light: 0.95, slide: 'oil',
+    { id: 'city', name: 'Микрорайон', style: 'city', accent: 0x4ab0ff, sky: 0xdcc8a8, zenith: 0x6690d0, fog: 0xd4c0a0, fogNear: 50, fogFar: 190, ground: 0x8a8a78, light: 0.95, slide: 'oil',
         animals: ['DOG', 'CAT', 'HUMAN', 'CHICKEN'] },
-    { id: 'night', name: 'Ночная трасса', style: 'arsenev', night: true, sky: 0x0a1020, zenith: 0x03050e, fog: 0x12182a, fogNear: 22, fogFar: 120, ground: 0x3a4458, light: 0.45, slide: 'oil',
+    { id: 'night', name: 'Ночная трасса', style: 'arsenev', accent: 0xff4ad8, night: true, sky: 0x0a1020, zenith: 0x03050e, fog: 0x12182a, fogNear: 22, fogFar: 120, ground: 0x3a4458, light: 0.45, slide: 'oil',
         animals: ['BEAR', 'BOAR', 'DOG', 'CAT', 'FOX', 'DEER'] },
-    { id: 'svalka', name: 'Свалка «Надежда»', style: 'junk', sky: 0xb0a080, zenith: 0x7488aa, fog: 0xa89878, fogNear: 45, fogFar: 180, ground: 0x8a7650, light: 0.95, slide: 'tar',
+    { id: 'svalka', name: 'Свалка «Надежда»', style: 'junk', accent: 0xffa03a, sky: 0xb0a080, zenith: 0x7488aa, fog: 0xa89878, fogNear: 45, fogFar: 180, ground: 0x8a7650, light: 0.95, slide: 'tar',
         animals: ['LION', 'MONKEY', 'ZEBRA', 'HIPPO', 'GIRAFFE'] },
-    { id: 'rain', name: 'Дождь на трассе', style: 'arsenev', rain: true, sky: 0x6a7a88, zenith: 0x3b4552, fog: 0x6a7a88, fogNear: 25, fogFar: 110, ground: 0x66727c, light: 0.75, slide: 'oil',
+    { id: 'rain', name: 'Дождь на трассе', style: 'arsenev', accent: 0x5ad8c8, rain: true, sky: 0x6a7a88, zenith: 0x3b4552, fog: 0x6a7a88, fogNear: 25, fogFar: 110, ground: 0x66727c, light: 0.75, slide: 'oil',
         animals: ['DOG', 'DEER', 'FOX', 'CAT', 'HUMAN', 'BOAR'] },
-    { id: 'jungle', name: 'Джунгли-зоопарк', style: 'forest', sky: 0x4a6a40, zenith: 0x2f5a4a, fog: 0x3d5a38, fogNear: 30, fogFar: 140, ground: 0x5a7a40, light: 0.9, slide: 'tar',
+    { id: 'jungle', name: 'Джунгли-зоопарк', style: 'forest', accent: 0x5aff7a, sky: 0x4a6a40, zenith: 0x2f5a4a, fog: 0x3d5a38, fogNear: 30, fogFar: 140, ground: 0x5a7a40, light: 0.9, slide: 'tar',
         animals: ['CROC', 'ELEPHANT', 'RHINO', 'LION', 'MONKEY'] }
 ];
 /** Номер пейзажа по id (для setThemeStart) */
@@ -36,12 +36,29 @@ let themeStart = 0;
 export function setThemeStart(i) { themeStart = ((Math.floor(i) || 0) % THEMES.length + THEMES.length) % THEMES.length; }
 export function getThemeStart() { return themeStart; }
 
+/**
+ * Сезонная зона: с 15 декабря по 15 января дневной Арсеньев — «Новогодний Арсеньев» (снег, ёлки с игрушками,
+ * гирлянды над трассой, Дед Мороз на «буханке»). Число пейзажей не меняется — сиды «Заезда дня» и вызовов прежние.
+ */
+export const NEWYEAR = { id: 'newyear', base: 'day', name: 'Новогодний Арсеньев', style: 'arsenev', snow: true, newyear: true,
+    sky: 0xc8d8ec, zenith: 0x5a84c8, fog: 0xdce6f0, fogNear: 50, fogFar: 195, ground: 0xeef4fa, light: 1.05, slide: 'ice', accent: 0xff3a4a,
+    animals: ['FOX', 'DEER', 'DOG', 'CAT'] };
+export function seasonFor(date) {
+    if (!date) return null;
+    const m = date.getMonth(), d = date.getDate();
+    return (m === 11 && d >= 15) || (m === 0 && d <= 15) ? 'newyear' : null;
+}
+let season = null;
+/** Включить сезон (main.js — по дате при старте; тестовая сборка — window.__forceSeason) */
+export function setSeason(s) { season = s || null; }
+function seasonal(th) { return season === 'newyear' && th.id === NEWYEAR.base ? NEWYEAR : th; }
+
 /** Какой пейзаж на расстоянии dist: { theme, next, k } — k 0..1 — доля перехода в следующий */
 export function themeAt(dist) {
     const d = Math.max(0, dist || 0) + themeStart * THEME_LEN;
     const i = Math.floor(d / THEME_LEN);
     const into = d - i * THEME_LEN;
-    const theme = THEMES[i % THEMES.length], next = THEMES[(i + 1) % THEMES.length];
+    const theme = seasonal(THEMES[i % THEMES.length]), next = seasonal(THEMES[(i + 1) % THEMES.length]);
     const k = Math.max(0, Math.min(1, (into - (THEME_LEN - BLEND_LEN)) / BLEND_LEN));
     return { index: i, theme: theme, next: next, k: k };
 }
@@ -195,6 +212,8 @@ export function planStretch(d0, d1, rnd, opts) {
     const eDs = out.filter(function(i) { return i.kind === 'echip'; }).map(function(i) { return i.d; });
     const clearOfE = function(dd) { return !nearGap(dd) && eDs.every(function(e) { return Math.abs(e - dd) > 18; }); };
     const spot = function(dd) { for (let k = 0; k < 12 && !clearOfE(dd); k++) dd += 20; return clearOfE(dd) && dd < d1 ? dd : null; };
+    // безумный транспорт (src/rides.js) — редко: трактор-таран, самосвал, «кукурузник»
+    for (let dd = d0 + 700 + r() * 600; dd < d1; dd += 1400 + r() * 800) { const at = spot(dd); if (at != null) out.push({ kind: 'ride', d: at, lane: lane() }); }
     // усиления: магнит, ×2, броня — раз в 450–750 м
     for (let dd = d0 + 150 + r() * 250; dd < d1; dd += POWER_EVERY[0] + r() * (POWER_EVERY[1] - POWER_EVERY[0])) {
         const at = spot(dd);
@@ -269,4 +288,25 @@ export function withRandom(rnd, fn) {
     const prev = Math.random;
     Math.random = rnd;
     try { return fn(); } finally { Math.random = prev; }
+}
+
+/**
+ * Закат и рассвет на стыке с ночью: переход в ночной пейзаж идёт через оранжево-розовое небо,
+ * выход из ночи — через розоватый рассвет. a, b — пейзажи, k — доля второго (как в themeAt).
+ * → { k: 0..1 сила (пик посередине перехода), horizon, zenith, fog } или null.
+ */
+export const SUNSET = { horizon: 0xff9a52, zenith: 0x4a3a78, fog: 0xd88a5a };
+export const SUNRISE = { horizon: 0xf6b8a0, zenith: 0x5a78b8, fog: 0xe0b0a0 };
+export function duskAt(a, b, k) {
+    if (!a || !b || !!a.night === !!b.night) return null;
+    const s = Math.sin(Math.max(0, Math.min(1, k)) * Math.PI); // 0 → 1 → 0
+    if (s < 0.01) return null;
+    const p = b.night ? SUNSET : SUNRISE;
+    return { k: s, horizon: p.horizon, zenith: p.zenith, fog: p.fog };
+}
+
+/** Фирменный цвет пейзажа (рамки плашек заезда) — CSS-строка; между пейзажами — плавно */
+export function accentCss(a, b, k) {
+    const h = mixHex(a.accent != null ? a.accent : 0xffd23c, b && b.accent != null ? b.accent : 0xffd23c, k || 0);
+    return '#' + h.toString(16).padStart(6, '0');
 }

@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { themeAt, mixHex } from './infinite.js';
+import { themeAt, mixHex, duskAt, accentCss } from './infinite.js';
 import * as Decor from './decor.js';
 import { createRock, createLog, createForestInstanced } from './biomes.js';
 import { createSpruce, createSnowBank, createSnowman } from './snow.js';
@@ -18,6 +18,7 @@ import { placeRoadside } from './roadside.js';
 import { hasBridge, createBridge, createBridgeTrain } from './railway.js';
 import { createSmoke } from './smoke.js';
 import { hasGulls, createGulls } from './gulls.js';
+import { createNyTree, createGarland, garlandTick } from './newyear.js';
 import { hasField, fieldSide, fieldKind, createField, createFarmWork, FIELD_X0, FIELD_X1 } from './farm.js';
 
 export const RIG_STEP = 180;
@@ -167,6 +168,12 @@ export function createInfWorld(o) {
             g.add(createField(fs, z0, STRETCH, W, fk, heightAt));
             addMover(i, createFarmWork(scene, fs, z0, STRETCH, W, fk, heightAt));
         }
+        if (th.newyear) { // «Новогодний Арсеньев»: ёлки с игрушками, гирлянда над трассой, снеговик (src/newyear.js)
+            for (let k = 0; k < 2; k++) { const sd = k ? 1 : -1, x = sd * (W / 2 + 3 + r() * 3), z = z0 - 8 - r() * 44; if (free(x, z)) { const t = createNyTree(0.8 + r() * 0.4); t.position.set(x, heightAt(x, z), z); g.add(t); } }
+            if (bridgeZ == null) g.add(createGarland(W, z0 - 30));
+            { const sd = r() < 0.5 ? -1 : 1, x = sd * (W / 2 + 2.4), z = z0 - 10 - r() * 40; if (free(x, z)) createSnowman(g, x, z, 0.9 + r() * 0.3); }
+            hasNewYear = true;
+        }
         if (hasGulls(i, th.style)) { const sd = r() < 0.5 ? -1 : 1; addMover(i, createGulls(scene, sd * (W / 2 + 20 + r() * 8), z0 - STRETCH / 2, 4 + Math.floor(r() * 4))); } // чайки над кучами (src/gulls.js)
         if (bridgeZ == null) try { placeRoadside(g, { style: th.style, i: i, z0: z0, len: STRETCH, W: W, rnd: r, heightAt: heightAt, night: !!th.night, snow: !!th.snow }); } catch (e) { console.warn('roadside', e); } // остановки, ларьки, бабушки, указатели (src/roadside.js)
         yield;
@@ -180,7 +187,7 @@ export function createInfWorld(o) {
             if (sc.smoke && sc.smoke.length) addMover(i, createSmoke(scene, sc.smoke)); // дым из труб и бочек (src/smoke.js)
         } catch (e) { console.warn('scenery', e); }
         setKeepOut(null);
-        if (bridgeZ != null) { g.add(createBridge(bridgeZ, W)); addMover(i, createBridgeTrain(scene, bridgeZ)); }
+        if (bridgeZ != null) { g.add(createBridge(bridgeZ, W)); addMover(i, createBridgeTrain(scene, bridgeZ, null, o.onEvent)); }
         freezeStatic(g);
         return g;
     }
@@ -206,12 +213,15 @@ export function createInfWorld(o) {
         return true;
     }
 
+    let lastAccent = '', hasNewYear = false;
     function atmosphere(d) {
         const t = themeAt(d), a = t.theme, b = t.next, k = t.k;
         const lerp = function(x, y) { return x + (y - x) * k; };
+        const dusk = duskAt(a, b, k); // закат перед ночью и рассвет после неё (src/infinite.js)
+        const fogHex = dusk ? mixHex(mixHex(a.fog, b.fog, k), dusk.fog, dusk.k * 0.7) : mixHex(a.fog, b.fog, k);
         if (scene.background && scene.background.isColor) scene.background.setHex(mixHex(a.sky, b.sky, k));
         if (scene.fog) {
-            scene.fog.color.setHex(mixHex(a.fog, b.fog, k));
+            scene.fog.color.setHex(fogHex);
             scene.fog.near = lerp(a.fogNear, b.fogNear);
             scene.fog.far = lerp(a.fogFar, b.fogFar);
         }
@@ -223,7 +233,10 @@ export function createInfWorld(o) {
         o.lights.hemi.intensity = base.hemi * L;
         o.lights.sun.intensity = base.sun * L;
         setKitGlow((1 - L) * 1.7); // ночью и в дождь окна и вывески светятся
-        if (o.sky) { o.sky.setTheme(a, b, k, mixHex(a.fog, b.fog, k)); o.sky.tick(1 / 60); } // небо и силуэты на горизонте (src/sky.js)
+        if (o.sky) { o.sky.setTheme(a, b, k, fogHex, dusk); o.sky.tick(1 / 60); }
+        // фирменный цвет пейзажа — рамки плашек заезда (css --zone-accent); шагами по 0.1, а не каждый кадр
+        const acc = accentCss(a, b, Math.round(k * 10) / 10);
+        if (acc !== lastAccent && typeof document !== 'undefined') { lastAccent = acc; try { document.documentElement.style.setProperty('--zone-accent', acc); } catch (e) {} } // небо и силуэты на горизонте (src/sky.js)
         return t;
     }
 
@@ -247,6 +260,7 @@ export function createInfWorld(o) {
                 if (!prefill) break;
             }
             const now = performance.now();
+            if (hasNewYear) garlandTick(now); // гирлянды мигают
             movers.forEach(function(list) { list.forEach(function(m) { m.update(zPos, now); }); });
             stretches.forEach(function(g, i) {
                 if (i >= lo) return;

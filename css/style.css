@@ -6468,3 +6468,29 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
     background: linear-gradient(180deg, rgba(30, 20, 0, 0.46), rgba(14, 8, 0, 0.52)) !important; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18) !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.5); }
 :root body.race-mode #mobile-controls .mc-cam .cam-btn, :root body.race-mode #hud-pause-btn { background: rgba(14, 10, 0, 0.42) !important; }
+
+/* ===== Фирменный цвет пейзажа (src/infinite.js accent → --zone-accent): рамки плашек заезда ===== */
+:root body.race-mode #game-hud.hud-v2#game-hud, :root body.race-mode #hud-menu-btn#hud-menu-btn, :root body.race-mode #e-counter#e-counter,
+:root body.race-mode #mobile-controls .mc-cam .cam-btn {
+    border-color: color-mix(in srgb, var(--zone-accent, #ffd23c) 75%, transparent) !important;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--zone-accent, #ffd23c) 25%, transparent), 0 2px 10px rgba(0, 0, 0, 0.18) !important;
+    transition: border-color 1.2s, box-shadow 1.2s; }
+
+/* ===== Альбом «Артефакты 90-х» (src/artifacts.js) ===== */
+#artifact-set .art-head { margin: 6px 0 10px; font: 800 14px system-ui, sans-serif; color: #ffe08a; }
+#artifact-set .art-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+#artifact-set .art-card { padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.15); color: #aaa; text-align: center; }
+#artifact-set .art-card.on { background: linear-gradient(180deg, rgba(255,210,60,0.14), rgba(255,160,40,0.06)); border: 1px solid rgba(255,210,60,0.5); color: #fff; }
+#artifact-set .art-card i { display: block; font-style: normal; font-size: 30px; line-height: 1.2; }
+#artifact-set .art-card b { display: block; font-size: 13px; margin: 2px 0; }
+#artifact-set .art-card small { display: block; font-size: 11px; color: #e8d8b0; line-height: 1.3; }
+
+/* ===== «Фото на память» на финише (src/photo.js) ===== */
+.fin-photo { margin: 10px auto 4px; max-width: 260px; text-align: center; }
+.fin-photo img { width: 100%; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.55); transform: rotate(-2deg); }
+.fin-photo-share { margin-top: 8px; min-height: 40px; padding: 0 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; font: 800 15px system-ui, sans-serif; cursor: pointer; }
+@media (max-height: 560px) { .fin-photo { max-width: 160px; margin-top: 4px; } }
+
+/* ===== Безумный транспорт: вспышка при появлении (src/rides.js) ===== */
+.ride-flash { position: fixed; inset: 0; z-index: 140; pointer-events: none; background: radial-gradient(circle at 50% 70%, rgba(255,240,200,0.85), rgba(255,140,40,0.35) 45%, rgba(255,120,0,0) 75%); animation: rideFlash .65s ease-out forwards; }
+@keyframes rideFlash { from { opacity: 1; } to { opacity: 0; } }
