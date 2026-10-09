@@ -31,6 +31,16 @@ function doorLabel() {
     return t;
 }
 let _label = null;
+/** Объём по профилю сбоку: pts — [[z, y], …] по кругу, вытянут по ширине w (вдоль x, по центру) */
+function prism(pts, w, mat) {
+    const sh = new THREE.Shape();
+    pts.forEach(function(p, i) { if (i) sh.lineTo(p[0], p[1]); else sh.moveTo(p[0], p[1]); });
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: false });
+    // (z профиля, y, глубина) → (x = глубина − w/2, y, z): ось вытягивания — поперёк машины
+    geo.translate(0, 0, -w / 2);
+    geo.rotateY(-Math.PI / 2);
+    return new THREE.Mesh(geo, mat);
+}
 export function policeCar() {
     const g = new THREE.Group();
     const cache = {};
@@ -42,11 +52,15 @@ export function policeCar() {
     box(white, 1.2, 0.36, 2.24, 0, 0.4, 0);
     box(white, 1.16, 0.08, 0.66, 0, 0.6, -0.76);                          // капот
     box(white, 1.16, 0.08, 0.5, 0, 0.6, 0.86);                            // багажник
-    box(white, 1.06, 0.34, 1.0, 0, 0.8, 0.1);                             // салон
-    box(glass, 1.07, 0.22, 0.86, 0, 0.8, 0.1);                            // боковые стёкла
-    [-0.18, 0.38].forEach(function(z) { [-1, 1].forEach(function(s) { box(white, 0.02, 0.24, 0.06, s * 0.536, 0.8, z); }); }); // стойки
-    box(glass, 0.98, 0.03, 0.42, 0, 0.805, -0.51, -0.98);                 // лобовое — от капота к крыше
-    box(glass, 0.96, 0.03, 0.42, 0, 0.805, 0.71, 0.98);                   // заднее — от крыши к багажнику
+    // салон — цельный объём по профилю сбоку (наклонные перёд и зад), без щелей между стёклами и крышей
+    const CAB = [[-0.62, 0.62], [-0.4, 0.97], [0.6, 0.97], [0.82, 0.62]];
+    g.add(prism(CAB, 1.06, white));
+    const yIn = function(y, front) { return front ? -0.62 + (y - 0.62) * 0.22 / 0.35 + 0.06 : 0.82 - (y - 0.62) * 0.22 / 0.35 - 0.06; };
+    g.add(prism([[yIn(0.69, true), 0.69], [yIn(0.92, true), 0.92], [yIn(0.92, false), 0.92], [yIn(0.69, false), 0.69]], 1.075, glass)); // боковые окна
+    [-1, 1].forEach(function(s) { box(white, 0.02, 0.25, 0.07, s * 0.538, 0.805, 0.12); }); // средняя стойка
+    const slope = Math.atan2(0.35, 0.22);
+    box(glass, 0.94, 0.02, 0.34, 0, 0.795 + 0.532 * 0.012, -0.51 - 0.847 * 0.012, -slope);  // лобовое — на скосе
+    box(glass, 0.92, 0.02, 0.34, 0, 0.795 + 0.532 * 0.012, 0.71 + 0.847 * 0.012, slope);    // заднее — на скосе
     // синяя полоса по борту и «ГАИ» на передних дверях
     [-1, 1].forEach(function(s) {
         box(blueM, 0.02, 0.09, 2.1, s * 0.605, 0.44, 0);
