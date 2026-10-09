@@ -188,9 +188,9 @@ test('подарок за возвращение, именной номер, м�
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__raceDebug.inf ? window.__raceDebug.inf.dist : 0), { timeout: 20_000 }).toBeGreaterThan(30); // хоть немного проехать
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await page.locator('.cc-no').click(); // «Е» за возвращение есть — предлагают «Дальше за 100 Е»; к итогам
     await expect(page.locator('#finish-screen .fin-week-prog')).toContainText('Машина недели');

@@ -17,7 +17,7 @@ test('Звериный час: волны идут подряд, конец за
     expect(seed).toBeGreaterThan(0);
     expect(await page.evaluate(() => window.__endless.daily)).toBe(true);
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect(page.locator('#endless-wave-card')).toContainText('ВОЛНА 2', { timeout: 60_000 });
     await expect(page.locator('#endless-wave-card .ew-seed')).toContainText('Звериный час дня');
     // у второй волны — своё правило; между волнами — выбор бонуса (src/wave-rules.js)
@@ -29,7 +29,7 @@ test('Звериный час: волны идут подряд, конец за
     await expect(page.locator('#endlessDisplay')).toContainText('ВОЛНА 2', { timeout: 20_000 });
     const score = await page.locator('#endlessDisplay').textContent();
     expect(parseInt(score.split('·')[1], 10)).toBeGreaterThanOrEqual(1000);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     await waitRacing(page);
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await expect(page.locator('#finish-screen')).toContainText('ЗВЕРИНЫЙ ЧАС ОКОНЧЕН', { timeout: 10_000 });
@@ -48,9 +48,9 @@ test('Звериный час: «В меню» на карточке волны 
     await unlockBeastHour(page);
     await page.locator('.menu-card[data-menu="endless"]').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect(page.locator('#endless-wave-card')).toContainText('ВОЛНА 2', { timeout: 60_000 });
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.locator('#endless-wave-card .ew-menu').click();
     await expect(page.locator('#endless-wave-card')).toHaveCount(0);
     await expect(page.locator('#main-menu-screen')).toBeVisible();

@@ -6494,3 +6494,13 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 /* ===== Безумный транспорт: вспышка при появлении (src/rides.js) ===== */
 .ride-flash { position: fixed; inset: 0; z-index: 140; pointer-events: none; background: radial-gradient(circle at 50% 70%, rgba(255,240,200,0.85), rgba(255,140,40,0.35) 45%, rgba(255,120,0,0) 75%); animation: rideFlash .65s ease-out forwards; }
 @keyframes rideFlash { from { opacity: 1; } to { opacity: 0; } }
+
+/* ===== Стрелка-подсказка (первые заезды): крупная, нейтрально-голубая, полупрозрачная, пульсирует — ↑ прыжок, ↓ подныр, ← → полоса ===== */
+#move-arrow { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 120; pointer-events: none; opacity: 0; transition: opacity .15s; text-align: center; }
+#move-arrow.on { opacity: 1; }
+#move-arrow i { display: block; width: 160px; height: 160px; margin: 0 auto; background: rgba(150, 210, 255, 0.55); filter: drop-shadow(0 0 2px rgba(20, 60, 110, 0.7)) drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+    clip-path: polygon(50% 0, 100% 48%, 70% 48%, 70% 100%, 30% 100%, 30% 48%, 0 48%); --r: 0deg; animation: moveArrow .55s ease-in-out infinite alternate; }
+#move-arrow.duck i { --r: 180deg; } #move-arrow.left i { --r: -90deg; } #move-arrow.right i { --r: 90deg; }
+#move-arrow b { display: block; margin-top: 8px; font: 900 21px system-ui, sans-serif; letter-spacing: 1px; color: rgba(235, 247, 255, 0.95); text-shadow: 0 2px 6px rgba(0, 20, 50, 0.8); }
+@keyframes moveArrow { from { transform: rotate(var(--r)) translateY(12px); opacity: .6; } to { transform: rotate(var(--r)) translateY(-12px); opacity: .95; } }
+@media (max-height: 500px) { #move-arrow i { width: 100px; height: 100px; } #move-arrow b { font-size: 15px; } }

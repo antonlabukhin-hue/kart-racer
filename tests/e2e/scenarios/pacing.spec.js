@@ -8,7 +8,7 @@ test('глава 1 укладывается в бюджет: трамплин д
     await startCampaign(page); // «ПОЕХАЛИ» теперь ведёт в бесконечную трассу — глава 1 из кампании
     await waitRacing(page);
     const gaps = await page.evaluate(() => window.__raceDebug.gaps.map(g => ({ z: g.zNear, lane: g.lanes[0] })));
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     const r = await page.evaluate((gaps) => new Promise(res => {
         const d = window.__raceDebug, ev = {}; const t0 = performance.now();
         const f = () => {

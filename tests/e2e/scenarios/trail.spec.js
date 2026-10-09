@@ -27,8 +27,8 @@ test('звериная тропа: с трамплина машина перел
         (d.animals || []).forEach(an => { if (!an.trail) { an.hit = true; if (an.mesh) an.mesh.visible = false; } });
         (d.cars || []).forEach(c => { if (c.mesh) { c.x = 99; c.mesh.position.x = 99; } });
     }, 30));
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.animalsJumped), { timeout: 40_000 }).toBeGreaterThanOrEqual(1);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });

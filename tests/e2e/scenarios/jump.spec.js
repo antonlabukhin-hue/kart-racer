@@ -9,7 +9,7 @@ test('разлом: по полосе трамплина машина взлет
     await waitRacing(page);
     const gap = await page.evaluate(() => { const g = window.__raceDebug.gaps[0]; return { zNear: g.zNear, zFar: g.zFar, lane: g.lanes[0] }; });
     const laneX = [-1.5, 0, 1.5][gap.lane];
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     const r = await page.evaluate(({ laneX, zFar }) => new Promise(res => {
         // удары за перелёт — по журналу ударов: жвачка над разломом лечит, и разница аварий бывала −1
         const d = window.__raceDebug; const h0 = d.hitLog.length; let flew = false, maxY = 0; const t0 = performance.now();
@@ -23,7 +23,7 @@ test('разлом: по полосе трамплина машина взлет
         };
         f();
     }), { laneX, zFar: gap.zFar });
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(r.flew).toBe(true);
     expect(r.maxY).toBeGreaterThan(0.85);
     expect(r.strikes).toBe(0);

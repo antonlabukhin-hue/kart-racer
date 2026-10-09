@@ -111,9 +111,9 @@ test('бесконечная трасса: усиление подбираетс
     await expect.poll(() => page.evaluate(() => [window.__raceDebug.state, window.__raceDebug.strikes].join())).toBe('racing,3');
     // после оплаты машина едет дальше (раньше игровой цикл вставал)
     const z0 = await page.evaluate(() => window.__raceDebug.z);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(z0 => z0 - window.__raceDebug.z, z0), { timeout: 8_000 }).toBeGreaterThan(5);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     // второй раз дороже; отказ — итоги
     await page.evaluate(() => window.__raceDebug.end('crash'));
     await expect(page.locator('.chance-modal')).toContainText('400 Е');
@@ -153,7 +153,7 @@ test('бесконечная трасса: ящик «?» разбивается
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     const crate = await page.evaluate(async () => {
         const g = window.__raceDebug;
         const c = g.collectibles.filter(c => c.type === 'crate' && c.active && c.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
@@ -183,7 +183,7 @@ test('бесконечная трасса: ящик «?» разбивается
         return { spikes: g.stats.spikes || 0, strikes: g.strikes, slower: ls.before > 0 && ls.after < ls.before * 0.8 };
     });
     expect(hit).toEqual({ spikes: 1, strikes: 0, slower: true });
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -195,7 +195,7 @@ test('первое знакомство: пауза с плашкой перед
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     const card = page.locator('.meet-overlay .meet-card');
     await expect(card).toBeVisible({ timeout: 45_000 }); // на медленных кадрах до первого нового на дороге дольше
     await expect(card.locator('.meet-go')).toContainText('Продолжить');
@@ -216,7 +216,7 @@ test('первое знакомство: пауза с плашкой перед
     await card.locator('.meet-off').click();
     await expect(page.locator('.meet-overlay')).toHaveCount(0);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_met_v1')).length)).toBe(15);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -240,7 +240,7 @@ test('погоня ГАИ: вторая авария во время погон�
     await login(page);
     await page.locator('#main-menu-play').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.waitForTimeout(1500);
     // попутка — прямо в машину игрока
     const crash = () => page.evaluate(async () => {
@@ -259,7 +259,7 @@ test('погоня ГАИ: вторая авария во время погон�
     await expect(page.locator('.police-hud')).toHaveCount(0);
     // ролик поимки (облёт машин с мигалками) и потом — итоги заезда (на «Второй шанс» в тесте нечем платить)
     await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 15_000 });
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -284,7 +284,7 @@ test('бусты: «Разгон» и «Запаска» покупаются в
     await page.locator('#shop-action').click();
     await waitRacing(page);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('road_racing_profiles_v1'))[0].season.chips)).toBe(550);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__sawHead), { timeout: 10_000 }).toBe(true);
     // попутка в машину во время «Разгона» — аварии нет
     const strikes = await page.evaluate(async () => {
@@ -293,7 +293,7 @@ test('бусты: «Разгон» и «Запаска» покупаются в
         return g.strikes;
     });
     expect(strikes).toBe(0);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -332,9 +332,9 @@ test('горячий старт: опытному игроку — плашка 
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__sawWarm), { timeout: 15_000 }).toContain('1500 м');
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -345,7 +345,7 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearMiss'); });
     await expect(page.locator('#fever-fx')).toBeVisible();
     await expect(page.locator('.big-plaque')).toContainText('В УДАРЕ');
@@ -365,7 +365,7 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
     await page.evaluate(() => { window.__raceDebug.risk.fever = 0.4; });
     await expect(page.locator('#fever-fx')).toBeHidden({ timeout: 12_000 });
     expect(await page.evaluate(() => window.__raceDebug.risk.mult)).toBeLessThan(5); // сброшен (после — может уже начаться новая цепочка)
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -376,7 +376,7 @@ test('узоры: чистый проход — рисковое действи�
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     // узоры отмечены конусами; перескакиваем за первый (ничего не задели)
     const z = await page.evaluate(() => {
         const g = window.__raceDebug;
@@ -389,7 +389,7 @@ test('узоры: чистый проход — рисковое действи�
     });
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.patterns || 0), { timeout: 20_000 }).toBeGreaterThan(0);
     expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThan(0);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -400,7 +400,7 @@ test('событие пейзажа: кортеж — плашка, машины
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 400); });
     await expect(page.locator('.big-plaque')).toContainText('СВАДЕБНЫЙ КОРТЕЖ');
     const convoy = await page.evaluate(() => window.__raceDebug.cars.filter(c => c.convoy).map(c => c.lane));
@@ -411,7 +411,7 @@ test('событие пейзажа: кортеж — плашка, машины
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.themeEvents || 0)).toBe(1);
     expect(await page.evaluate(() => window.__raceDebug.stats.eChips || 0)).toBeGreaterThanOrEqual(e0 + 30);
     expect(await page.evaluate(() => window.__raceDebug.cars.filter(c => c.convoy).length)).toBe(0);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -430,7 +430,7 @@ test('цели на дороге: растяжка рекорда и щиты с
     await page.locator('.menu-card[data-menu="infinite"]').click();
     await page.locator('#shop-action').click();
     await waitRacing(page);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 700); });
     // рекорд (900 м) и соперник «Шурик» (800 м) — в пределах видимости
     await expect.poll(() => page.evaluate(() => window.__raceDebug.goals)).toBeGreaterThanOrEqual(2);
@@ -439,7 +439,7 @@ test('цели на дороге: растяжка рекорда и щиты с
     await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 960); });
     // позади — убраны (впереди до 960 + 320 м целей нет); на медленных кадрах — с запасом
     await expect.poll(() => page.evaluate(() => window.__raceDebug.goals), { timeout: 15_000 }).toBe(0);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 

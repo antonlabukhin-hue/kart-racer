@@ -48,7 +48,7 @@ test('фазы босса: баррикада в двух полосах; тар
     await waitRacing(page);
     await page.evaluate(() => window.__raceDebug.spawnBossNow());
     await expect.poll(() => page.evaluate(() => !!(window.__raceDebug.boss && window.__raceDebug.boss.mesh)), { timeout: 5000 }).toBe(true);
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await page.evaluate(() => window.__raceDebug.forceBossAttack('barricade'));
     // одним запросом: на медленной машине баррикада успевает уехать за спину между двумя запросами
     await expect.poll(() => page.evaluate(() => { const b = window.__raceDebug.bossBarricades[0]; return b ? b.xs.length : 0; }), { timeout: 15_000 }).toBe(2);
@@ -73,7 +73,7 @@ test('фазы босса: баррикада в двух полосах; тар
         stomped = hp <= 4;
     }
     expect(stomped).toBe(true);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
 
@@ -93,13 +93,13 @@ test('отбитый на нитро снаряд ранит босса скво
         const f = () => { d.giveNitro(); if (++n < 150 && d.boss.hp >= 7) requestAnimationFrame(f); else res(); };
         f();
     }));
-    expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBe(6);
+    expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBeLessThan(7); // газ жмётся сам — машина может пройти сквозь залп и отбить больше одного
 
     // кувалда: подбираем, таран по броне проходит
     await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.spawnHammer(); const pk = d.bossPickups[0]; d.setX(pk.x); });
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__raceDebug.hammer), { timeout: 8_000 }).toBe(true);
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     // таран по броне с кувалдой (в залпе могли быть ещё отбитые снаряды — считаем от момента тарана)
     const r = await page.evaluate(() => new Promise(res => {
         const d = window.__raceDebug, b = d.boss; let n = 0; const hp0 = b.hp;
@@ -143,9 +143,9 @@ test('босс не добит до конца арены — сбегает с 
     await waitRacing(page);
     await page.evaluate(() => window.__raceDebug.spawnBossNow());
     await page.evaluate(() => setInterval(() => { (window.__raceDebug.animals || []).forEach(an => { an.hit = true; if (an.mesh) an.mesh.visible = false; }); }, 100));
-    await page.keyboard.down('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect(page.locator('#boss-intro.escape')).toContainText('Догоним в следующем заезде', { timeout: 30_000 });
-    await page.keyboard.up('w');
+    /* газ жмётся сам (W — прыжок) */
     await expect(page.locator('#boss-hud')).not.toHaveClass(/on/);
     expect(problems).toEqual([]);
 });

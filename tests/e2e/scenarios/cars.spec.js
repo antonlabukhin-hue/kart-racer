@@ -20,9 +20,9 @@ for (const id of CAR_SHOP_ORDER) {
         await waitRacing(page);
         expect(await page.evaluate(() => window.__raceDebug.car.userData.carId)).toBe(id);
         const z0 = await page.evaluate(() => window.__raceDebug.z);
-        await page.keyboard.down('w');
+        /* газ жмётся сам (W — прыжок) */
         await expect.poll(() => page.evaluate(z0 => z0 - window.__raceDebug.z, z0), { timeout: 15_000 }).toBeGreaterThan(3);
-        await page.keyboard.up('w');
+        /* газ жмётся сам (W — прыжок) */
         expect(problems).toEqual([]);
     });
 }
