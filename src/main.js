@@ -2,6 +2,7 @@
 import { createSpruce, createSnowman, createSnowBank, createIcePatch, isSnowTheme } from './snow.js';
 import { createSky } from './sky.js';
 import { addBlobShadow } from './ground-shadow.js';
+import { createCarTrail } from './car-trail.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
         import { AnimalSpawner } from './animals.js';
@@ -6195,6 +6196,7 @@ function startGaragePreview(carId) {
             // пламя нитро из выхлопа (видно на ускорении), вмятины и дым после аварий
             let nitroFlames = null;
             try { if (playerCar) nitroFlames = addNitroFlames(playerCar); } catch (e) { nitroFlames = null; }
+            let carTrail = null; try { carTrail = createCarTrail(scene, { lite: isMobile || quality === 'low' }); } catch (e) { carTrail = null; } // выхлоп и пыль из-под колёс (src/car-trail.js)
             let dentsShown = 0, smokeAcc = 0, prevSpeedForPitch = 0;
             function addDent() {
                 try {
@@ -8749,6 +8751,7 @@ function startGaragePreview(carId) {
                     playerCar.rotation.x = lerp(playerCar.rotation.x, pitchTarget, 1 - Math.pow(0.85, deltaTime * 60));
                 }
                 if (nitroFlames) nitroFlames.update(raceTime, nitroTimer > 0);
+                if (carTrail) carTrail.update(deltaTime, { x: playerCar.position.x, y: playerCar.position.y, z: playerCar.position.z, vz: -speed * 60, speedK: speed / MAX_SPEED, nitro: nitroTimer > 0, offroad: Math.abs(xPos) > TRACK_WIDTH / 2 - 0.3, airborne: carAirborne, theme: INF ? infTheme : null, len: 1.5, w: 0.85 });
                 // колёса: путь за кадр / радиус (модель в заезде уменьшена — радиус тоже); перёд к −z → вращение «−x»
                 if (raceWheels.length) {
                     const ang = (speed * 60 * deltaTime) / (raceWheelR * RACE_CAR_SCALE);
