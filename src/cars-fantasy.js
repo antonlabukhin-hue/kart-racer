@@ -158,7 +158,6 @@ function buildGhostcar(k, m, group) {
     const hose = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 6, 16, Math.PI), M(0xf08a20)); hose.position.set(-0.45, 1.34, 1.25); hose.rotation.y = Math.PI / 2; group.add(hose);
     [-1, 1].forEach(function(s) { k.cyl(m.tail, 0.07, 0.12, s * 0.52, 1.32, -0.02, 'y', LIGHT); });  // красные «вишни» спереди на крыше
     k.cyl(GLOW(0xffffff, 0.8), 0.05, 0.1, 0, 1.32, -0.02, 'y', LIGHT);
-    k.rod(alu, 0.01, [0.5, 1.3, 1.3], [0.5, 1.9, 1.35]);
     // белые боковины шин — на самих колёсах (src/cars-extra.js): отдельные кольца уезжали вверх с кузовом на высокой подвеске
     return { L: 3.25, W: W, Y: 0.5, wheels: [[-0.64, 0.31, -1.0, 0.31, 0.24], [0.64, 0.31, -1.0, 0.31, 0.24], [-0.64, 0.31, 1.02, 0.31, 0.24], [0.64, 0.31, 1.02, 0.31, 0.24]] };
 }

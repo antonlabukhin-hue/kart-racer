@@ -1,7 +1,7 @@
 /**
  * Второй слой деталей машин «из кино» и фантазийных — как у безумного транспорта (src/ride-models.js):
  *   диски — у каждой свой узнаваемый рисунок (WHEEL_STYLE), обод с хромовой кромкой, колпак и болты;
- *   кузов — тёмные арки над колёсами, нижний пояс-порог и фирменные мелочи каждой машины (bodyExtras).
+ *   кузов — фирменные мелочи каждой машины (bodyExtras); тёмные арки над колёсами убраны — читались как «брови».
  * Колёсные детали — внутри ступицы (userData.isWheel), поэтому крутятся с колесом и не уезжают с кузовом
  * при высокой подвеске (src/suspension.js).
  */
@@ -90,18 +90,9 @@ function mergeInto(hub, tmp) {
     });
 }
 
-/** Дуга-арка над колесом на боку кузова: x — плоскость борта, y/z — центр колеса */
-function arch(group, mat, x, y, z, r) {
-    const t = new THREE.Mesh(new THREE.TorusGeometry(r, r * 0.12, 6, 20, Math.PI), mat);
-    t.rotation.y = Math.PI / 2; t.position.set(x, y, z); t.scale.set(1, 1, 0.5); group.add(t); return t;
-}
-
-const ARCHES = { thief: 1, neon: 1, bull: 1, ghostcar: 1, timecar: 1 };
-
 /** Детали кузова поверх сборщика: k — kit, m — материалы, d — габариты сборщика { W, wheels } */
 export function bodyExtras(k, m, group, carId, d) {
-    const W = d.W, wheels = d.wheels || [];
-    if (ARCHES[carId]) wheels.forEach(function(w) { arch(group, m.matte, Math.sign(w[0]) * (W / 2 + 0.01), w[1], w[2], w[3] + 0.06); });
+    const W = d.W;
     const paint = { bodyPaint: true }, LIGHT = { isLight: true };
     const accent = M(0x26e0ff, { emissive: 0x0aa8d0, emissiveIntensity: 0.6, metalness: 0.3, roughness: 0.3 });
     if (carId === 'thief') {

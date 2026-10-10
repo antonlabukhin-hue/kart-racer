@@ -295,7 +295,7 @@ export function buildMovieCar(carId, preset) {
     const k = kit(group);
     const d = (BUILDERS[carId] || FANTASY_BUILDERS[carId])(k, m, group);
     applyDetails(k, m, group, carId); // номера, зеркала, двери, дворники (src/cars-detail.js)
-    bodyExtras(k, m, group, carId, d); // арки, пороги, фирменные мелочи (src/cars-extra.js)
+    bodyExtras(k, m, group, carId, d); // пороги и фирменные мелочи (src/cars-extra.js)
     const rim = carId === 'avenger' ? m.black : carId === 'thief' ? new THREE.MeshStandardMaterial({ color: 0x5a5e66, metalness: 0.7, roughness: 0.3 }) : (fantasyRim(carId, m) || m.chrome);
     const wheels = wheelSet(group, m, d.wheels, rim, carId === 'avenger' ? new THREE.MeshStandardMaterial({ color: 0xe8c020, metalness: 0.6, roughness: 0.3 }) : null, WHEEL_STYLE[carId]);
     group.traverse(function(o) { if (o.isMesh) o.castShadow = true; });
