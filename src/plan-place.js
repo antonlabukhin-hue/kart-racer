@@ -26,7 +26,7 @@ export function placePlan(items, env) {
             const next = env.letter ? env.letter() : null;
             if (!next) return;
             const m = createLetterToken(next); m.position.set(LX[it.lane], 0.9, z); env.scene.add(m);
-            L.collectibles.push({ mesh: m, x: LX[it.lane], z: z, type: 'letter', active: true, bob: 0, radius: 0.8, baseY: 0.9 });
+            L.collectibles.push({ mesh: m, x: LX[it.lane], z: z, type: 'letter', active: true, bob: 0, radius: 1.15, baseY: 0.9 }); // буква шириной 1.7: задел — взял
             return;
         }
         if (it.kind === 'crate' || it.kind === 'spikes') { // ящик «?» и шипы — src/hazards.js

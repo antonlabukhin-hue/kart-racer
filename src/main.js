@@ -6775,17 +6775,17 @@ function startGaragePreview(carId) {
                 if (type === 'shield') m.scale.multiplyScalar(1.3); // броня — на 30% крупнее
                 m.position.set(x, 0.8, z);
                 scene.add(m);
-                return { mesh: m, x: x, z: z, type: 'power', power: type, active: true, bob: Math.random() * 6, radius: type === 'shield' ? 0.8 : 0.7, baseY: 0.8 };
+                return { mesh: m, x: x, z: z, type: 'power', power: type, active: true, bob: Math.random() * 6, radius: 1.0, baseY: 0.8 }; // значок ~1.25: задел машиной — взял
             }
             function createArtifactItem(x, z) { // артефакт 90-х (src/artifacts.js): светится, висит над дорогой
                 const a = rollArtifact(currentPlayer), m = createArtifactToken(a);
                 m.position.set(x, 1.0, z);
                 scene.add(m);
-                return { mesh: m, x: x, z: z, type: 'artifact', art: a, active: true, bob: Math.random() * 6, radius: 0.75, baseY: 1.0 };
+                return { mesh: m, x: x, z: z, type: 'artifact', art: a, active: true, bob: Math.random() * 6, radius: 1.05, baseY: 1.0 };
             }
             function createRideItem(x, z) { // жетон безумного транспорта (src/rides.js)
                 const m = createRideToken(); m.position.set(x, 0.95, z); scene.add(m);
-                return { mesh: m, x: x, z: z, type: 'ride', active: true, bob: Math.random() * 6, radius: 0.8, baseY: 0.95 };
+                return { mesh: m, x: x, z: z, type: 'ride', active: true, bob: Math.random() * 6, radius: 1.15, baseY: 0.95 }; // жетон шириной 1.6: коснулся машиной — взял (было 0.8 — машина проезжала сквозь край, а превращения не было)
             }
             const moves = createMoves(); let hopJump = false; const hurdles = []; // прыжок и подныр, трубы и шлагбаумы (src/hop-duck.js)
             function doHop() {
