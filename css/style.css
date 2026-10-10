@@ -4884,6 +4884,18 @@ body .big-plaque.landing b { font-size: 23px; }
 #risk-hud .rk-pts { font-size: 13px; font-weight: 800; color: #ffe6c4; font-variant-numeric: tabular-nums; }
 #risk-hud .rk-bar { grid-column: 1 / -1; display: block; height: 3px; margin-top: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); overflow: hidden; }
 #risk-hud .rk-bar u { display: block; height: 100%; background: linear-gradient(90deg, #ff7a1a, #ffd23c); transition: width .1s linear; }
+/* одна шкала: пять делений до «В ударе»; в «В ударе» и на транспорте — та же шкала тает (src/ui/risk-hud.js) */
+#risk-hud .rk-segs { grid-column: 1 / -1; display: flex; gap: 3px; margin-top: 4px; min-width: 120px; }
+#risk-hud .rk-segs s { flex: 1; height: 6px; border-radius: 2px; background: rgba(255,255,255,0.14); }
+#risk-hud .rk-segs s.on { background: linear-gradient(90deg, #ff7a1a, #ffd23c); }
+#risk-hud .rk-segs s.on:last-child { box-shadow: 0 0 8px rgba(255,120,30,0.9); }
+#risk-hud.fever .rk-segs, #risk-hud.ride .rk-segs { display: none; }
+#risk-hud.fever .rk-bar, #risk-hud.ride .rk-bar { height: 7px; min-width: 150px; }
+#risk-hud.fever { border-color: #ff4a2a; box-shadow: 0 0 18px rgba(255,80,20,0.7); }
+#risk-hud.fever .rk-mult { color: #ff6a2a; font-size: 22px; }
+#risk-hud.ride { border-color: #4ad8ff; box-shadow: 0 0 16px rgba(40,200,255,0.55); }
+#risk-hud.ride .rk-mult { color: #7af0ff; font-size: 18px; text-shadow: 0 0 10px rgba(40,200,255,0.8); }
+#risk-hud.ride .rk-bar u { background: linear-gradient(90deg, #2ab8ff, #9affea); }
 #risk-hud.idle { opacity: .6; }
 #risk-hud.hot { border-color: #ff4a2a; box-shadow: 0 0 16px rgba(255,80,20,0.55); }
 #risk-hud.hot .rk-mult { color: #ff5a2a; }
@@ -6519,15 +6531,5 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 #move-arrow b { display: block; margin-top: 8px; font: 900 21px system-ui, sans-serif; letter-spacing: 1px; color: rgba(235, 247, 255, 0.95); text-shadow: 0 2px 6px rgba(0, 20, 50, 0.8); }
 @keyframes moveArrow { from { transform: rotate(var(--r)) translateY(12px); opacity: .6; } to { transform: rotate(var(--r)) translateY(-12px); opacity: .95; } }
 @media (max-height: 500px) { #move-arrow i { width: 100px; height: 100px; } #move-arrow b { font-size: 15px; } }
-
-/* ===== Шкала безумного транспорта (src/rides.js renderRideBar) — как у «В УДАРЕ», бирюзовая, чуть выше ===== */
-#ride-bar { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 128px); transform: translateX(-50%); z-index: 106; pointer-events: none; text-align: center; }
-#ride-bar b { display: block; font: 900 24px/1 Impact, "Arial Black", sans-serif; letter-spacing: 2px; color: #7af0ff; white-space: nowrap;
-    text-shadow: 0 0 12px rgba(40, 200, 255, 0.9), 0 2px 0 #0a3a5a; }
-#ride-bar i { display: block; width: 220px; height: 8px; margin: 6px auto 0; border-radius: 4px; background: rgba(0, 0, 0, 0.5); overflow: hidden; box-shadow: 0 0 0 1px rgba(122, 240, 255, 0.35); }
-#ride-bar u { display: block; height: 100%; background: linear-gradient(90deg, #2ab8ff, #9affea); transition: width .1s linear; }
-#ride-bar.ending { animation: feverBlink .18s steps(2) infinite; }
-@media (max-height: 560px) { #ride-bar { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 140px); } #ride-bar b { font-size: 18px; } #ride-bar i { width: 160px; } }
-
 /* ===== Таран на безумном транспорте: белая вспышка по краям ===== */
 .ram-flash { position: fixed; inset: 0; z-index: 139; pointer-events: none; box-shadow: inset 0 0 120px 40px rgba(255, 245, 210, 0.85); animation: rideFlash .35s ease-out forwards; }

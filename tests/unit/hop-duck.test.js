@@ -100,3 +100,28 @@ describe('подныр читается', () => {
         expect(createHurdle('pipe', [0], [-2, 0, 2], -50, 2).userData.okMat).toBeUndefined();
     });
 });
+
+import { planGates, GATE_FROM, GATE_EVERY, DUCK_KINDS as DK, JUMP_KINDS as JK, actOf as act2 } from '../../src/hop-duck.js';
+describe('подныр — только в воротах', () => {
+    it('случайные преграды — только для прыжка', () => {
+        for (let k = 0; k < 20; k++) planHurdles(0, 6000).forEach(function(p) { expect(act2(p.kind)).toBe('jump'); });
+        expect(JK.length).toBeGreaterThan(0);
+    });
+    it('ворота — через всю дорогу, не раньше GATE_FROM и не чаще GATE_EVERY', () => {
+        for (let k = 0; k < 20; k++) {
+            const g = planGates(0, 8000);
+            expect(g.length).toBeGreaterThan(2);
+            g.forEach(function(p, i) {
+                expect(p.d).toBeGreaterThanOrEqual(GATE_FROM);
+                expect(p.lanes).toEqual([0, 1, 2]);
+                expect(DK).toContain(p.kind);
+                if (i) expect(p.d - g[i - 1].d).toBeGreaterThanOrEqual(GATE_EVERY[0] - 1);
+            });
+        }
+    });
+    it('за воротами пусто дальше, чем за обычной рамой', () => {
+        const h = { z: -100, x0: -3, x1: 3 };
+        expect(carsToClear(h, [{ x: 0, z: -130 }], -30, 40).length).toBe(1);
+        expect(carsToClear(h, [{ x: 0, z: -130 }], -30).length).toBe(0);
+    });
+});

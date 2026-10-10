@@ -20,3 +20,30 @@ describe('стрелки движений', () => {
         run(p); expect(p.moveTutor).toEqual({ v: MOVES_VERSION, runs: 1 });
     });
 });
+
+import { createIntro, introAct, INTRO_ACTS, INTRO_MAX } from '../../src/move-tutor.js';
+describe('стрелки в начале заезда', () => {
+    it('по очереди четыре действия: выполнил — следующее, потом — ничего', () => {
+        const st = createIntro(), seen = [];
+        for (let i = 0; i < 400; i++) {
+            const a = introAct(st, 0.05, {});
+            if (a && seen[seen.length - 1] !== a) seen.push(a);
+            if (a) introAct(st, 0.05, { [a]: true });
+        }
+        expect(seen).toEqual(INTRO_ACTS);
+        expect(introAct(st, 0.05, {})).toBe(null);
+    });
+    it('не выполнил — стрелка сама гаснет и показывается следующая', () => {
+        const st = createIntro();
+        let a; for (let t = 0; t < INTRO_MAX + 0.2; t += 0.1) a = introAct(st, 0.1, {});
+        expect(a).toBe('right');
+    });
+});
+describe('стрелки: нажал сразу', () => {
+    it('нажатие раньше INTRO_MIN не теряется', () => {
+        const st = createIntro();
+        introAct(st, 0.1, { left: true });
+        let a; for (let i = 0; i < 10; i++) a = introAct(st, 0.1, {});
+        expect(a).toBe('right');
+    });
+});

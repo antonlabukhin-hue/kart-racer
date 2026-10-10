@@ -65,15 +65,3 @@ export function createRideToken() {
     return grp;
 }
 
-/** Шкала безумного транспорта (как у «В УДАРЕ», src/fever.js): название, сколько осталось, мигает в последние 2 с */
-export function renderRideBar(st) {
-    if (typeof document === 'undefined') return;
-    let el = document.getElementById('ride-bar');
-    if (!st || !st.id) { if (el) el.remove(); return; }
-    if (!el) { el = document.createElement('div'); el.id = 'ride-bar'; el.innerHTML = '<b></b><i><u></u></i>'; document.body.appendChild(el); }
-    const r = RIDES[st.id], k = Math.max(0, Math.min(1, st.t / RIDE_TIME));
-    const title = r.icon + ' ' + r.name + ' ' + st.t.toFixed(1) + ' с';
-    if (el.firstChild.textContent !== title) el.firstChild.textContent = title;
-    el.querySelector('u').style.width = (k * 100).toFixed(1) + '%';
-    el.classList.toggle('ending', st.t < 2);
-}

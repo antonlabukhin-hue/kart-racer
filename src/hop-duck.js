@@ -68,17 +68,35 @@ export function hurdleHit(kind, y, isDucking) {
 }
 
 /**
- * Где на участке [d0, d1) поставить препятствия: [{ d, kind, lanes }] — lanes: занятые полосы (0..2).
- * До FULL_FROM — одна-две полосы (можно объехать), дальше иногда все три (только прыжком или подныром).
+ * Где на участке [d0, d1) поставить препятствия для прыжка: [{ d, kind, lanes }] — lanes: занятые полосы (0..2).
+ * До FULL_FROM — одна-две полосы (можно объехать), дальше иногда все три (только прыжком).
+ * Подныр — только в «воротах» (planGates): случайная рама через всю дорогу закрывала обзор, и сразу за ней можно было врезаться.
  */
 export function planHurdles(d0, d1, rnd) {
     const r = rnd || Math.random, out = [];
     for (let d = Math.max(d0, HURDLE_FROM) + r() * 80; d < d1; d += HURDLE_EVERY[0] + r() * (HURDLE_EVERY[1] - HURDLE_EVERY[0])) {
-        const list = r() < 0.5 ? JUMP_KINDS : DUCK_KINDS, kind = list[Math.floor(r() * list.length) % list.length];
+        const kind = JUMP_KINDS[Math.floor(r() * JUMP_KINDS.length) % JUMP_KINDS.length];
         let lanes;
         if (d > FULL_FROM && r() < 0.35) lanes = [0, 1, 2];
         else { const free = Math.floor(r() * 3); lanes = [0, 1, 2].filter(function(l) { return l !== free && (r() < 0.6 || l === (free + 1) % 3); }); }
         out.push({ d: Math.round(d), kind: kind, lanes: lanes });
+    }
+    return out;
+}
+
+/**
+ * «Ворота» — постановочный подныр: табличка за GATE_SIGN м, рама через всю дорогу, за ней пусто GATE_AFTER м
+ * (ни попуток, ни зверей, ни препятствий) — вынырнул и видишь чистую дорогу. Не чаще раза на GATE_EVERY.
+ */
+export const GATE_FROM = 700;
+export const GATE_EVERY = [900, 1400];
+export const GATE_SIGN = 70;
+export const GATE_AFTER = 40;
+export function planGates(d0, d1, rnd) {
+    const r = rnd || Math.random, out = [];
+    const first = Math.max(d0, GATE_FROM) + r() * 200;
+    for (let d = first; d < d1; d += GATE_EVERY[0] + r() * (GATE_EVERY[1] - GATE_EVERY[0])) {
+        out.push({ d: Math.round(d), kind: DUCK_KINDS[Math.floor(r() * DUCK_KINDS.length) % DUCK_KINDS.length], lanes: [0, 1, 2], gate: true });
     }
     return out;
 }
@@ -155,19 +173,19 @@ const BUILD = {
         [x0 - 0.2, x1 + 0.2].forEach(function(x) { box(g, 0.18, 2.6, 0.18, M(0x5a5a62), x, 1.3, z); box(g, 0.34, 0.3, 0.34, M(0x3a3a40), x, 0.15, z); lamp(g, lamps, x, 2.7, z); });
         box(g, span + 0.4, 0.22, 0.12, STRIPES('#f2f2f2', '#d8281e', 6, 0x220000), cx, 0.85, z);   // планка шлагбаума
         for (let k = 0; k < Math.floor(span / 0.6); k++) box(g, 0.05, 0.22, 0.04, M(0xd8281e), x0 + 0.3 + k * 0.6, 0.65, z); // бахрома
-        box(g, span + 0.4, 1.35, 0.08, SIGN('СТОП', 'ПРОЕЗД ПОД ШЛАГБАУМОМ'), cx, 1.75, z - 0.02); // щит над планкой — сплошной до 2.4
+        box(g, span + 0.4, 0.55, 0.08, SIGN('СТОП', 'ПОДНЫРНИ'), cx, 2.15, z - 0.02); // щит высоко: между планкой и щитом видно дорогу за воротами
     },
     gantry: function(g, x0, x1, z, lamps) {
         const span = x1 - x0, cx = (x0 + x1) / 2;
         [x0 - 0.2, x1 + 0.2].forEach(function(x) { box(g, 0.24, 2.6, 0.24, STRIPES('#f2c81a', '#1a1a1a', 6), x, 1.3, z); lamp(g, lamps, x, 2.7, z, 0xffa020); });
         box(g, span + 0.5, 0.3, 0.3, STRIPES('#f2c81a', '#1a1a1a', 8, 0x332200), cx, 0.95, z);  // нижняя балка
-        box(g, span + 0.5, 1.2, 0.1, SIGN('ГАБАРИТ', '1,5 м'), cx, 1.75, z - 0.03);              // щит
+        box(g, span + 0.5, 0.5, 0.1, SIGN('ГАБАРИТ', '1,5 м'), cx, 2.2, z - 0.03);              // щит — высоко, сквозь раму видно дорогу
         for (let k = 0; k < Math.floor(span / 0.35); k++) box(g, 0.03, 0.18, 0.03, M(0x8a8a90, { metalness: 0.6 }), x0 + 0.2 + k * 0.35, 0.72, z); // цепочки
     },
     pipeline: function(g, x0, x1, z, lamps) {
         const span = x1 - x0, cx = (x0 + x1) / 2;
         [x0 - 0.25, x1 + 0.25].forEach(function(x) { box(g, 0.3, 2.5, 0.5, M(0x8a8c90, { metalness: 0.4 }), x, 1.25, z); lamp(g, lamps, x, 2.6, z); });
-        [[0.98, 0.2, 0x5a6a7a], [1.42, 0.24, 0x7a8a6a], [1.92, 0.26, 0x8a5a3a], [2.35, 0.17, 0x5a6a7a]].forEach(function(p, i) { cylX(g, p[1], span + 0.8, M(p[2], { metalness: 0.45, roughness: 0.4 }), cx, p[0], z + (i % 2 ? 0.08 : -0.08), 14); });
+        [[0.98, 0.2, 0x5a6a7a], [2.2, 0.24, 0x7a8a6a], [2.42, 0.17, 0x5a6a7a]].forEach(function(p, i) { cylX(g, p[1], span + 0.8, M(p[2], { metalness: 0.45, roughness: 0.4 }), cx, p[0], z + (i % 2 ? 0.08 : -0.08), 14); });
         box(g, span + 0.8, 0.12, 0.62, STRIPES('#f2c81a', '#1a1a1a', 8, 0x332200), cx, 0.78, z);  // жёлто-чёрная кромка снизу
         [-0.3, 0.3].forEach(function(dz) { box(g, span + 0.8, 0.05, 0.05, M(0x3a3a40), cx, 2.55, z + dz); });
     }
@@ -231,14 +249,15 @@ export function underDuck(h, x, z, pad) {
  * между игроком и рамой ближе 25 м к ней, — переставляем за раму (только пока рама далеко, ≥ 25 м: переноса не видно).
  * Возвращает список попуток, которые надо переставить, и новое z для каждой.
  */
-export function carsToClear(h, cars, zPos) {
+export function carsToClear(h, cars, zPos, after) {
     const dist = zPos - h.z;
     if (dist < 25 || dist > 110) return [];
     const out = [];
     (cars || []).forEach(function(c, i) {
         if (!c || c.active === false) return;
         if (!(c.x > h.x0 - 0.5 && c.x < h.x1 + 0.5)) return;
-        if (c.z > h.z - DUCK_CLEAR && c.z < h.z + 25) out.push({ car: c, z: h.z - DUCK_CLEAR - 8 - (i % 4) * 5 });
+        const aft = after || DUCK_CLEAR; // за воротами пусто дальше — GATE_AFTER
+        if (c.z > h.z - aft && c.z < h.z + 25) out.push({ car: c, z: h.z - aft - 8 - (i % 4) * 5 });
     });
     return out;
 }
