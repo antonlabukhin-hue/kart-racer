@@ -26,7 +26,7 @@ test('босс в броне: таран ранит только после пр
     await expect(page.locator('#boss-hud .bh-phase')).toContainText('Фаза 1');
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp0);
     expect(await ram(page)).toBe(hp0);            // броня
-    await page.evaluate(() => { window.__raceDebug.openBoss(); window.__raceDebug.boss.vulnT = 30; }); // окно длиннее: на медленной машине (CI без видеокарты) обычное успевает закрыться до проверки — удар его всё равно закрывает
+    await page.evaluate(() => { const d = window.__raceDebug; d.openBoss(); d.boss.vulnT = 30; d.setX(d.boss.x > 0 ? -2 : 2); }); // газ жмётся сам — машину уводим в другую полосу, чтобы не протаранить босса до проверки; окно длиннее для медленной машины
     await expect(page.locator('#boss-hud')).toHaveClass(/open/);
     await expect(page.locator('#boss-cue')).toHaveClass(/on/);
     await expect(page.locator('#boss-cue')).toHaveText('БЕЙ!'); // одно слово, без пояснений
