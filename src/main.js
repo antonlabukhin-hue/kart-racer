@@ -69,9 +69,9 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { runKind, crashesStr, infSummary } from './run-metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
-        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
+        window.__analytics = { summary: function() { return Object.assign(summarize(), { infinite: infSummary(loadEvents()) }); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
         import { waveConfig } from './endless.js';
         import { dailySeed, seedCode } from './beast-seed.js';
@@ -4940,7 +4940,8 @@ function startGaragePreview(carId) {
                         progress: Math.round(Math.max(0, Math.min(1, (START_Z - zPos) / (START_Z - FINISH_Z))) * 100) / 100,
                         mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race', map: mapId, diff: difficulty,
                         chapter: campaignTrackId, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
-                        wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined, eChips: infRun ? infRun.e : undefined
+                        wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined, eChips: infRun ? infRun.e : undefined,
+                        ...(infRun ? { kind: runKind(infRunOpts), cause: hitLog.length ? hitLog[hitLog.length - 1].cause : '', crashes: crashesStr(hitLog), car: carId, cont: continues, warm: infWarm } : {}) /* забег бесконечной трассы — в run_events (src/run-metrics.js) */
                     });
                 } catch (e) {}
 
@@ -7970,8 +7971,8 @@ function startGaragePreview(carId) {
             const hitLog = [];
             const logHit = function(cause) {
                 cleanRun.reset(); if (stats.cleanDist == null) stats.cleanDist = INF && infWorld ? Math.round(infWorld.dist) : 0; /* задание «без аварий»: сколько проехал до первой */
-                hitLog.push({ cause: cause, at: Math.round((START_Z - zPos) / (START_Z - FINISH_Z) * 100) });
-                trackEvent('crash', { cause: cause, at: hitLog[hitLog.length - 1].at, map: mapId, chapter: window.__campaignTrackId || null });
+                hitLog.push({ cause: cause, at: Math.round((START_Z - zPos) / (START_Z - FINISH_Z) * 100), dist: INF && infWorld ? Math.round(infWorld.dist) : undefined });
+                trackEvent('crash', { cause: cause, at: hitLog[hitLog.length - 1].at, dist: hitLog[hitLog.length - 1].dist, map: mapId, chapter: window.__campaignTrackId || null });
             };
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;

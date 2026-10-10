@@ -260,7 +260,12 @@ test('погоня ГАИ: вторая авария во время погон�
     await expect(page.locator('.police-hud')).toHaveCount(0);
     // ролик поимки (облёт машин с мигалками) и потом — итоги заезда (на «Второй шанс» в тесте нечем платить)
     await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 15_000 });
-    /* газ жмётся сам (W — прыжок) */
+    // в журнале — забег для run_events (src/run-metrics.js): вид, причина, аварии с дистанцией
+    const end = await page.evaluate(() => window.__analytics.events().filter(e => e.e === 'race_end').pop());
+    expect(end).toMatchObject({ mode: 'infinite', kind: 'inf', cont: 0 });
+    expect(end.cause).toMatch(/^car/);
+    expect(end.crashes).toMatch(/^\d+:car,\d+:car$/);
+    expect((await page.evaluate(() => window.__analytics.summary().infinite)).runs).toBe(1);
     expect(problems).toEqual([]);
 });
 

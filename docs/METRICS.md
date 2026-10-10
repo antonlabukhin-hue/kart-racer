@@ -125,3 +125,99 @@ select chapter as "глава",
   round(avg(progress) filter (where kind in ('lose', 'timeout', 'quit'))) as "где проигрывают, % трассы"
 from chapter_events group by chapter order by chapter;
 ```
+
+## 4. Забеги бесконечной трассы — где и от чего заканчиваются (один раз: SQL Editor → Run)
+
+Игра (`src/run-metrics.js`) шлёт строку на каждый законченный забег: дальность, длительность, причина последней аварии,
+все аварии забега (`412:car,980:animal:BEAR`), номер забега на устройстве, пауза до «Ещё раз» (`gap_s`, у первого в сессии −1),
+вид (`inf` / `daily` / `challenge`), машина, вторые шансы, «горячий старт», вариант правил A/B (`ab`), нитро по кнопке и рывки из-за попутки.
+
+```sql
+create table if not exists public.run_events (
+  id         bigint generated always as identity primary key,
+  pid        text not null,
+  day0       date not null,
+  day        date not null,
+  run_no     int  not null default 0,
+  kind       text not null default 'inf',
+  dist       int  not null default 0,
+  time_s     int  not null default 0,
+  cause      text not null default '',
+  crashes    text not null default '',
+  gap_s      int  not null default -1,
+  cont       int  not null default 0,
+  car        text not null default '',
+  ab         text not null default '',
+  warm       int  not null default 0,
+  nitro      int  not null default 0,
+  slip       int  not null default 0,
+  platform   text not null default 'web',
+  ver        text not null default '',
+  created_at timestamptz not null default now()
+);
+create index if not exists run_events_day on public.run_events (day);
+alter table public.run_events enable row level security;   -- прямого доступа нет: только функция ниже
+
+create or replace function public.run_put(
+  p_pid text, p_day0 date, p_day date, p_run_no int, p_kind text, p_dist int, p_time int, p_cause text, p_crashes text,
+  p_gap int, p_cont int, p_car text, p_ab text, p_warm int, p_nitro int, p_slip int, p_platform text, p_ver text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_pid !~ '^[0-9a-f]{16}$' or p_kind not in ('inf', 'daily', 'challenge') then raise exception 'bad'; end if;
+  if p_day > current_date + 1 or p_day < current_date - 2 then raise exception 'bad day'; end if;
+  insert into run_events (pid, day0, day, run_no, kind, dist, time_s, cause, crashes, gap_s, cont, car, ab, warm, nitro, slip, platform, ver)
+  values (p_pid, p_day0, p_day, least(greatest(p_run_no, 0), 100000), p_kind, least(greatest(p_dist, 0), 1000000), least(greatest(p_time, 0), 36000),
+    left(p_cause, 24), left(p_crashes, 400), least(greatest(p_gap, -1), 86400), least(greatest(p_cont, 0), 9), left(p_car, 24), left(p_ab, 24),
+    least(greatest(p_warm, 0), 5000), least(greatest(p_nitro, 0), 999), least(greatest(p_slip, 0), 999), left(p_platform, 12), left(p_ver, 40));
+end $$;
+revoke all on function public.run_put from public;
+grant execute on function public.run_put to anon;
+```
+
+**Где заканчиваются забеги** (корзины по 250 м; новички — первые 5 забегов на устройстве):
+
+```sql
+select (dist / 250) * 250 as "м", count(*) as "забегов",
+  count(*) filter (where run_no <= 5) as "из них новички",
+  mode() within group (order by cause) as "чаще всего от"
+from run_events where kind = 'inf' and day > current_date - 7 group by 1 order by 1;
+```
+
+**От чего** (причина последней аварии, медиана дальности):
+
+```sql
+select cause as "причина", count(*) as "забегов", percentile_cont(0.5) within group (order by dist) as "медиана, м"
+from run_events where day > current_date - 7 group by cause order by 2 desc;
+```
+
+**Длина забега и «Ещё раз»** (медиана и 90-й процентиль; доля рестартов быстрее 10 с):
+
+```sql
+select case when run_no <= 5 then 'новички (1–5)' else 'опытные' end as "кто", count(*) as "забегов",
+  percentile_cont(0.5) within group (order by time_s) as "медиана, с",
+  percentile_cont(0.9) within group (order by time_s) as "90%, с",
+  round(100.0 * count(*) filter (where gap_s between 0 and 10) / nullif(count(*) filter (where gap_s >= 0), 0), 1) as "рестарт ≤ 10 с, %"
+from run_events where day > current_date - 7 group by 1;
+```
+
+**D1 по длине первого забега** (вернулись ли назавтра те, у кого первый забег был коротким):
+
+```sql
+with first as (select pid, day0, time_s from run_events where run_no = 1),
+     back  as (select distinct pid, day from sessions)
+select case when f.time_s < 40 then '< 40 с' when f.time_s < 90 then '40–90 с' else '> 90 с' end as "первый забег",
+  count(*) as "игроков",
+  round(100.0 * count(*) filter (where exists (select 1 from back b where b.pid = f.pid and b.day = f.day0 + 1)) / count(*), 1) as "D1 %"
+from first f group by 1 order by 1;
+```
+
+**A/B правил** (сравнение вариантов, только обычные забеги):
+
+```sql
+select ab as "вариант", count(distinct pid) as "игроков", count(*) as "забегов",
+  percentile_cont(0.5) within group (order by time_s) as "медиана, с",
+  percentile_cont(0.5) within group (order by dist) as "медиана, м",
+  round(count(*)::numeric / count(distinct pid), 1) as "забегов на игрока",
+  round(100.0 * count(*) filter (where gap_s between 0 and 10) / nullif(count(*) filter (where gap_s >= 0), 0), 1) as "рестарт ≤ 10 с, %"
+from run_events where kind = 'inf' and ab <> '' group by ab;
+```
