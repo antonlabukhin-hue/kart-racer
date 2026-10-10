@@ -49,7 +49,7 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI, setSeasonMode } from './ui/season-screens.js'; import { renderGifts, giftsBadge } from './ui/gifts-screen.js'; import { showChest } from './ui/main-menu.js'; import { unclaimedRewards } from './ui/menu-badges.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
-        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, fairPreset, nextCost, normalizeLevels, statBars } from './upgrades.js';
+        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, fairPreset, laneMul, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames, showroomFrame, frameShowroom } from './cars.js'; import { partName } from './cars-tuning.js';
         import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
@@ -7789,7 +7789,7 @@ function startGaragePreview(carId) {
             const ACCELERATION = carStats.accel;
             const BRAKE_FORCE = 0.025;
             const FRICTION_FORCE = 0.008;
-            const MAX_X_SPEED = 0.55;
+            const LANE_MUL = INF && !FAIR_CAR ? laneMul(carId) : 1; /* поворотливость машины: лёгкие быстрее меняют полосу, тяжёлые медленнее (src/upgrades.js) */ const MAX_X_SPEED = 0.55 * LANE_MUL;
             const DRY_DAMPING = 0.82;
             const ABILITY = (carPreset.ability && carPreset.ability.id) || null;
             const ALWAYS_MAGNET = { magnet: 1 }; // способность «Зубила»
@@ -8469,7 +8469,7 @@ function startGaragePreview(carId) {
 
                 const onOil = (typeof oilSlideTimer !== 'undefined' && oilSlideTimer > 0);
                 const steerMul = onOil ? (0.35 * (typeof OIL_GRIP !== 'undefined' ? OIL_GRIP : 1)) : 1.0;
-                const swStep = swipeOn() ? swipeCtl.step(xPos, deltaTime) : null; // свайп — машину ведём прямо в центр полосы (src/swipe-control.js)
+                const swStep = swipeOn() ? swipeCtl.step(xPos, deltaTime, LANE_MUL) : null; // свайп — машину ведём прямо в центр полосы (src/swipe-control.js)
                 const dampMul = onOil ? 0.97 : DRY_DAMPING; // на масле почти не гасится — сносит
                 
                 if (swStep) {

@@ -47,12 +47,12 @@ export function createSwipe() {
          * Шаг руля: null — свайпа нет (руль как обычно); иначе { v } — скорость вбок на этот кадр,
          * { x, v: 0 } — доехали: машина ровно в центре полосы. xPos += v·15·dt (как в src/main.js).
          */
-        step: function(x, dt) {
+        step: function(x, dt, vmul) { // vmul — поворотливость машины (src/upgrades.js laneMul)
             if (s.target == null) return null;
             const left = s.target - x;
             if (Math.abs(left) <= SNAP) { const t = s.target; s.target = null; return { x: t, v: 0 }; }
             const reach = Math.abs(left) / (15 * Math.max(dt, 1e-3)); // скорость, чтобы доехать ровно за кадр
-            return { v: Math.sign(left) * Math.min(SWIPE_V, reach * 0.6) };
+            return { v: Math.sign(left) * Math.min(SWIPE_V * (vmul || 1), reach * 0.6) };
         },
         get target() { return s.target; }
     };
