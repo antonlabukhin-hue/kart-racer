@@ -14,10 +14,11 @@ import { renderRideBar, RIDES, createRideState, startRide, tickRide, rideOn, rid
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
 import { showMoveArrows } from './move-tutor.js';
+import { SIGNAL_TIME, cutInAllowed, wantsCut, blinkOn } from './traffic-signal.js';
 import { zoneFree, calmAhead, MAJOR_GAP, HURDLE_GAP } from './director.js';
 import { nearMissStep } from './near-miss.js';
 import { laneAssist } from './lane-assist.js';
-import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears } from './traffic-cars.js';
+import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traffic-cars.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
         import { AnimalSpawner } from './animals.js';
@@ -6328,6 +6329,11 @@ function startGaragePreview(carId) {
             const cars = [], AVENGER_RAMS = 5; // «Ночной мститель»: таранов за заезд
             const carColors = [0x3366ff, 0x33cc33, 0xffff00, 0xcc00ff, 0xff6600, 0x00ccff, 0xff33cc];
             
+            const SIG_MAT = new THREE.MeshBasicMaterial({ color: 0xffa020 }), SIG_GEO = new THREE.BoxGeometry(0.22, 0.15, 0.1);
+            const SIG_ARROW = (function() { // стрелка над попуткой: на 40–60 м лампа поворотника — пара пикселей, а стрелку видно на любом цвете машины
+                const mk = function(dir) { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const c = cv.getContext('2d'); c.translate(32, 32); c.scale(dir, 1); c.beginPath(); c.moveTo(20, 0); c.lineTo(-6, -22); c.lineTo(-6, -9); c.lineTo(-22, -9); c.lineTo(-22, 9); c.lineTo(-6, 9); c.lineTo(-6, 22); c.closePath(); c.fillStyle = '#ffa020'; c.strokeStyle = '#3a1800'; c.lineWidth = 5; c.stroke(); c.fill(); const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }); };
+                return [mk(-1), mk(1)];
+            })();
             function createOpponentCar(z, lane) {
                 const car = new THREE.Group();
                 const color = carColors[Math.floor(Math.random() * carColors.length)];
@@ -6356,6 +6362,7 @@ function startGaragePreview(carId) {
                 try { mergeCarParts(car, { all: true }); } catch (e) {} // 10–19 деталей → 5–6 (колёса не крутятся, перекраски нет)
                 try { shareMaterials(car); } catch (e) {} // общие материалы на все попутки (src/merge-static.js)
                 addBlobShadow(car, hitW, hitL, -0.08); // мягкая тень на асфальте (src/ground-shadow.js)
+                const sig = [-1, 1].map(function(sd) { const sg = new THREE.Group(); [frontZ - 0.02, hitL * 0.52].forEach(function(zz) { const b = new THREE.Mesh(SIG_GEO, SIG_MAT); b.position.set(sd * hitW * 0.44, 0.48, zz); sg.add(b); }); const ar = new THREE.Sprite(SIG_ARROW[sd < 0 ? 0 : 1]); ar.scale.set(0.9, 0.9, 1); ar.position.set(sd * 0.35, (TALL_H[kind] || 1.0) + 0.55, 0); ar.renderOrder = 6; sg.add(ar); sg.visible = false; car.add(sg); return sg; }); // поворотники и стрелка над машиной: мигают перед перестроением (src/traffic-signal.js)
                 const hug = hugFor(lane), x = carX(lane, hug); // по центру полосы или вплотную к обочине (src/traffic-lanes.js)
                 car.position.set(x, 0.1, z);
                 scene.add(car);
@@ -6371,7 +6378,8 @@ function startGaragePreview(carId) {
                     hitCooldown: 0,
                     kind: kind,
                     hitW: hitW,
-                    hitL: hitL
+                    hitL: hitL,
+                    sig: sig
                 };
             }
 
@@ -8840,6 +8848,16 @@ function startGaragePreview(carId) {
                         const tp = trafficPlan(car.z, car.isChangingLane ? car.targetLane : car.lane, _avoidH); car.mesh.position.y = 0.1 + tp.y; car.airY = tp.y; if (car._avoidLock > 0) car._avoidLock -= deltaTime; if (tp.lane != null && !car.isChangingLane && car.lane !== tp.lane && canEnterLane(cars, car, tp.lane)) { car.targetLane = tp.lane; car.isChangingLane = true; car.laneChangeProgress = 0; car._avoidLock = 3; } else if (tp.lane != null && car.isChangingLane && car.lane !== car.targetLane) { const l0 = car.lane, h0 = car._hug0 != null ? car._hug0 : car.hug; car.lane = car.targetLane; car.targetLane = l0; car._hug0 = car.hug; car.hug = h0; car.laneChangeProgress = 1 - car.laneChangeProgress; car._avoidLock = 3; } /* уже перестраивается в полосу трамплина — плавно назад */
                     }
                     
+                    if (car._sigT > 0) { // поворотник: 0.8 с мигает, потом перестраивается — если всё ещё можно и не подрезает игрока (src/traffic-signal.js)
+                        car._sigT -= deltaTime;
+                        const toRight = car._sigLane > car.lane;
+                        if (car.sig) { car.sig[0].visible = !toRight && blinkOn(car._sigT); car.sig[1].visible = toRight && blinkOn(car._sigT); }
+                        if (car._sigT <= 0) {
+                            if (car.sig) { car.sig[0].visible = false; car.sig[1].visible = false; }
+                            const L = car._sigLane; car._sigLane = null;
+                            if (L != null && L !== car.lane && !car.isChangingLane && !laneBlocked(car.z, L, _avoidH) && canEnterLane(cars, car, L) && cutInAllowed(L, laneOf(xPos), zPos - car.z)) { car._hug0 = car.hug; car.hug = hugFor(L); car.targetLane = L; car.isChangingLane = true; car.laneChangeProgress = 0; }
+                        }
+                    }
                     if (car.isChangingLane) {
                         car.laneChangeProgress += deltaTime * 1.5;
                         if (car.laneChangeProgress >= 1) {
@@ -8865,20 +8883,16 @@ function startGaragePreview(carId) {
                         const ahead = (zPos - car.z); // positive = car is ahead of player (smaller z)
                         
                         let shouldCut = false;
-                        if (!(car._avoidLock > 0) && ahead > -8 && ahead < 25) {
+                        if (!(car._avoidLock > 0) && !(car._sigT > 0) && wantsCut(ahead)) { // перед игроком — только издалека (было: в 0…25 м — не увернуться без тормозов)
                             // Машина относительно близко — чаще лезет в полосу игрока
                             const playerLaneApprox = laneOf(xPos);
                             const clampedLane = Math.max(0, Math.min(2, playerLaneApprox));
-                            if (car.lane !== clampedLane && !laneBlocked(car.z, clampedLane, _avoidH) && canEnterLane(cars, car, clampedLane) && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK * (ABILITY === 'boss' ? 0.1 : 1)) { car._hug0 = car.hug; car.hug = hugFor(clampedLane); // «Шестисотому» уступают
-                                car.targetLane = clampedLane;
-                                car.isChangingLane = true;
-                                car.laneChangeProgress = 0;
-                                car.laneChangeTimer = 1.2 + Math.random() * 1.5;
+                            if (car.lane !== clampedLane && !laneBlocked(car.z, clampedLane, _avoidH) && canEnterLane(cars, car, clampedLane) && Math.random() < (0.04 + progress * 0.06) * (window.__laneChangeMul || 1) * infLaneK * infLaneK * (ABILITY === 'boss' ? 0.1 : 1)) { car._sigLane = clampedLane; car._sigT = SIGNAL_TIME; car.laneChangeTimer = 1.2 + Math.random() * 1.5;
                                 shouldCut = true;
                             }
                         }
                         
-                        if (!shouldCut && !(car._avoidLock > 0) && car.laneChangeTimer <= 0) {
+                        if (!shouldCut && !(car._avoidLock > 0) && !(car._sigT > 0) && car.laneChangeTimer <= 0) {
                             const chance = 0.035 * (1 + progress * 0.8) * (window.__laneChangeMul || 1) * infLaneK * (ABILITY === 'boss' ? 0.3 : 1);
                             if (Math.random() < chance) {
                                 // С шансом целимся в игрока, иначе случайная полоса
@@ -8889,10 +8903,8 @@ function startGaragePreview(carId) {
                                 } else {
                                     newLane = Math.floor(Math.random() * 3);
                                 }
-                                if (newLane !== car.lane && !laneBlocked(car.z, newLane, _avoidH) && canEnterLane(cars, car, newLane)) { // не в полосу трамплина или ремонта впереди
-                                    car._hug0 = car.hug; car.hug = hugFor(newLane); car.targetLane = newLane;
-                                    car.isChangingLane = true;
-                                    car.laneChangeProgress = 0;
+                                if (newLane !== car.lane && !laneBlocked(car.z, newLane, _avoidH) && canEnterLane(cars, car, newLane) && cutInAllowed(newLane, laneOf(xPos), ahead)) { // не в полосу трамплина или ремонта впереди и не под нос игроку
+                                    car._sigLane = newLane; car._sigT = SIGNAL_TIME; // сначала поворотник
                                 }
                             }
                             car.laneChangeTimer = 1.0 + Math.random() * 2.2;
