@@ -10128,7 +10128,9 @@ function startGaragePreview(carId) {
                     }
                     bu.x += bu.vx * deltaTime;
                     bu.z += bu.vz * deltaTime;
-                    if (!bu.passed && !bu.reflected && bu.z > zPos + 2) {
+                    const buRel = zPos - bu.z, buNear = Math.abs(buRel) < 1.4 || (bu._rel != null && bu._rel >= 1.4 && buRel <= -1.4); bu._rel = buRel; /* на нитро (~100 м/с) снаряд проскакивал машину между кадрами — ловим и пересечение */
+                    const buTouch = buNear && Math.abs(bu.x - xPos) < 1.0;
+                    if (!bu.passed && !bu.reflected && bu.z > zPos + 2 && !buTouch) {
                         bu.passed = true; if (closeDodge(bu.x - xPos)) bossCharge(CHARGE.close, '😎 Впритирку!'); // снаряд мимо совсем рядом — шкала тарана быстрее
                         try { if (bu.volley && boss && boss.volleys) boss.volleys.gone(bu.volley); } catch (e) {}
                         bu.volley = 0;
@@ -10142,7 +10144,7 @@ function startGaragePreview(carId) {
                         if (!boss || !boss.active || boss.dying) { try { scene.remove(bu.mesh); } catch (e) {} bossBullets.splice(bi, 1); continue; }
                         const rdx = boss.x - bu.x, rdz = boss.z - bu.z;
                         const rl = Math.sqrt(rdx * rdx + rdz * rdz) || 1;
-                        bu.vx = rdx / rl * 34; bu.vz = rdz / rl * 34;
+                        const rv = 34 + Math.abs(speed) * 60; bu.vx = rdx / rl * rv; bu.vz = rdz / rl * rv; /* босс едет впереди со скоростью машины — снаряд быстрее её, иначе не догонит */
                         if (rl < 1.4) {
                             try { scene.remove(bu.mesh); } catch (e) {}
                             bossBullets.splice(bi, 1);
@@ -10152,7 +10154,7 @@ function startGaragePreview(carId) {
                         } else if (bu.life <= 0) { try { scene.remove(bu.mesh); } catch (e) {} bossBullets.splice(bi, 1); }
                         continue;
                     }
-                    if (Math.abs(bu.x - xPos) < 1.0 && Math.abs(bu.z - zPos) < 1.4 && nitroTimer > 0 && !bu.heavyOnly) {
+                    if (buTouch && nitroTimer > 0 && !bu.heavyOnly) {
                         // на нитро снаряд отлетает обратно
                         bu.reflected = true;
                         bu.life = 3;
@@ -10162,7 +10164,7 @@ function startGaragePreview(carId) {
                         shakeTime = Math.max(shakeTime, 0.12);
                         continue;
                     }
-                    if (Math.abs(bu.x - xPos) < 1.0 && Math.abs(bu.z - zPos) < 1.4) {
+                    if (buTouch) {
                         bu.hit = true; bossCharge(CHARGE.hit); // попали — шкала тарана теряет четверть
                         try { if (bu.volley && boss && boss.volleys) { boss.volleys.hit(bu.volley); boss.volleys.gone(bu.volley); } } catch (e) {}
                         const pen = bu.timePenalty || 2;
