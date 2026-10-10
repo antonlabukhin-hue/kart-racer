@@ -684,3 +684,27 @@ test('«ГАИ на хвосте» (A/B): разлом — тоже погоня
     expect(end).toMatchObject({ ab: 'chase', kind: 'inf' });
     expect(problems).toEqual([]);
 });
+
+// зоны столкновения (src/hit-zones.js): краем попутки — «задел» (скорость и множитель, сердце цело), по оси — авария
+test('задел боком — не авария; лоб в лоб — авария', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    await page.waitForTimeout(1500);
+    const hit = (off) => page.evaluate(async (off) => {
+        const g = window.__raceDebug, before = [g.strikes, g.stats.grazes || 0];
+        const c = g.cars[0], hw = (c.hitW || 0.75) * 0.55;
+        for (let i = 0; i < 20 && g.strikes === before[0] && (g.stats.grazes || 0) === before[1] && g.state === 'racing'; i++) {
+            c.hitCooldown = 0; c.x = g.x + hw * off; c.z = g.z; c.mesh.position.set(c.x, 0, c.z);
+            await new Promise(r => setTimeout(r, 50));
+        }
+        c.x = 99; c.mesh.position.x = 99;
+        return [g.strikes - before[0], (g.stats.grazes || 0) - before[1]];
+    }, off);
+    expect(await hit(0.85)).toEqual([0, 1]);
+    await expect(page.locator('.penalty-pop').filter({ hasText: 'Задел' })).toHaveCount(1);
+    await page.waitForTimeout(600);
+    expect(await hit(0)).toEqual([1, 0]);
+    expect(problems).toEqual([]);
+});

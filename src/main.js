@@ -69,7 +69,7 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { runKind, crashesStr, infSummary } from './run-metrics.js'; import { abVariant, failRules } from './fail-rules.js'; import { createSlip, stepSlip, addSlipCharge, useNitro, justSlung, slipHintDue, createNitroButton, createDraftFx, NM_CHARGE, SLING_TIME } from './slipstream.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { runKind, crashesStr, infSummary } from './run-metrics.js'; import { abVariant, failRules } from './fail-rules.js'; import { hitSeverity, grazeOutcome, grazePush, GRAZE_SPEED, GRAZE_STUN } from './hit-zones.js'; import { createSlip, stepSlip, addSlipCharge, useNitro, justSlung, slipHintDue, createNitroButton, createDraftFx, NM_CHARGE, SLING_TIME } from './slipstream.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return Object.assign(summarize(), { infinite: infSummary(loadEvents()) }); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
@@ -4942,7 +4942,7 @@ function startGaragePreview(carId) {
                         mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race', map: mapId, diff: difficulty,
                         chapter: campaignTrackId, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
                         wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined, eChips: infRun ? infRun.e : undefined,
-                        ...(infRun ? { kind: runKind(infRunOpts), cause: hitLog.length ? hitLog[hitLog.length - 1].cause : '', crashes: crashesStr(hitLog), car: carId, cont: continues, warm: infWarm, ab: FAIL ? FAIL.variant : '', nitroUsed: slipSt ? slipSt.uses : 0, slips: slipSt ? slipSt.slips : 0 } : {}) /* забег бесконечной трассы — в run_events (src/run-metrics.js) */
+                        ...(infRun ? { kind: runKind(infRunOpts), cause: hitLog.length ? hitLog[hitLog.length - 1].cause : '', crashes: crashesStr(hitLog), car: carId, cont: continues, warm: infWarm, ab: FAIL ? FAIL.variant : '', grazes: stats.grazes || 0, nitroUsed: slipSt ? slipSt.uses : 0, slips: slipSt ? slipSt.slips : 0 } : {}) /* забег бесконечной трассы — в run_events (src/run-metrics.js) */
                     });
                 } catch (e) {}
 
@@ -7978,6 +7978,21 @@ function startGaragePreview(carId) {
                 hitLog.push({ cause: cause, at: Math.round((START_Z - zPos) / (START_Z - FINISH_Z) * 100), dist: INF && infWorld ? Math.round(infWorld.dist) : undefined });
                 trackEvent('crash', { cause: cause, at: hitLog[hitLog.length - 1].at, dist: hitLog[hitLog.length - 1].dist, map: mapId, chapter: window.__campaignTrackId || null });
             };
+            // «задел боком» (src/hit-zones.js): не авария — скорость, множитель и толчок вбок; в правиле «ГАИ на хвосте» — погоня, задел в погоне — авария
+            function hitOrGraze(obs, dx, hw) {
+                if (hitSeverity(dx, hw, INF) === 'major') return handleObstacleHit(obs);
+                if (gameState !== 'racing') return;
+                _nmBlock = 2;
+                if ((headstartTo && infWorld && infWorld.dist < headstartTo) || risk.fever > 0 || rideOn(ride) || firstRunSafe(FIRST_RUN, raceTime)) return;
+                const go = grazeOutcome(FAIL && FAIL.chaseAll, !!(police && police.state.t > 0));
+                if (go === 'major') return handleObstacleHit(obs);
+                if (go === 'chase' && police) police.crash();
+                stats.grazes = (stats.grazes || 0) + 1; speed *= GRAZE_SPEED; stunTimer = Math.max(stunTimer, GRAZE_STUN); xVelocity += grazePush(dx); shakeTime = Math.max(shakeTime, 0.12);
+                const lost = riskCrash(risk);
+                try { showTimePenaltyPopup(0, lost > 1 ? '😬 Задел! ×' + lost + ' сгорел' : '😬 Задел!'); } catch (e) {}
+                try { if (window.soundEngine) window.soundEngine.playSfx('bump', 1.1); } catch (e) {}
+                try { if (_settings.vibrate && navigator.vibrate) navigator.vibrate(30); } catch (e) {}
+            }
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;
                 if (obs && String(obs.cause || '').indexOf('car') === 0) try { if (window.soundEngine) window.soundEngine.playSfx('crash'); } catch (e) {} // авария с машиной — хруст металла (src/sfx-kit.js), при любом исходе
@@ -8935,7 +8950,7 @@ function startGaragePreview(carId) {
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl))) {
                         car.hitCooldown = 1.2;
                         const pen = car.kind === 'bus' || car.kind === 'truck' ? 5 : 4;
-                        handleObstacleHit({ penalty: 0.3, timePenalty: pen, cause: 'car:' + (car.kind || 'car') });
+                        hitOrGraze({ penalty: 0.3, timePenalty: pen, cause: 'car:' + (car.kind || 'car') }, dx, hw);
                     }
                     
                     if (INF ? (car.z > zPos + 45 || car.z < zPos - 420) : car.z < -TRACK_LENGTH / 2 - 10) {
@@ -10245,7 +10260,7 @@ function startGaragePreview(carId) {
                                 try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
                             } else {
                                 obs.hit = true;
-                                handleObstacleHit(obs);
+                                hitOrGraze(obs, dx, hitR);
                             }
                         }
                     }
