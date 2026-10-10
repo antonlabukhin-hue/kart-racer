@@ -58,3 +58,22 @@ test('площадка: на обычном сайте рекламы и «Ка�
     await expect(page.locator('#shop-action')).toContainText('ПОЕХАЛИ');
     await expect(page.locator('#shop-pay')).toBeHidden();
 });
+
+// сохранение в аккаунт Яндекса (src/yandex-save.js): ?ads=mock — тестовая «облачная» запись; новее — главнее
+test('аккаунт Яндекса: прогресс уходит в аккаунт и приходит на «новое устройство»', async ({ browser, baseURL }) => {
+    const ctx1 = await browser.newContext({ baseURL }), p1 = await ctx1.newPage();
+    const problems = watchProblems(p1);
+    await login(p1, 'Аккаунт', './?ads=mock');
+    await expect.poll(() => p1.evaluate(() => { const d = JSON.parse(localStorage.getItem('mock_ya_save') || 'null'); return !!(d && d.keys && /Аккаунт/.test(d.keys.road_racing_profiles_v1 || '')); }), { timeout: 15_000 }).toBe(true);
+    const saved = await p1.evaluate(() => localStorage.getItem('mock_ya_save'));
+    expect(problems).toEqual([]);
+    await ctx1.close();
+    // «новое устройство»: пустое хранилище, в аккаунте — сохранение
+    const ctx2 = await browser.newContext({ baseURL }), p2 = await ctx2.newPage();
+    await p2.addInitScript((s) => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('mock_ya_save', s); } }, saved);
+    await p2.goto('./?ads=mock');
+    await expect.poll(() => p2.evaluate(() => /Аккаунт/.test(localStorage.getItem('road_racing_profiles_v1') || '')), { timeout: 15_000 }).toBe(true);
+    await p2.locator('#splash-screen').click();
+    await expect(p2.locator('#profile-list')).toContainText('Аккаунт', { timeout: 15_000 });
+    await ctx2.close();
+});

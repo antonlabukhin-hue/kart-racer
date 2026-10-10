@@ -73,6 +73,17 @@ export function createPlatform(o) {
             });
             return ready;
         },
+        /**
+         * Данные игрока в аккаунте площадки (Яндекс: player.getData / setData) — для src/yandex-save.js; не Яндекс — null.
+         * ?ads=mock — тестовая «облачная» запись в localStorage (mock_ya_save).
+         */
+        playerData: mock ? {
+            load: function() { try { return Promise.resolve(JSON.parse(localStorage.getItem('mock_ya_save') || 'null')); } catch (e) { return Promise.resolve(null); } },
+            save: function(d) { try { localStorage.setItem('mock_ya_save', JSON.stringify(d)); return Promise.resolve(true); } catch (e) { return Promise.resolve(false); } }
+        } : name !== 'yandex' ? null : {
+            load: function() { return api.init().then(function(s) { return s ? s.getPlayer({ scopes: false }) : null; }).then(function(p) { return p ? p.getData(['save']) : null; }).then(function(d) { return (d && d.save) || null; }).catch(function() { return null; }); },
+            save: function(data) { return api.init().then(function(s) { return s ? s.getPlayer({ scopes: false }) : null; }).then(function(p) { return p ? p.setData({ save: data }, true).then(function() { return true; }) : false; }).catch(function() { return false; }); }
+        },
         /** Язык площадки ('ru', 'en'…) или null */
         lang: function() { try { return ysdk ? ysdk.environment.i18n.lang : null; } catch (e) { return null; } },
         /** Игра загрузилась и готова (Яндекс: LoadingAPI.ready — обязательно) */
