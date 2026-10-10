@@ -613,9 +613,9 @@ test('слипстрим: мешок копит бак, «Рывок» при у
         const c = g.cars[0]; c.x = g.x; c.lane = 1; c.targetLane = 1; c.laneChangeTimer = 99; c.speed = 0.005; c.z = g.z - 30; c.mesh.position.set(c.x, 0.1, c.z); window.__slipCar = c;
     });
     await expect(page.locator('#nitro-btn')).toHaveClass(/drafting/, { timeout: 20_000 }); // в мешке — кнопка светится
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.z - window.__slipCar.z), { timeout: 20_000 }).toBeLessThan(8);
-    expect(await page.evaluate(() => { const g = window.__raceDebug; return [g.slip.charge > 0.1, Math.abs(g.x - window.__slipCar.x) < 0.9]; })).toEqual([true, true]);
-    await page.keyboard.down('d'); await page.waitForTimeout(400); await page.keyboard.up('d');
+    // уход вбок — прямо в странице, как только попутка ближе 7 м (опрос из теста под нагрузкой опаздывает)
+    const st = await page.evaluate(() => new Promise(res => { const g = window.__raceDebug; const t = setInterval(() => { if (g.z - window.__slipCar.z < 7) { clearInterval(t); const r = [g.slip.charge > 0.1, Math.abs(g.x - window.__slipCar.x) < 0.9]; document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD' })); setTimeout(() => { document.dispatchEvent(new KeyboardEvent('keyup', { key: 'd', code: 'KeyD' })); res(r); }, 400); } }, 10); }));
+    expect(st).toEqual([true, true]);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.slip.slips), { timeout: 5_000 }).toBe(1);
     expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
     // полный бак — кнопка «готово», E — нитро
