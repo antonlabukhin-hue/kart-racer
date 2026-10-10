@@ -9,7 +9,7 @@ test('центр полосы и «на волоске» при увороте',
     await page.waitForTimeout(1500);
     const r = await page.evaluate(async () => {
         const g = window.__raceDebug, wait = ms => new Promise(res => setTimeout(res, ms));
-        g.setStrikes(0); g.setX(1.3); await wait(800);
+        g.setStrikes(0); g.setX(1.3); { const t0 = performance.now(); while (Math.abs(g.x - 2) > 0.08 && performance.now() - t0 < 15000) await wait(100); } /* по игровому состоянию: на медленной машине (CI) игра идёт медленнее */
         const x1 = g.x;
         const res = [];
         for (let i = 0; i < 2; i++) {
