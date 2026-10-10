@@ -9,11 +9,11 @@ import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
 const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
-import { createMoves, hop, duck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice, underDuck, carsToClear, DUCK_CLEAR, planGates, GATE_AFTER, GATE_SIGN, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
+import { createMoves, hop, duck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, underDuck, carsToClear, DUCK_CLEAR, planGates, GATE_AFTER, GATE_SIGN, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
 import { RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
-import { showMoveArrows } from './move-tutor.js';
+import { showMoveArrows, createIntro, introAct } from './move-tutor.js';
 import { SIGNAL_TIME, cutInAllowed, wantsCut, blinkOn } from './traffic-signal.js';
 import { zoneFree, calmAhead, MAJOR_GAP, HURDLE_GAP } from './director.js';
 import { nearMissStep } from './near-miss.js';
@@ -6812,7 +6812,7 @@ function startGaragePreview(carId) {
                 if (duck(moves, carAirborne)) try { if (window.soundEngine) window.soundEngine.playSfx('scrape', 0.9); } catch (e) {} /* днище скребёт асфальт (src/sfx-kit.js) */
             }
             const showArrows = showMoveArrows(currentPlayer) || (import.meta.env.MODE === 'test' && window.__forceArrows); // стрелки: новичку 3 заезда, после обновления управления — всем ещё 2 (src/move-tutor.js)
-            let arrowEl = null, arrowAct = null;
+            let arrowEl = null, arrowAct = null; const moveIntro = createIntro();
             function moveArrow(act) { // act: 'jump' | 'duck' | 'left' | 'right' | null
                 if (act === arrowAct) return;
                 arrowAct = act;
@@ -6825,7 +6825,6 @@ function startGaragePreview(carId) {
             }
             const HURDLE_HINT = 'road_racing_hurdle_hint_v1';
             function hurdleHint(kind) { // первые три встречи каждого вида — подсказка, как пройти
-                if (showArrows) return; // в первых заездах подсказывают стрелки на экране
                 let seen = {}; try { seen = JSON.parse(localStorage.getItem(HURDLE_HINT) || '{}'); } catch (e) {}
                 if ((seen[kind] || 0) >= 3) return; // kind — 'jump' | 'duck'
                 seen[kind] = (seen[kind] || 0) + 1; try { localStorage.setItem(HURDLE_HINT, JSON.stringify(seen)); } catch (e) {}
@@ -8949,10 +8948,8 @@ function startGaragePreview(carId) {
 
 
                 // Трубы и шлагбаумы (src/hop-duck.js): перепрыгнуть, поднырнуть или объехать
-                let arrowFor = null; // ближайшее препятствие впереди на полосе игрока — для стрелки-подсказки
                 for (let hi = 0; hi < hurdles.length; hi++) {
                     const h = hurdles[hi];
-                    if (showArrows && !h.done && zPos - h.z > 3 && zPos - h.z < 30 && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && !arrowFor) arrowFor = actOf(h.kind);
                     blinkHurdle(h.mesh, raceTime, !h.done && actOf(h.kind) === 'duck' && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && zPos - h.z > -0.5 && zPos - h.z < 35 && duckWillClear(moves, zPos - h.z, Math.abs(speed) * 60)); // рама зелёная: в подныре и проскочишь
                     if (!h.done && actOf(h.kind) === 'duck' && zPos - h.z < 110) { if (!h.cleared) { h.cleared = true; obstacles.forEach(function(o) { if (o.active && underDuck(h, o.x != null ? o.x : o.mesh.position.x, o.z)) { o.active = false; o.mesh.visible = false; } }); } carsToClear(h, cars, zPos, h.gate ? GATE_AFTER : 0).forEach(function(m) { m.car.z = freeZ(m.z, m.car.lane, _avoidH); m.car.mesh.position.z = m.car.z; }); if (zPos - h.z > 15) animalSpawner.animals.forEach(function(an) { if (!an.hit && an.z > h.z - (h.gate ? GATE_AFTER : DUCK_CLEAR) && an.z < h.z + DUCK_CLEAR) { an.z = h.z - (h.gate ? GATE_AFTER : DUCK_CLEAR) - 8; if (an.mesh) an.mesh.position.z = an.z; } }); /* и зверь не стоит под рамой */ } // под рамой пусто: ни шипов, ни попуток — подныр всегда спасает
                     if (h.done) { if (h.z > zPos + 0.6 && h.mesh.visible) h.mesh.visible = false; continue; } // проехал — не закрывает камеру
@@ -8971,8 +8968,7 @@ function startGaragePreview(carId) {
                         photoBook.request(res === 'under' ? 'Под шлагбаумом!' : 'Через трубу!', res === 'under' ? 5 : 4);
                     }
                 }
-                if (showArrows && !arrowFor) { const th = []; cars.forEach(function(c) { if (c.active !== false && c.mesh && c.mesh.visible !== false) th.push(c); }); obstacles.forEach(function(o) { if (o.active) th.push(o); }); setEvents.forEach(function(ev) { if (ev.kind === 'oncoming' && ev.debug && ev.debug.state !== 'gone' && zPos - ev.debug.z < 140 && ev.debug.z < zPos + 2) th.push({ x: _rampLaneXs[ev.lane], z: Math.max(ev.debug.z, zPos - 20) }); }); /* встречка летит навстречу — её полоса занята заранее */ arrowFor = laneAdvice(xPos, zPos, th); } // впереди помеха на полосе — стрелка ← / →
-                if (showArrows) moveArrow(gameState === 'racing' && !(ducking(moves) && arrowFor === 'duck') && !(carAirborne && arrowFor === 'jump') ? arrowFor : null); // выполнил — стрелка гаснет
+                if (showArrows) moveArrow(gameState === 'racing' ? introAct(moveIntro, deltaTime, { left: !!currentKeys.a || xVelocity < -0.03, right: !!currentKeys.d || xVelocity > 0.03, jump: carAirborne, duck: ducking(moves) }) : null); // стрелки — только в начале заезда: четыре действия по очереди (src/move-tutor.js)
                 // Препятствия (ямы, кочки, масло)
                 if (oilSlideTimer > 0) oilSlideTimer -= deltaTime;
                 

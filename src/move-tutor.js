@@ -25,3 +25,20 @@ export function countArrowRun(profile) {
     t.runs = Math.min(REFRESH_RUNS, (t.runs || 0) + 1);
     profile.moveTutor = t;
 }
+
+/**
+ * Стрелки — только в начале заезда: по очереди все четыре действия (влево, вправо, прыжок, подныр).
+ * Каждая гаснет, когда игрок её выполнил (или сама через INTRO_MAX с), после четвёртой — до конца заезда ничего.
+ */
+export const INTRO_ACTS = ['left', 'right', 'jump', 'duck'];
+export const INTRO_MIN = 0.6, INTRO_MAX = 4;
+export function createIntro() { return { step: 0, t: 0 }; }
+/** Кадр: did — { left, right, jump, duck } что игрок делает сейчас; вернёт стрелку или null (обучение кончилось) */
+export function introAct(st, dt, did) {
+    if (st.step >= INTRO_ACTS.length) return null;
+    st.t += dt;
+    const act = INTRO_ACTS[st.step];
+    if (did && did[act]) st.done = true; // выполнил хоть раз, даже сразу — засчитано (стрелка всё же горит INTRO_MIN, чтобы её заметили)
+    if ((st.t > INTRO_MIN && st.done) || st.t > INTRO_MAX) { st.step++; st.t = 0; st.done = false; return st.step < INTRO_ACTS.length ? INTRO_ACTS[st.step] : null; }
+    return act;
+}
