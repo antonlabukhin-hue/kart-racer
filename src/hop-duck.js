@@ -16,8 +16,10 @@ export const HURDLE_EVERY = [170, 260];
 export const FULL_FROM = 1200;   // дальше — бывают через всю дорогу (только действием)
 
 export function createMoves() { return { duckT: 0, hop: false }; }
-/** Подныр: можно всегда на земле; в воздухе — нет */
-export function duck(st, airborne) { if (airborne) return false; st.duckT = DUCK_TIME; return true; }
+/** Подныр: на земле — сразу; в воздухе — запоминается и срабатывает при приземлении (landDuck) */
+export function duck(st, airborne) { if (airborne) { st.pend = true; return false; } st.pend = false; st.duckT = DUCK_TIME; return true; }
+/** Кадр: нажал «вниз» в прыжке — приземлился и сразу подныр. Вернёт true, если подныр начался */
+export function landDuck(st, airborne) { if (!st.pend || airborne) return false; st.pend = false; st.duckT = DUCK_TIME; return true; }
 /** Прыжок: только с земли и не в подныре — вернёт вертикальную скорость или 0 */
 export function hop(st, onGround) { if (!onGround) return 0; st.duckT = 0; st.hop = true; return HOP_V; }
 export function tickMoves(st, dt) { if (st.duckT > 0) st.duckT = Math.max(0, st.duckT - dt); }

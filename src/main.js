@@ -9,7 +9,7 @@ import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
 const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
-import { createMoves, hop, duck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, underDuck, carsToClear, DUCK_CLEAR, planGates, GATE_AFTER, GATE_SIGN, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
+import { createMoves, hop, duck, landDuck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, underDuck, carsToClear, DUCK_CLEAR, planGates, GATE_AFTER, GATE_SIGN, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
 import { RIDES, createRideState, startRide, tickRide, rideOn, rideFlies, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
@@ -8729,6 +8729,7 @@ function startGaragePreview(carId) {
                     rideSmokeT -= deltaTime;
                     if (rideSmokeT <= 0 && particleSystem && particleSystem.smoke) { rideSmokeT = 0.07; rideModel.userData.exhaust.forEach(function(p) { _v.rs = (_v.rs || new THREE.Vector3()).set(p.x, p.y, p.z); rideModel.localToWorld(_v.rs); particleSystem.smoke(_v.rs, ride.id === 'plane' ? 0.2 : 0.85); }); }
                 }
+                if (landDuck(moves, carAirborne)) try { if (window.soundEngine) window.soundEngine.playSfx('scrape', 0.9); } catch (e) {} /* «вниз» в прыжке — подныр сразу после приземления */
                 tickMoves(moves, deltaTime); { const dkk = duckK(moves), sq = duckSquash(dkk); if (susp && !susp.fallback) { susp.setDuck(dkk); susp.body.scale.set(sq.sx, sq.sy, sq.sz); } else playerCar.scale.set(RACE_CAR_SCALE * sq.sx, RACE_CAR_SCALE * sq.sy, RACE_CAR_SCALE * sq.sz); if (dkk > 0.5 && !carAirborne) { duckSparkT -= deltaTime; if (duckSparkT <= 0) { duckSparkT = 0.03; try { if (particleSystem.sparks) particleSystem.sparks({ x: xPos + (Math.random() - 0.5) * 0.7, y: 0.06, z: zPos + 0.45 }, 5, 1); } catch (e) {} } } } /* подныр: кузов сплющен и шире, из-под днища искры */ // подныр — кузов опускается к колёсам
                 playerCar.position.set(xPos, carYOffset + suspY + rideLift(ride) - (rideFlies(ride) ? 0.8 * duckK(moves) : 0), zPos); /* самолёт: прыжок — выше, подныр — ниже */
                 // лёгкий self-light кузова ночью

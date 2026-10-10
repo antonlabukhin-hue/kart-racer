@@ -43,7 +43,7 @@ test('множитель за риск в заезде и задания на ф
     const pts = await page.evaluate(() => window.__raceDebug.risk.points);
     expect(pts).toBe(50 + 100);
     await page.evaluate(() => window.__raceDebug.end('win'));
-    await expect(page.locator('#finish-screen .fin-risk')).toContainText('150', { timeout: 20_000 });
+    await expect(page.locator('#finish-screen .fin-risk')).toContainText('150', { timeout: 60_000 }); // на сервере GitHub (~5 к/с) перед итогами первой победы идёт ролик
     await expect(page.locator('#finish-screen .fin-risk')).toContainText('×3');
     expect(problems).toEqual([]);
 });

@@ -125,3 +125,16 @@ describe('подныр — только в воротах', () => {
         expect(carsToClear(h, [{ x: 0, z: -130 }], -30).length).toBe(0);
     });
 });
+
+import { landDuck } from '../../src/hop-duck.js';
+describe('подныр в прыжке', () => {
+    it('нажал «вниз» в воздухе — подныр сразу после приземления', () => {
+        const st = createMoves();
+        expect(duck(st, true)).toBe(false);
+        expect(ducking(st)).toBe(false);
+        expect(landDuck(st, true)).toBe(false); // ещё в воздухе
+        expect(landDuck(st, false)).toBe(true);
+        expect(ducking(st)).toBe(true);
+        expect(landDuck(st, false)).toBe(false); // один раз
+    });
+});
