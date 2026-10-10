@@ -6892,7 +6892,7 @@ function startGaragePreview(carId) {
             const infBusy = [], infArch = []; // infArch — арки с падающим грузом (нитро — подальше)
             const _gapStyle = gapStyle(mapId, isSnowTrack);
             const GAP_LEN = 5.5;
-            const _rampLaneXs = [-TRACK_WIDTH * 0.25, 0, TRACK_WIDTH * 0.25];
+            const _rampLaneXs = [-LANE_WIDTH, 0, LANE_WIDTH]; // центры полос −2 / 0 / 2 (как у попуток и свайпа); было ±1.5 — встречка, трамплины и шлагбаумы стояли со сдвигом к середине
             // убрать всё, что стоит в зоне участка (кроме трамплинов разлома) — участок читается чисто
             function clearZone(zHi, zLo) {
                 const inZone = function(z) { return z <= zHi && z >= zLo; };
@@ -8946,7 +8946,7 @@ function startGaragePreview(carId) {
                         photoBook.request(res === 'under' ? 'Под шлагбаумом!' : 'Через трубу!', res === 'under' ? 5 : 4);
                     }
                 }
-                if (showArrows && !arrowFor) { const th = []; cars.forEach(function(c) { if (c.active !== false && c.mesh && c.mesh.visible !== false) th.push(c); }); obstacles.forEach(function(o) { if (o.active) th.push(o); }); arrowFor = laneAdvice(xPos, zPos, th); } // впереди помеха на полосе — стрелка ← / →
+                if (showArrows && !arrowFor) { const th = []; cars.forEach(function(c) { if (c.active !== false && c.mesh && c.mesh.visible !== false) th.push(c); }); obstacles.forEach(function(o) { if (o.active) th.push(o); }); setEvents.forEach(function(ev) { if (ev.kind === 'oncoming' && ev.debug && ev.debug.state !== 'gone' && zPos - ev.debug.z < 140 && ev.debug.z < zPos + 2) th.push({ x: _rampLaneXs[ev.lane], z: Math.max(ev.debug.z, zPos - 20) }); }); /* встречка летит навстречу — её полоса занята заранее */ arrowFor = laneAdvice(xPos, zPos, th); } // впереди помеха на полосе — стрелка ← / →
                 if (showArrows) moveArrow(gameState === 'racing' && !(ducking(moves) && arrowFor === 'duck') && !(carAirborne && arrowFor === 'jump') ? arrowFor : null); // выполнил — стрелка гаснет
                 // Препятствия (ямы, кочки, масло)
                 if (oilSlideTimer > 0) oilSlideTimer -= deltaTime;
