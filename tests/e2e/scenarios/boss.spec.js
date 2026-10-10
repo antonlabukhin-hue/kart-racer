@@ -98,6 +98,8 @@ test('отбитый на нитро снаряд ранит босса скво
     // кувалда: подбираем, таран по броне проходит
     await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.spawnHammer(); const pk = d.bossPickups[0]; pk.z = d.z - 30; pk.mesh.position.z = pk.z; d.setX(pk.x); }); // подальше: на медленной машине иначе не успевает перестроиться
     /* газ жмётся сам (W — прыжок) */
+    // держим машину на полосе кувалды до подбора (её тянет к середине полосы; на медленной машине не доезжала)
+    await page.evaluate(() => new Promise(res => { const d = window.__raceDebug, pk = d.bossPickups[0], px = pk ? pk.x : d.x; let n = 0; const f = () => { d.setX(px); if (!d.hammer && ++n < 600) requestAnimationFrame(f); else res(); }; f(); }));
     await expect.poll(() => page.evaluate(() => window.__raceDebug.hammer), { timeout: 8_000 }).toBe(true);
     /* газ жмётся сам (W — прыжок) */
     // таран по броне с кувалдой (в залпе могли быть ещё отбитые снаряды — считаем от момента тарана)
