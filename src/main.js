@@ -69,7 +69,7 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { runKind, crashesStr, infSummary } from './run-metrics.js'; import { abVariant, failRules } from './fail-rules.js'; import { threatClass, pickMarks, warnPick, createWarnState, createThreatMarks, THREAT_CLASSES, MARK_FAR } from './threat-style.js'; import { hitSeverity, grazeOutcome, grazePush, GRAZE_SPEED, GRAZE_STUN } from './hit-zones.js'; import { createSlip, stepSlip, addSlipCharge, useNitro, justSlung, slipHintDue, createNitroButton, createDraftFx, NM_CHARGE, SLING_TIME } from './slipstream.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { runKind, crashesStr, infSummary } from './run-metrics.js'; import { abVariant, failRules } from './fail-rules.js'; import { threatClass, pickMarks, warnPick, createWarnState, createThreatMarks, THREAT_CLASSES, MARK_FAR } from './threat-style.js'; import { nearStyle } from './near-miss.js'; import { hitSeverity, grazeOutcome, grazePush, GRAZE_SPEED, GRAZE_STUN } from './hit-zones.js'; import { createSlip, stepSlip, addSlipCharge, useNitro, justSlung, slipHintDue, createNitroButton, createDraftFx, NM_CHARGE, SLING_TIME } from './slipstream.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return Object.assign(summarize(), { infinite: infSummary(loadEvents()) }); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
@@ -4942,7 +4942,7 @@ function startGaragePreview(carId) {
                         mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race', map: mapId, diff: difficulty,
                         chapter: campaignTrackId, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
                         wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined, eChips: infRun ? infRun.e : undefined,
-                        ...(infRun ? { kind: runKind(infRunOpts), cause: hitLog.length ? hitLog[hitLog.length - 1].cause : '', crashes: crashesStr(hitLog), car: carId, cont: continues, warm: infWarm, ab: FAIL ? FAIL.variant : '', grazes: stats.grazes || 0, nitroUsed: slipSt ? slipSt.uses : 0, slips: slipSt ? slipSt.slips : 0 } : {}) /* забег бесконечной трассы — в run_events (src/run-metrics.js) */
+                        ...(infRun ? { kind: runKind(infRunOpts), cause: hitLog.length ? hitLog[hitLog.length - 1].cause : '', crashes: crashesStr(hitLog), car: carId, cont: continues, warm: infWarm, ab: FAIL ? FAIL.variant : '', grazes: stats.grazes || 0, nearPerfect: stats.nearPerfect || 0, nitroUsed: slipSt ? slipSt.uses : 0, slips: slipSt ? slipSt.slips : 0 } : {}) /* забег бесконечной трассы — в run_events (src/run-metrics.js) */
                     });
                 } catch (e) {}
 
@@ -6908,19 +6908,21 @@ function startGaragePreview(carId) {
             // стоп-кадр: секунды реального времени, пока игра почти стоит (только короткий удар по боссу).
             // Замедление на «На волоске!» и при появлении босса убрано — ощущалось как подвисание
             let slowmoT = 0;
-            function nearMiss() {
+            let _nmg = null; /* качество последнего «на волоске» (src/near-miss.js) */
+            function nearMiss(grade) {
                 if (gameState !== 'racing' || _nmCooldown > 0 || _nmBlock > 0) return; // сразу после удара в броне / тарана — это не «на волоске»
                 _nmCooldown = 1.2;
-                nearMissCount++; riskEvent(risk, 'nearMiss'); announcer.say('nearMiss'); if (boss && boss.active) bossCharge(CHARGE.nearMiss); /* впритирку к попутке в бою — тоже заряд тарана */
+                const ns = nearStyle(INF ? grade : 'clean'); if (INF && grade === 'perfect') { stats.nearPerfect = (stats.nearPerfect || 0) + 1; nitroTimer = Math.max(nitroTimer, ns.nitro); fovPunch = Math.max(fovPunch, 12); }
+                nearMissCount++; riskEvent(risk, ns.risk); announcer.say('nearMiss'); if (boss && boss.active) bossCharge(CHARGE.nearMiss); /* впритирку к попутке в бою — тоже заряд тарана */
                 if (!INF) nitroTimer = Math.max(nitroTimer, ABILITY === 'nimble' ? 1.4 : 0.9); // бесконечная трасса: ускорение только с нитро-стрелок
                 try {
                     const el = document.createElement('div');
                     el.className = 'animal-shout';
-                    el.textContent = INF ? (slipSt && justSlung(slipSt) ? '💨 Рывок! На волоске' : '⚡ На волоске!') : '⚡ На волоске! +нитро'; if (slipSt) addSlipCharge(slipSt, NM_CHARGE); /* «на волоске» доливает бак нитро */
-                    el.style.color = '#66ffcc';
-                    el.style.borderColor = '#66ffcc';
+                    el.textContent = INF ? (slipSt && justSlung(slipSt) ? '💨 Рывок! ' : '') + ns.text + ' ' + ns.bar : '⚡ На волоске! +нитро'; if (slipSt) addSlipCharge(slipSt, NM_CHARGE * ns.charge); /* «на волоске» доливает бак нитро — чем точнее, тем больше */
+                    el.style.color = ns.color;
+                    el.style.borderColor = ns.color;
                     postShout(el, 1100);
-                    if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.5);
+                    if (window.soundEngine) { window.soundEngine.playSfx('whoosh', 0.5); if (ns.sfx) window.soundEngine.playSfx(ns.sfx, 0.7); }
                 } catch (e) {}
             }
             const _trackSpan = START_Z - FINISH_Z;
@@ -8949,7 +8951,7 @@ function startGaragePreview(carId) {
                     if (car.hitCooldown > 0) car.hitCooldown -= deltaTime;
                     const dx = xPos - car.x;
                     const dz = zPos - car.z;
-                    if (car.hitCooldown <= 0 && !rideFlies(ride) && nearMissStep(car, dx, dz, (car.hitW || 0.75) * 0.55, raceTime)) nearMiss(); /* был на твоей полосе и ты увернулся в последний момент — или впритирку (src/near-miss.js) */ else if (dz > 6) car._nm = false;
+                    if (car.hitCooldown <= 0 && !rideFlies(ride) && (_nmg = nearMissStep(car, dx, dz, (car.hitW || 0.75) * 0.55, raceTime))) nearMiss(_nmg); /* был на твоей полосе и ты увернулся в последний момент — или впритирку (src/near-miss.js) */ else if (dz > 6) car._nm = false;
                     const hw = (car.hitW || 0.75) * (ABILITY === 'narrow' ? 0.4 : 0.55); // «Мопед» — узкий
                     const hl = (car.hitL || 1.4) * 0.45;
                     if (rideFlies(ride)) { /* «кукурузник» летит над попутками — ничего не сбивает */ } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && (carAirborne || carYOffset > 0.55) && (!hopJump || hopClears(car.kind, carYOffset))) { /* грузовик и автобус выше прыжка с места (src/traffic-cars.js) */
@@ -10262,7 +10264,7 @@ function startGaragePreview(carId) {
                         const dx = xPos - obs.x;
                         const dz = zPos - obs.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
-                        if (nearMissStep(obs, dx, dz, obs.radius + 0.35, raceTime)) nearMiss();
+                        if ((_nmg = nearMissStep(obs, dx, dz, obs.radius + 0.35, raceTime))) nearMiss(_nmg);
                         const hitR = obs.radius + (ABILITY === 'narrow' ? 0.25 : 0.45);
                         if (dist < hitR || (Math.abs(dx) < hitR && sweptZ(obs.z, hitR))) { // отрезком кадра: при низком FPS зверя не проскочить насквозь
                             if ((ABILITY === 'cyborg' || risk.fever > 0) && !(carAirborne || carYOffset > 0.4)) {

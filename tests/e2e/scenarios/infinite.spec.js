@@ -614,7 +614,7 @@ test('слипстрим: мешок копит бак, «Рывок» при у
     });
     await expect(page.locator('#nitro-btn')).toHaveClass(/drafting/, { timeout: 20_000 }); // в мешке — кнопка светится
     // уход вбок — прямо в странице, как только попутка ближе 7 м (опрос из теста под нагрузкой опаздывает)
-    const st = await page.evaluate(() => new Promise(res => { const g = window.__raceDebug; const t = setInterval(() => { if (g.z - window.__slipCar.z < 7) { clearInterval(t); const r = [g.slip.charge > 0.1, Math.abs(g.x - window.__slipCar.x) < 0.9]; document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD' })); setTimeout(() => { document.dispatchEvent(new KeyboardEvent('keyup', { key: 'd', code: 'KeyD' })); res(r); }, 400); } }, 10); }));
+    const st = await page.evaluate(() => new Promise(res => { const g = window.__raceDebug; const t = setInterval(() => { if (g.z - window.__slipCar.z < 8) { clearInterval(t); const r = [g.slip.charge > 0.1, Math.abs(g.x - window.__slipCar.x) < 0.9]; document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD' })); setTimeout(() => { document.dispatchEvent(new KeyboardEvent('keyup', { key: 'd', code: 'KeyD' })); res(r); }, 400); } }, 10); }));
     expect(st).toEqual([true, true]);
     await expect.poll(() => page.evaluate(() => window.__raceDebug.slip.slips), { timeout: 5_000 }).toBe(1);
     expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
@@ -706,5 +706,24 @@ test('задел боком — не авария; лоб в лоб — авар
     await expect(page.locator('.penalty-pop').filter({ hasText: 'Задел' })).toHaveCount(1);
     await page.waitForTimeout(600);
     expect(await hit(0)).toEqual([1, 0]);
+    expect(problems).toEqual([]);
+});
+
+// качество «на волоске» (src/near-miss.js): надпись со шкалой точности (какое именно качество — проверяют юнит-тесты: под нагрузкой кадры длинные)
+test('«на волоске»: уход из полосы перед попуткой — надпись со шкалой точности', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => {
+        const g = window.__raceDebug;
+        g.cars.forEach((c, i) => { c.z = g.z - 300 - i * 40; c.x = 99; c.mesh.position.set(99, 0, c.z); });
+        const c = g.cars[0]; c.x = g.x; c.lane = 1; c.targetLane = 1; c.laneChangeTimer = 99; c.speed = 0.005; c.z = g.z - 30; c.mesh.position.set(c.x, 0.1, c.z); window.__nmCar = c;
+    });
+    await page.evaluate(() => new Promise(res => { const g = window.__raceDebug; const t = setInterval(() => { if (g.z - window.__nmCar.z < 8) { clearInterval(t); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD' })); setTimeout(() => { document.dispatchEvent(new KeyboardEvent('keyup', { key: 'd', code: 'KeyD' })); res(); }, 400); } }, 10); }));
+    await expect(page.locator('.animal-shout').filter({ hasText: /(На волоске|Впритирку|ИДЕАЛЬНО)! ▮/ })).toHaveCount(1, { timeout: 5_000 });
+    expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
+    expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThanOrEqual(50);
     expect(problems).toEqual([]);
 });
