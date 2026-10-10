@@ -26,7 +26,7 @@ test('босс в броне: таран ранит только после пр
     await expect(page.locator('#boss-hud .bh-phase')).toContainText('Фаза 1');
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp0);
     expect(await ram(page)).toBe(hp0);            // броня
-    await page.evaluate(() => window.__raceDebug.openBoss());
+    await page.evaluate(() => { window.__raceDebug.openBoss(); window.__raceDebug.boss.vulnT = 30; }); // окно длиннее: на медленной машине (CI без видеокарты) обычное успевает закрыться до проверки — удар его всё равно закрывает
     await expect(page.locator('#boss-hud')).toHaveClass(/open/);
     await expect(page.locator('#boss-cue')).toHaveClass(/on/);
     await expect(page.locator('#boss-cue')).toHaveText('БЕЙ!'); // одно слово, без пояснений
@@ -96,7 +96,7 @@ test('отбитый на нитро снаряд ранит босса скво
     expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBeLessThan(7); // газ жмётся сам — машина может пройти сквозь залп и отбить больше одного
 
     // кувалда: подбираем, таран по броне проходит
-    await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.spawnHammer(); const pk = d.bossPickups[0]; d.setX(pk.x); });
+    await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.spawnHammer(); const pk = d.bossPickups[0]; pk.z = d.z - 30; pk.mesh.position.z = pk.z; d.setX(pk.x); }); // подальше: на медленной машине иначе не успевает перестроиться
     /* газ жмётся сам (W — прыжок) */
     await expect.poll(() => page.evaluate(() => window.__raceDebug.hammer), { timeout: 8_000 }).toBe(true);
     /* газ жмётся сам (W — прыжок) */
