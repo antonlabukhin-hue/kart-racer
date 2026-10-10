@@ -635,3 +635,52 @@ test('слипстрим: мешок копит бак, «Рывок» при у
     expect(end).toMatchObject({ nitroUsed: 1, slips: 1 });
     expect(problems).toEqual([]);
 });
+
+// A/B правила провала (src/fail-rules.js), вариант «ГАИ на хвосте»: два сердца, погоня за любую аварию,
+// ушёл от ГАИ — сердца снова полные, авария во время погони — поймали
+test('«ГАИ на хвосте» (A/B): разлом — тоже погоня, ушёл — сердца полные, вторая в погоне — конец', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page, 'Тестер', './?fail=chase');
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    expect(await page.evaluate(() => window.__raceDebug.fail)).toMatchObject({ variant: 'chase', maxStrikes: 2, chaseAll: true });
+    await expect(page.locator('#heartsDisplay i')).toHaveCount(2);
+    // разлом — не машина, но в этом варианте ГАИ гонится за любую аварию
+    const res = await page.evaluate(async () => {
+        const g = window.__raceDebug;
+        let gp = null;
+        for (let i = 0; i < 12 && !gp; i++) {
+            gp = g.gaps.find(x => !(x.fallT > 0) && x.zFar < g.z - 5);
+            if (!gp) { g.setZ(g.z - 400); await new Promise(r => setTimeout(r, 800)); }
+        }
+        if (!gp) return null;
+        const before = g.strikes;
+        g.setZ((gp.zNear + gp.zFar) / 2);
+        for (let i = 0; i < 40 && g.strikes === before; i++) await new Promise(r => setTimeout(r, 50));
+        return g.strikes - before;
+    });
+    expect(res).toBe(1);
+    await expect(page.locator('.police-hud')).toBeVisible();
+    // погоня кончилась — ушёл: сердца снова полные
+    await page.evaluate(() => { window.__raceDebug.police.state.t = 0.05; });
+    await expect(page.locator('.police-hud')).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
+    // две аварии подряд с попуткой: первая — погоня, вторая — поймали
+    const crash = () => page.evaluate(async () => {
+        const g = window.__raceDebug, before = g.strikes;
+        for (let i = 0; i < 20 && g.strikes === before && g.state === 'racing'; i++) {
+            const c = g.cars[0]; c.hitCooldown = 0; c.x = g.x; c.z = g.z; c.mesh.position.set(c.x, 0, c.z);
+            await new Promise(r => setTimeout(r, 50));
+        }
+        return g.strikes;
+    });
+    expect(await crash()).toBe(1);
+    await expect(page.locator('.police-hud')).toBeVisible();
+    await page.evaluate(() => { const c = window.__raceDebug.cars[0]; c.x = 99; c.mesh.position.x = 99; });
+    await page.waitForTimeout(600);
+    expect(await crash()).toBe(2);
+    await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 15_000 });
+    const end = await page.evaluate(() => window.__analytics.events().filter(e => e.e === 'race_end').pop());
+    expect(end).toMatchObject({ ab: 'chase', kind: 'inf' });
+    expect(problems).toEqual([]);
+});

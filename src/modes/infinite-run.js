@@ -50,7 +50,7 @@ export function createInfiniteRun(ctx) {
     const weekTh = weekTheme().theme; // пейзаж недели: «Е» за две
     const patEnds = [], patHit = new Set(); // узоры: где кончаются и какие задеты
     const roots = [], box = new THREE.Box3(); // объекты кругов в сцене — для уборки позади
-    const police = createPolice(scene, function() { ctx.say('police'); }, function() { const s = ctx.stats; s.escapes = (s.escapes || 0) + 1; });
+    const police = createPolice(scene, function() { ctx.say('police'); }, function() { const s = ctx.stats; s.escapes = (s.escapes || 0) + 1; if (ctx.onEscape) ctx.onEscape(); }, ctx.chaseTime); // ctx.chaseTime, ctx.onEscape — правило провала A/B (src/fail-rules.js)
     // цели «До соперника N м»: таблица устройства и соперники сразу, мировая — когда придёт с сервера
     const withRival = function(t) { return ctx.rival ? t.concat([{ name: ctx.rival.name, dist: ctx.rival.dist }]).sort(function(a, b) { return a.dist - b.dist; }) : t; }; // друг из вызова — тоже цель
     const chase = player ? { targets: withRival(chaseTargets(topRuns(loadBoard(), 'all', Date.now(), me), me, best)), passed: new Set() } : null;
