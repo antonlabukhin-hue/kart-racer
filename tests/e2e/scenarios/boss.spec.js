@@ -96,7 +96,7 @@ test('отбитый на нитро снаряд ранит босса скво
     expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBeLessThan(7); // газ жмётся сам — машина может пройти сквозь залп и отбить больше одного
 
     // кувалда: подбираем, таран по броне проходит
-    await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.spawnHammer(); const pk = d.bossPickups[0]; pk.z = d.z - 30; pk.mesh.position.z = pk.z; d.setX(pk.x); }); // подальше: на медленной машине иначе не успевает перестроиться
+    await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.boss.invuln = 30; /* таран с автогазом сразу тратил кувалду — снимает таран ниже */ d.spawnHammer(); const pk = d.bossPickups[0]; pk.z = d.z - 30; pk.mesh.position.z = pk.z; d.setX(pk.x); }); // подальше: на медленной машине иначе не успевает перестроиться
     /* газ жмётся сам (W — прыжок) */
     // держим машину на полосе кувалды до подбора (её тянет к середине полосы; на медленной машине не доезжала)
     await page.evaluate(() => new Promise(res => { const d = window.__raceDebug, pk = d.bossPickups[0], px = pk ? pk.x : d.x; let n = 0; const f = () => { d.setX(px); if (!d.hammer && ++n < 600) requestAnimationFrame(f); else res(); }; f(); }));
