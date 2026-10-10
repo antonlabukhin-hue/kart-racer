@@ -14,6 +14,8 @@ import { renderRideBar, RIDES, createRideState, startRide, tickRide, rideOn, rid
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
 import { showMoveArrows } from './move-tutor.js';
+import { nearMissStep } from './near-miss.js';
+import { laneAssist } from './lane-assist.js';
 import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears } from './traffic-cars.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
@@ -8429,6 +8431,7 @@ function startGaragePreview(carId) {
                     xVelocity += (Math.random() - 0.5) * 0.04 * deltaTime * 60;
                 }
                 xPos += xVelocity * deltaTime * 15;
+                if (!swStep) xPos = laneAssist(xPos, xVelocity, deltaTime, !!(currentKeys.a || currentKeys.d), onOil); // отпустил руль — в центр ближайшей полосы (src/lane-assist.js)
 
                 const globalMaxX = TRACK_WIDTH / 2 - CAR_WIDTH / 2 - 0.1;
                 xPos = clamp(xPos, -globalMaxX, globalMaxX);
@@ -8888,8 +8891,7 @@ function startGaragePreview(carId) {
                     if (car.hitCooldown > 0) car.hitCooldown -= deltaTime;
                     const dx = xPos - car.x;
                     const dz = zPos - car.z;
-                    if (dz > 6) car._nm = false;
-                    else if (!car._nm && dz < -0.8 && dz > -3 && car.hitCooldown <= 0 && Math.abs(dx) < (car.hitW || 0.75) * 0.55 + 0.75) { car._nm = true; nearMiss(); }
+                    if (car.hitCooldown <= 0 && nearMissStep(car, dx, dz, (car.hitW || 0.75) * 0.55, raceTime)) nearMiss(); /* был на твоей полосе и ты увернулся в последний момент — или впритирку (src/near-miss.js) */ else if (dz > 6) car._nm = false;
                     const hw = (car.hitW || 0.75) * (ABILITY === 'narrow' ? 0.4 : 0.55); // «Мопед» — узкий
                     const hl = (car.hitL || 1.4) * 0.45;
                     if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && (carAirborne || carYOffset > 0.55) && (!hopJump || hopClears(car.kind, carYOffset))) { /* грузовик и автобус выше прыжка с места (src/traffic-cars.js) */
@@ -10252,7 +10254,7 @@ function startGaragePreview(carId) {
                         const dx = xPos - obs.x;
                         const dz = zPos - obs.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
-                        if (!obs._nm && dz < -0.6 && dz > -3 && Math.abs(dx) < obs.radius + 1.1) { obs._nm = true; nearMiss(); }
+                        if (nearMissStep(obs, dx, dz, obs.radius + 0.35, raceTime)) nearMiss();
                         const hitR = obs.radius + (ABILITY === 'narrow' ? 0.25 : 0.45);
                         if (dist < hitR || (Math.abs(dx) < hitR && sweptZ(obs.z, hitR))) { // отрезком кадра: при низком FPS зверя не проскочить насквозь
                             if ((ABILITY === 'cyborg' || risk.fever > 0) && !(carAirborne || carYOffset > 0.4)) {
