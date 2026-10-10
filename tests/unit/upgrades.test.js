@@ -50,3 +50,15 @@ describe('прокачка машин', () => {
         });
     });
 });
+
+import { fairPreset, FAIR_STATS, computeCarStats as ccs } from '../../src/upgrades.js';
+import { CAR_PRESETS as CP } from '../../src/data.js';
+describe('честный заезд: машины уравнены', () => {
+    it('у любой машины одинаковые характеристики и нет способности; вид — свой', () => {
+        const a = fairPreset(CP.raketa), b = fairPreset(CP.cheburashka);
+        expect(ccs(a, {})).toEqual(ccs(b, {}));
+        expect(a.ability).toBe(null);
+        expect(a.color).toBe(CP.raketa.color);
+        expect(a.maxSpeed).toBe(FAIR_STATS.maxSpeed);
+    });
+});

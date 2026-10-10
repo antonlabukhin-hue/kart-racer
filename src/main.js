@@ -49,7 +49,7 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI, setSeasonMode } from './ui/season-screens.js'; import { renderGifts, giftsBadge } from './ui/gifts-screen.js'; import { showChest } from './ui/main-menu.js'; import { unclaimedRewards } from './ui/menu-badges.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
-        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
+        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, fairPreset, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames, showroomFrame, frameShowroom } from './cars.js'; import { partName } from './cars-tuning.js';
         import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
@@ -4145,7 +4145,8 @@ function startGaragePreview(carId) {
             // тема уже выставлена в начале initGame
             const trackTheme = window.__trackThemeActive || 'default';
             window.__nightSpots = 0;
-            const carPreset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
+            const FAIR_CAR = typeof pendingMode !== 'undefined' && pendingMode === 'infinite' && !!(infRunOpts && infRunOpts.fair); /* «Заезд дня» и вызов: машины уравнены (src/upgrades.js fairPreset) */
+            const carPreset = FAIR_CAR ? fairPreset(CAR_PRESETS[carId] || CAR_PRESETS.cheburashka) : CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
             
             // кампания: «сложные» главы плавно ужесточаются к финалу (src/balance.js)
             const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
@@ -4154,7 +4155,7 @@ function startGaragePreview(carId) {
             let infWorld = null, infTheme = null, infSpeedK = 1, infHills = [], continues = 0;
             // попутки в бесконечной трассе: первые ~700 м не перестраиваются, дальше — постепенно (к ~3.2 км как обычно)
             let infLaneK = INF ? 0 : 1, infTrafficK = 1, infCarsBase = 0;
-            const powers = createPowers(currentPlayer && powerLevelsFor(currentPlayer, carId)); // усиления бесконечной трассы с прокачкой (src/powerups.js)
+            const powers = createPowers(currentPlayer && !FAIR_CAR && powerLevelsFor(currentPlayer, carId)); // усиления бесконечной трассы с прокачкой (src/powerups.js)
             const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
                 : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave, beast.rule()) : DIFFICULTY_CONFIG[difficulty]);
@@ -7783,7 +7784,7 @@ function startGaragePreview(carId) {
             let _nitroSfxT = 0;
 
             // характеристики с учётом прокачки (src/upgrades.js)
-            const carStats = computeCarStats(carPreset, getUpgradeLevels(carId || 'cheburashka'));
+            const carStats = computeCarStats(carPreset, FAIR_CAR ? {} : getUpgradeLevels(carId || 'cheburashka'));
             const MAX_SPEED = carStats.maxSpeed * ((carPreset.ability && carPreset.ability.id === 'bull') ? 1.08 : 1); // «Бычок» — +8%
             const ACCELERATION = carStats.accel;
             const BRAKE_FORCE = 0.025;

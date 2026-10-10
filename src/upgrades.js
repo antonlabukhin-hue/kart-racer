@@ -68,3 +68,12 @@ export function statBars(preset, levels) {
         { id: 'nitro', name: 'Нитро', v: clamp(s.nitroTime / 4.7) }
     ];
 }
+
+/**
+ * Честный заезд («Заезд дня», вызов другу): машины уравнены — одинаковые скорость, разгон, сцепление и прочность,
+ * без способности и прокачки (вид машины — свой). Иначе дорогая машина покупает место в таблице.
+ */
+export const FAIR_STATS = { maxSpeed: 0.44, accel: 0.025, durability: 1, oilGrip: 1 };
+export function fairPreset(preset) {
+    return Object.assign({}, preset, FAIR_STATS, { ability: null });
+}
