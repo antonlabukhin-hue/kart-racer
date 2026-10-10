@@ -14,7 +14,7 @@ describe('заезд вертикально', () => {
     it('камера вертикально — выше, чем боком, машина у низа экрана, всегда ниже крыши тоннеля (4,6 м)', () => {
         const p = chaseRig('portrait', 0), m = chaseRig('mobile', 0);
         expect(p.height).toBeGreaterThan(m.height);
-        expect(PORTRAIT_RIG).toEqual({ dist: 5.2, height: 3.0, lookY: 1.2, lookZoff: -15 });
+        expect(PORTRAIT_RIG).toEqual({ dist: 5.2, height: 3.0, lookY: -0.15, lookZoff: -15 });
         for (const k of [0, 0.5, 1]) expect(chaseRig('portrait', k).height + 0.6).toBeLessThan(4.6 - 0.3);
     });
 });
