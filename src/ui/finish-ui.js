@@ -143,7 +143,7 @@ export function infFinishHtml(o) {
         + '<div class="f2-main">'
         + '<div class="f2-title">' + o.title + '</div>'
         + '<div class="f2-hero"><b>' + m(h.dist) + '</b><span>м</span></div>'
-        + rec + '<div class="f2-meta">' + meta.join(' · ') + '</div>'
+        + rec + (h.goal || '') + '<div class="f2-meta">' + meta.join(' · ') + '</div>'
         + (o.chips || '') + (o.tiles || '') + (o.photo || '')
         + '</div>'
         + '<div class="f2-side">'

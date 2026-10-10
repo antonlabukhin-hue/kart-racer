@@ -6251,6 +6251,11 @@ body #finish-screen.finish-layout-f2 > .f2 { margin: auto !important; }
 #finish-screen.finish-layout-f2 .f2-rec { font: 800 14px system-ui, sans-serif; color: #d8d0e8; }
 #finish-screen.finish-layout-f2 .f2-rec.new { color: #7dff9a; font-size: 16px; text-shadow: 0 0 12px rgba(80,255,140,0.5); }
 #finish-screen.finish-layout-f2 .f2-meta { font: 700 12px system-ui, sans-serif; color: #a8a0b8; }
+/* одна цель на итогах (src/run-goal.js): что остановило, куда целиться, как */
+#finish-screen.finish-layout-f2 .f2-goal { margin: 6px 0 4px; padding: 8px 12px; border-radius: 12px; background: rgba(255,210,60,0.08); border: 1px solid rgba(255,210,60,0.35); text-align: left; max-width: 420px; }
+#finish-screen.finish-layout-f2 .f2-goal .g-why { font: 700 13px system-ui, sans-serif; color: #ffb4a8; }
+#finish-screen.finish-layout-f2 .f2-goal .g-goal { font: 900 16px/1.25 "Russo One", system-ui, sans-serif; color: #ffe27a; margin: 3px 0; }
+#finish-screen.finish-layout-f2 .f2-goal .g-tip { font: 600 12px/1.35 system-ui, sans-serif; color: #cfe6ff; }
 #finish-screen.finish-layout-f2 .fin-rewards { margin: 2px 0 0 !important; }
 #finish-screen.finish-layout-f2 .fin-stats { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; margin: 4px 0 0 !important; }
 #finish-screen.finish-layout-f2 .fin-stats > div { padding: 6px 4px !important; border-radius: 10px !important; }

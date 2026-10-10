@@ -163,7 +163,7 @@ test('бесконечная трасса: ящик «?» разбивается
         return { crates: g.stats.crates || 0, strikes: g.strikes };
     });
     expect(crate).toEqual({ crates: 1, strikes: 0 });
-    await expect(page.locator('.big-plaque')).toBeVisible();
+    await expect(page.locator('.big-plaque, .penalty-pop').first()).toBeVisible(); // исход — большой плашкой; значок 90-х (7%) — строкой сверху
     // вперёд за 600 м — там уже шипы
     await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 700); });
     // шипы — впереди машины (их нет на этом отрезке — проехать дальше; аварии по дороге не считаются)
@@ -514,7 +514,7 @@ test('итоги бесконечной трассы: «до рекорда не
     await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 300); });
     await page.waitForTimeout(300);
     await page.evaluate(() => window.__raceDebug.end('crash'));
-    await expect(page.locator('#finish-screen .fin-nearly')).toContainText('До рекорда не хватило', { timeout: 10_000 });
+    await expect(page.locator('#finish-screen .f2-goal .g-goal')).toContainText('До рекорда не хватило', { timeout: 10_000 }); // одна цель (src/run-goal.js)
     expect(problems).toEqual([]);
 });
 
