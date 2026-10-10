@@ -34,7 +34,8 @@ test('босс в броне: таран ранит только после пр
     expect(await page.evaluate(() => window.__raceDebug.boss.vulnT)).toBeLessThanOrEqual(0); // окно закрылось
     const hp1 = await page.evaluate(() => window.__raceDebug.boss.hp);
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp1);
-    await expect(page.locator('#boss-cue')).not.toHaveText('БЕЙ!'); // окно закрыто — «БЕЙ!» погас (на замахе — «УВЕРНИСЬ!»)
+    // окно закрыто — «БЕЙ!» не на экране: надпись спрятана (без класса on) или сменилась на «УВЕРНИСЬ!» на замахе
+    await expect.poll(() => page.evaluate(() => { const c = document.getElementById('boss-cue'); return !!c && c.classList.contains('on') && c.textContent.trim() === 'БЕЙ!'; })).toBe(false);
     expect(problems).toEqual([]);
 });
 
