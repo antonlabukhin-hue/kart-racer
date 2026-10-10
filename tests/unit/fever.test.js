@@ -18,7 +18,7 @@ describe('«В УДАРЕ»', () => {
     it('пока горит, цепочка не гаснет; погас — множитель снова ×1', () => {
         const r = createRisk(true);
         toMax(r);
-        expect(riskTick(r, CHAIN_WINDOW + 1)).toBe(false);
+        expect(riskTick(r, FEVER_TIME * 0.6)).toBe(false); // пока горит — цепочка держится
         expect(r.mult).toBe(MAX_MULT);
         expect(riskTick(r, FEVER_TIME)).toBe(true);
         expect(r).toMatchObject({ mult: 1, fever: 0, timer: 0 });
