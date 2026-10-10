@@ -67,8 +67,8 @@ describe('план участка', () => {
         for (let i = 1; i < all.length; i++) expect(all[i] - all[i - 1]).toBeGreaterThanOrEqual(GAP_EVERY[0]);
     });
     it('чем дальше, тем больше препятствий; «Е» есть всегда', () => {
-        const early = planStretch(0, 1000, seq(11)).items.filter(i => i.kind === 'obstacle').length;
-        const late = planStretch(9000, 10000, seq(11)).items.filter(i => i.kind === 'obstacle').length;
+        const n = (d0, s) => planStretch(d0, d0 + 1000, seq(s)).items.filter(i => i.kind === 'obstacle').length; // в среднем по 20 сидам: один сид — лотерея узоров
+        let early = 0, late = 0; for (let s = 1; s <= 20; s++) { early += n(0, s); late += n(9000, s); }
         expect(late).toBeGreaterThan(early);
         expect(planStretch(0, 1000, seq(5)).items.filter(i => i.kind === 'echip').length).toBeGreaterThan(20);
     });
