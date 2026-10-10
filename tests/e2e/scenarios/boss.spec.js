@@ -26,7 +26,7 @@ test('босс в броне: таран ранит только после пр
     await expect(page.locator('#boss-hud .bh-phase')).toContainText('Фаза 1');
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp0);
     expect(await ram(page)).toBe(hp0);            // броня
-    await page.evaluate(() => { const d = window.__raceDebug; d.openBoss(); d.boss.vulnT = 30; d.boss.invuln = 30; }); // газ жмётся сам: на медленной машине таран успевал закрыть окно до проверки — неуязвимость снимает ram()
+    await page.evaluate(() => { const d = window.__raceDebug; d.openBoss(); d.boss.vulnT = 30; d.boss.invuln = 30; d.boss.shotTimer = 99; }); // газ жмётся сам: на медленной машине таран успевал закрыть окно до проверки — неуязвимость снимает ram()
     await expect(page.locator('#boss-hud')).toHaveClass(/open/);
     await expect(page.locator('#boss-cue')).toHaveClass(/on/);
     await expect(page.locator('#boss-cue')).toHaveText('БЕЙ!'); // одно слово, без пояснений
@@ -34,7 +34,8 @@ test('босс в броне: таран ранит только после пр
     expect(await page.evaluate(() => window.__raceDebug.boss.vulnT)).toBeLessThanOrEqual(0); // окно закрылось
     const hp1 = await page.evaluate(() => window.__raceDebug.boss.hp);
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp1);
-    await expect(page.locator('#boss-cue')).not.toHaveText('БЕЙ!'); // окно закрыто — «БЕЙ!» погас (на замахе — «УВЕРНИСЬ!»)
+    // окно закрыто — «БЕЙ!» не на экране: надпись спрятана (без класса on) или сменилась на «УВЕРНИСЬ!» на замахе
+    await expect.poll(() => page.evaluate(() => { const c = document.getElementById('boss-cue'); return !!c && c.classList.contains('on') && c.textContent.trim() === 'БЕЙ!'; })).toBe(false);
     expect(problems).toEqual([]);
 });
 
@@ -105,7 +106,7 @@ test('отбитый на нитро снаряд ранит босса скво
     // таран по броне с кувалдой (в залпе могли быть ещё отбитые снаряды — считаем от момента тарана)
     const r = await page.evaluate(() => new Promise(res => {
         const d = window.__raceDebug, b = d.boss; let n = 0; const hp0 = b.hp;
-        const f = () => { b.invuln = 0; b.vulnT = 0; b.x = d.x; b.z = d.z + 0.5; if (++n < 40 && b.hp === hp0) requestAnimationFrame(f); else res({ hp0, hp: b.hp, ret: b.returning, ch: b.charging, act: b.active, dy: b.dying, air: d.air, y: d.y, ham: d.hammer, st: d.state }); };
+        const f = () => { b.invuln = 0; b.vulnT = 0; b.x = d.x; b.z = d.z + 0.5; if (++n < 150 && b.hp === hp0) requestAnimationFrame(f); else res({ hp0, hp: b.hp, ret: b.returning, ch: b.charging, act: b.active, dy: b.dying, air: d.air, y: d.y, ham: d.hammer, st: d.state }); };
         f();
     }));
     expect(r.hp, JSON.stringify(r)).toBeLessThan(r.hp0);

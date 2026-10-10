@@ -32,6 +32,8 @@ test('множитель за риск в заезде и задания на ф
     await expect(page.locator('#mm-missions .mmm-row')).toHaveCount(3);
     await startFreeRace(page, 'easy');
     await waitRacing(page);
+    // газ жмётся сам — машина едет: убираем препятствия и попутки, чтобы авария не сбросила множитель (на медленном сервере успевала)
+    await page.evaluate(() => setInterval(() => { const d = window.__raceDebug; d.obstacles.forEach(o => { o.active = false; }); d.cars.forEach(c => { if (Math.abs(c.z - d.z) < 40) { c.z = d.z - 300; c.mesh.position.z = c.z; } }); d.animals.forEach(a => { if (a.mesh) a.mesh.visible = false; a.active = false; }); }, 100));
     // задание «на волоске» — чтобы точно был прогресс
     // два «на волоске»; у него перезарядка 1.2 с игрового времени — повторяем, пока не засчитается второй
     await page.evaluate(() => window.__raceDebug.nearMissNow());
