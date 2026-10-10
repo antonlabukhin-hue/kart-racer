@@ -13,7 +13,7 @@ async function ram(page) {
     }));
 }
 
-test('босс в броне: таран ранит только после промаха его атаки', async ({ page }) => {
+test('босс: увороты копят шкалу тарана, полная — таран сам; случайное касание не ранит', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.45');
     await startFreeRace(page, 'easy');
@@ -21,21 +21,34 @@ test('босс в броне: таран ранит только после пр
     await page.evaluate(() => window.__raceDebug.spawnBossNow());
     await expect.poll(() => page.evaluate(() => !!(window.__raceDebug.boss && window.__raceDebug.boss.mesh)), { timeout: 5000 }).toBe(true);
     const hp0 = await page.evaluate(() => window.__raceDebug.boss.hp);
-    // полоска в HUD: имя, фаза и столько сегментов, сколько HP
+    // полоска в HUD: имя, фаза, столько сегментов, сколько HP, и шкала тарана
     await expect(page.locator('#boss-hud')).toHaveClass(/on/);
     await expect(page.locator('#boss-hud .bh-phase')).toContainText('Фаза 1');
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp0);
-    expect(await ram(page)).toBe(hp0);            // броня
-    await page.evaluate(() => { const d = window.__raceDebug; d.openBoss(); d.boss.vulnT = 30; d.boss.invuln = 30; d.boss.shotTimer = 99; }); // газ жмётся сам: на медленной машине таран успевал закрыть окно до проверки — неуязвимость снимает ram()
-    await expect(page.locator('#boss-hud')).toHaveClass(/open/);
-    await expect(page.locator('#boss-cue')).toHaveClass(/on/);
-    await expect(page.locator('#boss-cue')).toHaveText('БЕЙ!'); // одно слово, без пояснений
-    expect(await ram(page)).toBeLessThan(hp0);    // открыт — удар прошёл (на подобранном нитро — двойной)
-    expect(await page.evaluate(() => window.__raceDebug.boss.vulnT)).toBeLessThanOrEqual(0); // окно закрылось
+    await expect(page.locator('#boss-hud .bh-charge')).toBeVisible();
+    expect(await ram(page)).toBe(hp0);            // шкала пустая — касание только отбрасывает
+    // залп мимо: уводим машину в полосу подальше от ближайшего снаряда, пока он не пролетит
+    await page.evaluate(() => { const d = window.__raceDebug; d.boss.invuln = 30; d.forceBossAttack('shot'); });
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.bullets), { timeout: 15_000 }).toBeGreaterThan(0);
+    const got = await page.evaluate(() => new Promise(res => {
+        const d = window.__raceDebug, b = d.boss; const t0 = performance.now();
+        const f = () => {
+            d.setX(-2); d.bossBullets.forEach(bu => { bu.x = 2; bu.vx = 0; }); // снаряды гарантированно мимо: на медленной машине (CI) автоуворот не успевал
+            b._forceAtk = null; b.shotTimer = 99;
+            if ((b.charge || 0) > 0 || b.vulnT > 0 || performance.now() - t0 > 30000) res({ charge: b.charge, v: b.vulnT, bullets: d.bullets }); else requestAnimationFrame(f);
+        };
+        f();
+    }));
+    expect(got.charge > 0 || got.v > 0, JSON.stringify(got)).toBe(true);
+    await expect.poll(() => page.evaluate(() => { const w = document.querySelector('#boss-hud .bh-charge b'); return w ? parseFloat(w.style.width) : 0; })).toBeGreaterThan(0);
+    // дозаряжаем до полной: «ТАРАН!» по центру, босса тянет под машину — HP падает без всякого тарана
+    await page.evaluate(() => { const d = window.__raceDebug; d.boss.invuln = 0; d.chargeBoss(100); });
+    await expect(page.locator('#boss-cue')).toHaveText('ТАРАН!');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.boss.hp), { timeout: 10_000 }).toBeLessThan(hp0);
     const hp1 = await page.evaluate(() => window.__raceDebug.boss.hp);
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp1);
-    // окно закрыто — «БЕЙ!» не на экране: надпись спрятана (без класса on) или сменилась на «УВЕРНИСЬ!» на замахе
-    await expect.poll(() => page.evaluate(() => { const c = document.getElementById('boss-cue'); return !!c && c.classList.contains('on') && c.textContent.trim() === 'БЕЙ!'; })).toBe(false);
+    expect(await page.evaluate(() => window.__raceDebug.boss.charge)).toBeLessThan(50); // шкала с нуля (обгон попутки впритирку успевает дать +10)
+    await expect.poll(() => page.evaluate(() => { const c = document.getElementById('boss-cue'); return !!c && c.classList.contains('on') && c.textContent.trim() === 'ТАРАН!'; })).toBe(false);
     expect(problems).toEqual([]);
 });
 
@@ -78,7 +91,7 @@ test('фазы босса: баррикада в двух полосах; тар
     expect(problems).toEqual([]);
 });
 
-test('отбитый на нитро снаряд ранит босса сквозь броню; кувалда пробивает броню тараном', async ({ page }) => {
+test('отбитый на нитро снаряд ранит босса', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page, 'Тестер', './?start=0.43');
     await startFreeRace(page, 'medium');
@@ -91,26 +104,11 @@ test('отбитый на нитро снаряд ранит босса скво
     await expect.poll(() => page.evaluate(() => window.__raceDebug.bullets), { timeout: 15_000 }).toBeGreaterThan(0);
     await page.evaluate(() => new Promise(res => {
         const d = window.__raceDebug; let n = 0;
-        const f = () => { d.giveNitro(); if (++n < 150 && d.boss.hp >= 7) requestAnimationFrame(f); else res(); };
+        const f = () => { d.giveNitro(); const bu = d.bossBullets.filter(b => !b.reflected)[0]; if (bu) d.setX(bu.x); /* босс в ~20 м: встаём на линию снаряда */ if (++n < 150 && d.boss.hp >= 7) requestAnimationFrame(f); else res(); };
         f();
     }));
     expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBeLessThan(7); // газ жмётся сам — машина может пройти сквозь залп и отбить больше одного
 
-    // кувалда: подбираем, таран по броне проходит
-    await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.boss.invuln = 30; /* таран с автогазом сразу тратил кувалду — снимает таран ниже */ d.spawnHammer(); const pk = d.bossPickups[0]; pk.z = d.z - 30; pk.mesh.position.z = pk.z; d.setX(pk.x); }); // подальше: на медленной машине иначе не успевает перестроиться
-    /* газ жмётся сам (W — прыжок) */
-    // держим машину на полосе кувалды до подбора (её тянет к середине полосы; на медленной машине не доезжала)
-    await page.evaluate(() => new Promise(res => { const d = window.__raceDebug, pk = d.bossPickups[0], px = pk ? pk.x : d.x; let n = 0; const f = () => { d.setX(px); if (!d.hammer && ++n < 600) requestAnimationFrame(f); else res(); }; f(); }));
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.hammer), { timeout: 8_000 }).toBe(true);
-    /* газ жмётся сам (W — прыжок) */
-    // таран по броне с кувалдой (в залпе могли быть ещё отбитые снаряды — считаем от момента тарана)
-    const r = await page.evaluate(() => new Promise(res => {
-        const d = window.__raceDebug, b = d.boss; let n = 0; const hp0 = b.hp;
-        const f = () => { b.invuln = 0; b.vulnT = 0; b.x = d.x; b.z = d.z + 0.5; if (++n < 150 && b.hp === hp0) requestAnimationFrame(f); else res({ hp0, hp: b.hp, ret: b.returning, ch: b.charging, act: b.active, dy: b.dying, air: d.air, y: d.y, ham: d.hammer, st: d.state }); };
-        f();
-    }));
-    expect(r.hp, JSON.stringify(r)).toBeLessThan(r.hp0);
-    expect(await page.evaluate(() => window.__raceDebug.hammer)).toBe(false);
     expect(problems).toEqual([]);
 });
 

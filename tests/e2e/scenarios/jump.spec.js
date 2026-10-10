@@ -8,7 +8,7 @@ test('разлом: по полосе трамплина машина взлет
     await startFreeRace(page, 'easy');
     await waitRacing(page);
     const gap = await page.evaluate(() => { const g = window.__raceDebug.gaps[0]; return { zNear: g.zNear, zFar: g.zFar, lane: g.lanes[0] }; });
-    const laneX = [-1.5, 0, 1.5][gap.lane];
+    const laneX = [-2, 0, 2][gap.lane];
     /* газ жмётся сам (W — прыжок) */
     const r = await page.evaluate(({ laneX, zFar }) => new Promise(res => {
         // удары за перелёт — по журналу ударов: жвачка над разломом лечит, и разница аварий бывала −1

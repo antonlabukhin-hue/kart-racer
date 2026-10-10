@@ -87,6 +87,13 @@ export const SFX = {
         tone(ctx, out, t0, vs, 'square', 495, 0.02, 0.4, 0.07, 1980, 0.03);
         noiseBurst(ctx, out, t0, vs, noise, 0.02, 0.4, 0.3, 'bandpass', [700, 3500], 1.4);  // поток
         tone(ctx, out, t0, vs, 'sine', 2637, 0.3, 0.18, 0.06);                             // искра в конце
+    },
+    /** Подныр: днище скребёт асфальт ~0.85 с — металлический скрежет рывками и визг (в диапазоне динамика телефона) */
+    scrape: function(ctx, out, t0, vs, noise) {
+        noiseBurst(ctx, out, t0, vs, noise, 0, 0.06, 0.22, 'highpass', 1500, 0.7);          // «шварк» касания
+        for (let i = 0; i < 7; i++) noiseBurst(ctx, out, t0, vs, noise, 0.04 + i * 0.11, 0.13, 0.42 - i * 0.03, 'bandpass', 1900 + (i % 3) * 600, 3.5); // скрежет рывками
+        tone(ctx, out, t0, vs, 'sawtooth', 1760, 0.03, 0.8, 0.035, 1480);                  // визг металла
+        tone(ctx, out, t0, vs, 'square', 2349, 0.05, 0.7, 0.018, 2100);
     }
 };
 
@@ -98,7 +105,7 @@ export function makeNoise(ctx) {
 }
 
 /** Множители громкости: каждый звук на слух как «Е» (авария — чуть громче: важное событие) */
-export const SFX_LEVEL = { ring: 1, crash: 0.63, crate: 2.5, heart: 1.35, shield: 1.4, nitro: 1.95 };
+export const SFX_LEVEL = { ring: 1, crash: 0.63, crate: 2.5, heart: 1.35, shield: 1.4, nitro: 1.95, scrape: 3 };
 
 /** Сыграть звук name с выравниванием громкости; vs — общая громкость эффектов */
 export function playKit(name, ctx, out, t0, vs, noise, pitch) {

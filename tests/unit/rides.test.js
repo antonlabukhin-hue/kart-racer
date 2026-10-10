@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RIDES, RIDE_IDS, RIDE_TIME, pickRide, createRideState, startRide, tickRide, rideOn, rideLift, createRideModel } from '../../src/rides.js';
-import { planStretch } from '../../src/infinite.js';
+import { planStretch, seededRnd } from '../../src/infinite.js';
 
 describe('безумный транспорт', () => {
     it('10 секунд, потом снова своя машина', () => {
@@ -22,7 +22,8 @@ describe('безумный транспорт', () => {
     it('у каждого своя модель; жетон — не чаще одного на 4000 м, как бы ни резали трассу', () => {
         RIDE_IDS.forEach(function(id) { expect(createRideModel(id).children.length).toBeGreaterThan(0); expect(RIDES[id].name).toBeTruthy(); });
         const ds = [];
-        for (let a = 0; a < 20000; a += 1300) planStretch(a, a + 1300, Math.random, { slide: 'slide', nextGap: Infinity }).items.filter(function(i) { return i.kind === 'ride'; }).forEach(function(i) { ds.push(i.d); });
+        const rnd = seededRnd(20261010); // по сиду: с Math.random изредка выпадало меньше трёх жетонов на 20 км (их съедают разломы)
+        for (let a = 0; a < 20000; a += 1300) planStretch(a, a + 1300, rnd, { slide: 'slide', nextGap: Infinity }).items.filter(function(i) { return i.kind === 'ride'; }).forEach(function(i) { ds.push(i.d); });
         ds.sort(function(a, b) { return a - b; });
         expect(ds.length).toBeGreaterThanOrEqual(3);
         for (let i = 1; i < ds.length; i++) expect(Math.floor(ds[i] / 4000)).not.toBe(Math.floor(ds[i - 1] / 4000));

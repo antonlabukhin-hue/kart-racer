@@ -14,7 +14,7 @@ test('глава 1 укладывается в бюджет: трамплин д
         const f = () => {
             (d.animals || []).forEach(a => { a.hit = true; if (a.mesh) a.mesh.visible = false; });
             const g = gaps.find(g => g.z < d.z + 2 && g.z > d.z - 80);
-            if (g) d.setX([-1.5, 0, 1.5][g.lane]);
+            if (g) d.setX([-2, 0, 2][g.lane]);
             if (d.air && ev.jump == null) ev.jump = d.raceTime;
             if (d.boss && d.boss.mesh && ev.boss == null) ev.boss = d.raceTime;
             if (d.boss && d.boss.active) { d.boss.vulnT = 2; d.boss.x = d.x; d.boss.z = d.z - 0.5; }

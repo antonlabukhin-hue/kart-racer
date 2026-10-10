@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Галерея попуток</title>
+    <style>
+        /* Инструмент разработки: npm run dev → http://localhost:5173/tools/traffic-gallery.html?yaw=0.7
+           Попутки рядом с машиной игрока и планкой высоты прыжка с места — видно, что выше прыжка. */
+        body { margin: 0; background: #14121a; overflow: hidden; }
+    </style>
+</head>
+<body>
+<script type="module">
+    import * as THREE from 'three';
+    import { buildTraffic, KINDS, TALL_H } from '../src/traffic-cars.js';
+    import { buildShowroomCar } from '../src/cars.js';
+    import { HOP_V } from '../src/hop-duck.js';
+    import { GRAVITY } from '../src/race-physics.js';
+    const q = new URLSearchParams(location.search), yaw = parseFloat(q.get('yaw') || '0.7');
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight); document.body.appendChild(renderer.domElement);
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x1c1a24);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const d = new THREE.DirectionalLight(0xffe0b0, 1.6); d.position.set(3, 5, 2); scene.add(d);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 12), new THREE.MeshStandardMaterial({ color: 0x2a2a34 }));
+    ground.rotation.x = -Math.PI / 2; scene.add(ground);
+    const kinds = Array.from(new Set(KINDS));
+    const all = new THREE.Group(); scene.add(all);
+    kinds.forEach(function(k, i) { const t = buildTraffic(k, [0x3366aa, 0xcc3322, 0x22aa66, 0xddaa22][i % 4]).group; t.position.set((i - kinds.length / 2) * 1.6, 0.1, 0); all.add(t); });
+    try { const p = buildShowroomCar(Object.keys((await import('../src/data.js')).CAR_PRESETS)[0]).group; p.scale.setScalar(0.5); p.position.set(kinds.length / 2 * 1.6 + 0.4, 0, 0); all.add(p); } catch (e) {}
+    const peak = HOP_V * HOP_V / (2 * GRAVITY) + 0.1; // высота прыжка с места над дорогой
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(kinds.length * 1.6 + 3, 0.02, 0.02), new THREE.MeshBasicMaterial({ color: 0xff3344 }));
+    bar.position.set(0.4, peak, 1.4); all.add(bar);
+    all.rotation.y = yaw;
+    const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 3.2, 13); camera.lookAt(0, 0.7, 0);
+    (function frame() { renderer.render(scene, camera); requestAnimationFrame(frame); })(); window.__ready = true;
+</script>
+</body>
+</html>

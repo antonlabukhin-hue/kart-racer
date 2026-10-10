@@ -47,3 +47,56 @@ describe('подсказка полосы', () => {
         expect(laneAdvice(0, 100, [{ x: 0, z: 60 }])).toBe(null);                       // далеко
     });
 });
+
+import { underDuck, carsToClear, DUCK_CLEAR } from '../../src/hop-duck.js';
+describe('пусто под шлагбаумом', () => {
+    const h = { z: -100, x0: -1, x1: 1 };
+    it('шипы в полосе рамы рядом с ней — под ней, в стороне или далеко — нет', () => {
+        expect(underDuck(h, 0, -100)).toBe(true);
+        expect(underDuck(h, 0, -100 + DUCK_CLEAR - 1)).toBe(true);
+        expect(underDuck(h, 2.5, -100)).toBe(false);
+        expect(underDuck(h, 0, -120)).toBe(false);
+    });
+    it('попутка перед рамой переезжает за неё, пока рама далеко', () => {
+        const cars = [{ x: 0, z: -90 }, { x: 0, z: -140 }, { x: 2.5, z: -100 }];
+        const r = carsToClear(h, cars, -30);
+        expect(r.length).toBe(1);
+        expect(r[0].car).toBe(cars[0]);
+        expect(r[0].z).toBeLessThan(h.z - DUCK_CLEAR);
+    });
+    it('рама уже близко — не переставляем (было бы видно)', () => {
+        expect(carsToClear(h, [{ x: 0, z: -95 }], -80)).toEqual([]);
+    });
+});
+
+import { duckK, duckSquash, duckWillClear, createHurdle, blinkHurdle, DUCK_SCALE } from '../../src/hop-duck.js';
+describe('подныр читается', () => {
+    it('машина сплющена до 40% и шире; без подныра — как была', () => {
+        const st = createMoves();
+        expect(duckSquash(duckK(st))).toEqual({ sx: 1, sy: 1, sz: 1 });
+        duck(st, false); tickMoves(st, 0.3);
+        const q = duckSquash(duckK(st));
+        expect(q.sy).toBeCloseTo(DUCK_SCALE);
+        expect(DUCK_SCALE).toBeLessThanOrEqual(0.4);
+        expect(q.sx).toBeGreaterThan(1.1);
+    });
+    it('рама зелёная, только если подныр продержится до неё', () => {
+        const st = createMoves();
+        expect(duckWillClear(st, 10, 25)).toBe(false); // не в подныре
+        duck(st, false);                               // 0.9 с
+        expect(duckWillClear(st, 10, 25)).toBe(true);  // 0.4 с до рамы
+        expect(duckWillClear(st, 30, 25)).toBe(false); // 1.2 с — встанет раньше
+        tickMoves(st, 0.8);
+        expect(duckWillClear(st, 0.3, 25)).toBe(true); // уже под ней
+    });
+    it('у рамы для подныра — просвет, зелёный в подныре', () => {
+        const g = createHurdle('barrier', [0, 1, 2], [-2, 0, 2], -50, 2);
+        expect(g.userData.okMat.opacity).toBe(0);
+        for (let i = 0; i < 20; i++) blinkHurdle(g, i * 0.016, true);
+        expect(g.userData.okMat.opacity).toBeGreaterThan(0.3);
+        expect(g.userData.lamps[0].color.getHex()).toBe(0x3cff6a);
+        blinkHurdle(g, 1, false);
+        expect(g.userData.lamps[0].color.getHex()).not.toBe(0x3cff6a);
+        expect(createHurdle('pipe', [0], [-2, 0, 2], -50, 2).userData.okMat).toBeUndefined();
+    });
+});
