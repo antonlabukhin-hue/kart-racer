@@ -32,7 +32,7 @@ export function trafficPlan(z, lane, h) {
         if (z <= a && z >= b) y = Math.sin((a - z) / (a - b) * Math.PI) * JUMP_H;
     });
     if (target == null) (h.works || []).forEach(function(w) {
-        if (w.type !== 'roadworks' || !(z < w.z0 + LOOK && z > w.z1 - 2)) return;
+        if ((w.type !== 'roadworks' && w.type !== 'oncoming') || !(z < w.z0 + LOOK && z > w.z1 - 2)) return; // встречка (src/oncoming-lane.js) — тоже уходим из полосы
         if (laneOf(w.x) === lane) { const l = otherLane(lane, [laneOf(w.x)]); if (l != null) target = l; }
     });
     if (target == null) (h.ramps || []).forEach(function(r) {
