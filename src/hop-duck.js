@@ -192,3 +192,29 @@ export function laneAdvice(x, z, threats, laneW) {
     if (free.length === 2) return x > 0.1 ? 'left' : x < -0.1 ? 'right' : 'left';
     return free[0] < 0 ? 'left' : 'right';
 }
+
+/**
+ * Под шлагбаумом и рамой должно быть пусто — иначе подныр бесполезен: шипы под ним не проскочить,
+ * а попутка там стоит стеной. h — { z, x0, x1 }; в полосах препятствия и на DUCK_CLEAR м до и после.
+ */
+export const DUCK_CLEAR = 6;
+export function underDuck(h, x, z, pad) {
+    const p = pad == null ? DUCK_CLEAR : pad;
+    return x > h.x0 - 0.4 && x < h.x1 + 0.4 && z > h.z - p && z < h.z + p;
+}
+/**
+ * Попутки, которые окажутся под рамой, когда подъедет игрок: впереди неё (z < h.z) им не мешают, а те, что
+ * между игроком и рамой ближе 25 м к ней, — переставляем за раму (только пока рама далеко, ≥ 25 м: переноса не видно).
+ * Возвращает список попуток, которые надо переставить, и новое z для каждой.
+ */
+export function carsToClear(h, cars, zPos) {
+    const dist = zPos - h.z;
+    if (dist < 25 || dist > 110) return [];
+    const out = [];
+    (cars || []).forEach(function(c, i) {
+        if (!c || c.active === false) return;
+        if (!(c.x > h.x0 - 0.5 && c.x < h.x1 + 0.5)) return;
+        if (c.z > h.z - DUCK_CLEAR && c.z < h.z + 25) out.push({ car: c, z: h.z - DUCK_CLEAR - 8 - (i % 4) * 5 });
+    });
+    return out;
+}

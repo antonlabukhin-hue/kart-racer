@@ -9,7 +9,7 @@ import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
 const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
-import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice } from './hop-duck.js';
+import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice, underDuck, carsToClear } from './hop-duck.js';
 import { renderRideBar, RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
@@ -8964,6 +8964,7 @@ function startGaragePreview(carId) {
                     const h = hurdles[hi];
                     if (showArrows && !h.done && zPos - h.z > 3 && zPos - h.z < 30 && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && !arrowFor) arrowFor = actOf(h.kind);
                     blinkHurdle(h.mesh, raceTime);
+                    if (!h.done && actOf(h.kind) === 'duck' && zPos - h.z < 110) { if (!h.cleared) { h.cleared = true; obstacles.forEach(function(o) { if (o.active && underDuck(h, o.x != null ? o.x : o.mesh.position.x, o.z)) { o.active = false; o.mesh.visible = false; } }); } carsToClear(h, cars, zPos).forEach(function(m) { m.car.z = m.z; m.car.mesh.position.z = m.z; }); } // под рамой пусто: ни шипов, ни попуток — подныр всегда спасает
                     if (h.done) { if (h.z > zPos + 0.6 && h.mesh.visible) h.mesh.visible = false; continue; } // проехал — не закрывает камеру
                     if (!h.hintShown && h.z < zPos && zPos - h.z < 38) { h.hintShown = true; hurdleHint(actOf(h.kind)); }
                     if (!sweptZ(h.z, 0.35) || xPos < h.x0 - 0.25 || xPos > h.x1 + 0.25) { if (h.z > zPos + 1) h.done = true; continue; } // объехал — тоже позади

@@ -47,3 +47,24 @@ describe('подсказка полосы', () => {
         expect(laneAdvice(0, 100, [{ x: 0, z: 60 }])).toBe(null);                       // далеко
     });
 });
+
+import { underDuck, carsToClear, DUCK_CLEAR } from '../../src/hop-duck.js';
+describe('пусто под шлагбаумом', () => {
+    const h = { z: -100, x0: -1, x1: 1 };
+    it('шипы в полосе рамы рядом с ней — под ней, в стороне или далеко — нет', () => {
+        expect(underDuck(h, 0, -100)).toBe(true);
+        expect(underDuck(h, 0, -100 + DUCK_CLEAR - 1)).toBe(true);
+        expect(underDuck(h, 2.5, -100)).toBe(false);
+        expect(underDuck(h, 0, -120)).toBe(false);
+    });
+    it('попутка перед рамой переезжает за неё, пока рама далеко', () => {
+        const cars = [{ x: 0, z: -90 }, { x: 0, z: -140 }, { x: 2.5, z: -100 }];
+        const r = carsToClear(h, cars, -30);
+        expect(r.length).toBe(1);
+        expect(r[0].car).toBe(cars[0]);
+        expect(r[0].z).toBeLessThan(h.z - DUCK_CLEAR);
+    });
+    it('рама уже близко — не переставляем (было бы видно)', () => {
+        expect(carsToClear(h, [{ x: 0, z: -95 }], -80)).toEqual([]);
+    });
+});
