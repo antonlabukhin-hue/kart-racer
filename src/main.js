@@ -13,6 +13,7 @@ import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurd
 import { renderRideBar, RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
+import { showMoveArrows } from './move-tutor.js';
 import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears } from './traffic-cars.js';
         import * as THREE from 'three';
         import { SoundEngine } from './audio.js';
@@ -6799,8 +6800,7 @@ function startGaragePreview(carId) {
                 if (gameState !== 'racing') return;
                 if (duck(moves, carAirborne)) try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.45); } catch (e) {}
             }
-            const ARROW_RUNS = 3; // первые заезды — стрелки на экране (как в Subway Surfers)
-            const showArrows = (currentPlayer && currentPlayer.infinite ? currentPlayer.infinite.runs || 0 : 0) < ARROW_RUNS || (import.meta.env.MODE === 'test' && window.__forceArrows);
+            const showArrows = showMoveArrows(currentPlayer) || (import.meta.env.MODE === 'test' && window.__forceArrows); // стрелки: новичку 3 заезда, после обновления управления — всем ещё 2 (src/move-tutor.js)
             let arrowEl = null, arrowAct = null;
             function moveArrow(act) { // act: 'jump' | 'duck' | 'left' | 'right' | null
                 if (act === arrowAct) return;

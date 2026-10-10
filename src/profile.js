@@ -7,6 +7,7 @@
 import { applyMissionProgress, ensureMissions } from './missions.js';
 import { rankOf, totalFromSeason, RANKS } from './ranks.js';
 import { riskToXp } from './risk-combo.js';
+import { countArrowRun } from './move-tutor.js';
 
 export const PROFILES_KEY = 'road_racing_profiles_v1';
 export const SESSION_KEY = 'road_racing_session_player';
@@ -250,6 +251,7 @@ export function applyRaceResult(profile, state, meta, ctx) {
     const vhs = Math.max(0, Math.floor(m.vhs || 0));
     profile.season.vhs = (profile.season.vhs || 0) + vhs;
     // бесконечная трасса: опыт за дальность (1 XP за 20 м) и рекорд
+    countArrowRun(profile); // стрелки движений: учёт заездов после обновления (src/move-tutor.js)
     let infBest = null;
     if (m.distance > 0) {
         const dist = Math.round(m.distance);
