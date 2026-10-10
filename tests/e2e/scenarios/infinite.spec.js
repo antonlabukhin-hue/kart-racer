@@ -169,6 +169,7 @@ test('бесконечная трасса: ящик «?» разбивается
     // шипы — впереди машины (их нет на этом отрезке — проехать дальше; аварии по дороге не считаются)
     await expect.poll(() => page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); const ok = g.obstacles.some(o => o.type === 'spikes' && o.active && o.z < g.z - 3); if (!ok) g.setZ(g.z - 90); return ok; }), { timeout: 30_000 }).toBe(true);
     await page.waitForTimeout(1500); // разогнаться
+    await expect.poll(() => page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); return g.speed; }), { timeout: 20_000 }).toBeGreaterThan(0.1); // под нагрузкой машина после телепортов разгоняется дольше — ждём по скорости, а не по часам
     const hit = await page.evaluate(async () => {
         const g = window.__raceDebug;
         (g.animals || []).forEach(an => { an.hit = true; });
