@@ -175,7 +175,8 @@ test('бесконечная трасса: ящик «?» разбивается
         (g.animals || []).forEach(an => { an.hit = true; });
         const o = g.obstacles.filter(o => o.type === 'spikes' && o.active && o.z < g.z - 3).sort((a, b) => b.z - a.z)[0];
         // ставим на шипы, пока не сработают (под нагрузкой кадр может запоздать)
-        for (let i = 0; i < 20 && !(g.stats.spikes > 0); i++) {
+        for (let i = 0; i < 80 && !(g.stats.spikes > 0); i++) {
+            if (g.speed < 0.1) { g.setStrikes(0); await new Promise(r => setTimeout(r, 50)); continue; } // после телепорта под нагрузкой машина стоит — ждём, пока поедет
             g.setStrikes(0); g.setX(o.x); g.setZ(o.z + 0.2);
             await new Promise(r => setTimeout(r, 50));
         }
