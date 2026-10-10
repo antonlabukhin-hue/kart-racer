@@ -10,7 +10,7 @@ import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
 const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
 import { createMoves, hop, duck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice, underDuck, carsToClear, DUCK_CLEAR, planGates, GATE_AFTER, GATE_SIGN, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
-import { renderRideBar, RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
+import { RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
 import { showMoveArrows } from './move-tutor.js';
@@ -8232,7 +8232,7 @@ function startGaragePreview(carId) {
                 }
                 
                 // Комбо
-                comboTime += deltaTime; riskTick(risk, deltaTime); renderRiskHud(risk);
+                comboTime += deltaTime; riskTick(risk, deltaTime); renderRiskHud(risk, ride); /* одна шкала: цепочка, «В ударе», транспорт (src/ui/risk-hud.js) */
                 if (inf && infWorld) inf.tick(deltaTime);
                 if (chunkCull) { chunkCull.update(zPos, Math.min(camera.far, scene.fog ? scene.fog.far + 25 : camera.far), 30); if (++_cullN % 30 === 0) chunkCull.sweep(); }
                 if (comboTime > comboMax) comboMax = comboTime;
@@ -8724,7 +8724,7 @@ function startGaragePreview(carId) {
                     playerCar.userData._suspensionKick *= 0.72;
                     if (playerCar.userData._suspensionKick < 0.008) playerCar.userData._suspensionKick = 0;
                 }
-                const rideEnded = tickRide(ride, deltaTime); renderRideBar(ride); /* шкала: сколько ещё на транспорте */ if (rideEnded) { setRideModel(null); try { showBigPlaque('🏁 ПРИЕХАЛИ', 'Снова на своей машине', 'armor'); } catch (e) {} }
+                const rideEnded = tickRide(ride, deltaTime); /* сколько ещё на транспорте — в общей шкале (src/ui/risk-hud.js) */ if (rideEnded) { setRideModel(null); try { showBigPlaque('🏁 ПРИЕХАЛИ', 'Снова на своей машине', 'armor'); } catch (e) {} }
                 if (rideModel) { // маячки мигают, винт крутится, из труб — чёрный дым (src/ride-models.js)
                     if (rideModel.userData.anim) rideModel.userData.anim(deltaTime);
                     rideSmokeT -= deltaTime;

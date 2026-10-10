@@ -4,7 +4,6 @@
  * ямы, шипы, масло и разломы не мешают; работают магнит и двойные «Е», за каждую снесённую попутку или зверя — FEVER_RAM_E «Е».
  * Здесь — что делать каждый кадр и как это выглядит (рамка-пламя по краям экрана, плашка, звук).
  */
-import { FEVER_TIME } from './risk-combo.js';
 
 export const FEVER_RAM_E = 5;
 
@@ -18,7 +17,7 @@ export function feverHold(risk, powers) {
     return 0.25;
 }
 
-/** Рамка по краям экрана: k — 0..1, сколько ещё горит (под конец мигает) */
+/** Рамка по краям экрана (под конец мигает); надпись и секунды — в общей шкале заезда (src/ui/risk-hud.js) */
 export function renderFeverFx(risk) {
     let el = document.getElementById('fever-fx');
     const on = !!(risk && risk.fever > 0);
@@ -26,11 +25,7 @@ export function renderFeverFx(risk) {
     if (!el) {
         el = document.createElement('div');
         el.id = 'fever-fx';
-        el.innerHTML = '<b>🔥 В УДАРЕ <em></em></b><i><u></u></i>';
         document.body.appendChild(el);
     }
-    const k = risk.fever / FEVER_TIME;
-    el.querySelector('u').style.width = Math.round(k * 100) + '%';
-    const sec = el.querySelector('em'); if (sec) sec.textContent = risk.fever.toFixed(1) + ' с'; // сколько ещё осталось
     el.classList.toggle('ending', risk.fever < 1.6);
 }
