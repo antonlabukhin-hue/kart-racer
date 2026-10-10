@@ -33,6 +33,8 @@ export function tickRide(st, dt) {
     return false;
 }
 export function rideOn(st) { return !!(st && st.id); }
+/** «Кукурузник» в полёте: ничего не сбивает — пролетает над попутками, зверями и преградами */
+export function rideFlies(st) { return !!(st && st.id && RIDES[st.id] && RIDES[st.id].fly); }
 /** Высота полёта «кукурузника»: взлёт и посадка по 0.8 с */
 export function rideLift(st) {
     if (!st || !st.id || !RIDES[st.id].fly) return 0;
@@ -47,7 +49,7 @@ export function createRideModel(id) {
     return g;
 }
 
-/** Жетон 🚜 на трассе: светящийся круг с иконкой (как усиления) */
+/** Жетон 🚜 на трассе: крупный светящийся круг с иконкой и столб света — не спутать с усилениями и ящиком */
 let tokenMat = null;
 export function createRideToken() {
     if (!tokenMat) {
@@ -61,7 +63,9 @@ export function createRideToken() {
         const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.userData.keep = true;
         tokenMat = new THREE.SpriteMaterial({ map: t, depthWrite: false });
     }
-    const grp = new THREE.Group(); const s = new THREE.Sprite(tokenMat); s.scale.set(1.6, 1.6, 1); grp.add(s);
+    const grp = new THREE.Group(); const s = new THREE.Sprite(tokenMat); s.scale.set(2.0, 2.0, 1); grp.add(s);
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.6, 6, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xff8a3a, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide }));
+    beam.position.y = 2.2; grp.add(beam); // столб света — видно издалека
     return grp;
 }
 

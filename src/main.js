@@ -10,7 +10,7 @@ import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
 const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
 import { createMoves, hop, duck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, underDuck, carsToClear, DUCK_CLEAR, planGates, GATE_AFTER, GATE_SIGN, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
-import { RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
+import { RIDES, createRideState, startRide, tickRide, rideOn, rideFlies, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
 import { showMoveArrows, createIntro, introAct } from './move-tutor.js';
@@ -8730,7 +8730,7 @@ function startGaragePreview(carId) {
                     if (rideSmokeT <= 0 && particleSystem && particleSystem.smoke) { rideSmokeT = 0.07; rideModel.userData.exhaust.forEach(function(p) { _v.rs = (_v.rs || new THREE.Vector3()).set(p.x, p.y, p.z); rideModel.localToWorld(_v.rs); particleSystem.smoke(_v.rs, ride.id === 'plane' ? 0.2 : 0.85); }); }
                 }
                 tickMoves(moves, deltaTime); { const dkk = duckK(moves), sq = duckSquash(dkk); if (susp && !susp.fallback) { susp.setDuck(dkk); susp.body.scale.set(sq.sx, sq.sy, sq.sz); } else playerCar.scale.set(RACE_CAR_SCALE * sq.sx, RACE_CAR_SCALE * sq.sy, RACE_CAR_SCALE * sq.sz); if (dkk > 0.5 && !carAirborne) { duckSparkT -= deltaTime; if (duckSparkT <= 0) { duckSparkT = 0.03; try { if (particleSystem.sparks) particleSystem.sparks({ x: xPos + (Math.random() - 0.5) * 0.7, y: 0.06, z: zPos + 0.45 }, 5, 1); } catch (e) {} } } } /* подныр: кузов сплющен и шире, из-под днища искры */ // подныр — кузов опускается к колёсам
-                playerCar.position.set(xPos, carYOffset + suspY + rideLift(ride), zPos);
+                playerCar.position.set(xPos, carYOffset + suspY + rideLift(ride) - (rideFlies(ride) ? 0.8 * duckK(moves) : 0), zPos); /* самолёт: прыжок — выше, подныр — ниже */
                 // лёгкий self-light кузова ночью
                 if (isNight && playerCar.userData && !playerCar.userData._nightEmissive) {
                     playerCar.traverse(function(o) {
@@ -8913,10 +8913,10 @@ function startGaragePreview(carId) {
                     if (car.hitCooldown > 0) car.hitCooldown -= deltaTime;
                     const dx = xPos - car.x;
                     const dz = zPos - car.z;
-                    if (car.hitCooldown <= 0 && nearMissStep(car, dx, dz, (car.hitW || 0.75) * 0.55, raceTime)) nearMiss(); /* был на твоей полосе и ты увернулся в последний момент — или впритирку (src/near-miss.js) */ else if (dz > 6) car._nm = false;
+                    if (car.hitCooldown <= 0 && !rideFlies(ride) && nearMissStep(car, dx, dz, (car.hitW || 0.75) * 0.55, raceTime)) nearMiss(); /* был на твоей полосе и ты увернулся в последний момент — или впритирку (src/near-miss.js) */ else if (dz > 6) car._nm = false;
                     const hw = (car.hitW || 0.75) * (ABILITY === 'narrow' ? 0.4 : 0.55); // «Мопед» — узкий
                     const hl = (car.hitL || 1.4) * 0.45;
-                    if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && (carAirborne || carYOffset > 0.55) && (!hopJump || hopClears(car.kind, carYOffset))) { /* грузовик и автобус выше прыжка с места (src/traffic-cars.js) */
+                    if (rideFlies(ride)) { /* «кукурузник» летит над попутками — ничего не сбивает */ } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && (carAirborne || carYOffset > 0.55) && (!hopJump || hopClears(car.kind, carYOffset))) { /* грузовик и автобус выше прыжка с места (src/traffic-cars.js) */
                         car.hitCooldown = 1.2;
                         try { showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && ((ABILITY === 'avenger' && (stats.rams || 0) < AVENGER_RAMS) || risk.fever > 0 || rideOn(ride))) {
@@ -8956,7 +8956,7 @@ function startGaragePreview(carId) {
                     if (!h.hintShown && h.z < zPos && zPos - h.z < 38) { h.hintShown = true; hurdleHint(actOf(h.kind)); }
                     if (!sweptZ(h.z, 0.35) || xPos < h.x0 - 0.25 || xPos > h.x1 + 0.25) { if (h.z > zPos + 1) h.done = true; continue; } // объехал — тоже позади
                     h.done = true;
-                    const res = (rideOn(ride) || risk.fever > 0) ? 'smash' : hurdleHit(h.kind, carYOffset, ducking(moves));
+                    const res = rideFlies(ride) ? 'over' : (rideOn(ride) || risk.fever > 0) ? 'smash' : hurdleHit(h.kind, carYOffset, ducking(moves)); /* самолёт пролетает над трубами и сквозь ворота */
                     if (res === 'hit' || res === 'smash') {
                         h.mesh.visible = false;
                         try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: xPos, y: 0.6, z: h.z }, 0.7); } catch (e) {}
@@ -10220,7 +10220,7 @@ function startGaragePreview(carId) {
                     const _anims = animalSpawner.animals;
                     for (let ai = 0; ai < _anims.length; ai++) {
                         const obs = _anims[ai];
-                        if (!obs || !obs.triggered || obs.hit) continue;
+                        if (!obs || !obs.triggered || obs.hit || rideFlies(ride)) continue; // самолёт пролетает над зверями
                         const dx = xPos - obs.x;
                         const dz = zPos - obs.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);

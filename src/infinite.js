@@ -263,6 +263,10 @@ export function planStretch(d0, d1, rnd, opts) {
         if (at != null) out.push({ kind: 'vhs', d: at, lane: lane() });
     }
     out.sort(function(a, b) { return a.d - b.d; });
+    // вокруг жетона транспорта — пусто: ящик «?» и усиления рядом путались с ним («дал не то»)
+    const rideDs = out.filter(function(i) { return i.kind === 'ride'; }).map(function(i) { return i.d; });
+    const RIDE_CLEAR = 35, busyKinds = { crate: 1, power: 1, obstacle: 1, spikes: 1, vhs: 1 };
+    for (let i = out.length - 1; i >= 0; i--) if (busyKinds[out[i].kind] && rideDs.some(function(d) { return Math.abs(d - out[i].d) < RIDE_CLEAR; })) out.splice(i, 1);
     return { items: out, nextGap: nextGap };
 }
 
