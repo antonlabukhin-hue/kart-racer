@@ -597,3 +597,41 @@ test('вызов другу в бесконечной трассе: ссылка
     await expect(page.locator('#finish-screen .fin-daily')).toContainText('Вызов от Тестер', { timeout: 10_000 });
     expect(problems).toEqual([]);
 });
+
+// слипстрим (src/slipstream.js): в мешке за попуткой копится бак, уход вбок в последний момент — «Рывок»; полный бак — нитро по E
+test('слипстрим: мешок копит бак, «Рывок» при уходе вбок, нитро по кнопке', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    await expect(page.locator('#nitro-btn')).toBeVisible();
+    await page.waitForTimeout(1500);
+    // все попутки — далеко, одна — впереди в нашей полосе, почти стоит
+    await page.evaluate(() => {
+        const g = window.__raceDebug;
+        g.cars.forEach((c, i) => { c.z = g.z - 300 - i * 40; c.x = 99; c.mesh.position.set(99, 0, c.z); });
+        const c = g.cars[0]; c.x = g.x; c.lane = 1; c.targetLane = 1; c.laneChangeTimer = 99; c.speed = 0.005; c.z = g.z - 30; c.mesh.position.set(c.x, 0.1, c.z); window.__slipCar = c;
+    });
+    await expect(page.locator('#nitro-btn')).toHaveClass(/drafting/, { timeout: 20_000 }); // в мешке — кнопка светится
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.z - window.__slipCar.z), { timeout: 20_000 }).toBeLessThan(8);
+    expect(await page.evaluate(() => { const g = window.__raceDebug; return [g.slip.charge > 0.1, Math.abs(g.x - window.__slipCar.x) < 0.9]; })).toEqual([true, true]);
+    await page.keyboard.down('d'); await page.waitForTimeout(400); await page.keyboard.up('d');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.slip.slips), { timeout: 5_000 }).toBe(1);
+    expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
+    // полный бак — кнопка «готово», E — нитро
+    await page.evaluate(() => { window.__raceDebug.slip.charge = 1; });
+    await expect(page.locator('#nitro-btn')).toHaveClass(/ready/);
+    await page.keyboard.press('e');
+    await expect.poll(() => page.evaluate(() => window.__raceDebug.slip.uses)).toBe(1);
+    expect(await page.evaluate(() => window.__raceDebug.nitroT)).toBeGreaterThan(0.5);
+    expect(await page.evaluate(() => window.__raceDebug.slip.charge)).toBe(0);
+    await page.keyboard.press('e'); // пустой бак — ничего
+    expect(await page.evaluate(() => window.__raceDebug.slip.uses)).toBe(1);
+    // итоги: нитро и рывки — в журнале забега
+    await page.evaluate(() => window.__raceDebug.end('crash'));
+    await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('#nitro-btn')).toHaveCount(0);
+    const end = await page.evaluate(() => window.__analytics.events().filter(e => e.e === 'race_end').pop());
+    expect(end).toMatchObject({ nitroUsed: 1, slips: 1 });
+    expect(problems).toEqual([]);
+});

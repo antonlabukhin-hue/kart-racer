@@ -1,6 +1,6 @@
 /**
  * Геймпад (стандартная раскладка Xbox/PlayStation):
- *   гонка — левый стик / крестовина: полосы, RT или A: газ, LT или B: тормоз, Start: пауза, Y: камера;
+ *   гонка — левый стик / крестовина: полосы, RT или A: газ, LT или B: тормоз, X: нитро из бака, Start: пауза, Y: камера;
  *   меню — крестовина / стик: фокус по кнопкам, A: нажать, B: назад (Escape).
  * Опрос идёт своим rAF-циклом — работает и на паузе, и в меню.
  */
@@ -32,7 +32,8 @@ export function readPad(pad) {
         ok: btn(pad, 0),
         back: btn(pad, 1),
         start: btn(pad, 9),
-        camera: btn(pad, 3)
+        camera: btn(pad, 3),
+        nitro: btn(pad, 2)
     };
 }
 
@@ -74,7 +75,7 @@ export function startGamepadPolling(hooks) {
         rafId = requestAnimationFrame(tick);
         let st = null;
         try { st = readPads(navigator.getGamepads()); } catch (e) { st = null; }
-        window.__padKeys = st ? { w: st.w, s: st.s, a: st.a, d: st.d } : null;
+        window.__padKeys = st ? { w: st.w, s: st.s, a: st.a, d: st.d, n: st.nitro } : null;
         if (!st) { prev = null; return; }
         const ed = pressedEdges(prev, st);
         prev = st;

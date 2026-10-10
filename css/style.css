@@ -6546,3 +6546,27 @@ body.race-mode #risk-hud#risk-hud { left: calc(50% - 108px); right: auto; top: a
 @media (max-height: 500px) { #move-arrow i { width: 100px; height: 100px; } #move-arrow b { font-size: 15px; } }
 /* ===== Таран на безумном транспорте: белая вспышка по краям ===== */
 .ram-flash { position: fixed; inset: 0; z-index: 139; pointer-events: none; box-shadow: inset 0 0 120px 40px rgba(255, 245, 210, 0.85); animation: rideFlash .35s ease-out forwards; }
+
+/* нитро из бака (src/slipstream.js): круг с заливкой — копится в мешке за попуткой и за «на волоске», полный — жми */
+#nitro-btn { position: fixed; z-index: 112; right: calc(env(safe-area-inset-right, 0px) + 186px); bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+    width: 76px; height: 76px; padding: 0; flex-direction: column; gap: 0; font: inherit; cursor: pointer; overflow: visible;
+    background: radial-gradient(circle at 50% 50%, rgba(12,14,22,0.82) 58%, transparent 59%), conic-gradient(#ff8a1a 0 var(--k, 0%), rgba(255,255,255,0.13) var(--k, 0%) 100%);
+    border: 2px solid rgba(255,170,60,0.45); opacity: .82; }
+#nitro-btn i { font-style: normal; font-size: 26px; line-height: 1; filter: grayscale(.7) brightness(.8); transition: filter .2s; }
+#nitro-btn b { font: 900 10px/1 "Russo One", Impact, sans-serif; letter-spacing: 1px; color: #ffcf8a; margin-top: 3px; }
+#nitro-btn kbd { position: absolute; top: -6px; right: -6px; min-width: 20px; padding: 2px 5px; border-radius: 6px; font: 800 11px/1.2 system-ui, sans-serif;
+    color: #1a1208; background: #ffcf5a; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+#nitro-btn.drafting { border-color: #bfe8ff; box-shadow: 0 0 14px rgba(170,225,255,0.7), 0 6px 18px rgba(0,0,0,0.45); }
+#nitro-btn.ready { opacity: 1; border-color: #ffd23c; animation: nitroReady .7s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 50% 50%, rgba(60,22,6,0.85) 58%, transparent 59%), conic-gradient(#ffb020 0 100%); }
+#nitro-btn.ready i { filter: none; }
+#nitro-btn.burning { opacity: 1; border-color: #5ff0ff; box-shadow: 0 0 18px rgba(95,240,255,0.8); }
+#nitro-btn.burning i { filter: none; }
+@keyframes nitroReady { from { transform: scale(1); box-shadow: 0 0 10px rgba(255,170,30,0.6); } to { transform: scale(1.08); box-shadow: 0 0 26px rgba(255,170,30,0.95); } }
+body:not(.race-mode) #nitro-btn { display: none; }
+@media (pointer: coarse) {
+    /* свайпы: правый нижний угол под большой палец; кнопки ▲▼ — левее них */
+    #nitro-btn { right: calc(env(safe-area-inset-right, 0px) + 16px); bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); width: 80px; height: 80px; }
+    #nitro-btn kbd { display: none; }
+}
+body:not(.swipe-ctl) #mobile-controls.active ~ #nitro-btn { right: calc(env(safe-area-inset-right, 0px) + 136px); bottom: max(30px, env(safe-area-inset-bottom, 0px) + 20px); }
