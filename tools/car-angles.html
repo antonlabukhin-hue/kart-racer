@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Машина с четырёх ракурсов</title>
+    <style>
+        /* Инструмент разработки: npm run dev → /tools/car-angles.html?id=thief&parts=1&lift=1
+           Одна машина: спереди-сбоку, сзади-сбоку, сбоку, сверху-сзади (как в заезде). parts=1 — весь тюнинг, lift=1 — подвеска как в игре. */
+        body { margin: 0; background: #1c1a24; overflow: hidden; color: #eee; font: 14px system-ui; }
+        #t { position: fixed; left: 8px; top: 6px; z-index: 2; text-shadow: 0 1px 2px #000; }
+    </style>
+</head>
+<body>
+<div id="t"></div>
+<script type="module">
+    import * as THREE from 'three';
+    import { buildShowroomCar } from '../src/cars.js';
+    import { CAR_PRESETS } from '../src/data.js';
+    import { liftCar } from '../src/suspension.js';
+    window.THREE = THREE;
+    const q = new URLSearchParams(location.search), id = q.get('id') || 'thief';
+    document.getElementById('t').textContent = (CAR_PRESETS[id] ? CAR_PRESETS[id].name : id) + ' (' + id + ')';
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight); renderer.setScissorTest(true); document.body.appendChild(renderer.domElement);
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x2a2833);
+    scene.add(new THREE.HemisphereLight(0xdde8ff, 0x403830, 1.1));
+    const d = new THREE.DirectionalLight(0xffe8c8, 2.2); d.position.set(4, 6, 3); scene.add(d);
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(8, 48), new THREE.MeshStandardMaterial({ color: 0x3a3a44, roughness: 0.9 }));
+    ground.rotation.x = -Math.PI / 2; scene.add(ground);
+    const built = buildShowroomCar(id);
+    if (q.get('parts') === '1') Object.values(built.parts || {}).forEach(function(m) { if (m) m.visible = true; });
+    if (q.get('lift') !== '0') try { liftCar(built.group, built.upgrades && built.upgrades.wheelR); } catch (e) {}
+    scene.add(built.group);
+    const bb = new THREE.Box3().setFromObject(built.group), c = bb.getCenter(new THREE.Vector3()), R = bb.getSize(new THREE.Vector3()).length() * 0.62;
+    const views = [[-0.8, 0.35, -1], [0.8, 0.4, 1], [1, 0.12, 0], [0, 0.75, 1.15]]; // спереди слева, сзади справа, сбоку, сверху сзади
+    const cams = views.map(function(v) {
+        const cam = new THREE.PerspectiveCamera(30, (innerWidth / 2) / (innerHeight / 2), 0.05, 50);
+        const dir = new THREE.Vector3(v[0], v[1], v[2]).normalize();
+        cam.position.copy(c).addScaledVector(dir, R * 2.4); cam.lookAt(c); return cam;
+    });
+    (function frame() {
+        const w = innerWidth / 2, h = innerHeight / 2;
+        cams.forEach(function(cam, i) { const x = (i % 2) * w, y = (i < 2 ? 1 : 0) * h; renderer.setViewport(x, y, w, h); renderer.setScissor(x, y, w, h); renderer.render(scene, cam); });
+        requestAnimationFrame(frame);
+    })();
+    window.__ready = true;
+</script>
+</body>
+</html>

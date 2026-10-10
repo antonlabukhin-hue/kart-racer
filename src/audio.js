@@ -5,7 +5,7 @@ import { loadSettings } from './settings.js';
 import { playKit, makeNoise } from './sfx-kit.js';
 
 // музыка заставки и меню — на 30% тише прежнего (было ×0.85 от громкости музыки): на старте игры не оглушает
-export const MENU_MUSIC_K = 0.6;
+export const MENU_MUSIC_K = 0.3; // музыка меню — вдвое тише заездной (было 0.6)
 import { mapAudioTheme, musicRate, startAmbientBed } from './map-audio.js';
 import { engineProfile, targetRpm, stepRpm, createEngineVoice, createSimpleVoice, glide } from './engine-sound.js';
 class SoundEngine {

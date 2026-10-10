@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { buildTuning } from './cars-tuning.js';
 import { FANTASY_BUILDERS, FANTASY_FINISH, fantasyRim } from './cars-fantasy.js';
 import { sideWindows, applyDetails } from './cars-detail.js';
+import { WHEEL_STYLE, dressWheel, bodyExtras } from './cars-extra.js';
 
 export const MOVIE_CARS = ['thief', 'neon', 'bull', 'cyborg', 'avenger', 'trike', 'ghostcar', 'moped', 'chariot', 'timecar', 'carpet']; // вторая шестёрка — src/cars-fantasy.js
 
@@ -87,7 +88,7 @@ export function pane(k, mat, a, b, w, lift) {
     return m;
 }
 
-export function wheelSet(group, m, list, rimMat, capMat) {
+export function wheelSet(group, m, list, rimMat, capMat, style) {
     const wheels = [];
     list.forEach(function(p) {
         const r = p[3], w = p[4] || 0.2;
@@ -99,8 +100,10 @@ export function wheelSet(group, m, list, rimMat, capMat) {
         tire.rotation.z = Math.PI / 2; hub.add(tire);
         const disc = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r * 0.62, w + 0.02, 14), rimMat || m.chrome);
         disc.rotation.z = Math.PI / 2; hub.add(disc);
+        if (style === 'wire') disc.scale.y = 0.15; // спицованное колесо: сплошной диск закрыл бы спицы
+        if (style) dressWheel(hub, r, w, style, m); // свой рисунок диска (src/cars-extra.js)
         // спицы — чтобы вращение было видно
-        for (let i = 0; i < 5; i++) {
+        else for (let i = 0; i < 5; i++) {
             const sp = new THREE.Mesh(new THREE.BoxGeometry(w + 0.03, r * 0.1, r * 1.05), capMat || m.chrome);
             sp.rotation.x = i * Math.PI / 5; hub.add(sp);
         }
@@ -136,8 +139,7 @@ function buildThief(k, m, group) {
     [-0.46, 0.46].forEach(function(x) { k.cyl(m.chrome, 0.085, 0.04, x, 0.47, -1.305, 'z'); k.cyl(m.hl, 0.07, 0.05, x, 0.47, -1.31, 'z', LIGHT); });
     [-0.1, 0.1].forEach(function(x) { k.cyl(m.hl, 0.045, 0.05, x, 0.46, -1.325, 'z', LIGHT); });
     k.box(m.chrome, W * 0.98, 0.05, 0.06, 0, 0.3, -1.33);
-    // зад: широкий стоп-сигнал и бампер
-    k.box(m.tail, W * 0.82, 0.07, 0.02, 0, 0.55, 1.31, 0, LIGHT);
+    // зад: круглые фонари — src/cars-extra.js; бампер
     k.box(m.chrome, W * 0.98, 0.05, 0.06, 0, 0.3, 1.32);
     // боковые выхлопы под дверями
     [-1, 1].forEach(function(s) { k.cyl(m.chrome, 0.045, 0.85, s * (W / 2 + 0.03), 0.23, 0.1, 'z'); });
@@ -164,10 +166,7 @@ function buildNeon(k, m, group) {
     // круглые задние фонари по два
     [-0.52, -0.36, 0.36, 0.52].forEach(function(x) { k.cyl(m.tail, 0.055, 0.03, x, 0.5, 1.235, 'z', LIGHT); });
     k.cyl(m.chrome, 0.06, 0.2, 0.36, 0.25, 1.2, 'z');
-    // винил: косые полосы по бокам
-    [-1, 1].forEach(function(s) {
-        [0, 1].forEach(function(i) { const b = k.box(m.matte, 0.012, 0.05, 1.3 - i * 0.3, s * (W / 2 + 0.004), 0.36 + i * 0.08, 0.05 + i * 0.1); b.rotation.x = -0.12; });
-    });
+    // винил — src/cars-extra.js
     // неоновая подсветка днища
     const glow = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.95, 2.1), new THREE.MeshBasicMaterial({ color: 0x39ff88, transparent: true, opacity: 0.55, depthWrite: false }));
     glow.rotation.x = -Math.PI / 2; glow.position.y = 0.03; glow.userData.isLight = true; group.add(glow);
@@ -296,8 +295,9 @@ export function buildMovieCar(carId, preset) {
     const k = kit(group);
     const d = (BUILDERS[carId] || FANTASY_BUILDERS[carId])(k, m, group);
     applyDetails(k, m, group, carId); // номера, зеркала, двери, дворники (src/cars-detail.js)
+    bodyExtras(k, m, group, carId, d); // пороги и фирменные мелочи (src/cars-extra.js)
     const rim = carId === 'avenger' ? m.black : carId === 'thief' ? new THREE.MeshStandardMaterial({ color: 0x5a5e66, metalness: 0.7, roughness: 0.3 }) : (fantasyRim(carId, m) || m.chrome);
-    const wheels = wheelSet(group, m, d.wheels, rim, carId === 'avenger' ? new THREE.MeshStandardMaterial({ color: 0xe8c020, metalness: 0.6, roughness: 0.3 }) : null);
+    const wheels = wheelSet(group, m, d.wheels, rim, carId === 'avenger' ? new THREE.MeshStandardMaterial({ color: 0xe8c020, metalness: 0.6, roughness: 0.3 }) : null, WHEEL_STYLE[carId]);
     group.traverse(function(o) { if (o.isMesh) o.castShadow = true; });
     group.userData.carId = carId;
     group.userData.dims = { bodyL: d.L, bodyY: d.Y, bodyW: d.W };

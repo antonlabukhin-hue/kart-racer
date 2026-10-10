@@ -28,7 +28,7 @@ export function liftCar(car, wheelR) {
     const body = new THREE.Group();
     body.name = 'suspensionBody';
     car.children.slice().forEach(function(c) {
-        if (c.userData && (c.userData.isWheel || c.userData.blob)) return;
+        if (c.userData && (c.userData.isWheel || c.userData.blob || c.userData.wheelPart)) return; // литьё (диски тюнинга) — на колёсах, а не с кузовом
         car.remove(c); body.add(c);
     });
     car.add(body);
