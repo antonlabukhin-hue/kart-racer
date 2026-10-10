@@ -1,7 +1,7 @@
 /**
- * Одна шкала заезда вместо трёх (множитель риска, «В УДАРЕ», безумный транспорт):
- *   цепочка — «×3» крупно, очки, пять делений до «В ударе» и тающая полоска — сколько осталось до конца цепочки;
- *   «В УДАРЕ» — та же шкала горит и тает, секунды; транспорт — его значок и название, секунды.
+ * Шкалы заезда там, куда смотрят глаза — внизу у машины:
+ *   цепочка «на волоске» (#risk-hud) — слева от брони: «×3», очки, пять делений до «В ударе», тающая полоска — сколько до конца цепочки;
+ *   «В УДАРЕ» и безумный транспорт (#power-slot) — на месте шкалы брони, крупно: название, секунды, тающая полоса (броня на это время прячется).
  * Огненная рамка по краям экрана в «В ударе» — отдельно (src/fever.js). DOM трогаем только при изменениях.
  */
 import { CHAIN_WINDOW, MAX_MULT, FEVER_TIME } from '../risk-combo.js';
@@ -20,10 +20,21 @@ export function powerState(r, ride) {
 
 let last = {};
 
+let slot = null, slotKey = '';
+/** «В ударе» / транспорт — на месте брони */
+function renderSlot(st) {
+    if (!st) { if (slot) { slot.remove(); slot = null; } slotKey = ''; return; }
+    if (!slot || !slot.isConnected) { slot = document.createElement('div'); slot.id = 'power-slot'; slot.innerHTML = '<b></b><i><u></u></i>'; document.body.appendChild(slot); slotKey = ''; }
+    const key = st.mode + '|' + st.label + '|' + st.sec.toFixed(1);
+    if (key !== slotKey) { slot.className = st.mode + (st.sec < 1.6 ? ' ending' : ''); slot.firstChild.textContent = st.label + '  ' + st.sec.toFixed(1) + ' с'; slotKey = key; }
+    slot.querySelector('u').style.width = Math.round(st.fill * 100) + '%';
+}
+
 export function renderRiskHud(r, ride) {
     let el = document.getElementById('risk-hud');
     const st = powerState(r, ride);
-    if (!st) { if (el) el.hidden = true; return; }
+    renderSlot(st && st.mode !== 'chain' ? st : null);
+    if (!st || st.mode !== 'chain') { if (el) el.hidden = true; return; } // в «В ударе» и на транспорте цепочка не нужна — всё на месте брони
     if (!el) {
         el = document.createElement('div');
         el.id = 'risk-hud';
@@ -56,13 +67,6 @@ export function renderRiskHud(r, ride) {
     if (pts !== last.pts) {
         el.querySelector('.rk-pts').textContent = pts;
         last.pts = pts;
-        // панель заезда бывает выше обычной (бесконечная трасса) — встаём под неё, а не поверх
-        const hud = document.getElementById('game-hud');
-        if (hud && st.mode === 'chain') {
-            el.style.top = '';
-            const a = hud.getBoundingClientRect(), b = el.getBoundingClientRect();
-            if (a.height && b.left < a.right && b.top < a.bottom && b.bottom > a.top) el.style.top = Math.round(a.bottom + 8) + 'px';
-        }
     }
     const bar = Math.round(st.fill * 100);
     if (bar !== last.bar) { el.querySelector('.rk-bar u').style.width = bar + '%'; last.bar = bar; }

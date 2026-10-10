@@ -8172,7 +8172,7 @@ function startGaragePreview(carId) {
                 ghostRec.update(deltaTime, xPos, zPos, carYOffset);
                 {
                     if (!_armorShown && (ABILITY === 'armor' || boosts.indexOf('spare') >= 0)) { _armorShown = true; setShieldVisible(true); }
-                    renderArmorBar(cleanRun.shieldHits, risk.fever > 0); // шкала брони на 5 ячеек (src/ui/armor-bar.js), «В УДАРЕ» — главнее
+                    renderArmorBar(cleanRun.shieldHits, risk.fever > 0 || rideOn(ride)); /* «В ударе» и транспорт — на месте брони */ // шкала брони на 5 ячеек (src/ui/armor-bar.js), «В УДАРЕ» — главнее
                     const cleanGot = cleanRun.tick(deltaTime, speed > MAX_SPEED * 0.3);
                     if (cleanGot === 'shield') {
                         setShieldVisible(true);

@@ -402,8 +402,10 @@ test('событие пейзажа: кортеж — плашка, машины
     await page.locator('#shop-action').click();
     await waitRacing(page);
     /* газ жмётся сам (W — прыжок) */
+    // плашку кортежа может сразу сменить другая (подсказка первой трубы) — запоминаем сам факт появления
+    await page.evaluate(() => { window.__sawConvoy = false; new MutationObserver(() => { document.querySelectorAll('.big-plaque').forEach(p => { if (p.textContent.includes('СВАДЕБНЫЙ КОРТЕЖ')) window.__sawConvoy = true; }); }).observe(document.body, { childList: true, subtree: true, characterData: true }); });
     await page.evaluate(() => { const g = window.__raceDebug; g.setStrikes(0); g.setZ(g.startZ - 400); });
-    await expect(page.locator('.big-plaque')).toContainText('СВАДЕБНЫЙ КОРТЕЖ');
+    await expect.poll(() => page.evaluate(() => window.__sawConvoy), { timeout: 10_000 }).toBe(true);
     const convoy = await page.evaluate(() => window.__raceDebug.cars.filter(c => c.convoy).map(c => c.lane));
     expect(convoy.length).toBe(4);
     expect(new Set(convoy).size).toBe(1);
