@@ -73,3 +73,14 @@ describe('поворотливость машин', () => {
         expect(NIMBLE_CARS.filter(id => HEAVY_CARS.includes(id))).toEqual([]);
     });
 });
+
+import { infPreset, abilityLine, INF_SPREAD } from '../../src/upgrades.js';
+describe('бесконечная трасса: скорость почти одна, отличает способность', () => {
+    it('разброс скорости сжат, способность и вид — свои', () => {
+        const fast = infPreset(CAR_PRESETS.raketa), slow = infPreset(CAR_PRESETS.kirpich);
+        expect(fast.maxSpeed - slow.maxSpeed).toBeCloseTo((CAR_PRESETS.raketa.maxSpeed - CAR_PRESETS.kirpich.maxSpeed) * INF_SPREAD, 6);
+        expect(fast.ability).toBe(CAR_PRESETS.raketa.ability);
+        expect(abilityLine(CAR_PRESETS.buhanka)).toContain('Броня');
+        expect(abilityLine({ name: 'x' })).toBe('');
+    });
+});

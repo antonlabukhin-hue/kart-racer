@@ -49,7 +49,7 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI, setSeasonMode } from './ui/season-screens.js'; import { renderGifts, giftsBadge } from './ui/gifts-screen.js'; import { showChest } from './ui/main-menu.js'; import { unclaimedRewards } from './ui/menu-badges.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
-        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, fairPreset, laneMul, nextCost, normalizeLevels, statBars } from './upgrades.js';
+        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, fairPreset, laneMul, infPreset, abilityLine, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames, showroomFrame, frameShowroom } from './cars.js'; import { partName } from './cars-tuning.js';
         import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
@@ -4147,7 +4147,7 @@ function startGaragePreview(carId) {
             const trackTheme = window.__trackThemeActive || 'default';
             window.__nightSpots = 0;
             const FAIR_CAR = typeof pendingMode !== 'undefined' && pendingMode === 'infinite' && !!(infRunOpts && infRunOpts.fair); /* «Заезд дня» и вызов: машины уравнены (src/upgrades.js fairPreset) */
-            const carPreset = FAIR_CAR ? fairPreset(CAR_PRESETS[carId] || CAR_PRESETS.cheburashka) : CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
+            const carPreset = FAIR_CAR ? fairPreset(CAR_PRESETS[carId] || CAR_PRESETS.cheburashka) : typeof pendingMode !== 'undefined' && pendingMode === 'infinite' ? infPreset(CAR_PRESETS[carId] || CAR_PRESETS.cheburashka) : CAR_PRESETS[carId] || CAR_PRESETS.cheburashka; /* бесконечная трасса: скорость машин почти одна, отличает способность (src/upgrades.js infPreset) */
             
             // кампания: «сложные» главы плавно ужесточаются к финалу (src/balance.js)
             const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
@@ -10492,6 +10492,7 @@ function startGaragePreview(carId) {
                         } catch (e) {}
                         gameState = 'racing';
                         try { if (typeof fovPunch !== 'undefined') fovPunch = 12; } catch (e) {}
+                        if (INF && !FAIR_CAR && abilityLine(carPreset)) setTimeout(function() { try { if (gameState === 'racing') { const el = document.createElement('div'); el.className = 'animal-shout ability-shout'; el.textContent = abilityLine(carPreset); postShout(el, 3200); } } catch (e) {} }, 900); /* «глагол» машины — в начале заезда */
                         // телефон: «можно повернуть — заезд продолжится» (src/rotate-hint.js), первые заезды
                         if (isMobile && takeRotateHint(localStorage)) setTimeout(function() { if (gameState === 'racing') showBigPlaque(rotateHintText(window.innerHeight > window.innerWidth), '', 'crate-good'); }, 2200);
                         try {
