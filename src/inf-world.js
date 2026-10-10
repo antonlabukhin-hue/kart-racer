@@ -68,12 +68,47 @@ export function stretchTheme(i) {
     return t.k > 0.5 ? t.next : t.theme;
 }
 
+/** Пятно света фонаря на асфальте: радиальный градиент, складывается со светом (одна текстура и материал на всех) */
+let _poolTex = null, _poolMat = null;
+export function lampPoolTexture() {
+    if (_poolTex || typeof document === 'undefined') return _poolTex;
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d'), gr = x.createRadialGradient(64, 64, 4, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,170,70,0.9)'); gr.addColorStop(0.45, 'rgba(255,140,50,0.4)'); gr.addColorStop(1, 'rgba(255,120,40,0)');
+    x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+    _poolTex = new THREE.CanvasTexture(c); _poolTex.userData.keep = true;
+    return _poolTex;
+}
+/** Лужа в дождь: светлое пятно цвета неба с мягким краем (отражение неба), чуть блестит */
+let _puddleTex = null, _puddleMat = null;
+function puddle(g, x, z, s) {
+    if (typeof document === 'undefined') return;
+    if (!_puddleTex) {
+        const c = document.createElement('canvas'); c.width = c.height = 128;
+        const t = c.getContext('2d'), gr = t.createRadialGradient(64, 64, 10, 64, 64, 62);
+        gr.addColorStop(0, 'rgba(120,140,160,0.7)'); gr.addColorStop(0.7, 'rgba(100,120,140,0.5)'); gr.addColorStop(1, 'rgba(90,110,130,0)');
+        t.fillStyle = gr; t.fillRect(0, 0, 128, 128);
+        t.fillStyle = 'rgba(255,255,255,0.35)'; t.fillRect(30, 52, 60, 3); t.fillRect(44, 66, 40, 2); // блики
+        _puddleTex = new THREE.CanvasTexture(c); _puddleTex.userData.keep = true;
+        _puddleMat = new THREE.MeshBasicMaterial({ map: _puddleTex, transparent: true, depthWrite: false, opacity: 0.45 });
+    }
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(2.4 * s, 1.5 * s), _puddleMat);
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0.02, z); m.renderOrder = 1;
+    g.add(m);
+}
 function lamp(g, x, z) {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 3.5, 6), new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6, roughness: 0.4 }));
     pole.position.set(x, 1.75, z);
     const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffeebb }));
     bulb.position.set(x - Math.sign(x) * 0.6, 3.35, z);
     g.add(pole, bulb);
+    const tex = lampPoolTexture();
+    if (tex) { // тёплое пятно под фонарём: ночью дорога в лужах света, а не одна темнота
+        _poolMat = _poolMat || new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.6 });
+        const pool = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2), _poolMat);
+        pool.rotation.x = -Math.PI / 2; pool.position.set(x - Math.sign(x) * 1.7, 0.025, z); pool.renderOrder = 1;
+        g.add(pool);
+    }
 }
 
 /**
@@ -162,6 +197,7 @@ export function createInfWorld(o) {
         }
         yield;
         if (th.night && th.style === 'city') { /* в городе свои фонари */ } else if (th.night && bridgeZ == null) lamp(g, (i % 2 ? 1 : -1) * (W / 2 + 1.8), z0 - STRETCH / 2);
+        if (th.rain && bridgeZ == null) for (let k = 0; k < 4; k++) puddle(g, (r() < 0.5 ? -1 : 1) * (W / 2 - 0.2 - r() * 0.4), zr(), 0.7 + r() * 0.5); // лужи в дождь — у края дороги, не в полосах: чтобы не путать с помехами
         else if (i % 3 === 0 && bridgeZ == null) g.add(Decor.createCinemaBanner((i % 2 ? 1 : -1) * (W / 2 + 5 + r() * 4), zr(), BANNERS[i % BANNERS.length]));
         if (hasField(i, th.style)) { // поле с трактором или комбайном (src/farm.js)
             const fs = fieldSide(i), fk = fieldKind(i);
