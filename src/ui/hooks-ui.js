@@ -83,12 +83,13 @@ export function showTdPop(o) {
 }
 
 // новые краски, билеты и прочие награды копятся между заездами (волны «Звериного часа» без итогов) и показываются на ближайших итогах
-let pending = { paints: [], tickets: [], extra: [] };
+let pending = { paints: [], tickets: [], extra: [], queued: [] };
 /** extra — [{ icon, title, text, cls }] — машина недели, дружеский сундук */
-export function addHooks(paints, tks, extra) { pending.paints = pending.paints.concat(paints || []); pending.tickets = pending.tickets.concat(tks || []); pending.extra = pending.extra.concat((extra || []).filter(Boolean)); }
+export function addHooks(paints, tks, extra) { pending.paints = pending.paints.concat(paints || []); pending.tickets = pending.tickets.concat(tks || []); pending.queued = pending.queued.concat((tks && tks.queued) || []); pending.extra = pending.extra.concat((extra || []).filter(Boolean)); }
 export function takeHooksHtml(names) {
-    const p = pending; pending = { paints: [], tickets: [], extra: [] };
-    return p.extra.map(function(x) { return '<div class="fin-hook ' + (x.cls || '') + '"><i>' + x.icon + '</i><div><b>' + esc(x.title) + '</b><small>' + esc(x.text) + '</small></div></div>'; }).join('') + hooksFinishHtml(p.paints, p.tickets, names);
+    const p = pending; pending = { paints: [], tickets: [], extra: [], queued: [] };
+    const q = p.queued.map(function(k) { return '<div class="fin-hook fin-td"><i>🎟</i><div><b>Веха выполнена: ' + esc(k.why) + '!</b><small>' + (k.car ? 'Тест-драйв «' + esc(names(k.car)) + '» придёт' : 'Билет придёт') + ' через ' + k.inDays + ' дн. — билеты не чаще раза в 3 дня</small></div></div>'; }).join('');
+    return q + p.extra.map(function(x) { return '<div class="fin-hook ' + (x.cls || '') + '"><i>' + x.icon + '</i><div><b>' + esc(x.title) + '</b><small>' + esc(x.text) + '</small></div></div>'; }).join('') + hooksFinishHtml(p.paints, p.tickets, names);
 }
 
 /** Строка «Сегодня для тебя»: ближайшая к получению секретная краска или null */

@@ -47,6 +47,7 @@ export function pickCar(profile, want, presets, exclude) {
  */
 export function checkTestDrives(profile, s, presets, now) {
     const t = state(profile), out = [], at = now != null ? now : Date.now();
+    Object.defineProperty(out, 'queued', { value: [], enumerable: false }); // веха выполнена, но билет придёт позже (не чаще раза в TICKET_EVERY_MS) — на итогах об этом пишем, а не молчим
     const issue = function(q) {
         const car = pickCar(profile, q.want, presets, t.tickets.map(function(k) { return k.car; }));
         if (!car) return;
@@ -57,7 +58,8 @@ export function checkTestDrives(profile, s, presets, now) {
     const give = function(id, icon, why, want) {
         t.got[id] = at;
         const q = { id: id, icon: icon, why: why, want: want || null };
-        if (ready()) issue(q); else t.queue.push(q); // раньше 3 дней — ждёт своей очереди
+        if (ready()) issue(q);
+        else { t.queue.push(q); out.queued.push({ icon: icon, why: why, car: pickCar(profile, q.want, presets, t.tickets.map(function(k) { return k.car; })), inDays: Math.max(1, Math.ceil((TICKET_EVERY_MS * t.queue.length - (at - t.lastAt)) / 86400000)) }); } // раньше 3 дней — ждёт своей очереди
     };
     if (t.queue.length && ready()) issue(t.queue.shift());
     TD_MILESTONES.forEach(function(m) {

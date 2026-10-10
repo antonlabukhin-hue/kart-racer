@@ -103,7 +103,11 @@ describe('тест-драйвы — раз в 3 дня и без повторо�
         const { checkTestDrives, ladder, tickets, TICKET_EVERY_MS } = await import('../../src/test-drive.js');
         const p = { unlockedCars: ['cheburashka', 'raketa', 'avenger'], season: { chips: 0 } }; // «Ракета» и «Мститель» уже есть
         const t0 = 1e12;
-        expect(checkTestDrives(p, { chapters: 2, beastWaves: 3, infBest: 0 }, CAR_PRESETS, t0).length).toBe(1);
+        const q = checkTestDrives(p, { chapters: 2, beastWaves: 3, infBest: 0 }, CAR_PRESETS, t0);
+        expect(q.length).toBe(1);
+        expect(q.queued.length).toBe(1); // вторая веха выполнена — на итогах пишем, когда придёт билет, а не молчим
+        expect(q.queued[0].inDays).toBe(3);
+        expect(q.queued[0].car).toBeTruthy();
         expect(checkTestDrives(p, { chapters: 2, beastWaves: 3, infBest: 0 }, CAR_PRESETS, t0 + 1000)).toEqual([]);
         expect(checkTestDrives(p, { chapters: 2, beastWaves: 3, infBest: 0 }, CAR_PRESETS, t0 + TICKET_EVERY_MS).length).toBe(1);
         const cars = tickets(p).map(k => k.car);
