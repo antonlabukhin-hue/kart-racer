@@ -6,11 +6,13 @@
  * Логика — чистая (с тестами): время, хранилище и сеть передаются снаружи.
  */
 import { ONLINE } from './online-board.js';
+import { createRunTracker } from './run-metrics.js';
 
 export const PID_KEY = 'road_racing_pid';
 export const DAY0_KEY = 'road_racing_day0';
 const RPC = ONLINE.url.replace(/\/runs$/, '/rpc/session_put');
 const RPC_CHAPTER = ONLINE.url.replace(/\/runs$/, '/rpc/chapter_put');
+const RPC_RUN = ONLINE.url.replace(/\/runs$/, '/rpc/run_put');
 const MAX_GAP = 120000; // кадров/тиков не было дольше 2 минут (сон телефона) — этот промежуток не считаем
 
 function rid() {
@@ -41,6 +43,7 @@ export function createMetrics(o) {
     const t0 = now(), id = identity(o.storage, t0);
     const s = { sid: rid(), races: 0, runs: 0, best: 0, active: 0 };
     let last = t0, visible = true, sent = '';
+    const runs = createRunTracker({ storage: o.storage, now: now }); // забеги бесконечной трассы (src/run-metrics.js)
     const step = function() {
         const t = now(), dt = t - last;
         last = t;
@@ -64,6 +67,8 @@ export function createMetrics(o) {
             if (!ev) return;
             const ch = chapterRow(ev, id.pid, dayKeyOf(now())); // воронка глав кампании: начал / проиграл / вышел / прошёл
             if (ch && o.sendChapter) Promise.resolve(o.sendChapter(ch)).catch(function() {});
+            const run = runs.event(ev);
+            if (run && o.sendRun) Promise.resolve(o.sendRun(Object.assign({ p_pid: id.pid, p_day0: id.day0, p_day: dayKeyOf(now()), p_platform: o.platform || 'web', p_ver: o.ver || '' }, run))).catch(function() {});
             if (ev.e === 'race_start') s.races++;
             if (ev.e === 'race_end' && typeof ev.dist === 'number') { s.runs++; s.best = Math.max(s.best, Math.round(ev.dist)); }
         },
@@ -99,8 +104,10 @@ export function sendSession(row, keepalive, f) {
 export function installMetrics(opts) {
     const o = opts || {};
     const js = document.querySelector('script[src*="assets/index-"]'), ver = o.ver || (js ? (js.getAttribute('src').match(/index-([\w-]+)\.js/) || [])[1] || '' : 'dev');
+    const post = function(url, r) { return fetch(url, { method: 'POST', headers: { apikey: ONLINE.key, Authorization: 'Bearer ' + ONLINE.key, 'Content-Type': 'application/json' }, body: JSON.stringify(r) }).then(function(x) { return x.ok; }).catch(function() { return false; }); };
     const m = createMetrics({ storage: localStorage, send: function(r, k) { return sendSession(r, k); }, platform: o.platform, ver: ver,
-        sendChapter: function(r) { return fetch(RPC_CHAPTER, { method: 'POST', headers: { apikey: ONLINE.key, Authorization: 'Bearer ' + ONLINE.key, 'Content-Type': 'application/json' }, body: JSON.stringify(r) }).then(function(x) { return x.ok; }).catch(function() { return false; }); } });
+        sendChapter: function(r) { return post(RPC_CHAPTER, r); },
+        sendRun: function(r) { return post(RPC_RUN, r); } });
     document.addEventListener('visibilitychange', function() { m.visible(document.visibilityState === 'visible'); });
     window.addEventListener('pagehide', function() { m.flush(true); });
     setInterval(function() { if (document.visibilityState === 'visible') m.tick(); }, 60000);

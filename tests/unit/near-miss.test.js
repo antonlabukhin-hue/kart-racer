@@ -43,3 +43,32 @@ describe('центр полосы', () => {
         expect(laneAssist(1.3, 0, 0.1, false, true)).toBe(1.3);
     });
 });
+
+import { nearGrade, nearStyle, PERFECT_GAP, CLOSE_GAP, PERFECT_LATE, CLOSE_LATE } from '../../src/near-miss.js';
+import { RISK_POINTS } from '../../src/risk-combo.js';
+
+describe('качество «на волоске»', () => {
+    it('по зазору: идеально — меньше PERFECT_GAP, впритирку — меньше CLOSE_GAP', () => {
+        expect(nearGrade(PERFECT_GAP - 0.01, null)).toBe('perfect');
+        expect(nearGrade(CLOSE_GAP - 0.01, null)).toBe('close');
+        expect(nearGrade(1.2, null)).toBe('clean');
+    });
+    it('по позднему уходу из полосы (метры до помехи)', () => {
+        expect(nearGrade(1.2, PERFECT_LATE - 0.01)).toBe('perfect');
+        expect(nearGrade(1.2, CLOSE_LATE - 0.01)).toBe('close');
+        expect(nearGrade(1.2, 9)).toBe('clean');
+    });
+    it('точнее — дороже: очки, бак, нитро', () => {
+        const c = nearStyle('clean'), m = nearStyle('close'), p = nearStyle('perfect');
+        expect(RISK_POINTS[c.risk]).toBeLessThan(RISK_POINTS[m.risk]);
+        expect(RISK_POINTS[m.risk]).toBeLessThan(RISK_POINTS[p.risk]);
+        expect(c.charge).toBeLessThan(m.charge); expect(m.charge).toBeLessThan(p.charge);
+        expect(p.nitro).toBeGreaterThan(0);
+        expect(nearStyle(undefined)).toBe(c);
+    });
+    it('шаг возвращает качество (строка — прежние if() работают)', () => {
+        const o = {};
+        nearMissStep(o, 0, 2, 0.4, 0);          // на твоей полосе, 2 м впереди
+        expect(nearMissStep(o, 1.4, -1, 0.4, 0.1)).toBe('perfect'); // ушёл в последний момент
+    });
+});

@@ -211,7 +211,7 @@ function cloudTexture() {
 // своя проекция без «кривого мира» (src/curved-world.js ищет строку с mvPosition — её здесь нет)
 const VS_DOME = 'varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * (modelViewMatrix * vec4(position, 1.0)); }';
 const FS_DOME = `
-uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uSunDir; uniform vec3 uSun; uniform float uNight; uniform float uFlash;
+uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uSunDir; uniform vec3 uSun; uniform float uNight; uniform float uFlash; uniform float uRays; uniform float uTime;
 varying vec3 vDir;
 float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453); }
 void main() {
@@ -221,6 +221,12 @@ void main() {
     float s = max(dot(d, uSunDir), 0.0);
     float disc = smoothstep(0.9991 + uNight * 0.0004, 0.9995 + uNight * 0.0003, s);
     col += uSun * (disc * 1.2 + pow(s, 24.0) * 0.35 + pow(s, 4.0) * 0.12) * (1.0 - uNight * 0.6);
+    if (uRays > 0.0) { // солнечные лучи: мягкие полосы вокруг солнца, медленно поворачиваются (днём, без дождя)
+        vec3 ax = normalize(cross(uSunDir, vec3(0.0, 1.0, 0.0))), ay = cross(ax, uSunDir);
+        float an = atan(dot(d, ay), dot(d, ax));
+        float ray = (0.5 + 0.5 * sin(an * 13.0 + uTime * 0.12)) * (0.55 + 0.45 * sin(an * 5.0 - uTime * 0.07));
+        col += uSun * pow(s, 7.0) * ray * 0.2 * uRays * smoothstep(0.02, 0.12, h);
+    }
     if (uNight > 0.0) {
         vec3 q = floor(d * 220.0);
         float st = step(0.9965, hash(q)) * smoothstep(0.04, 0.3, h);
@@ -272,7 +278,7 @@ export function createSky(scene, o) {
     const group = new THREE.Group();
     const c = function(hex) { return new THREE.Color(hex); };
     const dome = new THREE.Mesh(new THREE.SphereGeometry(SKY_R, 32, 16), noBend(new THREE.ShaderMaterial({
-        uniforms: { uTop: { value: c(0x4a78c0) }, uHorizon: { value: c(0xe0c090) }, uSunDir: { value: new THREE.Vector3(0.22, 0.16, -1).normalize() }, uSun: { value: c(0xfff0c0) }, uNight: { value: 0 }, uFlash: { value: 0 } },
+        uniforms: { uTop: { value: c(0x4a78c0) }, uHorizon: { value: c(0xe0c090) }, uSunDir: { value: new THREE.Vector3(0.22, 0.16, -1).normalize() }, uSun: { value: c(0xfff0c0) }, uNight: { value: 0 }, uFlash: { value: 0 }, uRays: { value: 0 }, uTime: { value: 0 } },
         vertexShader: VS_DOME, fragmentShader: FS_DOME, side: THREE.BackSide, depthWrite: false, fog: false,
         // рисуется после дороги и домов (в прозрачном проходе, с проверкой глубины): шейдер неба считается только там, где видно небо
         transparent: true
@@ -365,6 +371,7 @@ export function createSky(scene, o) {
             const rain = (a.rain ? 1 - k : 0) + (b.rain ? k : 0);
             cu.uOpacity.value = 0.92 + rain * 0.08 - night * 0.45;
             storm = rain;
+            du.uRays.value = Math.max(0, 1 - night * 2) * Math.max(0, 1 - rain * 1.5); // лучи — днём и без дождя
         },
         /** облака медленно плывут */
         tick: function(dt) {
@@ -374,6 +381,7 @@ export function createSky(scene, o) {
             if (storm > 0.5 && (flashT -= dt) <= 0) { flash = 1; flash2 = Math.random() < 0.6 ? 0.18 : 0; flashT = 6 + Math.random() * 9; }
             if (flash > 0) { flash = Math.max(0, flash - dt * 5); if (flash < 0.4 && flash2 > 0) { flash = 0.8; flash2 = 0; } }
             dome.material.uniforms.uFlash.value = flash * flash * 0.55;
+            dome.material.uniforms.uTime.value += dt;
             if (flock.on) {
                 flock.t += dt;
                 if (flock.t >= flock.dur) { flock.on = false; flock.wait = 18 + Math.random() * 22; }

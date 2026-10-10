@@ -79,7 +79,7 @@ export function planHurdles(d0, d1, rnd) {
     for (let d = Math.max(d0, HURDLE_FROM) + r() * 80; d < d1; d += HURDLE_EVERY[0] + r() * (HURDLE_EVERY[1] - HURDLE_EVERY[0])) {
         const kind = JUMP_KINDS[Math.floor(r() * JUMP_KINDS.length) % JUMP_KINDS.length];
         let lanes;
-        if (d > FULL_FROM && r() < 0.35) lanes = [0, 1, 2];
+        if (Math.round(d) > FULL_FROM && r() < 0.35) lanes = [0, 1, 2]; // по округлённому, как пишется в план (1200.3 → 1200 — ещё не дальше FULL_FROM)
         else { const free = Math.floor(r() * 3); lanes = [0, 1, 2].filter(function(l) { return l !== free && (r() < 0.6 || l === (free + 1) % 3); }); }
         out.push({ d: Math.round(d), kind: kind, lanes: lanes });
     }

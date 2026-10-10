@@ -42,7 +42,7 @@ export function showDailyPop(o) {
     box.className = 'daily-modal';
     box.innerHTML = '<div class="daily-card" role="dialog" aria-label="Заезд дня">'
         + '<div class="dl-title">📅 ЗАЕЗД ДНЯ</div>'
-        + '<div class="dl-sub">Одна попытка · у всех одна трасса · без бустов и второго шанса</div>'
+        + '<div class="dl-sub">Одна попытка · у всех одна трасса · ⚖ машины уравнены (без способностей и прокачки) · без бустов и второго шанса</div>'
         + '<div class="dl-rule"><i>' + rule.icon + '</i><b>' + esc(rule.name) + '</b><span>' + esc(rule.desc) + '</span></div>'
         + '<div class="dl-board"><div class="dl-bt">🏆 Сегодня</div><ol class="dl-list"><li class="dl-empty">Пока никого — будь первым!</li></ol></div>'
         + (st.started ? '<div class="dl-done">' + (st.dist ? 'Твой результат: <b>' + m(st.dist) + ' м</b>' : 'Попытка уже потрачена') + ' — новая завтра</div>'

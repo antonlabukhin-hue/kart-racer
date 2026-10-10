@@ -12,9 +12,10 @@ export const CHASE_TIME = 5;
 export function createChaseState() { return { t: 0 }; }
 
 /** Авария: 'caught' — погоня уже шла (поймали), иначе погоня начинается — 'chase' */
-export function onCrash(st) {
+/** time — сколько длится погоня (A/B правила провала, src/fail-rules.js), по умолчанию CHASE_TIME */
+export function onCrash(st, time) {
     if (st.t > 0) { st.t = 0; return 'caught'; }
-    st.t = CHASE_TIME;
+    st.t = time || CHASE_TIME;
     return 'chase';
 }
 export function tickChase(st, dt) { st.t = Math.max(0, st.t - dt); return st.t; }
@@ -147,7 +148,7 @@ function glowTexture() {
  * Машина держится чуть сзади в соседней полосе (прямо сзади она закрыла бы обзор — стоит между камерой и игроком);
  * плашка «ПОГОНЯ» с отсчётом.
  */
-export function createPolice(scene, onChase, onEscape) { // onChase — погоня началась (ведущий: «ГАИ на хвосте!»), onEscape — ушёл от погони
+export function createPolice(scene, onChase, onEscape, time) { // onChase — погоня началась (ведущий: «ГАИ на хвосте!»), onEscape — ушёл от погони
     const st = createChaseState();
     let car = null, hud = null, t = 0;
     const show = function(on) {
@@ -163,7 +164,7 @@ export function createPolice(scene, onChase, onEscape) { // onChase — пого
     };
     return {
         state: st,
-        crash: function() { const r = onCrash(st); show(r === 'chase'); if (r === 'chase' && onChase) onChase(); return r; },
+        crash: function() { const r = onCrash(st, time); show(r === 'chase'); if (r === 'chase' && onChase) onChase(); return r; },
         stop: function() { st.t = 0; show(false); },
         tick: function(dt, x, z, gap) {
             if (st.t <= 0) return;
@@ -176,7 +177,7 @@ export function createPolice(scene, onChase, onEscape) { // onChase — пого
                 car.position.y = 0;
                 blink(car, t);
             }
-            if (hud) hud.querySelector('u').style.width = Math.round(st.t / CHASE_TIME * 100) + '%';
+            if (hud) hud.querySelector('u').style.width = Math.round(st.t / (time || CHASE_TIME) * 100) + '%';
         },
         /**
          * «ГАИ поймала»: ролик — машина ГАИ вплотную сбоку, камера облетает обе машины, мигалки (как финиш кампании).

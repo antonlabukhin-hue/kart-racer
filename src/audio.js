@@ -734,16 +734,18 @@ class SoundEngine {
             // звуки событий заезда — свои для каждого, громкость как у «Е» (src/sfx-kit.js)
             const kit = { crash: 'crash', crate: 'crate', heart: 'heart', armor: 'shield', nitro_pick: 'nitro', scrape: 'scrape' }[type];
             if (kit) { this._kitNoise = this._kitNoise || makeNoise(this.audioCtx); playKit(kit, this.audioCtx, this.audioCtx.destination, t0, vs, this._kitNoise, pitch); return; }
-            const mk = (wave, freq, dur, peak, slide) => {
+            const mk = (wave, freq, dur, peak, slide, delay) => { // delay — с от начала (второй слог сигнала)
                 const o = this.audioCtx.createOscillator();
                 const g = this.audioCtx.createGain();
+                const ts = t0 + (delay || 0);
                 o.type = wave;
-                o.frequency.setValueAtTime(freq, t0);
-                if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, slide), t0 + dur);
-                g.gain.setValueAtTime(Math.max(0.001, peak * vs), t0);
-                g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+                o.frequency.setValueAtTime(freq, ts);
+                if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, slide), ts + dur);
+                g.gain.setValueAtTime(0.0001, t0);
+                g.gain.setValueAtTime(Math.max(0.001, peak * vs), ts);
+                g.gain.exponentialRampToValueAtTime(0.001, ts + dur);
                 o.connect(g); g.connect(this.audioCtx.destination);
-                o.start(t0); o.stop(t0 + dur + 0.02);
+                o.start(t0); o.stop(ts + dur + 0.02);
             };
             switch (type) {
                 case 'shoot': mk('square', 420, 0.12, 0.1, 120); mk('sawtooth', 180, 0.15, 0.06, 60); break;
@@ -1083,6 +1085,11 @@ class SoundEngine {
                 case 'bump':
                     mk('triangle', 70, 0.12, 0.1, 40);
                     break;
+                // язык угроз (src/threat-style.js): у каждого класса свой короткий сигнал, тихо
+                case 'warn_block': mk('square', 196, 0.07, 0.05); mk('square', 196, 0.07, 0.05, 0, 0.09); break;   // преграда — двойной низкий «бип»
+                case 'warn_slow': mk('triangle', 520, 0.16, 0.07, 300); break;                                                  // тормозит — вниз
+                case 'warn_slide': mk('sine', 880, 0.18, 0.06, 1200); mk('sine', 892, 0.18, 0.04, 1180); break;                // заносит — скользящий вверх с биением
+                case 'warn_threat': mk('triangle', 660, 0.06, 0.07); mk('triangle', 990, 0.08, 0.07, 0, 0.07); break; // зверь — «ти-ту»
                 case 'win': [523,659,784].forEach((f,i)=>{ const o=this.audioCtx.createOscillator(); const g=this.audioCtx.createGain(); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0.1*vs,t0+i*0.1); g.gain.exponentialRampToValueAtTime(0.001,t0+i*0.1+0.25); o.connect(g); g.connect(this.audioCtx.destination); o.start(t0+i*0.1); o.stop(t0+i*0.1+0.25); }); break;
                 case 'lose': mk('triangle', 300, 0.4, 0.12, 80); break;
                 case 'boss': mk('square', 90, 0.35, 0.14, 45); break;

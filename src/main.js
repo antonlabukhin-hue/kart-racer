@@ -49,7 +49,7 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI, setSeasonMode } from './ui/season-screens.js'; import { renderGifts, giftsBadge } from './ui/gifts-screen.js'; import { showChest } from './ui/main-menu.js'; import { unclaimedRewards } from './ui/menu-badges.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
-        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, nextCost, normalizeLevels, statBars } from './upgrades.js';
+        import { UPGRADES, MAX_UPGRADE_LEVEL, computeCarStats, fairPreset, laneMul, nextCost, normalizeLevels, statBars } from './upgrades.js';
         import { buildShowroomCar, fitShowroom, applyUpgradeVisuals, addNitroFlames, showroomFrame, frameShowroom } from './cars.js'; import { partName } from './cars-tuning.js';
         import { damageLook, dentFor, pitchFor } from './car-damage.js';
         import { tasksForChapter, evaluateTasks, mergeTaskProgress, TASK_REWARD_CHIPS, taskKey, chapterTaskProgress, chapterHasTask } from './chapter-tasks.js';
@@ -69,9 +69,9 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { runKind, crashesStr, infSummary } from './run-metrics.js'; import { abVariant, failRules } from './fail-rules.js'; import { threatClass, pickMarks, warnPick, createWarnState, createThreatMarks, THREAT_CLASSES, MARK_FAR } from './threat-style.js'; import { nearStyle } from './near-miss.js'; import { runGoal, runGoalHtml } from './run-goal.js'; import { createLeaves } from './leaves.js'; import { createGroundMist, mistFor } from './ground-mist.js'; import { hitSeverity, grazeOutcome, grazePush, GRAZE_SPEED, GRAZE_STUN } from './hit-zones.js'; import { createSlip, stepSlip, addSlipCharge, useNitro, justSlung, slipHintDue, createNitroButton, createDraftFx, NM_CHARGE, SLING_TIME } from './slipstream.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
-        window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
+        window.__analytics = { summary: function() { return Object.assign(summarize(), { infinite: infSummary(loadEvents()) }); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
         import { waveConfig } from './endless.js';
         import { dailySeed, seedCode } from './beast-seed.js';
@@ -1269,7 +1269,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         }
 
         function loginAs(profile) {
-            currentPlayer = ensureProfileFields(profile); markVisit(currentPlayer, dayKey(new Date()), currentPlayer.createdAt ? dayKey(new Date(currentPlayer.createdAt)) : null); /* заходы: новичку — не всё сразу (src/visits.js) */ checkComeback(currentPlayer, dayKey(new Date())); touchStreak(currentPlayer, dayKey(new Date())); checkNamePlate(currentPlayer); /* подарок за возвращение — до отметки дня, именной номер — за 14 дней подряд */ // серия дней (src/streak.js)
+            currentPlayer = ensureProfileFields(profile); markVisit(currentPlayer, dayKey(new Date()), currentPlayer.createdAt ? dayKey(new Date(currentPlayer.createdAt)) : null); /* заходы: новичку — не всё сразу (src/visits.js) */ checkComeback(currentPlayer, dayKey(new Date())); powerLevelsFor(currentPlayer); if (currentPlayer.powerRefund) { const _rf = currentPlayer.powerRefund; delete currentPlayer.powerRefund; setTimeout(function() { try { Notify.info('⚡ Усиления теперь общие', 'Прокачка магнита, ×2 и брони работает на любой машине. За лишние уровни вернули ' + _rf + ' Е', 9000); } catch (e) {} }, 1500); } /* прокачка усилений — общая (src/powerups.js) */ touchStreak(currentPlayer, dayKey(new Date())); checkNamePlate(currentPlayer); /* подарок за возвращение — до отметки дня, именной номер — за 14 дней подряд */ // серия дней (src/streak.js)
             try {
                 localStorage.setItem(MAP_UNLOCK_KEY, JSON.stringify(currentPlayer.unlockedMaps || ['arsenev']));
             } catch (e) {}
@@ -2319,7 +2319,7 @@ function renderGaragePartsPanel() {
                     '<div class="up-pips">' + pips + '</div>' + btn + '</div>';
             }).join('');
             const abil = preset.ability ? '<div class="up-ability">★ ' + escapeHtml(preset.ability.name) + ': ' + escapeHtml(preset.ability.desc) + '</div>' : '';
-            // усиления бесконечной трассы — прокачка у каждой машины своя: +2 с действия за уровень
+            // усиления бесконечной трассы — прокачка общая для всех машин: +2 с действия за уровень
             const plv = Object.assign({}, powerLevelsFor(currentPlayer, carId));
             const pRows = POWER_UPGRADABLE.map(function(t) {
                 const pw = POWERS[t], lv = plv[t], cost = nextPowerCost(lv);
@@ -2331,8 +2331,8 @@ function renderGaragePartsPanel() {
             }).join('');
             box.innerHTML = '<div class="up-head">' + escapeHtml(preset.name) + ' · у тебя ' + chips + ' Е</div>' + abil +
                 '<div class="up-bars">' + bars + '</div>' + rows +
-                '<div class="up-note">Улучшения видны на машине и работают в заезде. У каждой машины своя прокачка.</div>' +
-                '<div class="up-head up-power-head">⚡ Усиления бесконечной трассы<small>только для этой машины · дольше действуют; броня — больше ударов и «Е» за отбитый</small></div>' + pRows;
+                '<div class="up-note">Улучшения видны на машине и работают в заезде. У каждой машины своя прокачка, усиления — общие.</div>' +
+                '<div class="up-head up-power-head">⚡ Усиления бесконечной трассы<small>для всех машин · дольше действуют; броня — больше ударов и «Е» за отбитый</small></div>' + pRows;
             box.querySelectorAll('button[data-pw]').forEach(function(b) {
                 b.addEventListener('click', function() {
                     const r = buyPowerLevel(currentPlayer, b.dataset.pw, carId);
@@ -4136,7 +4136,7 @@ function startGaragePreview(carId) {
             } catch (e) {}
             const _cont = document.getElementById('game-container');
             if (_cont) { while (_cont.firstChild) _cont.removeChild(_cont.firstChild); _cont.style.visibility = ''; } // после праздника рекорда заезд снова виден
-            document.querySelectorAll('#finish-screen,#game-hud,#hud-menu-btn,#power-hud,.chance-modal,#e-counter').forEach(el => { try { el.remove(); } catch(e){} });
+            document.querySelectorAll('#finish-screen,#game-hud,#hud-menu-btn,#power-hud,.chance-modal,#e-counter,#nitro-btn').forEach(el => { try { el.remove(); } catch(e){} });
             const _settings = loadSettings();
             const TUTOR = _settings.tutorial; // обучение в заезде — только если включено в «Настройках»
             window.__camMode = _settings.camera; // камера по умолчанию — из «Настроек»
@@ -4145,7 +4145,8 @@ function startGaragePreview(carId) {
             // тема уже выставлена в начале initGame
             const trackTheme = window.__trackThemeActive || 'default';
             window.__nightSpots = 0;
-            const carPreset = CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
+            const FAIR_CAR = typeof pendingMode !== 'undefined' && pendingMode === 'infinite' && !!(infRunOpts && infRunOpts.fair); /* «Заезд дня» и вызов: машины уравнены (src/upgrades.js fairPreset) */
+            const carPreset = FAIR_CAR ? fairPreset(CAR_PRESETS[carId] || CAR_PRESETS.cheburashka) : CAR_PRESETS[carId] || CAR_PRESETS.cheburashka;
             
             // кампания: «сложные» главы плавно ужесточаются к финалу (src/balance.js)
             const _campIdx = window.__campaignTrackId && window.__campaignIdx != null ? window.__campaignIdx : -1;
@@ -4154,7 +4155,7 @@ function startGaragePreview(carId) {
             let infWorld = null, infTheme = null, infSpeedK = 1, infHills = [], continues = 0;
             // попутки в бесконечной трассе: первые ~700 м не перестраиваются, дальше — постепенно (к ~3.2 км как обычно)
             let infLaneK = INF ? 0 : 1, infTrafficK = 1, infCarsBase = 0;
-            const powers = createPowers(currentPlayer && powerLevelsFor(currentPlayer, carId)); // усиления бесконечной трассы с прокачкой (src/powerups.js)
+            const powers = createPowers(currentPlayer && !FAIR_CAR && powerLevelsFor(currentPlayer, carId)); // усиления бесконечной трассы с прокачкой (src/powerups.js)
             const baseConfig = (difficulty === 'hard' && _campIdx >= 0)
                 ? campaignHardConfig(DIFFICULTY_CONFIG.hard, DIFFICULTY_CONFIG.medium, _campIdx, CAMPAIGN_TRACKS.length)
                 : (isEndlessMode() ? waveConfig(DIFFICULTY_CONFIG[difficulty], window.__endless.wave, beast.rule()) : DIFFICULTY_CONFIG[difficulty]);
@@ -4245,7 +4246,8 @@ function startGaragePreview(carId) {
             const TOTAL_LANES = 3;
             const CAR_WIDTH = 0.8;
             const TIME_LIMIT = config.timeLimit;
-            const MAX_STRIKES = (INF && infRunOpts && infRunOpts.rule && infRunOpts.rule.strikes) || 5 + (carPreset.ability && carPreset.ability.id === 'medic' ? 1 : 0); // «Рафик» — шестая жизнь; «Заезд дня» «Одна авария» — одна
+            const FAIL = INF ? failRules({ variant: abVariant(localStorage, Math.random, location.search, loadSettings().fail), fair: !!(infRunOpts && infRunOpts.fair), ruleStrikes: infRunOpts && infRunOpts.rule && infRunOpts.rule.strikes, medic: !!(carPreset.ability && carPreset.ability.id === 'medic') }) : null; /* правило провала A/B: сердца или «ГАИ на хвосте» (src/fail-rules.js) */
+            const MAX_STRIKES = FAIL ? FAIL.maxStrikes : 5 + (carPreset.ability && carPreset.ability.id === 'medic' ? 1 : 0); // «Рафик» — шестая жизнь; «Заезд дня» «Одна авария» — одна
             let TRIGGER_LOOKAHEAD = config.triggerLookahead;
             // мобилка: почти те же значения (без сильного урезания)
             if (window.__isMobile) {
@@ -4588,7 +4590,7 @@ function startGaragePreview(carId) {
                         + (lvUp ? '\n⬆ Уровень сезона: +' + lvUp * 100 + ' Е' : '') + (rewards.boardRank ? '\n🏆 Место на неделе: #' + rewards.boardRank : '')
                         + '\n' + (ib.isNew ? '🎉 НОВЫЙ РЕКОРД ДАЛЬНОСТИ!' : '🏆 Рекорд: ' + (ib.best || ir.dist) + ' м');
                     infHero = { dist: ir.dist, time: formatTime(timeTaken), score: ir.score, mult: ir.mult, isNew: !!ib.isNew, best: ib.best || ir.dist, place: rewards.boardRank, lvUp: lvUp }; // новая раскладка итогов (src/ui/finish-ui.js infFinishHtml)
-                    nearHtml = nearlyHtml(nearlyLines({ dist: ir.dist, best: ib.isNew ? 0 : (ib.best || 0), isNew: ib.isNew, targets: chase ? chase.targets : [], missions: rewards.missions ? rewards.missions.progressed : [] })); if (infRunOpts && infRunOpts.daily) nearHtml += dailyFinishHtml({ profile: currentPlayer, day: infRunOpts.daily, dist: ir.dist, car: carId, online: onlineBoard(), submit: onlineBoard() }); if (infRunOpts && infRunOpts.challenge) { nearHtml += challengeFinishHtml(infRunOpts.challenge, ir.dist); addHooks(null, null, [friendExtra(grantFriendChest(currentPlayer, infRunOpts.challenge.name, dayKey(new Date()), ir.dist > infRunOpts.challenge.score), infRunOpts.challenge.name)]); saveCurrentPlayer(); } if (testDrive && testDrive.car === carId) nearHtml += testDriveHtml({ name: carPreset.name, ability: carPreset.ability, dist: ir.dist, myBest: ib.isNew ? 0 : ib.best, price: testDrive.price, cost: dayPrice(testDrive.price), how: testDrive.how }); finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Собрано «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
+                    infHero.goal = runGoalHtml(runGoal({ dist: ir.dist, best: ib.best || 0, isNew: ib.isNew, crashes: hitLog, animalNames: Object.fromEntries(Object.keys(ANIMAL_TYPES).map(function(k) { return [k, ANIMAL_TYPES[k].name]; })), near: nearlyLines({ dist: ir.dist, best: ib.isNew ? 0 : (ib.best || 0), isNew: ib.isNew, targets: chase ? chase.targets : [], missions: rewards.missions ? rewards.missions.progressed : [] }) })); /* одна цель: что остановило, куда целиться, как (src/run-goal.js) — вместо строк «почти» */ if (infRunOpts && infRunOpts.daily) nearHtml += dailyFinishHtml({ profile: currentPlayer, day: infRunOpts.daily, dist: ir.dist, car: carId, online: onlineBoard(), submit: onlineBoard() }); if (infRunOpts && infRunOpts.challenge) { nearHtml += challengeFinishHtml(infRunOpts.challenge, ir.dist); addHooks(null, null, [friendExtra(grantFriendChest(currentPlayer, infRunOpts.challenge.name, dayKey(new Date()), ir.dist > infRunOpts.challenge.score), infRunOpts.challenge.name)]); saveCurrentPlayer(); } if (testDrive && testDrive.car === carId) nearHtml += testDriveHtml({ name: carPreset.name, ability: carPreset.ability, dist: ir.dist, myBest: ib.isNew ? 0 : ib.best, price: testDrive.price, cost: dayPrice(testDrive.price), how: testDrive.how }); finStats = [['🛣', 'Проехано', ir.dist + ' м'], ['Е', 'Собрано «Е»', ir.e], ['🐾', 'Удары по зверям', stats.animalsHit],
                         ['📼', 'Кассеты', stats.vhs || 0], ['🗺', 'Пейзажей', ir.lands], ['⚡', 'На волоске', nearMissCount]];
                 } else if (isEndlessMode()) {
                     const ft = beast.finishText({ state: state, strikes: strikes, maxStrikes: MAX_STRIKES, best: currentPlayer.endlessBest }); const bch = beast.run && beast.run.challenge; if (bch) { addHooks(null, null, [friendExtra(grantFriendChest(currentPlayer, bch.name, dayKey(new Date()), beast.run.score > bch.score), bch.name)]); saveCurrentPlayer(); } /* сундук за вызов друга */ // src/modes/beast-hour.js
@@ -4929,7 +4931,7 @@ function startGaragePreview(carId) {
                 try { const ct = document.getElementById('coach-tip'); if (ct) ct.remove(); } catch (e) {}
                 const cheb = document.getElementById('cheburashkaWarn');
                 if (cheb) cheb.remove();
-                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque, #power-hud, #e-counter').forEach(el => el.remove()); announcer.hush();
+                document.querySelectorAll('.animal-shout, .radio-line, .story-plaque, #power-hud, #e-counter, #nitro-btn').forEach(el => el.remove()); announcer.hush();
                 const timeTaken = raceTime;
                 const smul = scoreMult(currentPlayer); // множитель очков за задания (src/missions.js)
                 const infRun = INF && infWorld ? { dist: Math.round(infWorld.dist), e: stats.eChips || 0, mult: smul, score: runScore(infWorld.dist, stats.eChips || 0, risk.points) * smul,
@@ -4940,7 +4942,8 @@ function startGaragePreview(carId) {
                         progress: Math.round(Math.max(0, Math.min(1, (START_Z - zPos) / (START_Z - FINISH_Z))) * 100) / 100,
                         mode: typeof pendingMode !== 'undefined' ? pendingMode : 'race', map: mapId, diff: difficulty,
                         chapter: campaignTrackId, nearMiss: typeof nearMissCount !== 'undefined' ? nearMissCount : 0,
-                        wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined, eChips: infRun ? infRun.e : undefined
+                        wave: isEndlessMode() ? window.__endless.wave : undefined, dist: infRun ? infRun.dist : undefined, eChips: infRun ? infRun.e : undefined,
+                        ...(infRun ? { kind: runKind(infRunOpts), cause: hitLog.length ? hitLog[hitLog.length - 1].cause : '', crashes: crashesStr(hitLog), car: carId, cont: continues, warm: infWarm, ab: FAIL ? FAIL.variant : '', grazes: stats.grazes || 0, nearPerfect: stats.nearPerfect || 0, nitroUsed: slipSt ? slipSt.uses : 0, slips: slipSt ? slipSt.slips : 0 } : {}) /* забег бесконечной трассы — в run_events (src/run-metrics.js) */
                     });
                 } catch (e) {}
 
@@ -5298,7 +5301,7 @@ function startGaragePreview(carId) {
             } catch (e) { console.warn('noise landscape', e); }
 
             // === Снегопад — только на snow-теме, раньше с неба вообще ничего не падало ===
-            let snowfall = null; const rain = createRain(scene, { count: quality === 'low' ? 260 : quality === 'high' ? 700 : 480, width: TRACK_WIDTH + 22 }); /* дождь: косые струи вокруг машины (src/rain.js) */
+            let snowfall = null; const leafFall = INF ? createLeaves(scene, { count: quality === 'low' ? 28 : 64, width: TRACK_WIDTH + 18 }) : null; const groundMist = INF ? createGroundMist(scene, { trackWidth: TRACK_WIDTH, lite: quality === 'low' }) : null; /* утренний туман над полями (src/ground-mist.js) */ /* листопад и ветер (src/leaves.js) */ const rain = createRain(scene, { count: quality === 'low' ? 260 : quality === 'high' ? 700 : 480, width: TRACK_WIDTH + 22 }); /* дождь: косые струи вокруг машины (src/rain.js) */
             if (INF || window.__trackThemeActive === 'snow') {
                 try {
                     const snowCount = quality === 'low' ? 140 : (window.__isMobile ? 200 : 360);
@@ -6887,23 +6890,40 @@ function startGaragePreview(carId) {
                 return { mesh: m, x: x, z: z, type: 'vhs', active: true, bob: 0, radius: 0.7, baseY: y };
             }
             let nearMissCount = 0;
+            const slipSt = INF ? createSlip() : null; /* слипстрим и нитро по кнопке (src/slipstream.js) */ const draftFx = slipSt ? createDraftFx(scene) : null; const nitroBtn = slipSt ? createNitroButton({ keyHint: isMobile ? '' : 'E', onFire: function() { fireNitro(); } }) : null;
+            const threatMarks = INF ? createThreatMarks(scene) : null, _warnSt = createWarnState(), _tm = []; /* язык угроз: кольцо цвета класса под помехой впереди и звук класса (src/threat-style.js) */
+            function threatFrame() {
+                _tm.length = 0;
+                const near = function(z) { const d = zPos - z; return d > 2 && d < MARK_FAR + 2; };
+                for (let i = 0; i < obstacles.length; i++) { const o = obstacles[i]; if (o.active && near(o.z) && threatClass(o.type)) _tm.push({ x: o.x != null ? o.x : o.mesh.position.x, z: o.z, w: 1.2, cls: threatClass(o.type), ref: o }); }
+                for (let i = 0; i < hurdles.length; i++) { const h = hurdles[i]; if (!h.done && near(h.z)) _tm.push({ x: (h.x0 + h.x1) / 2, z: h.z, w: h.x1 - h.x0, cls: 'block', ref: h }); }
+                for (let i = 0; i < gaps.length; i++) { const g = gaps[i]; if (!(g.fallT > 0) && near(g.zNear)) (g.lanes || []).forEach(function(li) { _tm.push({ x: laneX(li), z: g.zNear, w: 1.8, cls: 'block', ref: g }); }); }
+                for (let i = 0; i < roadSegments.length; i++) { const rs = roadSegments[i]; if (rs.type === 'roadworks' && near(rs.z0)) _tm.push({ x: rs.x, z: rs.z0, w: 2, cls: 'block', ref: rs }); }
+                const an = animalSpawner.animals; for (let i = 0; i < an.length; i++) { const a = an[i]; if (a && a.triggered && !a.hit && near(a.z)) _tm.push({ x: a.x, z: a.z, w: 1.2, cls: 'threat', ref: a }); }
+                const marks = pickMarks(_tm, zPos);
+                threatMarks.update(marks, raceTime);
+                const wc = warnPick(_warnSt, marks, raceTime); if (wc) try { if (window.soundEngine) window.soundEngine.playSfx(THREAT_CLASSES[wc].sfx, 0.6); } catch (e) {}
+            }
+            function fireNitro() { if (!slipSt || gameState !== 'racing' || !useNitro(slipSt)) return; nitroTimer = Math.max(nitroTimer, NITRO_TIME); fovPunch = Math.max(fovPunch, 14); try { if (window.soundEngine) window.soundEngine.playSfx('nitro_pick', 1.1); } catch (e) {} try { showTimePenaltyPopup(0, '🔥 НИТРО!'); } catch (e) {} }
             let _nmCooldown = 0, _nmBlock = 0;
             // стоп-кадр: секунды реального времени, пока игра почти стоит (только короткий удар по боссу).
             // Замедление на «На волоске!» и при появлении босса убрано — ощущалось как подвисание
             let slowmoT = 0;
-            function nearMiss() {
+            let _nmg = null; /* качество последнего «на волоске» (src/near-miss.js) */
+            function nearMiss(grade) {
                 if (gameState !== 'racing' || _nmCooldown > 0 || _nmBlock > 0) return; // сразу после удара в броне / тарана — это не «на волоске»
                 _nmCooldown = 1.2;
-                nearMissCount++; riskEvent(risk, 'nearMiss'); announcer.say('nearMiss'); if (boss && boss.active) bossCharge(CHARGE.nearMiss); /* впритирку к попутке в бою — тоже заряд тарана */
+                const ns = nearStyle(INF ? grade : 'clean'); if (INF && grade === 'perfect') { stats.nearPerfect = (stats.nearPerfect || 0) + 1; nitroTimer = Math.max(nitroTimer, ns.nitro); fovPunch = Math.max(fovPunch, 12); }
+                nearMissCount++; riskEvent(risk, ns.risk); announcer.say('nearMiss'); if (boss && boss.active) bossCharge(CHARGE.nearMiss); /* впритирку к попутке в бою — тоже заряд тарана */
                 if (!INF) nitroTimer = Math.max(nitroTimer, ABILITY === 'nimble' ? 1.4 : 0.9); // бесконечная трасса: ускорение только с нитро-стрелок
                 try {
                     const el = document.createElement('div');
                     el.className = 'animal-shout';
-                    el.textContent = INF ? '⚡ На волоске!' : '⚡ На волоске! +нитро';
-                    el.style.color = '#66ffcc';
-                    el.style.borderColor = '#66ffcc';
+                    el.textContent = INF ? (slipSt && justSlung(slipSt) ? '💨 Рывок! ' : '') + ns.text + ' ' + ns.bar : '⚡ На волоске! +нитро'; if (slipSt) addSlipCharge(slipSt, NM_CHARGE * ns.charge); /* «на волоске» доливает бак нитро — чем точнее, тем больше */
+                    el.style.color = ns.color;
+                    el.style.borderColor = ns.color;
                     postShout(el, 1100);
-                    if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.5);
+                    if (window.soundEngine) { window.soundEngine.playSfx('whoosh', 0.5); if (ns.sfx) window.soundEngine.playSfx(ns.sfx, 0.7); }
                 } catch (e) {}
             }
             const _trackSpan = START_Z - FINISH_Z;
@@ -7117,7 +7137,7 @@ function startGaragePreview(carId) {
             const _lap0 = function() { for (const _st of populateLap(mapId, INF ? 'easy' : difficulty)) { /* обычный заезд — сразу целиком */ } }; if (INF && infRunOpts && infRunOpts.seed) withRandom(seededRnd((infRunOpts.seed ^ 0x5bd1e995) >>> 0), _lap0); else _lap0(); /* бесконечная: участки первого круга — тоже по сиду */ if (!INF && _campIdx >= 0) placePlan(chapterPatterns(_trackSpan, Math.random, { t: CHAPTER_T[difficulty] || 0.1, spikesOk: difficulty !== 'easy', free: function(a, b) { const lo = START_Z - b, hi = START_Z - a; return infBusy.every(function(z) { return lo > z[1] + 4 || hi < z[0] - 4; }); } }).map(function(it) { return it.kind === 'crate' ? { kind: 'nitro', d: it.d, lane: it.lane } : it; }), { scene: scene, START_Z: START_Z, lists: { obstacles: obstacles, collectibles: collectibles }, make: { eChip: createEChipItem, obstacle: createObstacle, collectible: createCollectible }, busy: infBusy, slideOf: function() { return slideType; } }); // главы: узоры с конусами и цепочками «Е» до босса (src/patterns.js); ящик — нитро
             // бесконечная трасса — src/modes/infinite-run.js: план кругов и узоры, уборка позади, ГАИ, цели на дороге, события пейзажей, «В ударе»
             const inf = INF ? createInfiniteRun({
-                seed: infRunOpts && infRunOpts.seed, rule: infRunOpts && infRunOpts.rule, fair: !!(infRunOpts && infRunOpts.fair), rival: infRunOpts && infRunOpts.rival, scene: scene, START_Z: START_Z, TRACK_WIDTH: TRACK_WIDTH, span: _trackSpan, busy: infBusy, arch: infArch, player: currentPlayer, carPreset: carPreset, online: onlineBoard(),
+                seed: infRunOpts && infRunOpts.seed, rule: infRunOpts && infRunOpts.rule, fair: !!(infRunOpts && infRunOpts.fair), rival: infRunOpts && infRunOpts.rival, chaseTime: FAIL && FAIL.chaseTime, onEscape: function() { if (FAIL && FAIL.refill && gameState === 'racing' && strikes > 0) { strikes = 0; updateHUD(); try { showTimePenaltyPopup(0, '🚔 Ушёл от ГАИ — ♥ снова полные'); } catch (e) {} } }, scene: scene, START_Z: START_Z, TRACK_WIDTH: TRACK_WIDTH, span: _trackSpan, busy: infBusy, arch: infArch, player: currentPlayer, carPreset: carPreset, online: onlineBoard(),
                 lists: { obstacles: obstacles, collectibles: collectibles, ramps: ramps, cars: cars, gapCones: gapCones, smashBoards: smashBoards, gaps: gaps, debrisZones: debrisZones, roadSegments: roadSegments, setEvents: setEvents },
                 make: { ride: createRideItem, eChip: createEChipItem, vhs: createVhsItem, power: createPowerItem, obstacle: createObstacle, collectible: createCollectible, car: createOpponentCar },
                 get lights() { return { ambient: ambient, hemi: hemi, sun: sunLight }; },
@@ -7764,12 +7784,12 @@ function startGaragePreview(carId) {
             let _nitroSfxT = 0;
 
             // характеристики с учётом прокачки (src/upgrades.js)
-            const carStats = computeCarStats(carPreset, getUpgradeLevels(carId || 'cheburashka'));
+            const carStats = computeCarStats(carPreset, FAIR_CAR ? {} : getUpgradeLevels(carId || 'cheburashka'));
             const MAX_SPEED = carStats.maxSpeed * ((carPreset.ability && carPreset.ability.id === 'bull') ? 1.08 : 1); // «Бычок» — +8%
             const ACCELERATION = carStats.accel;
             const BRAKE_FORCE = 0.025;
             const FRICTION_FORCE = 0.008;
-            const MAX_X_SPEED = 0.55;
+            const LANE_MUL = INF && !FAIR_CAR ? laneMul(carId) : 1; /* поворотливость машины: лёгкие быстрее меняют полосу, тяжёлые медленнее (src/upgrades.js) */ const MAX_X_SPEED = 0.55 * LANE_MUL;
             const DRY_DAMPING = 0.82;
             const ABILITY = (carPreset.ability && carPreset.ability.id) || null;
             const ALWAYS_MAGNET = { magnet: 1 }; // способность «Зубила»
@@ -7884,6 +7904,7 @@ function startGaragePreview(carId) {
                 if ((k === 's' || k === 'ы' || k === 'arrowdown') && !e.repeat) { doDuck(); e.preventDefault(); } // вниз — подныр
                 if (k === 'a' || k === 'ф' || k === 'arrowleft') { keys.a = true; e.preventDefault(); }
                 if (k === 'd' || k === 'в' || k === 'arrowright') { keys.d = true; e.preventDefault(); }
+                if ((k === 'e' || k === 'у') && !e.repeat && slipSt) { fireNitro(); e.preventDefault(); } /* E — нитро из бака (src/slipstream.js) */
                 if (e.code === 'Space' && !e.repeat) { doHop(); e.preventDefault(); } // пробел — прыжок
                 if ((e.key === 'Shift' || e.code === 'KeyX') && !e.repeat) doDuck(); // Shift / X — подныр
                 // Q — выйти в меню через общий выход (раньше перезагружал страницу).
@@ -7970,9 +7991,24 @@ function startGaragePreview(carId) {
             const hitLog = [];
             const logHit = function(cause) {
                 cleanRun.reset(); if (stats.cleanDist == null) stats.cleanDist = INF && infWorld ? Math.round(infWorld.dist) : 0; /* задание «без аварий»: сколько проехал до первой */
-                hitLog.push({ cause: cause, at: Math.round((START_Z - zPos) / (START_Z - FINISH_Z) * 100) });
-                trackEvent('crash', { cause: cause, at: hitLog[hitLog.length - 1].at, map: mapId, chapter: window.__campaignTrackId || null });
+                hitLog.push({ cause: cause, at: Math.round((START_Z - zPos) / (START_Z - FINISH_Z) * 100), dist: INF && infWorld ? Math.round(infWorld.dist) : undefined });
+                trackEvent('crash', { cause: cause, at: hitLog[hitLog.length - 1].at, dist: hitLog[hitLog.length - 1].dist, map: mapId, chapter: window.__campaignTrackId || null });
             };
+            // «задел боком» (src/hit-zones.js): не авария — скорость, множитель и толчок вбок; в правиле «ГАИ на хвосте» — погоня, задел в погоне — авария
+            function hitOrGraze(obs, dx, hw) {
+                if (hitSeverity(dx, hw, INF) === 'major') return handleObstacleHit(obs);
+                if (gameState !== 'racing') return;
+                _nmBlock = 2;
+                if ((headstartTo && infWorld && infWorld.dist < headstartTo) || risk.fever > 0 || rideOn(ride) || firstRunSafe(FIRST_RUN, raceTime)) return;
+                const go = grazeOutcome(FAIL && FAIL.chaseAll, !!(police && police.state.t > 0));
+                if (go === 'major') return handleObstacleHit(obs);
+                if (go === 'chase' && police) police.crash();
+                stats.grazes = (stats.grazes || 0) + 1; speed *= GRAZE_SPEED; stunTimer = Math.max(stunTimer, GRAZE_STUN); xVelocity += grazePush(dx); shakeTime = Math.max(shakeTime, 0.12);
+                const lost = riskCrash(risk);
+                try { showTimePenaltyPopup(0, lost > 1 ? '😬 Задел! ×' + lost + ' сгорел' : '😬 Задел!'); } catch (e) {}
+                try { if (window.soundEngine) window.soundEngine.playSfx('bump', 1.1); } catch (e) {}
+                try { if (_settings.vibrate && navigator.vibrate) navigator.vibrate(30); } catch (e) {}
+            }
             function handleObstacleHit(obs) {
                 if (gameState !== 'racing') return;
                 if (obs && String(obs.cause || '').indexOf('car') === 0) try { if (window.soundEngine) window.soundEngine.playSfx('crash'); } catch (e) {} // авария с машиной — хруст металла (src/sfx-kit.js), при любом исходе
@@ -7992,7 +8028,9 @@ function startGaragePreview(carId) {
                 }
                 logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
                 strikes++;
-                if (police && String(obs.cause || '').indexOf('car:') === 0 && police.crash() === 'caught' && strikes < MAX_STRIKES) { /* ГАИ — только за столкновение с машиной: разлом, ямы, звери — не повод для погони */ // ГАИ поймала: ролик облёта (src/police-chase.js), потом — как обычно «Второй шанс»
+                const _pr = police && (FAIL.chaseAll || String(obs.cause || '').indexOf('car:') === 0) ? police.crash() : null; /* «сердца»: ГАИ — только за столкновение с машиной; «ГАИ на хвосте» (src/fail-rules.js) — за любую аварию */
+                if (_pr === 'caught' && FAIL.chaseAll && strikes < MAX_STRIKES) police.crash(); /* «Рафик» в погоне выдержал удар — погоня заново */
+                if (_pr === 'caught' && (FAIL.chaseAll ? strikes >= MAX_STRIKES : strikes < MAX_STRIKES)) { // ГАИ поймала: ролик облёта (src/police-chase.js), потом — как обычно «Второй шанс»
                     strikes = MAX_STRIKES; speed = 0; gameState = 'chance'; cars.forEach(function(c) { if (Math.abs(c.z - zPos) < 16) { c.z = freeZ(zPos - 90, c.lane, { gaps: gaps, ramps: ramps, works: roadSegments }); c.mesh.position.z = c.z; } }); try { showBigPlaque('🚨 ГАИ ПОЙМАЛА!', 'Вторая авария во время погони', 'crate-bad'); } catch (e) {}
                     police.arrest({ camera: camera, renderer: renderer, x: xPos, z: zPos, onDone: function() { gameState = 'racing'; endGame('crash'); } }); return;
                 }
@@ -8042,7 +8080,7 @@ function startGaragePreview(carId) {
                 scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD,
                 config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
-            animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev; const _br = isEndlessMode() && beast.rule(); if (_br) { if (_br.pool) animalSpawner.animalPool = _br.pool.slice(); if (_br.speedMul) animalSpawner.speedMul = _br.speedMul; } // правило волны «Звериного часа» (src/wave-rules.js)
+            animalSpawner.speciesRules = INF; /* у каждого вида своё правило перебежки (src/animal-rules.js) — в бесконечной трассе */            animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev; const _br = isEndlessMode() && beast.rule(); if (_br) { if (_br.pool) animalSpawner.animalPool = _br.pool.slice(); if (_br.speedMul) animalSpawner.speedMul = _br.speedMul; } // правило волны «Звериного часа» (src/wave-rules.js)
             // зверь на «звериной тропе» за трамплином: виден заранее, медленно бредёт через середину.
             // Появляется, когда машина подъезжает (спавнер убирает зверей дальше 150 впереди)
             let trailPendingZ = window.__trailZ;
@@ -8066,7 +8104,7 @@ function startGaragePreview(carId) {
                 window.__raceDebug = {
                     get x() { return xPos; }, get z() { return zPos; }, get speed() { return speed; },
                     get state() { return gameState; }, get strikes() { return strikes; },
-                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, chargeBoss: function(n) { bossCharge(n == null ? 100 : n); }, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, riskEvent: function(k) { return riskEvent(risk, k); }, get goals() { return roadGoals ? roadGoals.count : 0; }, get renderer() { return renderer; }, buildCar: buildShowroomCar, smashBoards: smashBoards, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get chunks() { return chunkCull; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, get inf() { return infWorld; }, spawnMeme: function(id, ahead) { return inf ? inf.spawnMeme(id, ahead) : null; }, powers: powers, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
+                    get boss() { return boss; }, bossBullets, hitLog, gaps, debrisZones, get nearMiss() { return nearMissCount; }, get slip() { return slipSt; }, fail: FAIL, police: inf ? inf.police : null, draftFx: draftFx, fireNitro: fireNitro, get nitroT() { return nitroTimer; }, get riskBonuses() { return collectibles.filter(function(c) { return c.risk; }).map(function(c) { return { risk: c.risk, x: c.x, z: c.z, active: c.active }; }); }, get slide() { return oilSlideTimer; }, get camGap() { return camera.position.z - zPos; }, get animals() { return animalSpawner.animals; }, get biome() { return lastBiome; }, roadSegments: roadSegments, get tunnel() { return tunnelK; }, get curve() { return [curvedWorld.CURVE.value.x, curvedWorld.CURVE.value.y]; }, bossBarricades: bossBarricades, chargeBoss: function(n) { bossCharge(n == null ? 100 : n); }, get bullets() { return bossBullets.length; }, forceBossAttack: function(k) { if (boss) { boss._forceAtk = k; boss.shotTimer = 0.1; boss.vulnT = 0; } }, openBoss: function() { if (boss) boss.vulnT = VULN_TIME; }, get coach() { return Array.from(coachShown); }, spawnBossNow: function() { if (!bossSpawned) spawnBoss(); }, get slowmo() { return slowmoT; }, cleanRun: cleanRun, get camera() { return camera; }, get car() { return playerCar; }, setZ: function(v) { zPos = v; }, setStrikes: function(n) { strikes = n; }, riskEvent: function(k) { return riskEvent(risk, k); }, get goals() { return roadGoals ? roadGoals.count : 0; }, get renderer() { return renderer; }, buildCar: buildShowroomCar, smashBoards: smashBoards, nearMissNow: function() { nearMiss(); }, get ghost() { return ghostCar ? { visible: ghostCar.visible, z: ghostCar.position.z } : null; }, get y() { return carYOffset; }, get air() { return carAirborne; }, gapCones, get mapEvent() { return mapEvent; }, get pipeDrop() { return pipeDrop; }, get mergeStats() { return mergeStats; }, get risk() { return risk; }, get chunks() { return chunkCull; }, get carMerge() { return carMerge; }, get dust() { return dustGust; }, get inf() { return infWorld; }, spawnMeme: function(id, ahead) { return inf ? inf.spawnMeme(id, ahead) : null; }, powers: powers, setEvents: setEvents, giveNitro: function() { nitroTimer = NITRO_TIME; }, end: function(st) { strikes = st === "crash" ? MAX_STRIKES : strikes; endGame(st); }, setX: function(v) { xPos = v; xVelocity = 0; }, stats: stats, carStats: carStats,
                     get raceTime() { return raceTime; }, get infWorld() { return infWorld; }, get moments() { return moments; }, spawnHurdle: function(kind, lanes, ahead) { const z = zPos - (ahead || 30), g = createHurdle(kind, lanes || [0, 1, 2], _rampLaneXs, z, 2); scene.add(g); hurdles.push({ mesh: g, kind: kind, z: z, x0: g.userData.x0, x1: g.userData.x1, done: false }); return z; }, hop: function() { doHop(); }, duck: function() { doDuck(); }, get hurdleStats() { return { passed: stats.hurdles || 0, strikes: strikes, fever: risk.fever, shield: cleanRun.shield, list: hurdles.map(function(h) { return [h.kind, Math.round(h.z - zPos), h.done]; }) }; }, giveRide: function(id) { if (id) { ride.last = null; const i = startRide(ride, id); setRideModel(id); return i.name; } startRideNow(); return ride.id; }, get ride() { return ride.id; },
                     trackWidth: TRACK_WIDTH, startZ: START_Z, finishZ: FINISH_Z,
                     cars, obstacles, collectibles, ramps, animals: animalSpawner.animals, scene
@@ -8431,7 +8469,7 @@ function startGaragePreview(carId) {
 
                 const onOil = (typeof oilSlideTimer !== 'undefined' && oilSlideTimer > 0);
                 const steerMul = onOil ? (0.35 * (typeof OIL_GRIP !== 'undefined' ? OIL_GRIP : 1)) : 1.0;
-                const swStep = swipeOn() ? swipeCtl.step(xPos, deltaTime) : null; // свайп — машину ведём прямо в центр полосы (src/swipe-control.js)
+                const swStep = swipeOn() ? swipeCtl.step(xPos, deltaTime, LANE_MUL) : null; // свайп — машину ведём прямо в центр полосы (src/swipe-control.js)
                 const dampMul = onOil ? 0.97 : DRY_DAMPING; // на масле почти не гасится — сносит
                 
                 if (swStep) {
@@ -8914,7 +8952,7 @@ function startGaragePreview(carId) {
                     if (car.hitCooldown > 0) car.hitCooldown -= deltaTime;
                     const dx = xPos - car.x;
                     const dz = zPos - car.z;
-                    if (car.hitCooldown <= 0 && !rideFlies(ride) && nearMissStep(car, dx, dz, (car.hitW || 0.75) * 0.55, raceTime)) nearMiss(); /* был на твоей полосе и ты увернулся в последний момент — или впритирку (src/near-miss.js) */ else if (dz > 6) car._nm = false;
+                    if (car.hitCooldown <= 0 && !rideFlies(ride) && (_nmg = nearMissStep(car, dx, dz, (car.hitW || 0.75) * 0.55, raceTime))) nearMiss(_nmg); /* был на твоей полосе и ты увернулся в последний момент — или впритирку (src/near-miss.js) */ else if (dz > 6) car._nm = false;
                     const hw = (car.hitW || 0.75) * (ABILITY === 'narrow' ? 0.4 : 0.55); // «Мопед» — узкий
                     const hl = (car.hitL || 1.4) * 0.45;
                     if (rideFlies(ride)) { /* «кукурузник» летит над попутками — ничего не сбивает */ } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && (carAirborne || carYOffset > 0.55) && (!hopJump || hopClears(car.kind, carYOffset))) { /* грузовик и автобус выше прыжка с места (src/traffic-cars.js) */
@@ -8928,7 +8966,7 @@ function startGaragePreview(carId) {
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl))) {
                         car.hitCooldown = 1.2;
                         const pen = car.kind === 'bus' || car.kind === 'truck' ? 5 : 4;
-                        handleObstacleHit({ penalty: 0.3, timePenalty: pen, cause: 'car:' + (car.kind || 'car') });
+                        hitOrGraze({ penalty: 0.3, timePenalty: pen, cause: 'car:' + (car.kind || 'car') }, dx, hw);
                     }
                     
                     if (INF ? (car.z > zPos + 45 || car.z < zPos - 420) : car.z < -TRACK_LENGTH / 2 - 10) {
@@ -8948,6 +8986,8 @@ function startGaragePreview(carId) {
                 });
 
 
+                if (threatMarks && gameState === 'racing') threatFrame();
+                if (slipSt) { const pn = !!(window.__padKeys && window.__padKeys.n); if (pn && !slipSt.padN) fireNitro(); slipSt.padN = pn; const so = stepSlip(slipSt, cars, xPos, zPos, deltaTime, gameState === 'racing' && !(risk.fever > 0) && !rideOn(ride) && !carAirborne); if (so.sling) { nitroTimer = Math.max(nitroTimer, SLING_TIME); try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.8); } catch (e) {} } if (so.ready) { try { showTimePenaltyPopup(0, isMobile ? '🔥 Нитро готово — жми!' : '🔥 Нитро готово — жми E'); if (window.soundEngine) window.soundEngine.playSfx('nitro_pick', 0.7); } catch (e) {} } if (slipHintDue(slipSt, localStorage)) try { showTimePenaltyPopup(0, '💨 За попуткой копится нитро'); } catch (e) {} draftFx.update(deltaTime, slipSt, xPos, zPos); nitroBtn.render(slipSt, nitroTimer > 0); } /* слипстрим: мешок за попуткой копит бак, выход вбок — «Рывок» (src/slipstream.js) */
                 // Трубы и шлагбаумы (src/hop-duck.js): перепрыгнуть, поднырнуть или объехать
                 for (let hi = 0; hi < hurdles.length; hi++) {
                     const h = hurdles[hi];
@@ -10201,7 +10241,7 @@ function startGaragePreview(carId) {
                         0.25
                     );
                 }
-                rain.visible = weatherMode === 'rain' && tunnelK < 0.5; rain.update(deltaTime, xPos, zPos, Math.abs(speed) / MAX_SPEED); // дождь (src/rain.js); в тоннеле не льёт
+                rain.visible = weatherMode === 'rain' && tunnelK < 0.5; rain.update(deltaTime, xPos, zPos, Math.abs(speed) / MAX_SPEED); if (leafFall) { leafFall.visible = !!(infTheme && infTheme.id === 'village') && tunnelK < 0.5; leafFall.update(deltaTime, xPos, zPos, Math.abs(speed) / MAX_SPEED); } if (groundMist) groundMist.update(deltaTime, xPos, zPos, tunnelK < 0.5 ? mistFor(infTheme) : 0, scene.fog ? scene.fog.color.getHex() : null); // дождь (src/rain.js); в тоннеле не льёт
 
                 // Животные
                 // mobile: AI/спавн зверей через кадр
@@ -10225,7 +10265,7 @@ function startGaragePreview(carId) {
                         const dx = xPos - obs.x;
                         const dz = zPos - obs.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
-                        if (nearMissStep(obs, dx, dz, obs.radius + 0.35, raceTime)) nearMiss();
+                        if ((_nmg = nearMissStep(obs, dx, dz, obs.radius + 0.35, raceTime))) nearMiss(_nmg);
                         const hitR = obs.radius + (ABILITY === 'narrow' ? 0.25 : 0.45);
                         if (dist < hitR || (Math.abs(dx) < hitR && sweptZ(obs.z, hitR))) { // отрезком кадра: при низком FPS зверя не проскочить насквозь
                             if ((ABILITY === 'cyborg' || risk.fever > 0) && !(carAirborne || carYOffset > 0.4)) {
@@ -10237,7 +10277,7 @@ function startGaragePreview(carId) {
                                 try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
                             } else {
                                 obs.hit = true;
-                                handleObstacleHit(obs);
+                                hitOrGraze(obs, dx, hitR);
                             }
                         }
                     }
@@ -10670,7 +10710,7 @@ function startGaragePreview(carId) {
                     });
                     // дорога / ground явно
                     scene.traverse(function(obj) {
-                        if (obj.isMesh && obj.geometry && obj.geometry.type === 'PlaneGeometry') {
+                        if (obj.isMesh && obj.geometry && obj.geometry.type === 'PlaneGeometry' && !(obj.userData && obj.userData.dynamic)) {
                             obj.matrixAutoUpdate = false;
                             obj.updateMatrix();
                         }

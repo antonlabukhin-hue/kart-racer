@@ -50,3 +50,26 @@ describe('прокачка машин', () => {
         });
     });
 });
+
+import { fairPreset, FAIR_STATS, computeCarStats as ccs } from '../../src/upgrades.js';
+import { CAR_PRESETS as CP } from '../../src/data.js';
+describe('честный заезд: машины уравнены', () => {
+    it('у любой машины одинаковые характеристики и нет способности; вид — свой', () => {
+        const a = fairPreset(CP.raketa), b = fairPreset(CP.cheburashka);
+        expect(ccs(a, {})).toEqual(ccs(b, {}));
+        expect(a.ability).toBe(null);
+        expect(a.color).toBe(CP.raketa.color);
+        expect(a.maxSpeed).toBe(FAIR_STATS.maxSpeed);
+    });
+});
+
+import { laneMul, NIMBLE_CARS, HEAVY_CARS } from '../../src/upgrades.js';
+describe('поворотливость машин', () => {
+    it('лёгкие быстрее меняют полосу, тяжёлые медленнее; все — настоящие машины', () => {
+        expect(laneMul('cheburashka')).toBeGreaterThan(1);
+        expect(laneMul('buhanka')).toBeLessThan(1);
+        expect(laneMul('turbo')).toBe(1);
+        NIMBLE_CARS.concat(HEAVY_CARS).forEach(id => expect(CAR_PRESETS[id], id).toBeTruthy());
+        expect(NIMBLE_CARS.filter(id => HEAVY_CARS.includes(id))).toEqual([]);
+    });
+});

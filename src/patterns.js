@@ -4,7 +4,9 @@
  * между случайными одиночками; чем дальше, тем чаще и тем сложнее узоры.
  *
  * Узор: { id, len, minT — с какой сложности (rampAt.t), w — вес, spikes — нужны шипы (только после SPIKES_FROM), items }.
- * items — { dz (вперёд от начала узора), lane 0..2, kind: 'block' (type) | 'echip' | 'crate' }.
+ * items — { dz (вперёд от начала узора), lane 0..2, kind: 'block' (type) | 'echip' | 'crate' | 'nitro' | 'gum' }.
+ * Награда объясняет решение: цепочка «Е» — подсказка пути, ящик — перед выбором, нитро — на быстрой линии или после сложного,
+ * сердечко — после рискованного. «Три линии»: безопасная (пусто), быстрая (нитро, но дальше помеха — успей уйти), стильная (прыжок за «Е»).
  * 'block' перекрывает полосу: шипы — одной лентой, яма/кочка/скользкое пятно — парой (одно пятно узкое, его объедешь в полосе).
  * Логика — чистая (с тестами).
  */
@@ -15,6 +17,9 @@ const E = function(lane, from, to) { // цепочка «Е» по полосе 
     return out;
 };
 const B = function(lane, dz, type) { return { dz: dz, lane: lane, kind: 'block', type: type }; };
+const EA = function(lane, from, to) { // «Е» в воздухе над помехой — берутся только в прыжке (стильная линия)
+    return E(lane, from, to).map(function(e) { e.y = 1.35; e.air = true; return e; });
+};
 
 export const PATTERNS = [
     // коридор: ямы по краям, «Е» — по центру
@@ -39,12 +44,16 @@ export const PATTERNS = [
     // шахматка из шипов: центр → край → центр
     { id: 'checker', len: 30, minT: 0.4, w: 2, spikes: true, items: [].concat(
         B(0, 0, 'spikes'), B(2, 0, 'spikes'), B(1, 15, 'spikes'), B(0, 30, 'spikes'), B(2, 30, 'spikes'),
-        E(1, -8, 6), E(2, 11, 19), E(1, 24, 36)) },
+        E(1, -8, 6), E(2, 11, 19), E(1, 24, 36), { dz: 42, lane: 1, kind: 'gum' }) }, // рискованный участок — сердечко на выходе
     // минное поле: ямы в шахматном порядке по всем полосам — проходишь змейкой по «Е»
     { id: 'minefield', len: 40, minT: 0.55, w: 1, items: [].concat(
         B(0, 0, 'pothole'), B(1, 0, 'pothole'), B(2, 13, 'pothole'), B(1, 13, 'pothole'),
         B(0, 26, 'pothole'), B(1, 26, 'pothole'), B(2, 40, 'pothole'), B(1, 40, 'pothole'),
-        E(2, -4, 6), E(0, 9, 19), E(2, 22, 32), E(0, 35, 45)) }
+        E(2, -4, 6), E(0, 9, 19), E(2, 22, 32), E(0, 35, 45), { dz: 50, lane: 0, kind: 'nitro' }) }, // прошёл минное поле — нитро
+    // три линии: слева — безопасно, по центру — нитро, но через 28 м ямы (уходи на скорости), справа — шипы с «Е» над ними (прыжок) и ящик
+    { id: 'three-lines', len: 40, minT: 0.1, w: 3, spikes: true, items: [].concat(
+        E(0, -6, -2), { dz: 2, lane: 1, kind: 'nitro' }, B(1, 30, 'pothole'),
+        E(2, 2, 12), B(2, 18, 'spikes'), EA(2, 16, 20.5), E(2, 25, 34), { dz: 40, lane: 2, kind: 'crate' }) }
 ];
 
 /** Шаг между узорами: на старте — раз в ~220 м, на потолке сложности — раз в ~100 м */
@@ -77,7 +86,8 @@ export function expandPattern(p, d0, mirror, laneX) {
     p.items.forEach(function(it) {
         const lane = mirror ? 2 - it.lane : it.lane;
         const d = d0 + it.dz;
-        if (it.kind === 'echip') out.push({ kind: 'echip', d: d, lane: lane, y: 0.6 });
+        if (it.kind === 'echip') out.push({ kind: 'echip', d: d, lane: lane, y: it.y || 0.6 });
+        else if (it.kind === 'nitro' || it.kind === 'gum') out.push({ kind: it.kind, d: d, lane: lane });
         else if (it.kind === 'crate') out.push({ kind: 'crate', d: d, lane: lane });
         else if (it.type === 'spikes') out.push({ kind: 'spikes', d: d, lane: lane });
         // у первого из пары — конус по центру полосы (cone — его x от предмета): издалека видно, что полоса закрыта

@@ -17,7 +17,7 @@ describe('узоры бесконечной трассы', () => {
             const items = expandPattern(p, 0, mirror);
             const rows = [...new Set(items.filter(i => i.kind === 'obstacle' || i.kind === 'spikes').map(i => i.d))];
             rows.forEach(d => expect([0, 1, 2].some(l => !blocked(items, l, d)), p.id + ' ряд ' + d).toBe(true));
-            items.filter(i => i.kind === 'echip' || i.kind === 'crate').forEach(e => expect(blocked(items, e.lane, e.d), p.id + ' «Е» на ' + e.d).toBe(false));
+            items.filter(i => (i.kind === 'echip' && !(i.y > 1.05)) || i.kind === 'crate' || i.kind === 'nitro' || i.kind === 'gum').forEach(e => expect(blocked(items, e.lane, e.d), p.id + ' «Е» на ' + e.d).toBe(false)); // «Е» в воздухе — над помехой, за прыжком
         }));
     });
     it('чем дальше, тем больше разных узоров и тем они чаще', () => {
@@ -50,6 +50,19 @@ describe('узоры бесконечной трассы', () => {
 });
 
 import { dropBusy } from '../../src/patterns.js';
+describe('три линии', () => {
+    it('безопасная — пустая, быстрая — нитро и помеха дальше, стильная — «Е» в воздухе над шипами и ящик', () => {
+        const items = expandPattern(PATTERNS.find(p => p.id === 'three-lines'), 0, false);
+        expect(items.filter(i => (i.kind === 'obstacle' || i.kind === 'spikes') && i.lane === 0).length).toBe(0);
+        const nitro = items.find(i => i.kind === 'nitro'), hole = items.find(i => i.kind === 'obstacle' && i.lane === 1);
+        expect(nitro.lane).toBe(1); expect(hole.d - nitro.d).toBeGreaterThan(20);
+        const sp = items.find(i => i.kind === 'spikes'), air = items.filter(i => i.kind === 'echip' && i.y > 1.05);
+        expect(sp.lane).toBe(2); expect(air.length).toBeGreaterThan(1);
+        expect(air.some(e => Math.abs(e.d - sp.d) < 1.2)).toBe(true);
+        expect(items.find(i => i.kind === 'crate').lane).toBe(2);
+    });
+});
+
 describe('узор целиком или никак', () => {
     it('задетый занятым местом узор убирается весь, одиночки — по месту', () => {
         const items = [{ d: 10, pat: 1 }, { d: 20, pat: 1 }, { d: 30 }, { d: 40, pat: 2 }, { d: 55 }];
@@ -60,12 +73,12 @@ describe('узор целиком или никак', () => {
 
 describe('конец узора', () => {
     it('у каждого узора — отметка конца за его последним препятствием, ids — с opts.patId', () => {
-        const items = planStretch(0, 5000, seq(17), { patId: 3000 }).items;
+        const items = [17, 3, 9].flatMap((s, k) => planStretch(k * 6000, k * 6000 + 5000, seq(s), { patId: 3000 + k * 1000 }).items);
         const ends = items.filter(i => i.kind === 'patEnd');
         expect(ends.length).toBeGreaterThan(10);
         ends.forEach(e => {
             expect(e.pat).toBeGreaterThan(3000);
-            const own = items.filter(i => i.pat === e.pat && i.kind !== 'patEnd' && i.kind !== 'echip');
+            const own = items.filter(i => i.pat === e.pat && i.kind !== 'patEnd' && i.kind !== 'echip' && i.kind !== 'gum' && i.kind !== 'nitro'); // награда за пройденное — сразу за концом
             expect(own.every(i => i.d < e.d)).toBe(true);
         });
     });

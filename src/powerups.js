@@ -17,8 +17,9 @@ export const POWER_EVERY = [450, 750];
 /**
  * Прокачка усилений за «Е» (как в Subway Surfers — главная трата монет): 5 уровней.
  * Магнит и ×2 — +2 с действия за уровень. Броня — держит больше ударов (1 → 4) и за каждый отбитый удар даёт «Е».
- * Прокачка — у каждой машины своя: profile.powerLvByCar = { [carId]: { magnet, x2, shield } }.
- * Раньше была общая profile.powerLv — при первом обращении она переходит машине, на которой игрок ездит (preferredCar).
+ * Прокачка — общая для всех машин: profile.powerLvAll = { magnet, x2, shield } (своя у каждой машины наказывала за покупку новой:
+ * пересел — и магнит снова слабый). Переход с прежней (powerLvByCar, ещё раньше — powerLv): берётся лучший уровень каждого усиления,
+ * а «Е», потраченные на остальные машины, возвращаются на счёт (profile.powerRefund — сколько вернули, для плашки).
  */
 export const POWER_LEVELS = 5;
 export const POWER_UP_COST = [150, 300, 600, 1200, 2400];
@@ -40,20 +41,27 @@ export function powerTime(type, lv) {
 export function nextPowerCost(lv) {
     return (lv || 0) >= POWER_LEVELS ? null : POWER_UP_COST[lv || 0];
 }
-/** Уровни усилений машины carId (живой объект в профиле — менять можно) */
-export function powerLevelsFor(profile, carId) {
+/** Сколько «Е» стоят уровни 0..lv */
+export function spentOn(lv) { let s = 0; for (let i = 0; i < Math.min(POWER_LEVELS, lv || 0); i++) s += POWER_UP_COST[i]; return s; }
+/** Уровни усилений игрока (общие для всех машин; живой объект в профиле — менять можно). carId — прежний параметр, не важен */
+export function powerLevelsFor(profile, carId) { // eslint-disable-line no-unused-vars
     if (!profile) return { magnet: 0, x2: 0, shield: 0 };
-    const by = profile.powerLvByCar = (profile.powerLvByCar && typeof profile.powerLvByCar === 'object') ? profile.powerLvByCar : {};
-    if (profile.powerLv) { // миграция общей прокачки — машине, на которой ездит игрок
-        const to = profile.preferredCar || 'cheburashka';
-        by[to] = Object.assign({ magnet: 0, x2: 0, shield: 0 }, by[to], profile.powerLv);
-        delete profile.powerLv;
+    const all = profile.powerLvAll = Object.assign({ magnet: 0, x2: 0, shield: 0 }, profile.powerLvAll);
+    const olds = [].concat(profile.powerLv ? [profile.powerLv] : [], profile.powerLvByCar && typeof profile.powerLvByCar === 'object' ? Object.values(profile.powerLvByCar) : []);
+    if (olds.length) { // переход: лучший уровень каждого усиления, остальное — «Е» назад
+        let refund = 0;
+        POWER_UPGRADABLE.forEach(function(t) {
+            const lvs = olds.map(function(o) { return Math.max(0, Math.min(POWER_LEVELS, (o && o[t]) || 0)); }).concat([all[t]]);
+            const best = Math.max.apply(null, lvs);
+            refund += lvs.reduce(function(a, l) { return a + spentOn(l); }, 0) - spentOn(best);
+            all[t] = best;
+        });
+        delete profile.powerLv; delete profile.powerLvByCar;
+        if (refund > 0) { profile.season = profile.season || {}; profile.season.chips = (profile.season.chips || 0) + refund; profile.powerRefund = (profile.powerRefund || 0) + refund; }
     }
-    const id = carId || profile.preferredCar || 'cheburashka';
-    by[id] = Object.assign({ magnet: 0, x2: 0, shield: 0 }, by[id]);
-    return by[id];
+    return all;
 }
-/** Купить следующий уровень усиления машине carId: списывает «Е». { ok, cost } | { ok: false, reason: 'max' | 'no_chips' } */
+/** Купить следующий уровень усиления (для всех машин): списывает «Е». { ok, cost } | { ok: false, reason: 'max' | 'no_chips' } */
 export function buyPowerLevel(profile, type, carId) {
     if (POWER_UPGRADABLE.indexOf(type) < 0) return { ok: false, reason: 'max' };
     const lv = powerLevelsFor(profile, carId);
