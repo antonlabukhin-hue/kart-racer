@@ -6424,6 +6424,18 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 #armor-bar i { flex: 1; height: 8px; border-radius: 3px; background: rgba(0,0,0,0.45); box-shadow: inset 0 0 0 1px rgba(160,230,255,0.25); transition: background .25s; }
 #armor-bar i.on { background: linear-gradient(180deg, #8fe6ff, #2a9ad8); box-shadow: 0 0 6px rgba(80,200,255,0.7); }
 #armor-bar.hit { animation: armorHit .35s; }
+/* «В ударе» и безумный транспорт — на месте брони (src/ui/risk-hud.js); цепочка «на волоске» — слева от неё */
+#power-slot { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 78px); transform: translateX(-50%); width: 230px; z-index: 106; pointer-events: none; text-align: center; }
+#power-slot b { display: block; margin-bottom: 4px; font: 900 22px/1 Impact, "Arial Black", sans-serif; letter-spacing: 2px; white-space: nowrap; color: #ffb040; text-shadow: 0 0 12px rgba(255,120,20,0.9), 0 2px 0 #4a1a00; }
+#power-slot i { display: block; height: 9px; border-radius: 4px; background: rgba(0,0,0,0.5); overflow: hidden; }
+#power-slot u { display: block; height: 100%; background: linear-gradient(90deg, #ff4a1a, #ffd23c); }
+#power-slot.ride b { color: #7af0ff; text-shadow: 0 0 12px rgba(40,200,255,0.9), 0 2px 0 #0a3a5a; }
+#power-slot.ride u { background: linear-gradient(90deg, #2ab8ff, #9affea); }
+#power-slot.ending { animation: feverBlink .18s steps(2) infinite; }
+body:not(.race-mode) #power-slot { display: none; }
+@media (max-height: 560px) { #power-slot { bottom: calc(env(safe-area-inset-bottom, 0px) + 46px); width: 200px; } #power-slot b { font-size: 18px; } }
+/* вертикально — цепочка тоже слева от брони */
+body.race-mode #risk-hud#risk-hud { left: calc(50% - 108px); right: auto; top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 78px); transform: translateX(-100%); }
 @keyframes armorHit { 0% { transform: translateX(-50%) scale(1.1); } 30% { transform: translateX(calc(-50% - 6px)); } 60% { transform: translateX(calc(-50% + 5px)); } 100% { transform: translateX(-50%); } }
 @media (max-height: 560px) { #armor-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 46px); width: 170px; } #armor-bar b { font-size: 18px; } }
 
@@ -6466,7 +6478,7 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
     :root body.race-mode #e-counter#e-counter { left: max(10px, env(safe-area-inset-left)) !important; right: auto !important; transform: none !important; top: calc(max(10px, env(safe-area-inset-top)) + 118px) !important; }
     :root body.race-mode #e-counter.pop { animation: none !important; }
     :root body.race-mode .police-hud.police-hud { top: calc(max(10px, env(safe-area-inset-top)) + 132px) !important; right: max(10px, env(safe-area-inset-right)) !important; left: auto !important; }
-    :root body.race-mode #risk-hud#risk-hud { top: calc(max(10px, env(safe-area-inset-top)) + 206px) !important; left: max(10px, env(safe-area-inset-left)) !important; right: auto !important; }
+    :root body.race-mode #risk-hud#risk-hud { top: auto !important; left: 50% !important; right: auto !important; transform: translateX(-50%) !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 128px) !important; } /* цепочка — над бронёй, у машины */
     :root body.race-mode .rt.rt.rt { top: calc(max(10px, env(safe-area-inset-top)) + 280px) !important; }
 }
 
@@ -6483,7 +6495,8 @@ body.swipe-ctl #mobile-controls .mc-left, body.swipe-ctl #mobile-controls #btnGa
 /* ===== Горизонтальный режим: множитель риска «×N» — сверху, справа от «Е» (внизу по центру он лез под машину);
    шкала брони — у самого низа, ниже «В УДАРЕ»: с бронёй машина у низа экрана, и шкала её не закрывает ===== */
 @media (orientation: landscape) {
-    :root body.race-mode #risk-hud#risk-hud { left: calc(50% + 62px) !important; right: auto !important; bottom: auto !important; top: max(4px, env(safe-area-inset-top)) !important; transform: none !important; } /* в верхней строке, справа от «Е» */
+    :root body.race-mode #risk-hud#risk-hud { left: calc(50% - 108px) !important; right: auto !important; top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important; transform: translateX(-100%) !important; } /* цепочка «на волоске» — слева от брони, внизу у машины */
+    :root body.race-mode #power-slot { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
     :root body.race-mode #armor-bar#armor-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important; }
 }
 #endless-wave-card .ew-menu { display: block; width: 100%; max-width: 340px; margin: 4px auto; min-height: 42px; border-radius: 12px; cursor: pointer;
