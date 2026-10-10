@@ -28,14 +28,18 @@ test('босс: увороты копят шкалу тарана, полная 
     await expect(page.locator('#boss-hud .bh-charge')).toBeVisible();
     expect(await ram(page)).toBe(hp0);            // шкала пустая — касание только отбрасывает
     // залп мимо: уводим машину в полосу подальше от ближайшего снаряда, пока он не пролетит
-    await page.evaluate(() => { const d = window.__raceDebug; d.boss.invuln = 30; d.forceBossAttack('shot'); });
-    await expect.poll(() => page.evaluate(() => window.__raceDebug.bullets), { timeout: 15_000 }).toBeGreaterThan(0);
+    // после тарана босс стоит вплотную: на медленном сервере (CI) он не успевал отъехать, и залп бил в упор — ставим его на 20 м вперёд
+    await page.evaluate(() => { const d = window.__raceDebug, b = d.boss; b.invuln = 30; b.z = d.z - 20; b.charge = 0; });
+    await expect.poll(() => page.evaluate(() => { const d = window.__raceDebug; return d.z - d.boss.z; })).toBeGreaterThan(12);
+    // выстрел и отвод снарядов — в одном шаге: снаряды уходят в другую полосу с того же кадра, в котором появились
     const got = await page.evaluate(() => new Promise(res => {
-        const d = window.__raceDebug, b = d.boss; const t0 = performance.now();
+        const d = window.__raceDebug, b = d.boss; const t0 = performance.now(); let fired = false;
+        d.setX(-2); d.forceBossAttack('shot');
         const f = () => {
-            d.setX(-2); d.bossBullets.forEach(bu => { bu.x = 2; bu.vx = 0; }); // снаряды гарантированно мимо: на медленной машине (CI) автоуворот не успевал
-            b._forceAtk = null; b.shotTimer = 99;
-            if ((b.charge || 0) > 0 || b.vulnT > 0 || performance.now() - t0 > 30000) res({ charge: b.charge, v: b.vulnT, bullets: d.bullets }); else requestAnimationFrame(f);
+            d.setX(-2); d.bossBullets.forEach(bu => { bu.x = 2; bu.vx = 0; }); // гарантированно мимо: на медленной машине (CI) автоуворот не успевал
+            if (d.bullets > 0) fired = true;
+            if (fired) { b._forceAtk = null; b.shotTimer = 99; }
+            if ((b.charge || 0) > 0 || b.vulnT > 0 || performance.now() - t0 > 45000) res({ charge: b.charge, v: b.vulnT, bullets: d.bullets, fired: fired }); else requestAnimationFrame(f);
         };
         f();
     }));
