@@ -9,11 +9,12 @@ import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
 const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
-import { createMoves, hop, duck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice, underDuck, carsToClear, DUCK_CLEAR, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
+import { createMoves, hop, duck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice, underDuck, carsToClear, DUCK_CLEAR, planGates, GATE_AFTER, GATE_SIGN, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
 import { renderRideBar, RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
 import { showMoveArrows } from './move-tutor.js';
+import { zoneFree, calmAhead, MAJOR_GAP, HURDLE_GAP } from './director.js';
 import { nearMissStep } from './near-miss.js';
 import { laneAssist } from './lane-assist.js';
 import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears } from './traffic-cars.js';
@@ -6823,15 +6824,25 @@ function startGaragePreview(carId) {
                 if (actOf(kind) === 'jump') showBigPlaque(isMobile ? '⬆ СВАЙП ВВЕРХ — ПРЫЖОК' : '⬆ ПРОБЕЛ — ПРЫЖОК', 'Перепрыгни или объедь', 'landing');
                 else showBigPlaque(isMobile ? '⬇ СВАЙП ВНИЗ — ПОДНЫР' : '⬇ SHIFT — ПОДНЫР', 'Нырни под него или объедь', 'landing');
             }
-            function placeHurdles(dA, dB) {
+            function placeHurdles(dA, dB) { // ворота (подныр) и трубы (прыжок) — через «режиссёра»: не рядом с разломом, ремонтом, событием (src/director.js)
+                planGates(dA, dB, seededRnd((((infRunOpts && infRunOpts.seed) || 7) ^ Math.round(dA)) + 0x9e37)).forEach(function(p) { // подныр — только в «воротах»: табличка заранее, за ними пусто (src/hop-duck.js)
+                    const z = START_Z - p.d;
+                    if (!zoneFree(infBusy, z - GATE_AFTER - 5, z + GATE_SIGN, MAJOR_GAP)) return;
+                    clearZone(z + GATE_SIGN, z - GATE_AFTER - 5); // от таблички до конца коридора — ни препятствий, ни трамплинов
+                    const g = createHurdle(p.kind, p.lanes, _rampLaneXs, z, 2);
+                    scene.add(g);
+                    hurdles.push({ mesh: g, kind: p.kind, z: z, x0: g.userData.x0, x1: g.userData.x1, done: false, gate: true });
+                    [-1, 1].forEach(function(side) { scene.add(createRoadSign(['⬇ ВОРОТА', 'ПОДНЫРНИ'], side * (TRACK_WIDTH / 2 + 1.8), z + GATE_SIGN, { big: true })); });
+                });
                 planHurdles(dA, dB, seededRnd(((infRunOpts && infRunOpts.seed) || 7) ^ Math.round(dA))).forEach(function(p) { // свой генератор: общий не сдвигается — трасса по сиду (вызов другу) та же
                     const z = START_Z - p.d;
-                    if (infBusy.some(function(b) { return z >= b[0] - 6 && z <= b[1] + 6; })) return; // не на разломе, трамплине, событии
+                    if (!zoneFree(infBusy, z - 1, z + 1, HURDLE_GAP)) return; // не у разлома, трамплина, ворот, события
                     const g = createHurdle(p.kind, p.lanes, _rampLaneXs, z, 2);
                     scene.add(g);
                     hurdles.push({ mesh: g, kind: p.kind, z: z, x0: g.userData.x0, x1: g.userData.x1, done: false });
-                    // «Е» над трубой — в прыжке, под шлагбаумом — низко
-                    collectibles.forEach(function(c) { if (c.type === 'echip' && Math.abs(c.z - z) < 1.2 && c.x > g.userData.x0 - 0.5 && c.x < g.userData.x1 + 0.5 && c.baseY < 0.9) c.baseY = actOf(p.kind) === 'jump' ? 1.05 : 0.45; });
+                    infBusy.push([z - 3, z + 3]);
+                    // «Е» над трубой — в прыжке
+                    collectibles.forEach(function(c) { if (c.type === 'echip' && Math.abs(c.z - z) < 1.2 && c.x > g.userData.x0 - 0.5 && c.x < g.userData.x1 + 0.5 && c.baseY < 0.9) c.baseY = 1.05; });
                 });
                 for (let i = hurdles.length - 1; i >= 0; i--) if (hurdles[i].z > zPos + 40) hurdles.splice(i, 1);
             }
@@ -7010,7 +7021,6 @@ function startGaragePreview(carId) {
                         setFracs.push(fr[i]);
                         scene.add(createRoadSign(EVENT_SIGNS[kind], TRACK_WIDTH / 2 + 1.8, ez + 55, { big: true }));
                     });
-                    if (INF) placeHurdles(START_Z - _zAt(0), START_Z - _zAt(1)); // трубы и шлагбаумы на круге
                     if (INF && Math.random() < ARTIFACT_CHANCE) { const az = _zAt(0.25 + Math.random() * 0.5), al = Math.floor(Math.random() * 3); collectibles.push(createArtifactItem(_rampLaneXs[al], az)); } // артефакт 90-х — примерно раз на круг
                     pick.landmarks.forEach(function(kind, i) {
                         const side = Math.random() < 0.5 ? -1 : 1;
@@ -7084,7 +7094,7 @@ function startGaragePreview(carId) {
                         const style = isSnowTrack ? 'snow' : mapId;
                         scene.add(createTunnel(TRACK_WIDTH, z0, len, style).group);
                         scene.add(createRoadSign(['ТОННЕЛЬ', 'ВКЛЮЧИ ФАРЫ'], TRACK_WIDTH / 2 + 1.8, z0 + 50));
-                        roadSegments.push({ type: 'tunnel', z0: z0, z1: z0 - len });
+                        roadSegments.push({ type: 'tunnel', z0: z0, z1: z0 - len }); infBusy.push([z0 - len - 4, z0 + 16]); /* в тоннеле — без ворот и преград (src/director.js) */
                         // бонус с риском: жвачка у стены в темноте — заметишь, если смотришь по сторонам
                         const darkGum = createCollectible(z0 - len * 0.6, 'gum');
                         darkGum.x = (Math.random() < 0.5 ? -1 : 1) * 2.2;
@@ -7093,6 +7103,7 @@ function startGaragePreview(carId) {
                         collectibles.push(darkGum);
                     }
                 });
+                if (INF) placeHurdles(START_Z - _zAt(0), START_Z - _zAt(1)); // трубы и ворота — последними: в обход всех крупных событий круга (src/director.js)
             } catch (eSet) { console.warn('setpieces', eSet); }
             }
             const _infM0 = scene.children.length;
@@ -8042,7 +8053,7 @@ function startGaragePreview(carId) {
             }
             // ритм заезда: разгон → слалом → босс → финал; на ремонте и развилке реже (src/rhythm.js)
             animalSpawner.densityFn = function(z) { return densityAt((START_Z - z) / (START_Z - FINISH_Z), window.__trackLayout); };
-            if (INF) { animalSpawner.finishZ = -Infinity; animalSpawner.densityFn = function() { return inf.animalDensity(); }; }
+            if (INF) { animalSpawner.finishZ = -Infinity; animalSpawner.densityFn = function(z) { return calmAhead(infBusy, z) ? 0 : inf.animalDensity(); }; } /* у разлома, ворот, события зверь не выбегает — у угрозы один ответ (src/director.js) */
             // Только в тестовой сборке: состояние заезда для автопилота в тестах. На сайт не попадает.
             if (import.meta.env.MODE === 'test') {
                 window.__raceDebug = {
@@ -8931,7 +8942,7 @@ function startGaragePreview(carId) {
                     const h = hurdles[hi];
                     if (showArrows && !h.done && zPos - h.z > 3 && zPos - h.z < 30 && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && !arrowFor) arrowFor = actOf(h.kind);
                     blinkHurdle(h.mesh, raceTime, !h.done && actOf(h.kind) === 'duck' && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && zPos - h.z > -0.5 && zPos - h.z < 35 && duckWillClear(moves, zPos - h.z, Math.abs(speed) * 60)); // рама зелёная: в подныре и проскочишь
-                    if (!h.done && actOf(h.kind) === 'duck' && zPos - h.z < 110) { if (!h.cleared) { h.cleared = true; obstacles.forEach(function(o) { if (o.active && underDuck(h, o.x != null ? o.x : o.mesh.position.x, o.z)) { o.active = false; o.mesh.visible = false; } }); } carsToClear(h, cars, zPos).forEach(function(m) { m.car.z = freeZ(m.z, m.car.lane, _avoidH); m.car.mesh.position.z = m.car.z; }); if (zPos - h.z > 15) animalSpawner.animals.forEach(function(an) { if (!an.hit && an.z > h.z - DUCK_CLEAR && an.z < h.z + DUCK_CLEAR) { an.z = h.z - DUCK_CLEAR - 8; if (an.mesh) an.mesh.position.z = an.z; } }); /* и зверь не стоит под рамой */ } // под рамой пусто: ни шипов, ни попуток — подныр всегда спасает
+                    if (!h.done && actOf(h.kind) === 'duck' && zPos - h.z < 110) { if (!h.cleared) { h.cleared = true; obstacles.forEach(function(o) { if (o.active && underDuck(h, o.x != null ? o.x : o.mesh.position.x, o.z)) { o.active = false; o.mesh.visible = false; } }); } carsToClear(h, cars, zPos, h.gate ? GATE_AFTER : 0).forEach(function(m) { m.car.z = freeZ(m.z, m.car.lane, _avoidH); m.car.mesh.position.z = m.car.z; }); if (zPos - h.z > 15) animalSpawner.animals.forEach(function(an) { if (!an.hit && an.z > h.z - (h.gate ? GATE_AFTER : DUCK_CLEAR) && an.z < h.z + DUCK_CLEAR) { an.z = h.z - (h.gate ? GATE_AFTER : DUCK_CLEAR) - 8; if (an.mesh) an.mesh.position.z = an.z; } }); /* и зверь не стоит под рамой */ } // под рамой пусто: ни шипов, ни попуток — подныр всегда спасает
                     if (h.done) { if (h.z > zPos + 0.6 && h.mesh.visible) h.mesh.visible = false; continue; } // проехал — не закрывает камеру
                     if (!h.hintShown && h.z < zPos && zPos - h.z < 38) { h.hintShown = true; hurdleHint(actOf(h.kind)); }
                     if (!sweptZ(h.z, 0.35) || xPos < h.x0 - 0.25 || xPos > h.x1 + 0.25) { if (h.z > zPos + 1) h.done = true; continue; } // объехал — тоже позади
