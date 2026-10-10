@@ -6224,7 +6224,9 @@ body:has(#fever-fx) .big-plaque { top: 24% !important; }
 #fever-fx b em { font-style: normal; font-size: 0.8em; color: #fff; font-variant-numeric: tabular-nums; }
 
 /* ===== Итоги бесконечной трассы — новая раскладка (src/ui/finish-ui.js infFinishHtml) ===== */
-#finish-screen.finish-layout-f2 { align-items: center !important; justify-content: center !important; padding: 12px !important; }
+#finish-screen.finish-layout-f2 { align-items: flex-start !important; justify-content: flex-start !important; padding: 12px !important; }
+/* по центру — полями auto: карточка выше экрана не обрезается сверху (с justify-content: center на iPhone вертикально заголовок уходил за край), а прокручивается */
+body #finish-screen.finish-layout-f2 > .f2 { margin: auto !important; }
 #finish-screen.finish-layout-f2 .f2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; width: min(860px, 100%); box-sizing: border-box;
     padding: 16px; border-radius: 20px; background: rgba(8,8,12,0.94); border: 2px solid #ffd23c; box-shadow: 0 20px 80px rgba(0,0,0,0.9);
     font-family: system-ui, 'Segoe UI', Arial, sans-serif; color: #fff; text-align: center; max-height: calc(100dvh - 24px); }
@@ -6259,6 +6261,10 @@ body:has(#fever-fx) .big-plaque { top: 24% !important; }
     #finish-screen.finish-layout-f2 .f2-hero b { font-size: 52px; }
     #finish-screen.finish-layout-f2 .f2-feed { overflow: visible; }
     #finish-screen.finish-layout-f2 .f2-actions { position: sticky; bottom: 0; padding: 8px 0 2px; background: linear-gradient(180deg, rgba(8,8,12,0), rgba(8,8,12,0.96) 30%); }
+}
+/* вертикальный телефон: итоги не уходят под вырез и шторку iPhone (верхняя надпись пряталась), кнопки — над полосой жестов */
+@media (max-width: 640px) and (orientation: portrait) {
+    body #finish-screen.finish-layout-f2, body #finish-screen { padding-top: calc(var(--ui-safe-t, env(safe-area-inset-top, 0px)) + 12px) !important; padding-bottom: calc(var(--ui-safe-b, env(safe-area-inset-bottom, 0px)) + 6px) !important; box-sizing: border-box; }
 }
 /* телефон лёжа: низкий экран — две колонки, всё компактнее */
 @media (max-height: 520px) and (min-width: 641px) {
