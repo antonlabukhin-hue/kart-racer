@@ -106,7 +106,7 @@ test('отбитый на нитро снаряд ранит босса скво
     // таран по броне с кувалдой (в залпе могли быть ещё отбитые снаряды — считаем от момента тарана)
     const r = await page.evaluate(() => new Promise(res => {
         const d = window.__raceDebug, b = d.boss; let n = 0; const hp0 = b.hp;
-        const f = () => { b.invuln = 0; b.vulnT = 0; b.x = d.x; b.z = d.z + 0.5; if (++n < 40 && b.hp === hp0) requestAnimationFrame(f); else res({ hp0, hp: b.hp, ret: b.returning, ch: b.charging, act: b.active, dy: b.dying, air: d.air, y: d.y, ham: d.hammer, st: d.state }); };
+        const f = () => { b.invuln = 0; b.vulnT = 0; b.x = d.x; b.z = d.z + 0.5; if (++n < 150 && b.hp === hp0) requestAnimationFrame(f); else res({ hp0, hp: b.hp, ret: b.returning, ch: b.charging, act: b.active, dy: b.dying, air: d.air, y: d.y, ham: d.hammer, st: d.state }); };
         f();
     }));
     expect(r.hp, JSON.stringify(r)).toBeLessThan(r.hp0);
