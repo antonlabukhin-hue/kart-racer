@@ -872,7 +872,7 @@ export function buildShowroomCar(carId) {
         );
         rim.rotation.z = Math.PI / 2; rim.position.set(p[0], p[1], p[2]); rims.add(rim);
     });
-    rims.visible = false; group.add(rims); parts.rims = rims;
+    rims.visible = false; rims.userData.wheelPart = true; group.add(rims); parts.rims = rims;
 
     // Антенна стоит НА крыше
     const antLen = isJeep ? 0.4 : 0.7;

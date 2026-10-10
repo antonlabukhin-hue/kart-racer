@@ -140,7 +140,7 @@ export function buildTuning(group, d, carId, bodyMat) {
 
     // литьё — золотые диски снаружи колёс (машины, мотоциклы, трайк)
     if (!parts.rims) {
-        const rm = G('rims');
+        const rm = G('rims'); rm.userData.wheelPart = true; // литьё — на колёсах: высокая подвеска поднимает кузов, а не диски (src/suspension.js)
         wheels.forEach(function(w) {
             const side = w[0] === 0 ? [-1, 1] : [Math.sign(w[0])];
             side.forEach(function(s) { K.can(rm, gold, w[3] * 0.62, 0.02, w[0] + s * ((w[4] || 0.2) / 2 + 0.02), w[1], w[2], 'x'); });
@@ -285,7 +285,7 @@ function buildChariotParts(G, K, gold) {
     K.box(rr, gold, 0.27, 0.03, 0.23, 0.3, 1.14, 0.52); K.ball(rr, pearl, 0.04, 0.3, 1.18, 0.52);
     const lp = G('lip'); // звезда на носу чаши
     const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.09), gold); star.position.set(0, 0.9, -0.36); star.scale.set(1, 1, 0.5); lp.add(star);
-    const rm = G('rims'); // золотые колёса: обод снаружи колеса
+    const rm = G('rims'); rm.userData.wheelPart = true; // золотые колёса: обод снаружи колеса
     [-1, 1].forEach(function(s) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.025, 8, 24), gold); t.rotation.y = Math.PI / 2; t.position.set(s * 0.73, 0.38, 0.3); rm.add(t); });
     const an = G('antenna'); // вымпел на древке у обода слева сзади
     K.rod(an, gold, 0.012, [-0.55, 0.86, 0.55], [-0.55, 1.62, 0.58]);
