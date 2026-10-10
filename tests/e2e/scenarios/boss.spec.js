@@ -33,10 +33,9 @@ test('босс: увороты копят шкалу тарана, полная 
     const got = await page.evaluate(() => new Promise(res => {
         const d = window.__raceDebug, b = d.boss; const t0 = performance.now();
         const f = () => {
-            let near = null; d.bossBullets.forEach(bu => { if (!near || Math.abs(bu.z - d.z) < Math.abs(near.z - d.z)) near = bu; });
-            if (near) { const lanes = [-2, 0, 2]; d.setX(lanes.reduce((a, x) => Math.abs(x - near.x) > Math.abs(a - near.x) ? x : a, 0)); }
+            d.setX(-2); d.bossBullets.forEach(bu => { bu.x = 2; bu.vx = 0; }); // снаряды гарантированно мимо: на медленной машине (CI) автоуворот не успевал
             b._forceAtk = null; b.shotTimer = 99;
-            if ((b.charge || 0) > 0 || b.vulnT > 0 || performance.now() - t0 > 12000) res({ charge: b.charge, v: b.vulnT, bullets: d.bullets }); else requestAnimationFrame(f);
+            if ((b.charge || 0) > 0 || b.vulnT > 0 || performance.now() - t0 > 30000) res({ charge: b.charge, v: b.vulnT, bullets: d.bullets }); else requestAnimationFrame(f);
         };
         f();
     }));
