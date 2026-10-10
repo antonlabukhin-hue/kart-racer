@@ -9214,11 +9214,11 @@ function startGaragePreview(carId) {
                             startRideNow();
                         } else if (c.type === 'artifact') {
                             const ga = grantArtifact(currentPlayer, c.art); saveCurrentPlayer();
-                            try { showBigPlaque(c.art.icon + ' ' + (ga.setDone ? 'АЛЬБОМ СОБРАН!' : ga.isNew ? c.art.name.toUpperCase() : 'УЖЕ ЕСТЬ: +' + ga.chips + ' Е'), ga.isNew ? c.art.memo + ' · +' + ga.chips + ' Е' : 'Повтор — в альбоме уже есть', 'armor'); } catch (e) {}
+                            try { showTimePenaltyPopup(0, c.art.icon + ' ' + (ga.setDone ? 'Альбом собран!' : ga.isNew ? 'В альбом: ' + c.art.name : 'Уже есть') + ' +' + ga.chips + ' Е'); } catch (e) {} /* без большой плашки посреди дороги — подробности в альбоме */
                             try { if (window.soundEngine) window.soundEngine.playSfx('vhs', 1); } catch (e) {}
                         } else if (c.type === 'letter') {
                             const w = pickupLetter(currentPlayer, dayKey(new Date()), collectibles.filter(function(o) { return o.type === 'letter' && o.active; }));
-                            if (w) { saveCurrentPlayer(); showBigPlaque(w.title, w.sub, w.done ? 'crate-good' : 'armor'); try { soundEngine.playSfx(w.done ? 'vhs' : 'ring', 1.3); } catch (e) {} }
+                            if (w) { saveCurrentPlayer(); showTimePenaltyPopup(0, w.title + ' · ' + w.sub); /* строкой, а не плашкой на пол-экрана */ try { soundEngine.playSfx(w.done ? 'vhs' : 'ring', 1.3); } catch (e) {} }
                         } else if (c.type === 'crate') {
                             // ящик «?»: разлетается досками, внутри — случайный исход (src/hazards.js)
                             breakCrate(scene, c.x, c.z, Math.abs(speed) * 60).forEach(function(pt) { crateParts.push(pt); });
@@ -9228,7 +9228,7 @@ function startGaragePreview(carId) {
                             if (POWERS[o.id]) grabPower(o.id);
                             else if (o.id === 'badge') { // значок 90-х в коллекцию (src/badges.js)
                                 const bd = dropBadge(currentPlayer); saveCurrentPlayer();
-                                try { showBigPlaque(bd.badge.icon + ' ' + (bd.setDone ? 'КОЛЛЕКЦИЯ СОБРАНА!' : bd.isNew ? bd.badge.name.toUpperCase() : 'ПОВТОР: +' + bd.dupChips + ' Е'), bd.setDone ? '+2000 Е и 2 📼' : bd.isNew ? 'Новый значок в коллекции (Трофеи)' : bd.badge.name, 'crate-good'); soundEngine.playSfx('vhs', 1); } catch (e) {}
+                                try { showTimePenaltyPopup(0, bd.badge.icon + ' ' + (bd.setDone ? 'Коллекция собрана! +2000 Е и 2 📼' : bd.isNew ? 'В коллекцию: ' + bd.badge.name : 'Повтор +' + bd.dupChips + ' Е')); soundEngine.playSfx('vhs', 1); } catch (e) {}
                             }
                             else {
                                 if (o.id === 'nitro') nitroTimer = NITRO_TIME;
