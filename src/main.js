@@ -8079,7 +8079,7 @@ function startGaragePreview(carId) {
                 scene, TRACK_WIDTH, 0, FINISH_Z, TRIGGER_LOOKAHEAD,
                 config.maxAnimals, config.animalSpawnRate, config.animalCrossMul, START_Z
             );
-            animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev; const _br = isEndlessMode() && beast.rule(); if (_br) { if (_br.pool) animalSpawner.animalPool = _br.pool.slice(); if (_br.speedMul) animalSpawner.speedMul = _br.speedMul; } // правило волны «Звериного часа» (src/wave-rules.js)
+            animalSpawner.speciesRules = INF; /* у каждого вида своё правило перебежки (src/animal-rules.js) — в бесконечной трассе */            animalSpawner.animalPool = MAP_ANIMALS[mapId] || MAP_ANIMALS.arsenev; const _br = isEndlessMode() && beast.rule(); if (_br) { if (_br.pool) animalSpawner.animalPool = _br.pool.slice(); if (_br.speedMul) animalSpawner.speedMul = _br.speedMul; } // правило волны «Звериного часа» (src/wave-rules.js)
             // зверь на «звериной тропе» за трамплином: виден заранее, медленно бредёт через середину.
             // Появляется, когда машина подъезжает (спавнер убирает зверей дальше 150 впереди)
             let trailPendingZ = window.__trailZ;

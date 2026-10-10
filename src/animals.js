@@ -3,6 +3,7 @@
  */
 import * as THREE from 'three';
 import { ANIMAL_TYPES } from './data.js';
+import { crossK, durMul } from './animal-rules.js';
 
 const ANIMAL_KEYS = Object.keys(ANIMAL_TYPES);
 
@@ -261,6 +262,7 @@ class AnimalSpawner {
             }
             if (distanceAhead > 1.2 && distanceAhead <= animal._trigDist * (this._k || 1)) {
                 animal.triggered = true;
+                if (this.speciesRules) animal.duration *= durMul(animal.speciesKey); // своё правило у вида (src/animal-rules.js): курица мечется, медведь встаёт
                 animal.mesh.visible = true;
                 try {
                     if (typeof this.startZ === 'number' && typeof this.finishZ === 'number') {
@@ -284,7 +286,7 @@ class AnimalSpawner {
             animal.elapsed += deltaTime;
             const t = Math.min(animal.elapsed / animal.duration, 1);
             // ease-in-out + небольшой разгон в середине
-            const easedT = t * t * (3 - 2 * t);
+            const easedT = this.speciesRules ? crossK(animal.speciesKey, t) : t * t * (3 - 2 * t);
             animal.x = animal.startX + (animal.endX - animal.startX) * easedT;
             animal.mesh.position.x = animal.x;
 
