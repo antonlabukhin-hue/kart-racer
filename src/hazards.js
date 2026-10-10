@@ -139,3 +139,15 @@ export function createLaneCone() {
     g.add(base, cone, band);
     return g;
 }
+
+/**
+ * Помехи на асфальте — всего два поведения, чтобы читалось с одного взгляда (вид — по пейзажу):
+ *   'slow' — тормозит: яма, кочка, шипы, смола — скорость ×SLOW_MUL и ещё SLOW_TIME с не разогнаться;
+ *   'skid' — заносит: масло, лёд, кислота — руль скользит SKID_TIME с, машину ведёт в сторону.
+ * Раньше было 7 видов с разными цифрами (яма −72%, кочка −45%, шипы −30%, кислота ещё и штраф времени…).
+ */
+export const HAZARD_KIND = { pothole: 'slow', bump: 'slow', spikes: 'slow', tar: 'slow', oil: 'skid', ice: 'skid', acid: 'skid' };
+export const SLOW_MUL = 0.6, SLOW_TIME = 1.6, SKID_TIME = 1.5, SKID_KICK = 1.1, SKID_MUL = 0.9;
+export const HAZARD_LABEL = { pothole: 'Яма', bump: 'Кочка', spikes: 'Шипы', tar: 'Смола', oil: 'Масло!', ice: 'Гололёд!', acid: 'Кислота!' };
+/** 'slow' | 'skid' */
+export function hazardKind(type) { return HAZARD_KIND[type] || 'slow'; } // незнакомая помеха — тормозит

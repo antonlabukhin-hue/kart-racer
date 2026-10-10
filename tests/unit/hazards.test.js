@@ -17,3 +17,14 @@ describe('ящик «?»', () => {
         expect(rollCrate(() => 0.999999).id).toBe(CRATE_OUTCOMES[CRATE_OUTCOMES.length - 1].id);
     });
 });
+
+import { hazardKind, HAZARD_KIND, SLOW_MUL } from '../../src/hazards.js';
+describe('помехи на асфальте — два поведения', () => {
+    it('яма, кочка, шипы, смола тормозят; масло, лёд, кислота заносят', () => {
+        ['pothole', 'bump', 'spikes', 'tar'].forEach(function(t) { expect(hazardKind(t)).toBe('slow'); });
+        ['oil', 'ice', 'acid'].forEach(function(t) { expect(hazardKind(t)).toBe('skid'); });
+        expect(hazardKind('что-то новое')).toBe('slow');
+        expect(new Set(Object.values(HAZARD_KIND)).size).toBe(2);
+        expect(SLOW_MUL).toBeGreaterThan(0.4);
+    });
+});

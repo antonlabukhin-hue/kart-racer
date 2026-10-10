@@ -45,7 +45,7 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import { loadSettings, saveSettings } from './settings.js';
         import { openSettingsScreen as openSettingsScreenUI } from './ui/settings-screen.js';
         import { shareLink } from './ui/share-link.js'; import { campFinishHtml } from './ui/finish-ui.js'; import { refreshMainMenu, wireMainMenu } from './ui/main-menu.js'; import { createRisk, riskEvent, riskTick, riskCrash } from './risk-combo.js'; import { renderRiskHud } from './ui/risk-hud.js'; import { missionRows, scoreMult } from './missions.js'; import { touchStreak, canClaimChest, claimChest, dayKey } from './streak.js'; import { rollChestLoot, lootText } from './chest-loot.js'; import { carStatsHtml } from './ui/car-stats.js'; import { finishButtonsHtml, rewardChipsHtml, animateRewardChips, statTilesHtml, bindFinishKeys, nearlyText, retentionHtml, infFinishHtml } from './ui/finish-ui.js'; import { affordableUpgrades } from './ui/menu-badges.js';
-        import { mergeStaticMeshes, mergeCarParts, shareMaterials } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow, createEChipBatch } from './echip.js'; import { createCassette } from './cassette.js'; import { powerLevelsFor, powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet, MEET_KEY } from './first-meet.js'; import { createSwipe, swipeDir } from './swipe-control.js'; import { markVisit, newsReady, extrasReady, openAll } from './visits.js'; import { installRaceToasts } from './ui/race-toasts.js'; import { fovFor, chaseRig, PORTRAIT_FOLLOW, PORTRAIT_FOV_K, dollyK, chaseLag, DOLLY_POW, DOLLY_LOOK } from './portrait.js'; import { isFirstRun, firstRunSafe, stageFirstRun } from './first-run.js'; import { nextCarGoal, carGoalHtml } from './car-goal.js'; import { buzz } from './haptics.js'; import { renderArmorBar } from './ui/armor-bar.js'; import { takeRotateHint, rotateHintText, rotatedOnce } from './rotate-hint.js'; import * as Memes from './memes.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf, weekKey } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart, THEMES, themeAt, setSeason, seasonFor } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { diagOn, installDiag, setDiagSource } from './ui/diag.js'; import { trafficPlan, laneBlocked, freeZ } from './traffic-avoid.js'; import { wireTrophyTabs } from './ui/trophy-tabs.js'; import { checkComeback } from './comeback.js'; import { checkNamePlate, namePlateOn, applyNamePlate } from './name-plate.js'; import { grantFriendChest } from './friend-chest.js'; import { WEEK_GOAL } from './week-car.js'; import { weekRaceExtra, friendExtra, moreForYou, helloGifts } from './ui/hooks-ui.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); installRaceToasts(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); if (diagOn(location.search)) installDiag({ sound: function() { return window.soundEngine; } }); /* ?diag=1 — счётчики памяти и звука на телефоне (src/ui/diag.js) */ // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
+        import { mergeStaticMeshes, mergeCarParts, shareMaterials } from './merge-static.js'; import { buildChunks } from './chunk-cull.js'; import { registerSW, wireInstall } from './ui/install.js'; import { installTouchScale } from './ui/touch-scale.js'; import { installHudLayout } from './ui/hud-layout.js'; import * as Decor from './decor.js'; import { createEChip, eGlow, createEChipBatch } from './echip.js'; import { createCassette } from './cassette.js'; import { powerLevelsFor, powerTime, powerLabel, shieldHits, shieldBonus, nextPowerCost, buyPowerLevel, POWER_UPGRADABLE, POWER_LEVELS, createPowers, activatePower, eValue, magnetPull, createPowerToken, POWERS, MAX_CONTINUES, continueCost } from './powerups.js'; import { showSecondChance } from './ui/second-chance.js'; import { showRewardReveal } from './ui/reward-reveal.js'; import { showInfoPop, hintOnce } from './ui/info-pop.js'; import { rollCrate, breakCrate, stepCrateParts, hazardKind, HAZARD_LABEL, SLOW_MUL, SLOW_TIME, SKID_TIME, SKID_KICK, SKID_MUL } from './hazards.js'; import { nitroArrowsMesh, heartGumMesh } from './pickups.js'; import { pickMeet, loadSeen, showMeet, MEET_KEY } from './first-meet.js'; import { createSwipe, swipeDir } from './swipe-control.js'; import { markVisit, newsReady, extrasReady, openAll } from './visits.js'; import { installRaceToasts } from './ui/race-toasts.js'; import { fovFor, chaseRig, PORTRAIT_FOLLOW, PORTRAIT_FOV_K, dollyK, chaseLag, DOLLY_POW, DOLLY_LOOK } from './portrait.js'; import { isFirstRun, firstRunSafe, stageFirstRun } from './first-run.js'; import { nextCarGoal, carGoalHtml } from './car-goal.js'; import { buzz } from './haptics.js'; import { renderArmorBar } from './ui/armor-bar.js'; import { takeRotateHint, rotateHintText, rotatedOnce } from './rotate-hint.js'; import * as Memes from './memes.js'; import { wordState, pickupLetter } from './word-day.js'; import { loadBoard, saveBoard, addRun, topRuns, rankOf, weekKey } from './leaderboard.js'; import { showBoard, showWordInfo, renderMenuExtras } from './ui/board.js'; import { submitRun, fetchTop } from './online-board.js'; import { installUpdateCheck } from './ui/update-check.js'; import { stepChase } from './rival-chase.js'; import { renderBoostBar, buyBoosts, HEADSTART_M } from './ui/boosts.js'; import { dropBadge, badgesHtml } from './badges.js'; import { createAutoSync, cloudCodeHint } from './cloud-save.js'; import { showNewCarsPop, shouldShowNew } from './ui/new-cars-pop.js'; import { runScore, setThemeStart, THEMES, themeAt, setSeason, seasonFor } from './infinite.js'; import { createInfiniteRun } from './modes/infinite-run.js'; import { createBeastHour } from './modes/beast-hour.js'; import { nearlyLines, nearlyHtml } from './nearly.js'; import { dailySeedOf, ruleOf, startDaily, randomSeed } from './daily-run.js'; import { withRandom, seededRnd } from './infinite.js'; import { placePlan } from './plan-place.js'; import { chapterPatterns, CHAPTER_T } from './patterns.js'; import { createRingChain } from './juice.js'; import { grantSticker, backfillStickers, stickersHtml, stickerFinishHtml } from './stickers.js'; import { localBest, fetchWorldBests, worldLine, fmtTime } from './chapter-records.js'; import { renderDailyCard, showDailyPop, dailyFinishHtml, challengeFinishHtml } from './ui/daily-pop.js'; import { challengeUrl } from './challenge.js'; import { carOfDay, dayPrice, canTestDrive, markTestDrive, buyCarOfDay, testDriveHtml } from './car-of-day.js'; import { checkGiftCars, takeGiftPending, isGiftCar, giftProgress } from './gift-cars.js'; import { whenMenuFree, introSeen, showGiftCarsIntro, showGiftCarPop } from './ui/gift-car-pop.js'; import { markGiftGlow, seenGift, showGiftPlaque, setPendingGift, peekPendingGift, takePendingGift } from './ui/gift-garage.js'; import { ringPitch, speedFov } from './juice.js'; import { checkTestDrives, useTicket, tdOffer } from './test-drive.js'; import { checkSecretPaints, SECRET_PAINTS } from './secret-paints.js'; import { paintBody } from './paint-fx.js'; import { secretSwatchesHtml, secretHint, secretNextText, renderTdButton, showTdPop, addHooks, takeHooksHtml } from './ui/hooks-ui.js'; import { helloDue, showHello, markSeen } from './ui/hello-news.js'; import { diagOn, installDiag, setDiagSource } from './ui/diag.js'; import { trafficPlan, laneBlocked, freeZ } from './traffic-avoid.js'; import { wireTrophyTabs } from './ui/trophy-tabs.js'; import { checkComeback } from './comeback.js'; import { checkNamePlate, namePlateOn, applyNamePlate } from './name-plate.js'; import { grantFriendChest } from './friend-chest.js'; import { WEEK_GOAL } from './week-car.js'; import { weekRaceExtra, friendExtra, moreForYou, helloGifts } from './ui/hooks-ui.js'; import { FEVER_RAM_E } from './fever.js'; installTouchScale(); installHudLayout(); installRaceToasts(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} if (import.meta.env.MODE !== 'test' && !navigator.webdriver) installUpdateCheck(); if (diagOn(location.search)) installDiag({ sound: function() { return window.soundEngine; } }); /* ?diag=1 — счётчики памяти и звука на телефоне (src/ui/diag.js) */ // интерфейс заезда — от размера экрана на сенсорных (src/ui/touch-scale.js)
         import { openRewardsScreen as openRewardsScreenUI, openEventsScreen as openEventsScreenUI, setSeasonMode } from './ui/season-screens.js'; import { renderGifts, giftsBadge } from './ui/gifts-screen.js'; import { showChest } from './ui/main-menu.js'; import { unclaimedRewards } from './ui/menu-badges.js';
         import { startMenuBg, stopMenuBg } from './menu-bg.js';
         import { renderDiorama, LANES as ART_LANES } from './art-scene.js';
@@ -8986,62 +8986,31 @@ function startGaragePreview(carId) {
                     if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && sweptZ(obs.z, hitR)) {
                         if (obs.pat && !(carAirborne || carYOffset > 0.45 || risk.fever > 0)) patHit.add(obs.pat); /* узор задет — «чисто» не будет */ if (carAirborne || carYOffset > 0.45 || rideOn(ride) || ABILITY === 'fly' || risk.fever > 0) {
                             // в прыжке (и на ковре-самолёте) ямы/кочки/масло/шипы не срабатывают
-                        } else if (ABILITY === 'trike' && (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar')) {
+                        } else if (ABILITY === 'trike' && hazardKind(obs.type) === 'skid') {
                             if (!obs._trikeShown) { obs._trikeShown = true; try { showTimePenaltyPopup(0, '🛞 Трайк держит дорогу'); } catch (e) {} }
-                        } else if (obs.type === 'spikes') {
-                            // шипы: не авария, но скорость резко падает; шипы приминаются
-                            stats.lastSpike = { before: speed, after: speed * 0.7 }; speed *= 0.7; spikeSlowT = 2.2; shakeTime = 0.2; obs.active = false; obs.mesh.scale.y = 0.3; // шипы: −30% на пару секунд
-                            stats.spikes = (stats.spikes || 0) + 1;
-                            try { showBigPlaque('⚠ ШИПЫ!', 'Пробил колёса: −30% скорости на пару секунд', 'crate-bad'); if (window.soundEngine) window.soundEngine.playSfx('bump', 1.3); } catch (e) {}
-                        } else if (ABILITY === 'offroad' && obs.type !== 'oil' && obs.type !== 'acid') {
-                            // Нива-внедорожник: ямы, кочки, лёд и смола — не помеха (масло и кислота — да)
+                        } else if (ABILITY === 'offroad' && hazardKind(obs.type) === 'slow') {
+                            // Нива-внедорожник: ямы, кочки, шипы и смола — не помеха (заносит — как всех)
                             if (!obs._offroadShown) {
                                 obs._offroadShown = true;
                                 showTimePenaltyPopup(0, '🚙 Нива не заметила');
                                 try { if (playerCar) playerCar.userData._suspensionKick = 0.08; } catch (e) {}
                             }
-                        } else if (obs.type === 'pothole') {
-                            const acidMul = weatherZone === 'acid' ? 1.6 : 1;
-                            speed *= 0.28 / acidMul;
-                            stunTimer = 0.35 * acidMul;
-                            shakeTime = 0.18;
-                            soundEngine.playCrashSound(0.35);
-                            try { if (window.soundEngine) window.soundEngine.playSfx('bump', 0.9); } catch (e) {}
-                            try { if (typeof playerCar !== 'undefined' && playerCar) playerCar.userData._suspensionKick = 0.22; } catch (e) {}
-                            // надпись была «−2 с», но время не прибавлялось: потеря — от торможения, пишем честно
-                            showTimePenaltyPopup(0, weatherZone==='acid' ? 'Кислотная яма' : 'Яма');
+                        } else if (hazardKind(obs.type) === 'slow') {
+                            // тормозит (яма, кочка, шипы, смола) — одинаково: скорость падает и пару секунд не разогнаться (src/hazards.js)
+                            if (obs.type === 'spikes') { stats.lastSpike = { before: speed, after: speed * SLOW_MUL }; stats.spikes = (stats.spikes || 0) + 1; obs.mesh.scale.y = 0.3; } else obs.mesh.visible = false;
+                            speed *= SLOW_MUL; spikeSlowT = SLOW_TIME; shakeTime = 0.18; carYOffset = Math.max(carYOffset, 0.12); carBumpTimer = 0.15;
                             obs.active = false;
-                            obs.mesh.visible = false;
-                        } else if (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') {
-                            // Разные эффекты поверхностей
+                            try { if (playerCar) playerCar.userData._suspensionKick = 0.18; } catch (e) {}
+                            try { if (window.soundEngine) window.soundEngine.playSfx('bump', 1.0); } catch (e) {}
+                            showTimePenaltyPopup(0, '🐌 ' + (obs.label || HAZARD_LABEL[obs.type]));
+                            for (let s = 0; s < 6; s++) particleSystem.emit(_v.p1.set(xPos, 0.2, zPos), _v.vel.set((Math.random() - 0.5) * 2, 1 + Math.random(), (Math.random() - 0.5) * 2), 1, 0.15);
+                        } else if (hazardKind(obs.type) === 'skid') {
+                            // заносит (масло, лёд, кислота) — одинаково: руль скользит, машину ведёт в сторону
                             stats.oilHits++;
-                            const labels = { oil: 'Масло!', acid: 'Кислота!', ice: 'Гололёд!', tar: 'Смола!' };
-                            if (obs.type === 'ice') {
-                                // сильное скольжение по X, слабое замедление
-                                oilSlideTimer = 1.8;
-                                xVelocity += (Math.random() - 0.5) * 1.6;
-                                speed *= 0.92;
-                                showTimePenaltyPopup(0, obs.label || labels.ice);
-                            } else if (obs.type === 'acid') {
-                                // замедление + штраф времени
-                                oilSlideTimer = 0.9;
-                                speed *= 0.55;
-                                raceTime += 1.5;
-                                xVelocity += (Math.random() - 0.5) * 0.4;
-                                showTimePenaltyPopup(1.5, labels.acid); // прибавляется 1.5, а писало 2.5
-                            } else if (obs.type === 'tar') {
-                                // торможение + потеря управления
-                                oilSlideTimer = 1.5;
-                                speed *= 0.45;
-                                xVelocity *= 0.3;
-                                showTimePenaltyPopup(0, labels.tar);
-                            } else {
-                                // oil — классика
-                                oilSlideTimer = 1.4;
-                                speed *= 0.82;
-                                xVelocity += (Math.random() - 0.5) * 0.9;
-                                showTimePenaltyPopup(0, labels.oil);
-                            }
+                            oilSlideTimer = SKID_TIME;
+                            speed *= SKID_MUL;
+                            xVelocity += (Math.random() < 0.5 ? -1 : 1) * SKID_KICK * (0.6 + Math.random() * 0.4);
+                            showTimePenaltyPopup(0, '🌀 ' + (obs.label || HAZARD_LABEL[obs.type]));
                             if (Math.random() < 0.35 && RADIO_LINES.oil) radioSay(RADIO_LINES.oil[Math.floor(Math.random() * RADIO_LINES.oil.length)] || RADIO_LINES.oil[0]);
                             soundEngine.playCrashSound(0.15);
                             obs.mesh.scale.multiplyScalar(0.92);
@@ -9049,24 +9018,6 @@ function startGaragePreview(carId) {
                                 obs.active = false;
                                 obs.mesh.visible = false;
                             }
-                        } else {
-                            // Кочка + искры (carYOffset — update не затирает прыжок)
-                            speed *= 0.55;
-                            carYOffset = 0.28;
-                            carBumpTimer = 0.2;
-                            shakeTime = 0.15;
-                            try { if (playerCar) playerCar.userData._suspensionKick = 0.12; } catch (e) {}
-                            soundEngine.playCrashSound(0.2);
-                            showTimePenaltyPopup(0, obs.label || 'Кочка');
-                            for (let s = 0; s < 6; s++) {
-                                particleSystem.emit(
-                                    _v.p1.set(xPos, 0.2, zPos),
-                                    _v.vel.set((Math.random()-0.5)*2, 1+Math.random(), (Math.random()-0.5)*2),
-                                    1, 0.15
-                                );
-                            }
-                            obs.active = false;
-                            obs.mesh.visible = false;
                         }
                     }
                 });
