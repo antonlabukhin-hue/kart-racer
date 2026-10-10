@@ -9,7 +9,7 @@ import { createPhotoBook, photoHtml, bindPhoto } from './photo.js';
 import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
 const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
-import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice, underDuck, carsToClear } from './hop-duck.js';
+import { createMoves, hop, duck, tickMoves, ducking, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice, underDuck, carsToClear, DUCK_CLEAR, duckK, duckSquash, duckWillClear, DUCK_CAM } from './hop-duck.js';
 import { renderRideBar, RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
@@ -6787,7 +6787,7 @@ function startGaragePreview(carId) {
                 const m = createRideToken(); m.position.set(x, 0.95, z); scene.add(m);
                 return { mesh: m, x: x, z: z, type: 'ride', active: true, bob: Math.random() * 6, radius: 1.15, baseY: 0.95 }; // жетон шириной 1.6: коснулся машиной — взял (было 0.8 — машина проезжала сквозь край, а превращения не было)
             }
-            const moves = createMoves(); let hopJump = false; const hurdles = []; // прыжок и подныр, трубы и шлагбаумы (src/hop-duck.js)
+            const moves = createMoves(); let hopJump = false, duckSparkT = 0; const hurdles = []; // прыжок и подныр, трубы и шлагбаумы (src/hop-duck.js)
             function doHop() {
                 if (gameState !== 'racing') return;
                 const v = hop(moves, !carAirborne && carYOffset < 0.15);
@@ -6798,7 +6798,7 @@ function startGaragePreview(carId) {
             }
             function doDuck() {
                 if (gameState !== 'racing') return;
-                if (duck(moves, carAirborne)) try { if (window.soundEngine) window.soundEngine.playSfx('whoosh', 0.45); } catch (e) {}
+                if (duck(moves, carAirborne)) try { if (window.soundEngine) window.soundEngine.playSfx('scrape', 0.9); } catch (e) {} /* днище скребёт асфальт (src/sfx-kit.js) */
             }
             const showArrows = showMoveArrows(currentPlayer) || (import.meta.env.MODE === 'test' && window.__forceArrows); // стрелки: новичку 3 заезда, после обновления управления — всем ещё 2 (src/move-tutor.js)
             let arrowEl = null, arrowAct = null;
@@ -8708,7 +8708,7 @@ function startGaragePreview(carId) {
                     rideSmokeT -= deltaTime;
                     if (rideSmokeT <= 0 && particleSystem && particleSystem.smoke) { rideSmokeT = 0.07; rideModel.userData.exhaust.forEach(function(p) { _v.rs = (_v.rs || new THREE.Vector3()).set(p.x, p.y, p.z); rideModel.localToWorld(_v.rs); particleSystem.smoke(_v.rs, ride.id === 'plane' ? 0.2 : 0.85); }); }
                 }
-                tickMoves(moves, deltaTime); { const ds = duckScale(moves); if (susp && !susp.fallback) susp.setDuck((1 - ds) / (1 - DUCK_SCALE)); else playerCar.scale.y = RACE_CAR_SCALE * ds; } // подныр — кузов опускается к колёсам
+                tickMoves(moves, deltaTime); { const dkk = duckK(moves), sq = duckSquash(dkk); if (susp && !susp.fallback) { susp.setDuck(dkk); susp.body.scale.set(sq.sx, sq.sy, sq.sz); } else playerCar.scale.set(RACE_CAR_SCALE * sq.sx, RACE_CAR_SCALE * sq.sy, RACE_CAR_SCALE * sq.sz); if (dkk > 0.5 && !carAirborne) { duckSparkT -= deltaTime; if (duckSparkT <= 0) { duckSparkT = 0.03; try { if (particleSystem.sparks) particleSystem.sparks({ x: xPos + (Math.random() - 0.5) * 0.7, y: 0.06, z: zPos + 0.45 }, 5, 1); } catch (e) {} } } } /* подныр: кузов сплющен и шире, из-под днища искры */ // подныр — кузов опускается к колёсам
                 playerCar.position.set(xPos, carYOffset + suspY + rideLift(ride), zPos);
                 // лёгкий self-light кузова ночью
                 if (isNight && playerCar.userData && !playerCar.userData._nightEmissive) {
@@ -8928,8 +8928,8 @@ function startGaragePreview(carId) {
                 for (let hi = 0; hi < hurdles.length; hi++) {
                     const h = hurdles[hi];
                     if (showArrows && !h.done && zPos - h.z > 3 && zPos - h.z < 30 && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && !arrowFor) arrowFor = actOf(h.kind);
-                    blinkHurdle(h.mesh, raceTime);
-                    if (!h.done && actOf(h.kind) === 'duck' && zPos - h.z < 110) { if (!h.cleared) { h.cleared = true; obstacles.forEach(function(o) { if (o.active && underDuck(h, o.x != null ? o.x : o.mesh.position.x, o.z)) { o.active = false; o.mesh.visible = false; } }); } carsToClear(h, cars, zPos).forEach(function(m) { m.car.z = m.z; m.car.mesh.position.z = m.z; }); } // под рамой пусто: ни шипов, ни попуток — подныр всегда спасает
+                    blinkHurdle(h.mesh, raceTime, !h.done && actOf(h.kind) === 'duck' && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && zPos - h.z > -0.5 && zPos - h.z < 35 && duckWillClear(moves, zPos - h.z, Math.abs(speed) * 60)); // рама зелёная: в подныре и проскочишь
+                    if (!h.done && actOf(h.kind) === 'duck' && zPos - h.z < 110) { if (!h.cleared) { h.cleared = true; obstacles.forEach(function(o) { if (o.active && underDuck(h, o.x != null ? o.x : o.mesh.position.x, o.z)) { o.active = false; o.mesh.visible = false; } }); } carsToClear(h, cars, zPos).forEach(function(m) { m.car.z = m.z; m.car.mesh.position.z = m.z; }); if (zPos - h.z > 15) animalSpawner.animals.forEach(function(an) { if (!an.hit && an.z > h.z - DUCK_CLEAR && an.z < h.z + DUCK_CLEAR) { an.z = h.z - DUCK_CLEAR - 8; if (an.mesh) an.mesh.position.z = an.z; } }); /* и зверь не стоит под рамой */ } // под рамой пусто: ни шипов, ни попуток — подныр всегда спасает
                     if (h.done) { if (h.z > zPos + 0.6 && h.mesh.visible) h.mesh.visible = false; continue; } // проехал — не закрывает камеру
                     if (!h.hintShown && h.z < zPos && zPos - h.z < 38) { h.hintShown = true; hurdleHint(actOf(h.kind)); }
                     if (!sweptZ(h.z, 0.35) || xPos < h.x0 - 0.25 || xPos > h.x1 + 0.25) { if (h.z > zPos + 1) h.done = true; continue; } // объехал — тоже позади
@@ -10301,9 +10301,9 @@ function startGaragePreview(carId) {
                     targetX = xPos * (camera.aspect < 1 ? 0.3 : 0.15);
                     // угол на скорости шире — камера ближе во столько же раз (src/portrait.js dollyK): машина в кадре не уменьшается и не уезжает
                     const dk0 = dollyK(baseFov(), camera.fov); dk = Math.pow(dk0, DOLLY_POW); dl = Math.pow(dk0, DOLLY_LOOK); const cy = 0.3;
-                    targetY = cy + (rig.height - cy) * dk + rideLift(ride); // «кукурузник»: камера поднимается вместе с ним
+                    targetY = cy + (rig.height - cy) * dk + rideLift(ride) - DUCK_CAM * duckK(moves); /* в подныре камера приседает с машиной */ // «кукурузник»: камера поднимается вместе с ним
                     targetZ = zPos + rig.dist * dk;
-                    lookY = cy + (rig.lookY - cy) * dl + rideLift(ride);
+                    lookY = cy + (rig.lookY - cy) * dl + rideLift(ride) - DUCK_CAM * 0.6 * duckK(moves);
                     lookZoff = rig.lookZoff * dl;
                 }
                 // Раньше камера догоняла цель на долю пути ЗА КАДР, а машина едет на путь ЗА ВРЕМЯ:

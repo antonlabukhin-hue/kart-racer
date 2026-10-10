@@ -732,7 +732,7 @@ class SoundEngine {
             const t0 = this.audioCtx.currentTime;
             const vs = (volScale != null ? volScale : 1) * 0.9 * (this.sfxVolume != null ? this.sfxVolume : 1);
             // звуки событий заезда — свои для каждого, громкость как у «Е» (src/sfx-kit.js)
-            const kit = { crash: 'crash', crate: 'crate', heart: 'heart', armor: 'shield', nitro_pick: 'nitro' }[type];
+            const kit = { crash: 'crash', crate: 'crate', heart: 'heart', armor: 'shield', nitro_pick: 'nitro', scrape: 'scrape' }[type];
             if (kit) { this._kitNoise = this._kitNoise || makeNoise(this.audioCtx); playKit(kit, this.audioCtx, this.audioCtx.destination, t0, vs, this._kitNoise, pitch); return; }
             const mk = (wave, freq, dur, peak, slide) => {
                 const o = this.audioCtx.createOscillator();

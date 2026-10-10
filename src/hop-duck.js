@@ -9,7 +9,7 @@ import * as THREE from 'three';
 
 export const HOP_V = 4.6;        // вертикальная скорость прыжка: пик ~1.1 (GRAVITY 9.5 в src/race-physics.js)
 export const DUCK_TIME = 0.9;    // сек подныра
-export const DUCK_SCALE = 0.55;  // высота машины в подныре
+export const DUCK_SCALE = 0.4;   // высота машины в подныре — мультяшно сплющена, видно даже сзади
 export const LOWBAR_H = 0.45;    // выше — пролетел над трубой
 export const HURDLE_FROM = 450;  // ед. от старта — раньше новичку не попадаются
 export const HURDLE_EVERY = [170, 260];
@@ -22,6 +22,19 @@ export function duck(st, airborne) { if (airborne) return false; st.duckT = DUCK
 export function hop(st, onGround) { if (!onGround) return 0; st.duckT = 0; st.hop = true; return HOP_V; }
 export function tickMoves(st, dt) { if (st.duckT > 0) st.duckT = Math.max(0, st.duckT - dt); }
 export function ducking(st) { return st.duckT > 0; }
+/** Доля подныра 0..1 (плавно: присела за 0.1 с, встала за 0.15 с) */
+export function duckK(st) { return (1 - duckScale(st)) / (1 - DUCK_SCALE); }
+/** Мультяшное сплющивание: ниже и шире (объём «сохраняется») — k из duckK */
+export function duckSquash(k) {
+    const q = Math.max(0, Math.min(1, k || 0));
+    return { sx: 1 + 0.18 * q, sy: 1 - (1 - DUCK_SCALE) * q, sz: 1 + 0.06 * q };
+}
+export const DUCK_CAM = 0.25; // на столько опускается камера в подныре
+/** Проскочит ли под рамой в dist м при скорости pv м/с: подныр продержится до неё */
+export function duckWillClear(st, dist, pv) {
+    if (!(st.duckT > 0)) return false;
+    return dist <= 0.5 || (pv > 0.5 && dist / pv < st.duckT - 0.05);
+}
 /** Высота машины в подныре (плавно: присела за 0.1 с, встала за 0.15 с) */
 export function duckScale(st) {
     if (st.duckT <= 0) return 1;
@@ -167,11 +180,22 @@ export function createHurdle(kind, lanes, laneXs, z, laneW) {
     const xs = lanes.map(function(l) { return laneXs[l]; }), x0 = Math.min.apply(null, xs) - w / 2 + 0.1, x1 = Math.max.apply(null, xs) + w / 2 - 0.1;
     BUILD[k](g, x0, x1, z, lamps);
     g.userData = { hurdle: k, act: actOf(k), lamps: lamps, x0: x0, x1: x1 };
+    if (actOf(k) === 'duck') { // просвет снизу: загорается зелёным, когда машина в подныре и проскочит
+        const okMat = new THREE.MeshBasicMaterial({ color: 0x3cff6a, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+        const p = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, 0.56), okMat); p.position.set((x0 + x1) / 2, 0.28, z + 0.05); g.add(p);
+        g.userData.okMat = okMat; g.userData.lampCol = lamps.map(function(m) { return m.color.getHex(); });
+    }
     return g;
 }
-/** Мигалки */
-export function blinkHurdle(g, t) {
-    (g.userData.lamps || []).forEach(function(m, i) { m.emissiveIntensity = Math.sin(t * 9 + i * Math.PI) > 0 ? 1.8 : 0.15; });
+/** Мигалки; ok — машина в подныре и проскочит: мигалки и просвет зелёные */
+export function blinkHurdle(g, t, ok) {
+    const u = g.userData;
+    if (u.okMat && u._ok !== !!ok) {
+        u._ok = !!ok;
+        (u.lamps || []).forEach(function(m, i) { const c = ok ? 0x3cff6a : u.lampCol[i]; m.color.setHex(c); m.emissive.setHex(c); });
+    }
+    if (u.okMat) u.okMat.opacity += ((ok ? 0.42 : 0) - u.okMat.opacity) * 0.35;
+    (u.lamps || []).forEach(function(m, i) { m.emissiveIntensity = ok ? 1.8 : Math.sin(t * 9 + i * Math.PI) > 0 ? 1.8 : 0.15; });
 }
 
 /**
