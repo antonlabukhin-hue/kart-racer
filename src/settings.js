@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS = {
     curve: true,      // «кривой мир»: повороты и холмы
     host: 'voice',    // ведущий-комментатор: voice — голос и текст | text — только текст | off
     controls: 'auto', // управление на телефоне: auto — вертикально свайпы, боком кнопки | buttons — кнопки | swipe — свайпы, газ сам
+    fail: 'hearts',   // правило провала бесконечной трассы (src/fail-rules.js): hearts — пять сердец | chase — «ГАИ на хвосте» (проба)
     tutorial: false,  // обучение в заезде («Даю установку:», «Новое на дороге», тренер глав 1–3) — включается в «Настройках»
     v: 2              // версия настроек (v2 — тише музыка и двигатель по умолчанию)
 };
@@ -39,6 +40,7 @@ export function normalizeSettings(raw) {
         curve: r.curve == null ? d.curve : !!r.curve,
         host: ['voice', 'text', 'off'].indexOf(r.host) >= 0 ? r.host : d.host,
         controls: ['auto', 'buttons', 'swipe'].indexOf(r.controls) >= 0 ? r.controls : d.controls,
+        fail: ['hearts', 'chase'].indexOf(r.fail) >= 0 ? r.fail : d.fail,
         tutorial: r.tutorial == null ? d.tutorial : !!r.tutorial,
         v: 2
     };

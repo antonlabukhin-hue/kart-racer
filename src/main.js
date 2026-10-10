@@ -4245,7 +4245,7 @@ function startGaragePreview(carId) {
             const TOTAL_LANES = 3;
             const CAR_WIDTH = 0.8;
             const TIME_LIMIT = config.timeLimit;
-            const FAIL = INF ? failRules({ variant: abVariant(localStorage, Math.random, location.search, import.meta.env.MODE === 'test' || navigator.webdriver ? 'hearts' : null), fair: !!(infRunOpts && infRunOpts.fair), ruleStrikes: infRunOpts && infRunOpts.rule && infRunOpts.rule.strikes, medic: !!(carPreset.ability && carPreset.ability.id === 'medic') }) : null; /* правило провала A/B: сердца или «ГАИ на хвосте» (src/fail-rules.js) */
+            const FAIL = INF ? failRules({ variant: abVariant(localStorage, Math.random, location.search, loadSettings().fail), fair: !!(infRunOpts && infRunOpts.fair), ruleStrikes: infRunOpts && infRunOpts.rule && infRunOpts.rule.strikes, medic: !!(carPreset.ability && carPreset.ability.id === 'medic') }) : null; /* правило провала A/B: сердца или «ГАИ на хвосте» (src/fail-rules.js) */
             const MAX_STRIKES = FAIL ? FAIL.maxStrikes : 5 + (carPreset.ability && carPreset.ability.id === 'medic' ? 1 : 0); // «Рафик» — шестая жизнь; «Заезд дня» «Одна авария» — одна
             let TRIGGER_LOOKAHEAD = config.triggerLookahead;
             // мобилка: почти те же значения (без сильного урезания)
