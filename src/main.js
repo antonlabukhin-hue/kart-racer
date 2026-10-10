@@ -1269,7 +1269,7 @@ function createProfile(name) { return Profile.createProfile(name); }
         }
 
         function loginAs(profile) {
-            currentPlayer = ensureProfileFields(profile); markVisit(currentPlayer, dayKey(new Date()), currentPlayer.createdAt ? dayKey(new Date(currentPlayer.createdAt)) : null); /* заходы: новичку — не всё сразу (src/visits.js) */ checkComeback(currentPlayer, dayKey(new Date())); touchStreak(currentPlayer, dayKey(new Date())); checkNamePlate(currentPlayer); /* подарок за возвращение — до отметки дня, именной номер — за 14 дней подряд */ // серия дней (src/streak.js)
+            currentPlayer = ensureProfileFields(profile); markVisit(currentPlayer, dayKey(new Date()), currentPlayer.createdAt ? dayKey(new Date(currentPlayer.createdAt)) : null); /* заходы: новичку — не всё сразу (src/visits.js) */ checkComeback(currentPlayer, dayKey(new Date())); powerLevelsFor(currentPlayer); if (currentPlayer.powerRefund) { const _rf = currentPlayer.powerRefund; delete currentPlayer.powerRefund; setTimeout(function() { try { Notify.info('⚡ Усиления теперь общие', 'Прокачка магнита, ×2 и брони работает на любой машине. За лишние уровни вернули ' + _rf + ' Е', 9000); } catch (e) {} }, 1500); } /* прокачка усилений — общая (src/powerups.js) */ touchStreak(currentPlayer, dayKey(new Date())); checkNamePlate(currentPlayer); /* подарок за возвращение — до отметки дня, именной номер — за 14 дней подряд */ // серия дней (src/streak.js)
             try {
                 localStorage.setItem(MAP_UNLOCK_KEY, JSON.stringify(currentPlayer.unlockedMaps || ['arsenev']));
             } catch (e) {}
@@ -2319,7 +2319,7 @@ function renderGaragePartsPanel() {
                     '<div class="up-pips">' + pips + '</div>' + btn + '</div>';
             }).join('');
             const abil = preset.ability ? '<div class="up-ability">★ ' + escapeHtml(preset.ability.name) + ': ' + escapeHtml(preset.ability.desc) + '</div>' : '';
-            // усиления бесконечной трассы — прокачка у каждой машины своя: +2 с действия за уровень
+            // усиления бесконечной трассы — прокачка общая для всех машин: +2 с действия за уровень
             const plv = Object.assign({}, powerLevelsFor(currentPlayer, carId));
             const pRows = POWER_UPGRADABLE.map(function(t) {
                 const pw = POWERS[t], lv = plv[t], cost = nextPowerCost(lv);
@@ -2331,8 +2331,8 @@ function renderGaragePartsPanel() {
             }).join('');
             box.innerHTML = '<div class="up-head">' + escapeHtml(preset.name) + ' · у тебя ' + chips + ' Е</div>' + abil +
                 '<div class="up-bars">' + bars + '</div>' + rows +
-                '<div class="up-note">Улучшения видны на машине и работают в заезде. У каждой машины своя прокачка.</div>' +
-                '<div class="up-head up-power-head">⚡ Усиления бесконечной трассы<small>только для этой машины · дольше действуют; броня — больше ударов и «Е» за отбитый</small></div>' + pRows;
+                '<div class="up-note">Улучшения видны на машине и работают в заезде. У каждой машины своя прокачка, усиления — общие.</div>' +
+                '<div class="up-head up-power-head">⚡ Усиления бесконечной трассы<small>для всех машин · дольше действуют; броня — больше ударов и «Е» за отбитый</small></div>' + pRows;
             box.querySelectorAll('button[data-pw]').forEach(function(b) {
                 b.addEventListener('click', function() {
                     const r = buyPowerLevel(currentPlayer, b.dataset.pw, carId);

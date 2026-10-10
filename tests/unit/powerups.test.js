@@ -60,20 +60,32 @@ describe('прокачка брони за «Е»', () => {
         expect(UPG).toContain('shield');
         const p = { season: { chips: 200 } };
         expect(buyLv(p, 'shield')).toMatchObject({ ok: true, cost: 150, level: 1 });
-        expect(p.powerLvByCar.cheburashka.shield).toBe(1);
+        expect(p.powerLvAll.shield).toBe(1);
         expect(buyLv(p, 'shield')).toMatchObject({ ok: false, reason: 'no_chips' });
     });
 });
 
-import { powerLevelsFor } from '../../src/powerups.js';
-describe('прокачка усилений — у каждой машины своя', () => {
-    it('купил на одной машине — на другой нет; старая общая прокачка переходит машине, на которой ездишь', () => {
-        const p = { season: { chips: 1000 }, preferredCar: 'kirpich', powerLv: { magnet: 2, x2: 0, shield: 1 } };
-        expect(powerLevelsFor(p, 'kirpich')).toEqual({ magnet: 2, x2: 0, shield: 1 });
-        expect(p.powerLv).toBeUndefined();
-        expect(powerLevelsFor(p, 'turbo')).toEqual({ magnet: 0, x2: 0, shield: 0 });
+import { powerLevelsFor, spentOn } from '../../src/powerups.js';
+describe('прокачка усилений — общая для всех машин', () => {
+    it('купил на одной машине — работает на любой', () => {
+        const p = { season: { chips: 1000 } };
         expect(buyLv(p, 'x2', 'turbo')).toMatchObject({ ok: true, level: 1 });
+        expect(powerLevelsFor(p, 'kirpich').x2).toBe(1);
         expect(powerLevelsFor(p, 'turbo').x2).toBe(1);
-        expect(powerLevelsFor(p, 'kirpich').x2).toBe(0);
+    });
+    it('переход с прокачки по машинам: лучший уровень, лишние «Е» — назад', () => {
+        const p = { season: { chips: 0 }, powerLvByCar: { kirpich: { magnet: 2, x2: 0, shield: 1 }, turbo: { magnet: 1, x2: 1, shield: 0 } } };
+        expect(powerLevelsFor(p)).toEqual({ magnet: 2, x2: 1, shield: 1 });
+        expect(p.powerLvByCar).toBeUndefined();
+        expect(p.season.chips).toBe(spentOn(1)); // второй магнит (1 уровень) — лишний
+        expect(p.powerRefund).toBe(spentOn(1));
+        expect(powerLevelsFor(p)).toEqual({ magnet: 2, x2: 1, shield: 1 }); // повторно — без нового возврата
+        expect(p.season.chips).toBe(spentOn(1));
+    });
+    it('совсем старая общая прокачка тоже переходит', () => {
+        const p = { season: { chips: 5 }, powerLv: { magnet: 3, x2: 0, shield: 0 } };
+        expect(powerLevelsFor(p).magnet).toBe(3);
+        expect(p.powerLv).toBeUndefined();
+        expect(p.season.chips).toBe(5);
     });
 });
