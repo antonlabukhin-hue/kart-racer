@@ -4886,7 +4886,7 @@ function startGaragePreview(carId) {
                         // вокруг машины — чисто: звери убегают, ямы и попутки отодвигаются
                         animalSpawner.animals.forEach(function(a) { if (Math.abs(a.z - zPos) < 30) a.hit = true; });
                         obstacles.forEach(function(o) { if (o.active && Math.abs(o.z - zPos) < 25) { o.active = false; o.mesh.visible = false; } });
-                        cars.forEach(function(c) { if (c.z < zPos + 6 && c.z > zPos - 35) { c.z = zPos - 70 - Math.random() * 40; c.mesh.position.z = c.z; } });
+                        cars.forEach(function(c) { if (c.z < zPos + 6 && c.z > zPos - 35) { c.z = freeZ(zPos - 70 - Math.random() * 40, c.lane, { gaps: gaps, ramps: ramps, works: roadSegments }); c.mesh.position.z = c.z; } }); /* не над разломом */
                         gameState = 'racing';
                         try { showBigPlaque('▶ ВТОРОЙ ШАНС', 'Две жизни и броня — газу!', 'armor'); } catch (e) {}
                     },
@@ -6910,7 +6910,7 @@ function startGaragePreview(carId) {
                 }
                 // попутка, оказавшаяся там, где только что появился разлом (бесконечная трасса строится впереди на ходу), —
                 // дальше по дороге, иначе она стоит над провалом и на следующем кадре «взлетает»
-                cars.forEach(function(c) { if (c.active && c.mesh && c.z <= zHi + 4 && c.z >= zLo - 4) { c.z = zLo - 6 - Math.random() * 10; c.mesh.position.z = c.z; } });
+                cars.forEach(function(c) { if (c.active && c.mesh && c.z <= zHi + 4 && c.z >= zLo - 4) { c.z = freeZ(zLo - 6 - Math.random() * 10, c.lane, { gaps: gaps, ramps: ramps, works: roadSegments }); c.mesh.position.z = c.z; } });
             }
             // генератор: в бесконечной трассе круг строится по участку за кадр (yield), в обычной — целиком
             function* populateLap(mapId, difficulty) {
@@ -7975,7 +7975,7 @@ function startGaragePreview(carId) {
                 logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
                 strikes++;
                 if (police && String(obs.cause || '').indexOf('car:') === 0 && police.crash() === 'caught' && strikes < MAX_STRIKES) { /* ГАИ — только за столкновение с машиной: разлом, ямы, звери — не повод для погони */ // ГАИ поймала: ролик облёта (src/police-chase.js), потом — как обычно «Второй шанс»
-                    strikes = MAX_STRIKES; speed = 0; gameState = 'chance'; cars.forEach(function(c) { if (Math.abs(c.z - zPos) < 16) { c.z = zPos - 90; c.mesh.position.z = c.z; } }); try { showBigPlaque('🚨 ГАИ ПОЙМАЛА!', 'Вторая авария во время погони', 'crate-bad'); } catch (e) {}
+                    strikes = MAX_STRIKES; speed = 0; gameState = 'chance'; cars.forEach(function(c) { if (Math.abs(c.z - zPos) < 16) { c.z = freeZ(zPos - 90, c.lane, { gaps: gaps, ramps: ramps, works: roadSegments }); c.mesh.position.z = c.z; } }); try { showBigPlaque('🚨 ГАИ ПОЙМАЛА!', 'Вторая авария во время погони', 'crate-bad'); } catch (e) {}
                     police.arrest({ camera: camera, renderer: renderer, x: xPos, z: zPos, onDone: function() { gameState = 'racing'; endGame('crash'); } }); return;
                 }
                 const lostMult = riskCrash(risk); if (lostMult > 1) try { showTimePenaltyPopup(0, '🔥 ×' + lostMult + ' сгорел'); } catch (e) {}
@@ -8931,7 +8931,7 @@ function startGaragePreview(carId) {
                     const h = hurdles[hi];
                     if (showArrows && !h.done && zPos - h.z > 3 && zPos - h.z < 30 && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && !arrowFor) arrowFor = actOf(h.kind);
                     blinkHurdle(h.mesh, raceTime, !h.done && actOf(h.kind) === 'duck' && xPos > h.x0 - 0.3 && xPos < h.x1 + 0.3 && zPos - h.z > -0.5 && zPos - h.z < 35 && duckWillClear(moves, zPos - h.z, Math.abs(speed) * 60)); // рама зелёная: в подныре и проскочишь
-                    if (!h.done && actOf(h.kind) === 'duck' && zPos - h.z < 110) { if (!h.cleared) { h.cleared = true; obstacles.forEach(function(o) { if (o.active && underDuck(h, o.x != null ? o.x : o.mesh.position.x, o.z)) { o.active = false; o.mesh.visible = false; } }); } carsToClear(h, cars, zPos).forEach(function(m) { m.car.z = m.z; m.car.mesh.position.z = m.z; }); if (zPos - h.z > 15) animalSpawner.animals.forEach(function(an) { if (!an.hit && an.z > h.z - DUCK_CLEAR && an.z < h.z + DUCK_CLEAR) { an.z = h.z - DUCK_CLEAR - 8; if (an.mesh) an.mesh.position.z = an.z; } }); /* и зверь не стоит под рамой */ } // под рамой пусто: ни шипов, ни попуток — подныр всегда спасает
+                    if (!h.done && actOf(h.kind) === 'duck' && zPos - h.z < 110) { if (!h.cleared) { h.cleared = true; obstacles.forEach(function(o) { if (o.active && underDuck(h, o.x != null ? o.x : o.mesh.position.x, o.z)) { o.active = false; o.mesh.visible = false; } }); } carsToClear(h, cars, zPos).forEach(function(m) { m.car.z = freeZ(m.z, m.car.lane, _avoidH); m.car.mesh.position.z = m.car.z; }); if (zPos - h.z > 15) animalSpawner.animals.forEach(function(an) { if (!an.hit && an.z > h.z - DUCK_CLEAR && an.z < h.z + DUCK_CLEAR) { an.z = h.z - DUCK_CLEAR - 8; if (an.mesh) an.mesh.position.z = an.z; } }); /* и зверь не стоит под рамой */ } // под рамой пусто: ни шипов, ни попуток — подныр всегда спасает
                     if (h.done) { if (h.z > zPos + 0.6 && h.mesh.visible) h.mesh.visible = false; continue; } // проехал — не закрывает камеру
                     if (!h.hintShown && h.z < zPos && zPos - h.z < 38) { h.hintShown = true; hurdleHint(actOf(h.kind)); }
                     if (!sweptZ(h.z, 0.35) || xPos < h.x0 - 0.25 || xPos > h.x1 + 0.25) { if (h.z > zPos + 1) h.done = true; continue; } // объехал — тоже позади
