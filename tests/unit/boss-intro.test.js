@@ -44,10 +44,10 @@ describe('портрет в карточке босса', () => {
 
 import { cueWord, bossHudState } from '../../src/boss-hud.js';
 describe('подсказка у босса — одно слово', () => {
-    it('замах — «УВЕРНИСЬ!», открыт — «БЕЙ!», иначе ничего', () => {
+    it('замах — «УВЕРНИСЬ!», шкала полная — «ТАРАН!», иначе ничего', () => {
         const b = { active: true, hp: 3, maxHp: 3, name: 'Кабан «Бригада»', vulnT: 0, attackState: 'idle' };
         expect(cueWord(bossHudState(b, 3))).toBe(null);
         expect(cueWord(bossHudState(Object.assign({}, b, { attackState: 'windup' }), 3))).toBe('УВЕРНИСЬ!');
-        expect(cueWord(bossHudState(Object.assign({}, b, { vulnT: 1 }), 3))).toBe('БЕЙ!');
+        expect(cueWord(bossHudState(Object.assign({}, b, { vulnT: 1 }), 3))).toBe('ТАРАН!');
     });
 });

@@ -4414,6 +4414,13 @@
         #boss-hud.open { border-color: #5dff8a; box-shadow: 0 0 18px rgba(80,255,130,0.45); }
         #boss-hud.open .bh-hp i.on { background: linear-gradient(180deg, #8dffb0, #27c25a); }
         #boss-hud.hit { animation: bossHudHit .35s; }
+        /* шкала тарана: копится от уворотов, полная — таран сам (src/boss-fight.js) */
+        #boss-hud .bh-charge { position: relative; height: 14px; margin-top: 5px; border-radius: 7px; background: rgba(255,255,255,0.1); overflow: hidden; }
+        #boss-hud .bh-charge b { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 7px; background: linear-gradient(90deg, #3ac8ff, #7affd8); transition: width .25s ease-out; }
+        #boss-hud .bh-charge span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; letter-spacing: 2px; color: #fff; text-shadow: 0 1px 2px #000; }
+        #boss-hud.ready .bh-charge b { background: linear-gradient(90deg, #ffd23c, #ff8a1a); animation: bossChargeReady .4s infinite alternate; }
+        #boss-hud.open .bh-charge b { background: linear-gradient(90deg, #8dffb0, #27c25a); }
+        @keyframes bossChargeReady { from { filter: brightness(1); } to { filter: brightness(1.45); } }
         @keyframes bossHudHit { 0% { transform: translateX(-50%) scale(1.08); } 30% { transform: translateX(calc(-50% - 6px)); } 60% { transform: translateX(calc(-50% + 5px)); } 100% { transform: translateX(-50%); } }
         @media (max-width: 600px) { #boss-hud { top: 64px; width: 62vw; } }
         /* пока на экране полоска босса — радио-строка уходит под неё */
@@ -4823,6 +4830,8 @@ body .big-plaque.landing b { font-size: 23px; }
     body #boss-hud .bh-phase { font-size: 9px; }
     body #boss-hud .bh-hp { margin-top: 3px; gap: 3px; }
     body #boss-hud .bh-hp i { height: 5px; }
+    body #boss-hud .bh-charge { height: 9px; margin-top: 3px; }
+    body #boss-hud .bh-charge span { font-size: 7px; }
     body #coach-tip { top: 42px; bottom: auto; max-width: min(380px, 44vw); padding: 4px 10px; font-size: 11px; line-height: 1.3; border-width: 1.5px; border-radius: 9px; }
     body .big-plaque { top: 24%; padding: 5px 14px 6px; border-width: 1.5px; border-radius: 11px; max-width: 46vw; }
     body .big-plaque b { font-size: 17px; letter-spacing: 1px; }

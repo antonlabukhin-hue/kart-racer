@@ -22,6 +22,12 @@ describe('полоска босса в HUD', () => {
         expect(bossHudState(boss({ hp: 0 }))).toBeNull();
     });
 
+    it('шкала тарана: доля 0…1, оглушён — полная; заметное изменение меняет ключ', () => {
+        expect(bossHudState(boss({ charge: 50 })).charge).toBe(0.5);
+        expect(bossHudState(boss({ charge: 20, vulnT: 0.5 })).charge).toBe(1);
+        expect(bossHudKey(bossHudState(boss({ charge: 50 })))).not.toBe(bossHudKey(bossHudState(boss({ charge: 0 }))));
+    });
+
     it('ключ меняется только при видимых изменениях', () => {
         const a = bossHudState(boss());
         expect(bossHudKey(a)).toBe(bossHudKey(bossHudState(boss({ z: 5 }))));

@@ -38,13 +38,13 @@ export function splitBossName(name) {
 /** portrait — адрес портрета босса (images/boss_NN.jpg), необязательно */
 export function bossIntroHtml(def, chapterNo, hp, portrait) {
     const n = splitBossName(def && def.name);
-    const hint = ATTACK_HINTS[def && def.attack] || 'Увернись от атаки — после промаха тарань';
+    const hint = ATTACK_HINTS[def && def.attack] || 'Уворачивайся от атак — копится таран';
     return '<div class="bi-stripe" style="background:' + hex(def && def.trim, 0xffcc00) + '"></div>'
         + (portrait ? '<img class="bi-portrait" decoding="async" src="' + esc(portrait) + '" alt="" style="border-color:' + hex(def && def.trim, 0xffcc00) + '" onerror="this.remove()">' : '')
         + '<div class="bi-top">БОСС' + (chapterNo ? ' · глава ' + chapterNo : '') + '</div>'
         + '<div class="bi-title">' + esc(n.title) + '</div>'
         + '<div class="bi-nick" style="color:' + hex(def && def.eye, 0xffdd44) + '">«' + esc(n.nick) + '»</div>'
-        + '<div class="bi-hp">' + '❤'.repeat(Math.max(1, Math.min(8, hp || 3))) + ' <span>броня: увернись и тарань</span></div>'
+        + '<div class="bi-hp">' + '❤'.repeat(Math.max(1, Math.min(8, hp || 3))) + ' <span>увернись — заряди — таран сам</span></div>'
         + '<div class="bi-hint">' + esc(hint) + '</div>'
         + (def && def.shout ? '<div class="bi-quote">— ' + esc(def.shout) + '</div>' : '');
 }
@@ -54,10 +54,10 @@ export function bossPhaseHtml(def, phase) {
     const n = splitBossName(def && def.name);
     if (phase === 2) {
         return '<div class="bi-top">ФАЗА 2</div><div class="bi-nick" style="color:#ffaa22">«' + esc(n.nick) + '» строит баррикады</div>'
-            + '<div class="bi-hint">Ищи просвет — проскочил чисто, он открыт</div>';
+            + '<div class="bi-hint">Ищи просвет — проскочил чисто, таран копится</div>';
     }
     return '<div class="bi-top">ФАЗА 3</div><div class="bi-nick" style="color:#ff4422">«' + esc(n.nick) + '» в ярости</div>'
-        + '<div class="bi-hint">Бежит навстречу — уйди с полосы или прыгай на него с трамплина</div>';
+        + '<div class="bi-hint">Бежит навстречу — увернись (таран сразу) или прыгай на него с трамплина</div>';
 }
 
 /**

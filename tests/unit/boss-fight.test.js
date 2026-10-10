@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { bossHp, phaseForHp, damageFor, createVolleyTracker, barricadeLanes, arenaOpen, ARENA_END, hitStopFor, HIT_STOP_TIME_SCALE } from '../../src/boss-fight.js';
+import { bossHp, phaseForHp, damageFor, addCharge, closeDodge, CHARGE, CHARGE_MAX, createVolleyTracker, barricadeLanes, arenaOpen, ARENA_END, hitStopFor, HIT_STOP_TIME_SCALE } from '../../src/boss-fight.js';
 
 describe('бой с боссом', () => {
-    it('HP главы +1, в разумных пределах', () => {
-        expect(bossHp(3)).toBe(4);
-        expect(bossHp(6)).toBe(7);
-        expect(bossHp(undefined)).toBe(4);
+    it('HP главы, в разумных пределах', () => {
+        expect(bossHp(3)).toBe(3);
+        expect(bossHp(6)).toBe(6);
+        expect(bossHp(undefined)).toBe(3);
         expect(bossHp(20)).toBe(8);
     });
 
@@ -15,11 +15,10 @@ describe('бой с боссом', () => {
         expect(phaseForHp(1, 4)).toBe(3);
     });
 
-    it('броня: таран без окна уязвимости не ранит, кувалда и прыжок — ранят', () => {
+    it('случайное касание не ранит; таран по полной шкале, прыжок и отбитый снаряд — ранят', () => {
         expect(damageFor('ram', { vulnerable: false })).toBe(0);
         expect(damageFor('ram', { vulnerable: true })).toBe(1);
         expect(damageFor('ram', { vulnerable: true, nitro: true })).toBe(2);
-        expect(damageFor('ram', { hammer: true })).toBe(1);
         expect(damageFor('stomp', {})).toBe(3);
         expect(damageFor('reflect', {})).toBe(1);
     });
@@ -37,6 +36,24 @@ describe('бой с боссом', () => {
         expect(missed).toEqual([a]);
         expect(t.pending).toBe(0);
         t.gone(999); // неизвестный залп — без ошибок
+    });
+
+    it('шкала тарана: два залпа мимо — таран, попадание отнимает, уворот от рывка — сразу', () => {
+        const b = {};
+        expect(addCharge(b, CHARGE.volley)).toBe(false);
+        expect(addCharge(b, CHARGE.volley)).toBe(true);
+        expect(b.charge).toBe(0); // заполнилась — обнулилась
+        addCharge(b, CHARGE.volley); addCharge(b, CHARGE.hit);
+        expect(b.charge).toBe(CHARGE.volley + CHARGE.hit);
+        addCharge(b, -500); expect(b.charge).toBe(0); // не ниже нуля
+        expect(addCharge({}, CHARGE.runBy)).toBe(true);
+        expect(CHARGE_MAX).toBe(100);
+    });
+
+    it('снаряд впритирку — из соседней полосы, не через полосу', () => {
+        expect(closeDodge(1.2)).toBe(true);
+        expect(closeDodge(-1.5)).toBe(true);
+        expect(closeDodge(3.8)).toBe(false);
     });
 
     it('баррикада: перекрыты две полосы, просвет меняется', () => {
