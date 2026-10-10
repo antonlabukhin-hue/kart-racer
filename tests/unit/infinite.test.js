@@ -34,10 +34,11 @@ describe('рост сложности и счёт', () => {
     it('скорость, звери и препятствия растут и упираются в потолок', () => {
         // старт лёгкий; звери и попутки первые 1000 м как на старте, дальше плавно; потолок — к 8 км
         expect(rampAt(0)).toMatchObject({ speed: 0.765, animals: 0.55, density: 0.3, maxAnimals: 6, animalSpeed: 1, traffic: 0 });
-        expect(rampAt(1000)).toMatchObject({ animals: 0.55, animalSpeed: 1, traffic: 0 });
+        expect(rampAt(1350)).toMatchObject({ animals: 0.55, animalSpeed: 1, traffic: 0 });
         expect(rampAt(1000).speed).toBeGreaterThan(0.765);
-        expect(rampAt(4000).speed).toBeCloseTo((0.765 + 1.3) / 2, 3);
-        expect(rampAt(4000).animals).toBeGreaterThan(1);
+        expect(rampAt(5400).speed).toBeCloseTo((0.765 + 1.3) / 2, 3); // середина разгона — 5400 м (RAMP_LEN 10800)
+        expect(rampAt(4000).speed).toBeLessThan((0.765 + 1.3) / 2);
+        expect(rampAt(5400).animals).toBeGreaterThan(1);
         expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.3, maxAnimals: 16, animalSpeed: 1.6, traffic: 8, trafficSpeed: 1.5 });
         expect(rampAt(1e6).animals).toBeCloseTo(2.6, 6);
     });
@@ -66,7 +67,7 @@ describe('план участка', () => {
     });
     it('чем дальше, тем больше препятствий; «Е» есть всегда', () => {
         const early = planStretch(0, 1000, seq(11)).items.filter(i => i.kind === 'obstacle').length;
-        const late = planStretch(6000, 7000, seq(11)).items.filter(i => i.kind === 'obstacle').length;
+        const late = planStretch(9000, 10000, seq(11)).items.filter(i => i.kind === 'obstacle').length;
         expect(late).toBeGreaterThan(early);
         expect(planStretch(0, 1000, seq(5)).items.filter(i => i.kind === 'echip').length).toBeGreaterThan(20);
     });

@@ -26,6 +26,11 @@ export const THEMES = [
     { id: 'jungle', name: 'Джунгли-зоопарк', style: 'forest', accent: 0x5aff7a, sky: 0x4a6a40, zenith: 0x2f5a4a, fog: 0x3d5a38, fogNear: 30, fogFar: 140, ground: 0x5a7a40, light: 0.9, slide: 'tar',
         animals: ['CROC', 'ELEPHANT', 'RHINO', 'LION', 'MONKEY'] }
 ];
+/** Безумный транспорт (src/rides.js) — не чаще одного превращения на RIDE_SPAN ед. */
+export const RIDE_SPAN = 4000;
+/** Место жетона в отрезке k — от номера отрезка (одинаково при любом разбиении на круги) */
+export function rideJitter(k) { const x = Math.sin((k + 1) * 12.9898) * 43758.5453; return x - Math.floor(x); }
+
 /** Номер пейзажа по id (для setThemeStart) */
 export function themeIndex(id) { return Math.max(0, THEMES.findIndex(function(t) { return t.id === id; })); }
 export const THEME_LEN = 900;   // длина пейзажа, ед. (~30–40 с езды)
@@ -77,14 +82,14 @@ export function mixHex(a, b, k) {
  *   traffic — сколько попуток добавить (0 → +8), trafficSpeed — их скорость (×1 → ×1.5).
  * density — плотность препятствий на участке (0.3 → 1.3)
  */
-export const RAMP_LEN = 8000;
+export const RAMP_LEN = 10800; // на 35% длиннее прежних 8000: скорость и сложность растут медленнее — успеваешь насладиться трассой
 // скорость машины: на старте на 10% тише прежнего (0.85 → 0.765) — успеваешь освоиться; к ~8 км плавно до 1.3
 export const SPEED_RANGE = [0.765, 1.3];
 export function rampAt(dist, warm) {
     dist = (dist || 0) + (warm || 0); // warm — «горячий старт» (warmStart)
     const t = Math.max(0, Math.min(1, (dist || 0) / RAMP_LEN));
     const e = t * t * (3 - 2 * t); // медленно в начале, быстрее в середине, мягко к потолку
-    const a = Math.max(0, Math.min(1, ((dist || 0) - 1000) / (RAMP_LEN - 1000))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1000 м
+    const a = Math.max(0, Math.min(1, ((dist || 0) - 1350) / (RAMP_LEN - 1350))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1350 м
     return { t: t, speed: SPEED_RANGE[0] + (SPEED_RANGE[1] - SPEED_RANGE[0]) * e, density: 0.3 + e,
         animals: 0.55 + 2.05 * ea, maxAnimals: Math.round(6 + 10 * ea), animalSpeed: 1 + 0.6 * ea,
         traffic: Math.round(8 * ea), trafficSpeed: 1 + 0.5 * ea };
@@ -213,7 +218,13 @@ export function planStretch(d0, d1, rnd, opts) {
     const clearOfE = function(dd) { return !nearGap(dd) && eDs.every(function(e) { return Math.abs(e - dd) > 18; }); };
     const spot = function(dd) { for (let k = 0; k < 12 && !clearOfE(dd); k++) dd += 20; return clearOfE(dd) && dd < d1 ? dd : null; };
     // безумный транспорт (src/rides.js) — редко: трактор-таран, самосвал, «кукурузник»
-    for (let dd = d0 + 700 + r() * 600; dd < d1; dd += 1400 + r() * 800) { const at = spot(dd); if (at != null) out.push({ kind: 'ride', d: at, lane: lane() }); }
+    // не чаще одного на RIDE_SPAN: общая сетка по всей трассе — в каждом отрезке 4000 м одно место (в первом — не раньше 1500 м)
+    for (let k = Math.floor(d0 / RIDE_SPAN); k * RIDE_SPAN < d1; k++) {
+        const want = k * RIDE_SPAN + 1500 + rideJitter(k) * (RIDE_SPAN - 2000);
+        if (want < d0 || want >= d1) continue;
+        const at = spot(want);
+        if (at != null && Math.floor(at / RIDE_SPAN) === k) out.push({ kind: 'ride', d: at, lane: lane() });
+    }
     // усиления: магнит, ×2, броня — раз в 450–750 м
     for (let dd = d0 + 150 + r() * 250; dd < d1; dd += POWER_EVERY[0] + r() * (POWER_EVERY[1] - POWER_EVERY[0])) {
         const at = spot(dd);

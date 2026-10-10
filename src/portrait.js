@@ -10,7 +10,7 @@ export const MAX_PORTRAIT_FOV = 82; // вертикальный угол — н�
 const rad = Math.PI / 180;
 
 /** Камера вертикально: ниже крыши тоннеля (4,6 м), смотрит вперёд — машина у нижнего края, как в горизонтальном режиме */
-export const PORTRAIT_RIG = { dist: 5.2, height: 3.0, lookY: 1.2, lookZoff: -15 }; // машина у низа экрана (~¾ высоты), как боком
+export const PORTRAIT_RIG = { dist: 5.2, height: 3.0, lookY: -0.15, lookZoff: -15 }; // взгляд ниже — машина на 5% выше от нижнего края (замер: низ машины 0.88 → 0.83 высоты) // машина у низа экрана (~¾ высоты), как боком
 /** Вертикально: камера почти не отстаёт на скорости (боком на телефоне 0.3) и угол на нитро растёт втрое меньше — машина держится у низа экрана */
 export const PORTRAIT_FOLLOW = 0.4; // (не используется для вида сзади вертикально — там PORTRAIT_BOOST_LAG)
 export const PORTRAIT_FOV_K = 0.6;
@@ -26,10 +26,11 @@ export function fovFor(aspect, base) {
 export function chaseRig(view, spdK) {
     if (view === 'portrait') {
         const o = (typeof window !== 'undefined' && window.__portraitRig) || PORTRAIT_RIG; // __portraitRig — подбор вида на скриншотах
-        return { dist: o.dist - spdK * 0.2, height: o.height - spdK * 0.15, lookY: o.lookY, lookZoff: o.lookZoff };
+        return { dist: o.dist - spdK * 0.2, height: o.height - spdK * 0.15, lookY: o.lookY + ((typeof window !== 'undefined' && window.__lookShift) || 0), lookZoff: o.lookZoff };
     }
-    if (view === 'mobile') return { dist: 5.0 - spdK * 0.3, height: 2.2 - spdK * 0.15, lookY: 1.15, lookZoff: -11 };
-    return { dist: 6.8 - spdK * 0.6, height: 2.7 - spdK * 0.15, lookY: 0.7, lookZoff: -5.8 };
+    const L = (typeof window !== 'undefined' && window.__lookShift) || 0; // подбор кадра на скриншотах
+    if (view === 'mobile') return { dist: 5.0 - spdK * 0.3, height: 2.2 - spdK * 0.15, lookY: 0.3 + L, lookZoff: -11 }; // боком — машина на 5% выше (0.87 → 0.82)
+    return { dist: 6.8 - spdK * 0.6, height: 2.7 - spdK * 0.15, lookY: -0.15 + L, lookZoff: -5.8 };
 }
 
 /**

@@ -10,7 +10,7 @@ import { createDedMoroz } from './newyear.js';
 import { liftCar } from './suspension.js';
 const SHOWROOM_MARGIN = 1.15; // запас кадра в гараже и витрине: машина не касается рамки при вращении
 import { DUCK_SCALE, createMoves, hop, duck, tickMoves, ducking, duckScale, hurdleHit, planHurdles, createHurdle, blinkHurdle, actOf, laneAdvice } from './hop-duck.js';
-import { RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
+import { renderRideBar, RIDES, createRideState, startRide, tickRide, rideOn, rideLift, pickRide, createRideModel, createRideToken } from './rides.js';
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
 import { buildTraffic, KINDS as TRAFFIC_KINDS } from './traffic-cars.js';
@@ -2620,7 +2620,7 @@ function startGaragePreview(carId) {
             try { window.__racePaused = false; } catch (e) {}
             try { window.__inRace = false; } catch (e) {}
             // всё временное, что рисует заезд: HUD, финиш, карточки босса и волн, подсказки, всплывашки
-            const kill = '#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#hud-speedo,.big-plaque,.share-link,#endless-wave-card,#coach-tip,.unlock-plaque,#risk-hud,#fever-fx,#armor-bar,#speed-lines';
+            const kill = '#ride-bar,#move-arrow,#finish-screen,#game-hud,#hud-menu-btn,#cheburashkaWarn,#race-countdown,#boss-intro,#boss-hud,#boss-cue,.boss-hit-flash,#hud-speedo,.big-plaque,.share-link,#endless-wave-card,#coach-tip,.unlock-plaque,#risk-hud,#fever-fx,#armor-bar,#speed-lines';
             try { clearTimeout(window.__coachTimer); } catch (e) {}
             try {
                 document.querySelectorAll(kill + ',.animal-shout,.radio-line,.story-plaque,.boss-shout').forEach(function(el) {
@@ -6839,6 +6839,16 @@ function startGaragePreview(carId) {
                 playerCar.children.forEach(function(c) { if (!c.userData.blob && !c.userData.ride) { if (c.userData._rideVis == null) c.userData._rideVis = c.visible; c.visible = id ? false : c.userData._rideVis; if (!id) delete c.userData._rideVis; } });
                 if (id) { rideModel = createRideModel(id); rideModel.scale.setScalar(1 / RACE_CAR_SCALE * 0.62); playerCar.add(rideModel); }
             }
+            function rideRam(car) { // сбил на безумном транспорте: попутка летит, искры, обломки, тряска, рывок камеры, миг замедления
+                const side = car.x >= xPos ? 1 : -1;
+                car._fly = { t: 0, y: 0.1, vy: 9 + Math.random() * 3, vx: side * (6 + Math.random() * 3), vz: -(Math.abs(speed) * 60 * 0.6 + 6), rx: (Math.random() < 0.5 ? -1 : 1) * (5 + Math.random() * 4), rz: side * (4 + Math.random() * 4) };
+                try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: car.x, y: 0.7, z: car.z }, 1.5); } catch (e) {}
+                try { if (particleSystem && particleSystem.sparks) particleSystem.sparks({ x: (car.x + xPos) / 2, y: 0.6, z: car.z + 0.5 }, 26, 1); } catch (e) {}
+                shakeTime = Math.max(shakeTime, 0.35); fovPunch = Math.max(fovPunch || 0, 14); buzz('board', _settings.vibrate);
+                try { const fl = document.createElement('div'); fl.className = 'ram-flash'; document.body.appendChild(fl); setTimeout(function() { fl.remove(); }, 380); } catch (e) {}
+                slowmoT = Math.max(slowmoT, 0.12); // доли секунды — чтобы разглядеть полёт (общее замедление удара, как у босса)
+                stats.rideRams = (stats.rideRams || 0) + 1;
+            }
             function startRideNow() {
                 const id = pickRide(Math.random, ride.last), info = startRide(ride, id);
                 setRideModel(id);
@@ -8727,7 +8737,7 @@ function startGaragePreview(carId) {
                     playerCar.userData._suspensionKick *= 0.72;
                     if (playerCar.userData._suspensionKick < 0.008) playerCar.userData._suspensionKick = 0;
                 }
-                if (tickRide(ride, deltaTime)) { setRideModel(null); try { showBigPlaque('🏁 ПРИЕХАЛИ', 'Снова на своей машине', 'armor'); } catch (e) {} }
+                const rideEnded = tickRide(ride, deltaTime); renderRideBar(ride); /* шкала: сколько ещё на транспорте */ if (rideEnded) { setRideModel(null); try { showBigPlaque('🏁 ПРИЕХАЛИ', 'Снова на своей машине', 'armor'); } catch (e) {} }
                 if (rideModel) { // маячки мигают, винт крутится, из труб — чёрный дым (src/ride-models.js)
                     if (rideModel.userData.anim) rideModel.userData.anim(deltaTime);
                     rideSmokeT -= deltaTime;
@@ -8834,6 +8844,14 @@ function startGaragePreview(carId) {
                 }
                 cars.forEach(car => {
                     if (!car.active) return;
+                    if (car._fly) { // сбита безумным транспортом — летит, кувыркается, падает и возвращается в поток (src/rides.js)
+                        const f = car._fly; f.t += deltaTime; f.vy -= 14 * deltaTime;
+                        car.x += f.vx * deltaTime; car.z += f.vz * deltaTime; f.y = Math.max(0.1, f.y + f.vy * deltaTime);
+                        car.mesh.position.set(car.x, f.y, car.z); car.mesh.rotation.x += f.rx * deltaTime; car.mesh.rotation.z += f.rz * deltaTime;
+                        if (f.y <= 0.1 && f.vy < 0 && !f.landed) { f.landed = true; f.vy = 3.5; f.vx *= 0.5; try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: car.x, y: 0.4, z: car.z }, 0.8); } catch (e) {} }
+                        if (f.t > 1.6) { car._fly = null; car.mesh.rotation.set(0, 0, 0); car.mesh.position.y = 0.1; car.x = carX(car.lane, car.hug); car.z = freeZ(zPos - 120 - Math.random() * 60, car.lane, _avoidH); car.mesh.position.set(car.x, 0.1, car.z); car.hitCooldown = 0; }
+                        return;
+                    }
                     
                     if (car._boost > 0) car._boost -= deltaTime;
                     car.z -= car.speed * 60 * deltaTime * (car._boost > 0 ? 5 : 1);
@@ -8914,7 +8932,7 @@ function startGaragePreview(carId) {
                         try { showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl)) && ((ABILITY === 'avenger' && (stats.rams || 0) < AVENGER_RAMS) || risk.fever > 0 || rideOn(ride))) {
                         // «Ночной мститель» и «В ударе» — таран: попутку отбрасывает вперёд, аварии нет («В ударе» — ещё и «Е»)
-                        car.hitCooldown = 1.2; car.z = freeZ(zPos - 60 - Math.random() * 40, car.lane, _avoidH); car.mesh.position.z = car.z; speed *= risk.fever > 0 ? 1 : 0.9; shakeTime = 0.15; if (risk.fever > 0) stats.eChips = (stats.eChips || 0) + FEVER_RAM_E; const rideE = rideOn(ride) ? RIDES[ride.id].ramE : 0; if (rideE) stats.eChips = (stats.eChips || 0) + rideE;
+                        car.hitCooldown = 1.2; if (!rideOn(ride)) { car.z = freeZ(zPos - 60 - Math.random() * 40, car.lane, _avoidH); car.mesh.position.z = car.z; } /* на безумном транспорте попутка не переносится — она улетает (rideRam) */ speed *= risk.fever > 0 ? 1 : 0.9; shakeTime = 0.15; if (risk.fever > 0) stats.eChips = (stats.eChips || 0) + FEVER_RAM_E; const rideE = rideOn(ride) ? RIDES[ride.id].ramE : 0; if (rideE) stats.eChips = (stats.eChips || 0) + rideE; if (rideOn(ride)) rideRam(car);
                         _nmBlock = 2; try { if (window.soundEngine) window.soundEngine.playSfx('crash', 0.8); } catch (e) {} if (risk.fever > 0) photoBook.request('Снёс в «УДАРЕ»!', 5); if (!(risk.fever > 0) && !rideOn(ride)) stats.rams = (stats.rams || 0) + 1; // «Ночной мститель»: таранов — AVENGER_RAMS за заезд, дальше — как все
                         try { showTimePenaltyPopup(0, rideOn(ride) ? (RIDES[ride.id].icon + ' Снёс!' + (rideE ? ' +' + rideE + ' Е' : '')) : risk.fever > 0 ? '💥 Снёс! +' + FEVER_RAM_E + ' Е' : stats.rams >= AVENGER_RAMS ? '🦇 Последний таран!' : '🦇 Таран ' + stats.rams + '/' + AVENGER_RAMS); } catch (e) {}
                     } else if (car.hitCooldown <= 0 && Math.abs(dx) < hw && (Math.abs(dz) < hl || sweptZ(car.z, hl))) {
@@ -8975,7 +8993,7 @@ function startGaragePreview(carId) {
                     const hitR = (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar') ? 0.55 : 0.42;
                     
                     if (Math.abs(dx) < (obs.type === 'spikes' ? 0.95 : hitR) && sweptZ(obs.z, hitR)) {
-                        if (obs.pat && !(carAirborne || carYOffset > 0.45 || risk.fever > 0)) patHit.add(obs.pat); /* узор задет — «чисто» не будет */ if (carAirborne || carYOffset > 0.45 || ABILITY === 'fly' || risk.fever > 0) {
+                        if (obs.pat && !(carAirborne || carYOffset > 0.45 || risk.fever > 0)) patHit.add(obs.pat); /* узор задет — «чисто» не будет */ if (carAirborne || carYOffset > 0.45 || rideOn(ride) || ABILITY === 'fly' || risk.fever > 0) {
                             // в прыжке (и на ковре-самолёте) ямы/кочки/масло/шипы не срабатывают
                         } else if (ABILITY === 'trike' && (obs.type === 'oil' || obs.type === 'acid' || obs.type === 'ice' || obs.type === 'tar')) {
                             if (!obs._trikeShown) { obs._trikeShown = true; try { showTimePenaltyPopup(0, '🛞 Трайк держит дорогу'); } catch (e) {} }
@@ -9152,7 +9170,7 @@ function startGaragePreview(carId) {
                         const dz = zPos - d.z;
                         const hitR = d.groundY != null ? 0.7 : 0.55; // предметы с арки крупнее
                         if (Math.abs(dx) < hitR && Math.abs(dz) < hitR) {
-                            if (carAirborne || carYOffset > 0.45) {
+                            if (carAirborne || carYOffset > 0.45 || rideOn(ride)) { /* безумный транспорт обломков не замечает */
                                 try { if (typeof showTimePenaltyPopup === 'function') showTimePenaltyPopup(0, 'Перелёт!'); } catch (e) {}
                             } else {
                                 speed *= 0.65;

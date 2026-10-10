@@ -26,7 +26,7 @@ test('босс в броне: таран ранит только после пр
     await expect(page.locator('#boss-hud .bh-phase')).toContainText('Фаза 1');
     await expect(page.locator('#boss-hud .bh-hp i.on')).toHaveCount(hp0);
     expect(await ram(page)).toBe(hp0);            // броня
-    await page.evaluate(() => window.__raceDebug.openBoss());
+    await page.evaluate(() => { const d = window.__raceDebug; d.openBoss(); d.boss.vulnT = 30; d.boss.invuln = 30; }); // газ жмётся сам: на медленной машине таран успевал закрыть окно до проверки — неуязвимость снимает ram()
     await expect(page.locator('#boss-hud')).toHaveClass(/open/);
     await expect(page.locator('#boss-cue')).toHaveClass(/on/);
     await expect(page.locator('#boss-cue')).toHaveText('БЕЙ!'); // одно слово, без пояснений
@@ -96,8 +96,10 @@ test('отбитый на нитро снаряд ранит босса скво
     expect(await page.evaluate(() => window.__raceDebug.boss.hp)).toBeLessThan(7); // газ жмётся сам — машина может пройти сквозь залп и отбить больше одного
 
     // кувалда: подбираем, таран по броне проходит
-    await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.spawnHammer(); const pk = d.bossPickups[0]; d.setX(pk.x); });
+    await page.evaluate(() => { const d = window.__raceDebug; d.boss._forceAtk = null; d.boss.shotTimer = 99; d.boss.invuln = 30; /* таран с автогазом сразу тратил кувалду — снимает таран ниже */ d.spawnHammer(); const pk = d.bossPickups[0]; pk.z = d.z - 30; pk.mesh.position.z = pk.z; d.setX(pk.x); }); // подальше: на медленной машине иначе не успевает перестроиться
     /* газ жмётся сам (W — прыжок) */
+    // держим машину на полосе кувалды до подбора (её тянет к середине полосы; на медленной машине не доезжала)
+    await page.evaluate(() => new Promise(res => { const d = window.__raceDebug, pk = d.bossPickups[0], px = pk ? pk.x : d.x; let n = 0; const f = () => { d.setX(px); if (!d.hammer && ++n < 600) requestAnimationFrame(f); else res(); }; f(); }));
     await expect.poll(() => page.evaluate(() => window.__raceDebug.hammer), { timeout: 8_000 }).toBe(true);
     /* газ жмётся сам (W — прыжок) */
     // таран по броне с кувалдой (в залпе могли быть ещё отбитые снаряды — считаем от момента тарана)
