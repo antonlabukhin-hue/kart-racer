@@ -30,3 +30,25 @@ describe('безумный транспорт', () => {
         expect(ds[0]).toBeGreaterThanOrEqual(1500);
     });
 });
+
+import { rideFlies } from '../../src/rides.js';
+describe('жетон транспорта — без соседей, самолёт ничего не сбивает', () => {
+    it('ящиков, усилений и препятствий в 35 м от жетона нет', () => {
+        const rnd = seededRnd(7);
+        let rides = 0;
+        for (let a = 0; a < 40000; a += 1300) {
+            const items = planStretch(a, a + 1300, rnd, { slide: 'slide', nextGap: Infinity }).items;
+            items.filter(i => i.kind === 'ride').forEach(function(rd) {
+                rides++;
+                items.forEach(function(i) { if (['crate', 'power', 'obstacle', 'spikes', 'vhs'].includes(i.kind)) expect(Math.abs(i.d - rd.d)).toBeGreaterThanOrEqual(35); });
+            });
+        }
+        expect(rides).toBeGreaterThan(3);
+    });
+    it('летит только «кукурузник»', () => {
+        const st = createRideState();
+        startRide(st, 'plane'); expect(rideFlies(st)).toBe(true);
+        startRide(st, 'tractor'); expect(rideFlies(st)).toBe(false);
+        expect(rideFlies(null)).toBe(false);
+    });
+});

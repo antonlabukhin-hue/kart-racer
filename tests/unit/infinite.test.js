@@ -36,10 +36,11 @@ describe('рост сложности и счёт', () => {
         expect(rampAt(0)).toMatchObject({ speed: 0.765, animals: 0.55, density: 0.3, maxAnimals: 6, animalSpeed: 1, traffic: 0 });
         expect(rampAt(1350)).toMatchObject({ animals: 0.55, animalSpeed: 1, traffic: 0 });
         expect(rampAt(1000).speed).toBeGreaterThan(0.765);
-        expect(rampAt(5400).speed).toBeCloseTo((0.765 + 1.3) / 2, 3); // середина разгона — 5400 м (RAMP_LEN 10800)
-        expect(rampAt(4000).speed).toBeLessThan((0.765 + 1.3) / 2);
-        expect(rampAt(5400).animals).toBeGreaterThan(1);
-        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.3, maxAnimals: 16, animalSpeed: 1.6, traffic: 8, trafficSpeed: 1.5 });
+        expect(rampAt(8100).speed).toBeCloseTo((0.765 + 1.3) / 2, 3); // середина разгона — 8100 м (RAMP_LEN 16200)
+        expect(rampAt(6000).speed).toBeLessThan((0.765 + 1.3) / 2);
+        expect(rampAt(10000).speed).toBeLessThan(1.15); // к 10 км ещё не на потолке
+        expect(rampAt(8100).animals).toBeGreaterThan(1);
+        expect(rampAt(1e6)).toMatchObject({ t: 1, speed: 1.3, maxAnimals: 16, animalSpeed: 1.6, traffic: 4, trafficSpeed: 1.3 });
         expect(rampAt(1e6).animals).toBeCloseTo(2.6, 6);
     });
     it('очки и опыт', () => {

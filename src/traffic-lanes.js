@@ -6,6 +6,8 @@
  */
 export const LANE_STEP = 2;
 export const WALL_WIN = 14; // ед. по ходу: машины ближе друг к другу считаются «в одном ряду»
+/** Окно «ряда» растёт со скоростью игрока: лесенка из трёх машин, которую за ~0.7 с не объехать, — тоже «стенка» */
+export function wallWin(ups) { return Math.max(WALL_WIN, Math.min(48, (ups || 0) * 0.7)); }
 
 /** x центра полосы 0 | 1 | 2 */
 export function laneX(lane) { return (lane - 1) * LANE_STEP; }
@@ -64,4 +66,18 @@ export function spawnLane(cars, z, want, win) {
     const tight = function(l) { return (cars || []).some(function(c) { return c && c.active !== false && (c.lane === l || c.targetLane === l) && Math.abs(c.z - z) < GAP_SAME; }); };
     for (let i = 0; i < 3; i++) if (!tight(order[i]) && canEnterLane(cars, { z: z }, order[i], win)) return order[i];
     return null;
+}
+
+/** Догнала переднюю в своей полосе (ближе gap) — едет не быстрее её: не проезжает сквозь и не сбивается в кучу */
+export const FOLLOW_GAP = 7;
+export function followSpeed(car, cars, gap) {
+    const g = gap || FOLLOW_GAP, lane = car.isChangingLane ? car.targetLane : car.lane;
+    let v = car.speed;
+    (cars || []).forEach(function(o) {
+        if (o === car || !o || o.active === false || o._fly) return;
+        const ol = o.isChangingLane ? o.targetLane : o.lane;
+        const d = car.z - o.z; // > 0 — o впереди (едут к −z)
+        if (ol === lane && d > 0 && d < g && o.speed < v) v = o.speed;
+    });
+    return v;
 }
