@@ -28,3 +28,23 @@ describe('полосы попуток', () => {
         expect(wallBreaker(jam, 200, 0)).toBe(jam[2]);
     });
 });
+
+import { wallWin, WALL_WIN } from '../../src/traffic-lanes.js';
+describe('ряд на скорости', () => {
+    it('медленно — как раньше, быстро — окно длиннее, но не безгранично', () => {
+        expect(wallWin(10)).toBe(WALL_WIN);
+        expect(wallWin(70)).toBeGreaterThan(30);
+        expect(wallWin(500)).toBe(48);
+    });
+});
+
+import { followSpeed } from '../../src/traffic-lanes.js';
+describe('попутки не проезжают сквозь друг друга', () => {
+    it('догнала медленную в своей полосе — едет с её скоростью; в другой полосе или далеко — своя', () => {
+        const slow = { lane: 1, z: -100, speed: 0.01 }, fast = { lane: 1, z: -95, speed: 0.04 };
+        expect(followSpeed(fast, [slow, fast])).toBe(0.01);
+        expect(followSpeed({ lane: 2, z: -95, speed: 0.04 }, [slow])).toBe(0.04);
+        expect(followSpeed({ lane: 1, z: -80, speed: 0.04 }, [slow])).toBe(0.04);
+        expect(followSpeed(slow, [slow, fast])).toBe(0.01); // задняя переднюю не тормозит
+    });
+});

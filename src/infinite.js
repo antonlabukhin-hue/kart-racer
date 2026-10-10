@@ -79,10 +79,10 @@ export function mixHex(a, b, k) {
  * Машина разгоняется плавно с первого метра: speed — множитель максимальной скорости (SPEED_RANGE: 0.765 → 1.3 к ~8 км).
  * Звери и попутки первые 1000 м — как на старте, дальше плавно растут вместе со скоростью машины (к ~8 км — потолок):
  *   animals — частота зверей (0.55 → 2.6), maxAnimals — сколько сразу (6 → 16), animalSpeed — скорость перебежки (×1 → ×1.6),
- *   traffic — сколько попуток добавить (0 → +8), trafficSpeed — их скорость (×1 → ×1.5).
+ *   traffic — сколько попуток добавить (0 → +4; было +8 — собирались в непроезжие скопления), trafficSpeed — их скорость (×1 → ×1.3).
  * density — плотность препятствий на участке (0.3 → 1.3)
  */
-export const RAMP_LEN = 10800; // на 35% длиннее прежних 8000: скорость и сложность растут медленнее — успеваешь насладиться трассой
+export const RAMP_LEN = 16200; // ещё в 1.5 раза длиннее (8000 → 10800 → 16200): после 10 км уже было не разобрать, что происходит
 // скорость машины: на старте на 10% тише прежнего (0.85 → 0.765) — успеваешь освоиться; к ~8 км плавно до 1.3
 export const SPEED_RANGE = [0.765, 1.3];
 export function rampAt(dist, warm) {
@@ -92,7 +92,7 @@ export function rampAt(dist, warm) {
     const a = Math.max(0, Math.min(1, ((dist || 0) - 1350) / (RAMP_LEN - 1350))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1350 м
     return { t: t, speed: SPEED_RANGE[0] + (SPEED_RANGE[1] - SPEED_RANGE[0]) * e, density: 0.3 + e,
         animals: 0.55 + 2.05 * ea, maxAnimals: Math.round(6 + 10 * ea), animalSpeed: 1 + 0.6 * ea,
-        traffic: Math.round(8 * ea), trafficSpeed: 1 + 0.5 * ea };
+        traffic: Math.round(4 * ea), trafficSpeed: 1 + 0.3 * ea };
 }
 
 /**

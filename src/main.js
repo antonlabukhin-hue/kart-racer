@@ -69,7 +69,7 @@ import { buildTraffic, KINDS as TRAFFIC_KINDS, hopClears, TALL_H } from './traff
         import * as Profile from './profile.js';
         import { stepRamps, stepAir, timeToLand, landingSpeed, landingGrade } from './race-physics.js';
         import { densityAt } from './rhythm.js';
-        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
+        import { track as trackEvent, summarize, loadEvents, clearEvents, setSender } from './analytics.js'; import { installMetrics } from './metrics.js'; import { createPlatform } from './platform.js'; import { wirePlatform, pauseForAd, resumeForAd } from './platform-hooks.js'; import { createAnnouncer, plaqueKind } from './announcer.js'; import { createRain } from './rain.js'; import { laneX, laneOf, hugFor, carX , canEnterLane, spawnLane, wallBreaker, wallWin, followSpeed } from './traffic-lanes.js'; import '@fontsource/russo-one/400.css'; import { shouldPlayVhs, playVhsIntro } from './ui/vhs-intro.js';
         // для разработчика: в консоли __analytics.summary() — сводка по заездам на этом устройстве
         window.__analytics = { summary: function() { return summarize(); }, events: loadEvents, clear: clearEvents }; const platform = createPlatform({ mode: import.meta.env.MODE, search: location.search, onPause: pauseForAd, onResume: resumeForAd }); let platformHooks = null; if (shouldPlayVhs({ search: location.search, webdriver: navigator.webdriver, session: sessionStorage, reduceMotion: window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches })) playVhsIntro(); /* VHS-заставка при запуске (src/ui/vhs-intro.js) */ const announcer = createAnnouncer({ mode: function() { return loadSettings().host; }, volume: function() { return loadSettings().sfx; } }); /* ведущий-комментатор (src/announcer.js); */ /* площадка: сайт / Яндекс Игры (src/platform.js); метрики сессий → Supabase (src/metrics.js) */
         import { ghostKey, createGhostRecorder, sampleGhost, isValidGhost, isBetterGhost, createGhostDelta, formatGhostDelta, recordCompare } from './ghost.js';
@@ -8815,7 +8815,7 @@ function startGaragePreview(carId) {
                 // Попутные машины
                 const _avoidH = { gaps: gaps, ramps: ramps, works: roadSegments }; /* попутки объезжают трамплины и ремонт, разлом — перепрыгивают (src/traffic-avoid.js) */
                 {
-                    const wb = wallBreaker(cars, zPos - 2, zPos - 320);
+                    const wb = wallBreaker(cars, zPos - 2, zPos - 320, wallWin(Math.abs(speed) * 60)); // на скорости «ряд» длиннее — лесенку из трёх машин тоже разбиваем (src/traffic-lanes.js)
                     if (wb) {
                         if (zPos - wb.z > 45) { // в тумане — переставить подальше вперёд
                             const nz = freeZ(zPos - 200 - Math.random() * 100, wb.lane, _avoidH), nl = spawnLane(cars.filter(function(o) { return o !== wb; }), nz, wb.lane);
@@ -8840,7 +8840,7 @@ function startGaragePreview(carId) {
                     }
                     
                     if (car._boost > 0) car._boost -= deltaTime;
-                    car.z -= car.speed * 60 * deltaTime * (car._boost > 0 ? 5 : 1);
+                    car.z -= (car._boost > 0 ? car.speed * 5 : followSpeed(car, cars)) * 60 * deltaTime; // догнала переднюю в полосе — за ней, а не сквозь (src/traffic-lanes.js)
                     if (car.mesh) {
                         car.mesh.matrixAutoUpdate = true;
                         car.mesh.position.z = car.z;
