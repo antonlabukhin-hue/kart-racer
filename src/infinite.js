@@ -76,21 +76,26 @@ export function mixHex(a, b, k) {
 
 /**
  * Рост сложности по расстоянию. База — «лёгкая» сложность (src/difficulty.js).
- * Машина разгоняется плавно с первого метра: speed — множитель максимальной скорости (SPEED_RANGE: 0.765 → 1.3 к ~8 км).
- * Звери и попутки первые 1000 м — как на старте, дальше плавно растут вместе со скоростью машины (к ~8 км — потолок):
+ * Пик — к RAMP_LEN (~4.5 км): там новичок и проигрывает (забег 1–3 минуты), а дальше скорость больше не растёт —
+ * растут связки (src/patterns.js): чаще и сложнее (late — 0..1 за следующие LATE_LEN м). Так долгий забег не превращается
+ * в «не разобрать, что происходит» (как было при росте скорости до 16 км), но и не становится скучным.
+ * Машина разгоняется плавно с первого метра: speed — множитель максимальной скорости (SPEED_RANGE: 0.765 → 1.15 к пику).
+ * Звери и попутки первые 1350 м — как на старте, дальше плавно растут вместе со скоростью машины (к пику — потолок):
  *   animals — частота зверей (0.55 → 2.6), maxAnimals — сколько сразу (6 → 16), animalSpeed — скорость перебежки (×1 → ×1.6),
  *   traffic — сколько попуток добавить (0 → +4; было +8 — собирались в непроезжие скопления), trafficSpeed — их скорость (×1 → ×1.3).
  * density — плотность препятствий на участке (0.3 → 1.3)
  */
-export const RAMP_LEN = 16200; // ещё в 1.5 раза длиннее (8000 → 10800 → 16200): после 10 км уже было не разобрать, что происходит
-// скорость машины: на старте на 10% тише прежнего (0.85 → 0.765) — успеваешь освоиться; к ~8 км плавно до 1.3
-export const SPEED_RANGE = [0.765, 1.3];
+export const RAMP_LEN = 4500;  // пик сложности (было 16200: рост скорости до 16 км — долгие скучные забеги, а потом «не разобрать»)
+export const LATE_LEN = 12000; // за пиком: связки чаще и сложнее ещё 12 км
+// скорость машины: на старте — 0.765 (успеваешь освоиться); к пику плавно до 1.15 — потолок ниже прежних 1.3: на нём едешь долго, всё должно читаться
+export const SPEED_RANGE = [0.765, 1.15];
 export function rampAt(dist, warm) {
     dist = (dist || 0) + (warm || 0); // warm — «горячий старт» (warmStart)
     const t = Math.max(0, Math.min(1, (dist || 0) / RAMP_LEN));
     const e = t * t * (3 - 2 * t); // медленно в начале, быстрее в середине, мягко к потолку
     const a = Math.max(0, Math.min(1, ((dist || 0) - 1350) / (RAMP_LEN - 1350))), ea = a * a * (3 - 2 * a); // звери и попутки — после 1350 м
-    return { t: t, speed: SPEED_RANGE[0] + (SPEED_RANGE[1] - SPEED_RANGE[0]) * e, density: 0.3 + e,
+    const late = Math.max(0, Math.min(1, ((dist || 0) - RAMP_LEN) / LATE_LEN));
+    return { t: t, late: late, speed: SPEED_RANGE[0] + (SPEED_RANGE[1] - SPEED_RANGE[0]) * e, density: 0.3 + e,
         animals: 0.55 + 2.05 * ea, maxAnimals: Math.round(6 + 10 * ea), animalSpeed: 1 + 0.6 * ea,
         traffic: Math.round(4 * ea), trafficSpeed: 1 + 0.3 * ea };
 }
@@ -158,7 +163,7 @@ export function planStretch(d0, d1, rnd, opts) {
     const gapNear = function(d) { return gaps.some(function(g) { return d > g - 50 && d < g + 20; }); };
     for (let dd = Math.max(d0, 150) + r() * 60; dd < d1; ) {
         const rp = rampAt(dd, warm);
-        const pat = pickPattern(rp.t, dd + warm >= SPIKES_FROM, r);
+        const pat = pickPattern(rp.t, dd + warm >= SPIKES_FROM, r, rp.late);
         const sp = patternSpan(pat);
         if (dd + sp[1] + 3 < d1 && !gapNear(dd + sp[0]) && !gapNear(dd + sp[1] + 3)) {
             const id = o.patId = (o.patId || 0) + 1;
@@ -170,7 +175,7 @@ export function planStretch(d0, d1, rnd, opts) {
             out.push({ kind: 'patEnd', d: dd + pat.len + 3, pat: id, name: pat.id }); // проехал сюда, не задев узор, — «чисто!» (рисковое действие)
             busy.push([dd + sp[0] - 12, dd + sp[1] + 12]);
         }
-        dd += sp[1] + patternGap(rp.t) * (0.8 + r() * 0.4);
+        dd += sp[1] + patternGap(rp.t, rp.late) * (0.8 + r() * 0.4);
     }
     const nearGap = function(d) { return gapNear(d) || inBusy(d); };
     // препятствия-одиночки — вдвое реже, чем до узоров: основное делают узоры

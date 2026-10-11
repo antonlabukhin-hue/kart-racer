@@ -87,3 +87,20 @@ export const HEAVY_CARS = ['buhanka', 'gazel', 'saray', 'rafik', 'shestisot', 'p
 export function laneMul(carId) {
     return NIMBLE_CARS.indexOf(carId) >= 0 ? 1.1 : HEAVY_CARS.indexOf(carId) >= 0 ? 0.88 : 1;
 }
+
+/**
+ * Бесконечная трасса: разброс скорости и разгона между машинами сжат до INF_SPREAD (быстрая машина делала забег труднее —
+ * покупка наказывала). Машины отличаются способностью («глаголом»), поворотливостью и видом; прокачка мотора работает как раньше.
+ */
+export const INF_SPREAD = 0.3;
+export function infPreset(preset) {
+    return Object.assign({}, preset, {
+        maxSpeed: FAIR_STATS.maxSpeed + (preset.maxSpeed - FAIR_STATS.maxSpeed) * INF_SPREAD,
+        accel: FAIR_STATS.accel + (preset.accel - FAIR_STATS.accel) * INF_SPREAD
+    });
+}
+/** Строка о способности машины при старте заезда: «🚐 Буханка — Броня: каждый заезд — с бронёй…» (нет способности — '') */
+export function abilityLine(preset) {
+    const a = preset && preset.ability;
+    return a && a.name ? '★ ' + preset.name + ' — ' + a.name + ': ' + a.desc : '';
+}

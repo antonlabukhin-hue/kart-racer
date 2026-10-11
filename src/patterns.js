@@ -56,20 +56,21 @@ export const PATTERNS = [
         E(2, 2, 12), B(2, 18, 'spikes'), EA(2, 16, 20.5), E(2, 25, 34), { dz: 40, lane: 2, kind: 'crate' }) }
 ];
 
-/** Шаг между узорами: на старте — раз в ~220 м, на потолке сложности — раз в ~100 м */
-export const PATTERN_GAP = [220, 100];
-export function patternGap(t) {
-    const k = Math.max(0, Math.min(1, t || 0));
-    return PATTERN_GAP[0] + (PATTERN_GAP[1] - PATTERN_GAP[0]) * k;
+/** Шаг между узорами: на старте — раз в ~220 м, на пике сложности — раз в ~100 м, за пиком (late 0..1) — до ~65 м */
+export const PATTERN_GAP = [220, 100], LATE_GAP_K = 0.35;
+export function patternGap(t, late) {
+    const k = Math.max(0, Math.min(1, t || 0)), l = Math.max(0, Math.min(1, late || 0));
+    return (PATTERN_GAP[0] + (PATTERN_GAP[1] - PATTERN_GAP[0]) * k) * (1 - LATE_GAP_K * l);
 }
 
-/** Выбрать узор по сложности t (0..1); spikesOk — шипы уже разрешены. rnd — [0,1) */
-export function pickPattern(t, spikesOk, rnd) {
-    const r = rnd || Math.random;
+/** Выбрать узор по сложности t (0..1); spikesOk — шипы уже разрешены; late (0..1) — за пиком сложные (minT ≥ 0.4) втрое чаще. rnd — [0,1) */
+export function pickPattern(t, spikesOk, rnd, late) {
+    const r = rnd || Math.random, l = Math.max(0, Math.min(1, late || 0));
     const pool = PATTERNS.filter(function(p) { return p.minT <= (t || 0) && (!p.spikes || spikesOk); });
-    const total = pool.reduce(function(s, p) { return s + p.w; }, 0);
+    const w = function(p) { return p.w * (p.minT >= 0.4 ? 1 + 2 * l : 1); };
+    const total = pool.reduce(function(s, p) { return s + w(p); }, 0);
     let x = r() * total;
-    for (let i = 0; i < pool.length; i++) { x -= pool[i].w; if (x < 0) return pool[i]; }
+    for (let i = 0; i < pool.length; i++) { x -= w(pool[i]); if (x < 0) return pool[i]; }
     return pool[pool.length - 1];
 }
 

@@ -105,3 +105,11 @@ describe('узоры в главе: свободные окна', () => {
         items.forEach(i => expect(i.d < 150 - 3 || i.d > 260).toBe(true));
     });
 });
+
+describe('за пиком сложности — связки, а не скорость', () => {
+    it('чаще и сложнее', () => {
+        expect(patternGap(1, 1)).toBeLessThan(patternGap(1, 0));
+        const hard = (late) => { const r = seq(77); let n = 0; for (let i = 0; i < 2000; i++) if (pickPattern(1, true, r, late).minT >= 0.4) n++; return n; };
+        expect(hard(1)).toBeGreaterThan(hard(0) * 1.6);
+    });
+});

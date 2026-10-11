@@ -158,6 +158,7 @@ test('бесконечная трасса: ящик «?» разбивается
         const g = window.__raceDebug;
         const c = g.collectibles.filter(c => c.type === 'crate' && c.active && c.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
         if (!c) return null;
+        g.cars.forEach(o => { o.x = 99; o.mesh.position.x = 99; }); (g.animals || []).forEach(an => { an.hit = true; }); // телепорт — не в попутку
         g.setX(c.x); g.setZ(c.z + 0.3);
         await new Promise(r => setTimeout(r, 300));
         return { crates: g.stats.crates || 0, strikes: g.strikes };
@@ -175,7 +176,8 @@ test('бесконечная трасса: ящик «?» разбивается
         (g.animals || []).forEach(an => { an.hit = true; });
         const o = g.obstacles.filter(o => o.type === 'spikes' && o.active && o.z < g.z - 3).sort((a, b) => b.z - a.z)[0];
         // ставим на шипы, пока не сработают (под нагрузкой кадр может запоздать)
-        for (let i = 0; i < 20 && !(g.stats.spikes > 0); i++) {
+        for (let i = 0; i < 80 && !(g.stats.spikes > 0); i++) {
+            if (g.speed < 0.1) { g.setStrikes(0); await new Promise(r => setTimeout(r, 50)); continue; } // после телепорта под нагрузкой машина стоит — ждём, пока поедет
             g.setStrikes(0); g.setX(o.x); g.setZ(o.z + 0.2);
             await new Promise(r => setTimeout(r, 50));
         }
@@ -692,6 +694,7 @@ test('задел боком — не авария; лоб в лоб — авар
     await page.locator('#main-menu-play').click();
     await waitRacing(page);
     await page.waitForTimeout(1500);
+    await page.evaluate(() => { window.__pops = []; new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.classList && n.classList.contains('penalty-pop')) window.__pops.push(n.textContent); }))).observe(document.body, { childList: true, subtree: true }); }); // надписи сменяют друг друга — запоминаем все
     const hit = (off) => page.evaluate(async (off) => {
         const g = window.__raceDebug, before = [g.strikes, g.stats.grazes || 0];
         const c = g.cars[0], hw = (c.hitW || 0.75) * 0.55;
@@ -703,7 +706,7 @@ test('задел боком — не авария; лоб в лоб — авар
         return [g.strikes - before[0], (g.stats.grazes || 0) - before[1]];
     }, off);
     expect(await hit(0.85)).toEqual([0, 1]);
-    await expect(page.locator('.penalty-pop').filter({ hasText: 'Задел' })).toHaveCount(1);
+    expect((await page.evaluate(() => window.__pops)).some(t => /Задел/.test(t))).toBe(true);
     await page.waitForTimeout(600);
     expect(await hit(0)).toEqual([1, 0]);
     expect(problems).toEqual([]);
