@@ -4,9 +4,12 @@
  * «Нарочно в его полосу» — только издалека, с CUT_FROM…CUT_TO м впереди.
  */
 export const SIGNAL_TIME = 0.8;
-export const CUT_SAFE = 35;
-export const CUT_FROM = 38;
-export const CUT_TO = 60;
+// попутки должны успевать встать перед игроком: решают издалека (CUT_FROM…CUT_TO), после поворотника (SIGNAL_TIME) игрок
+// подъезжает на ~18 м — и всё ещё дальше CUT_SAFE; перестраиваются быстро (LANE_CHANGE_RATE: полоса за ~0.38 с)
+export const CUT_SAFE = 22;
+export const CUT_FROM = 45;
+export const CUT_TO = 80;
+export const LANE_CHANGE_RATE = 2.6; // доля полосы в секунду (было 1.5 — за 0.67 с, и манёвр не успевал)
 
 /** ahead — насколько попутка впереди игрока (м, > 0 — впереди) */
 export function cutInAllowed(newLane, playerLane, ahead) {

@@ -14,7 +14,7 @@ import { RIDES, createRideState, startRide, tickRide, rideOn, rideFlies, rideLif
 const MOMENT_CAPTIONS = { ded_moroz: 'Дед Мороз спешит!', granny_cross: 'Бабушка, осторожнее!', zapor_nitro: '«Запорожец» обогнал?!', hedgehog: 'Ёжик! А лошадка где?', ufo: 'Они существуют!', wheelie: 'Каскадёр на одном колесе', cow: 'Корова у трассы' };
 import { record as recordFun } from './fun-achievements.js';
 import { showMoveArrows, createIntro, introAct } from './move-tutor.js';
-import { SIGNAL_TIME, cutInAllowed, wantsCut, blinkOn } from './traffic-signal.js';
+import { SIGNAL_TIME, cutInAllowed, wantsCut, blinkOn, LANE_CHANGE_RATE } from './traffic-signal.js';
 import { zoneFree, calmAhead, MAJOR_GAP, HURDLE_GAP } from './director.js';
 import { nearMissStep } from './near-miss.js';
 import { laneAssist } from './lane-assist.js';
@@ -8916,7 +8916,7 @@ function startGaragePreview(carId) {
                         }
                     }
                     if (car.isChangingLane) {
-                        car.laneChangeProgress += deltaTime * 1.5;
+                        car.laneChangeProgress += deltaTime * (INF ? LANE_CHANGE_RATE : 1.5); /* бесконечная трасса: попутка успевает встать перед игроком (src/traffic-signal.js) */
                         if (car.laneChangeProgress >= 1) {
                             car.laneChangeProgress = 0;
                             car.isChangingLane = false;
