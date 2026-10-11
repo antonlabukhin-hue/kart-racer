@@ -354,7 +354,7 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
     await page.locator('#shop-action').click();
     await waitRacing(page);
     /* газ жмётся сам (W — прыжок) */
-    await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearMiss'); });
+    await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearClose'); });
     await expect(page.locator('#fever-fx')).toBeVisible();
     await expect(page.locator('.big-plaque')).toContainText('В УДАРЕ');
     // «В ударе» — на нитро: линии скорости по краям (src/juice.js; слой всегда на месте, видно — по прозрачности)
@@ -745,7 +745,7 @@ test('столкновения: что теряешь — зверь полсе�
     await clear();
     const animal = await page.evaluate(async () => {
         const g = window.__raceDebug, before = g.strikes;
-        g.riskEvent('nearMiss'); const m0 = g.risk.mult;
+        g.riskEvent('nearClose'); const m0 = g.risk.mult;
         for (let i = 0; i < 200 && g.strikes === before; i++) { // ждём, пока выбежит зверь (до ~12 с)
             g.cars.forEach(c => { c.x = 99; c.mesh.position.x = 99; });
             const a = (g.animals || []).find(x => !x.hit) || null; // любой зверь — прямо в машину (без телепортов: по дороге можно въехать в трубу)

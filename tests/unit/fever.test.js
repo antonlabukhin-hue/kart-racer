@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createRisk, riskEvent, riskTick, MAX_MULT, FEVER_TIME, CHAIN_WINDOW } from '../../src/risk-combo.js';
 import { feverHold } from '../../src/fever.js';
 
-const toMax = (r) => { let last; for (let i = 1; i < MAX_MULT; i++) last = riskEvent(r, 'nearMiss'); return last; };
+const toMax = (r) => { let last; for (let i = 1; i < MAX_MULT; i++) last = riskEvent(r, 'nearClose'); return last; }; // ступень — только за настоящий риск (STEP_KINDS)
 
 describe('«В УДАРЕ»', () => {
     it('×5 в бесконечной трассе зажигает «В ударе», в остальных режимах — нет', () => {
@@ -32,5 +32,20 @@ describe('«В УДАРЕ»', () => {
         toMax(r);
         expect(feverHold(r, pw)).toBeGreaterThan(0);
         expect(pw).toEqual({ magnet: FEVER_TIME, x2: 12 });
+    });
+});
+
+import { STEP_KINDS } from '../../src/risk-combo.js';
+describe('«В ударе» — только за настоящий риск', () => {
+    it('обычное «на волоске», труба и посадка — очки без ступени; в кампании — ступень за любое', () => {
+        const r = createRisk(true);
+        ['nearMiss', 'landing', 'billboard', 'nearMiss'].forEach(k => riskEvent(r, k));
+        expect(r.mult).toBe(1);
+        expect(r.points).toBeGreaterThan(0);
+        expect(riskEvent(r, 'nearPerfect').mult).toBe(2);
+        expect(STEP_KINDS).toContain('jump');
+        const camp = createRisk(false);
+        riskEvent(camp, 'nearMiss');
+        expect(camp.mult).toBe(2);
     });
 });

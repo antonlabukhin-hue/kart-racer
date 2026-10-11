@@ -15,14 +15,22 @@ export function createRisk(feverOk) {
 }
 
 /** Рисковое действие: возвращает { gained, mult, fever } — сколько очков, какой множитель теперь и начался ли «В ударе» */
+/**
+ * Бесконечная трасса (feverOk): ступень множителя и продление цепочки — только за настоящий риск (STEP_KINDS): «впритирку»,
+ * «идеально», сложная связка, прыжок над зверем. Обычное «на волоске», прыжок через трубу, посадка — очки, но не ступень:
+ * «В ударе» набирался слишком просто. Окно цепочки там — FEVER_WINDOW. В кампании — как раньше, ступень за любое.
+ */
+export const STEP_KINDS = ['nearClose', 'nearPerfect', 'pattern', 'jump'];
+export const FEVER_WINDOW = 4;
 export function riskEvent(r, kind) {
     const base = RISK_POINTS[kind] || 40;
     const gained = base * r.mult;
     r.points += gained;
     r.events++;
+    if (r.feverOk && STEP_KINDS.indexOf(kind) < 0) return { gained: gained, mult: r.mult, fever: false, step: false };
     r.mult = Math.min(MAX_MULT, r.mult + 1);
     r.best = Math.max(r.best, r.mult);
-    r.timer = CHAIN_WINDOW;
+    r.timer = r.feverOk ? FEVER_WINDOW : CHAIN_WINDOW;
     const fever = !!r.feverOk && r.mult >= MAX_MULT && !(r.fever > 0);
     if (fever) { r.fever = FEVER_TIME; r.fevers = (r.fevers || 0) + 1; }
     return { gained: gained, mult: r.mult, fever: fever };
