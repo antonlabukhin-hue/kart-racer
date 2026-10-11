@@ -4888,13 +4888,13 @@ function startGaragePreview(carId) {
                         continues++;
                         try { saveCurrentPlayer(); } catch (e) {}
                         strikes = MAX_STRIKES - 2; speed = 0; stunTimer = 0;
-                        cleanRun.grantShield(); setShieldVisible(true);
+                        if (!INF) { cleanRun.grantShield(); setShieldVisible(true); } /* бесконечная трасса: броня — только с фишки */
                         // вокруг машины — чисто: звери убегают, ямы и попутки отодвигаются
                         animalSpawner.animals.forEach(function(a) { if (Math.abs(a.z - zPos) < 30) a.hit = true; });
                         obstacles.forEach(function(o) { if (o.active && Math.abs(o.z - zPos) < 25) { o.active = false; o.mesh.visible = false; } });
                         cars.forEach(function(c) { if (c.z < zPos + 6 && c.z > zPos - 35) { c.z = freeZ(zPos - 70 - Math.random() * 40, c.lane, { gaps: gaps, ramps: ramps, works: roadSegments }); c.mesh.position.z = c.z; } }); /* не над разломом */
                         gameState = 'racing';
-                        try { showBigPlaque('▶ ВТОРОЙ ШАНС', 'Две жизни и броня — газу!', 'armor'); } catch (e) {}
+                        try { showBigPlaque('▶ ВТОРОЙ ШАНС', INF ? 'Ещё ' + (MAX_STRIKES - strikes) + ' ♥ — газу!' : 'Две жизни и броня — газу!', 'armor'); } catch (e) {}
                     },
                     onDecline: function() { gameState = 'racing'; continues = MAX_CONTINUES; endGame('crash'); }
                 });
@@ -7822,7 +7822,7 @@ function startGaragePreview(carId) {
             let comboTime = 0;
             let comboMax = 0;
             // «Чистый отрезок» (src/clean-run.js): 10 с без ударов — щит, потом фишки
-            const cleanRun = createCleanRun(); if (ABILITY === 'armor') cleanRun.grantShield(); /* «Буханка»: старт с бронёй */ let _armorShown = false;
+            const cleanRun = createCleanRun({ noFreeShield: INF }); /* бесконечная трасса: броня — только с фишки «Броня» (или «Буханка», «Запаска») */ if (ABILITY === 'armor') cleanRun.grantShield(); /* «Буханка»: старт с бронёй */ let _armorShown = false;
             const boosts = INF ? pendingBoosts : [], headstartTo = boosts.indexOf('headstart') >= 0 ? HEADSTART_M : 0; pendingBoosts = []; // «Разгон» и «Запаска» (src/ui/boosts.js)
             if (boosts.indexOf('spare') >= 0) cleanRun.grantShield();
             let rewindUsed = false, spikeSlowT = 0; /* spikeSlowT — сколько ещё секунд тормозят пробитые шипами колёса */ const risk = createRisk(INF); /* INF — с «В ударе» (src/fever.js) */ // множитель за риск ×1…×5 (src/risk-combo.js)

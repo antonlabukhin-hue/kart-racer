@@ -48,3 +48,14 @@ describe('броня на несколько ударов', () => {
         expect(c.shieldHits).toBe(1);
     });
 });
+
+import { createCleanRun as ccr, CLEAN_SEGMENT as CS, CLEAN_CHIPS as CC } from '../../src/clean-run.js';
+describe('броня только с фишки (бесконечная трасса)', () => {
+    it('чистый отрезок даёт «Е», а не броню', () => {
+        const c = ccr({ noFreeShield: true });
+        expect(c.tick(CS, true)).toBe('chips');
+        expect(c.shield).toBe(false);
+        c.grantShield(2);
+        expect(c.shieldHits).toBe(2);
+    });
+});
