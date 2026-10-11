@@ -729,3 +729,53 @@ test('«на волоске»: уход из полосы перед попут�
     expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThanOrEqual(50);
     expect(problems).toEqual([]);
 });
+
+// потери при столкновениях (отзыв 11.10): три сердца, зверь — полсердца, труба — сердце, краем попутки — без сердца,
+// любое столкновение сбрасывает множитель; брони без фишки нет
+test('столкновения: что теряешь — зверь полсердца, труба сердце, краем попутки — только скорость и множитель', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#heartsDisplay i')).toHaveCount(3);
+    expect(await page.evaluate(() => window.__raceDebug.cleanRun.shield)).toBe(false); // брони без фишки нет
+    const clear = () => page.evaluate(() => { const g = window.__raceDebug; g.cars.forEach(c => { c.x = 99; c.mesh.position.x = 99; }); (g.animals || []).forEach(a => { a.hit = true; }); });
+    // зверь прямо в машину — полсердца
+    await clear();
+    const animal = await page.evaluate(async () => {
+        const g = window.__raceDebug, before = g.strikes;
+        g.riskEvent('nearMiss'); const m0 = g.risk.mult;
+        for (let i = 0; i < 200 && g.strikes === before; i++) { // ждём, пока выбежит зверь (до ~12 с)
+            g.cars.forEach(c => { c.x = 99; c.mesh.position.x = 99; });
+            const a = (g.animals || []).find(x => !x.hit) || null; // любой зверь — прямо в машину (без телепортов: по дороге можно въехать в трубу)
+            if (a) (g.animals || []).forEach(x => { if (x !== a) x.hit = true; }); // один зверь — иначе два удара в одном кадре дают целое сердце
+            if (a) { a.triggered = true; a.mesh.visible = true; a.elapsed = a.duration; a.x = g.x; a.z = g.z; a.mesh.position.set(a.x, 0, a.z); }
+            await new Promise(r => setTimeout(r, 60));
+        }
+        return { lost: g.strikes - before, m0, m1: g.risk.mult, cause: (g.hitLog[g.hitLog.length - 1] || {}).cause };
+    });
+    expect(animal.lost, JSON.stringify(animal)).toBe(0.5);
+    expect(animal.m0).toBeGreaterThan(1);
+    expect(animal.m1).toBe(1);
+    await expect(page.locator('#heartsDisplay i.half')).toHaveCount(1);
+    // краем попутки — без сердца
+    await page.waitForTimeout(800); await clear();
+    const graze = await page.evaluate(async () => {
+        const g = window.__raceDebug, before = g.strikes, gr = g.stats.grazes || 0, c = g.cars[0], hw = (c.hitW || 0.75) * 0.55;
+        for (let i = 0; i < 20 && (g.stats.grazes || 0) === gr && g.strikes === before; i++) { c.hitCooldown = 0; c.x = g.x + hw * 0.85; c.z = g.z; c.mesh.position.set(c.x, 0, c.z); await new Promise(r => setTimeout(r, 50)); }
+        c.x = 99; c.mesh.position.x = 99;
+        return { lost: g.strikes - before, grazed: (g.stats.grazes || 0) - gr };
+    });
+    expect(graze).toEqual({ lost: 0, grazed: 1 });
+    // труба через всю дорогу без прыжка — целое сердце
+    await page.waitForTimeout(800); await clear();
+    const pipe = await page.evaluate(async () => {
+        const g = window.__raceDebug, before = g.strikes;
+        g.spawnHurdle('pipe', [0, 1, 2], 12);
+        for (let i = 0; i < 60 && g.strikes === before; i++) await new Promise(r => setTimeout(r, 50));
+        return g.strikes - before;
+    });
+    expect(pipe).toBe(1);
+    expect(problems).toEqual([]);
+});
