@@ -216,7 +216,7 @@ export function planStretch(d0, d1, rnd, opts) {
         }
     }
     // нитро и сердечки — реже
-    for (let dd = d0 + 90 + r() * 80; dd < d1; dd += 180 + r() * 140) if (!nearGap(dd)) out.push({ kind: 'nitro', d: dd, lane: lane() });
+    for (let dd = d0 + 90 + r() * 80; dd < d1; dd += 360 + r() * 280) if (!nearGap(dd)) out.push({ kind: 'nitro', d: dd, lane: lane() }); // вдвое реже прежнего: главное ускорение — бак и кнопка
     for (let dd = d0 + 300 + r() * 300; dd < d1; dd += 600 + r() * 400) if (!nearGap(dd)) out.push({ kind: 'gum', d: dd, lane: lane() });
     // кассеты и усиления — отдельно, в стороне от цепочек «Е» (не теряются среди них)
     const eDs = out.filter(function(i) { return i.kind === 'echip'; }).map(function(i) { return i.d; });
