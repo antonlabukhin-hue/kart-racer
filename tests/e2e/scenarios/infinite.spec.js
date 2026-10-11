@@ -378,7 +378,7 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
 });
 
 // узор пройден, ничего не задев, — «✔ Чисто!» и множитель риска растёт (путь к «В ударе»)
-test('узоры: чистый проход — рисковое действие', async ({ page }) => {
+test('узоры: чистый проход засчитан (множитель — только за сложные, src/patterns.js patternCounts)', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
     await page.locator('.menu-card[data-menu="infinite"]').click();
@@ -396,7 +396,6 @@ test('узоры: чистый проход — рисковое действи�
         return last.z;
     });
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.patterns || 0), { timeout: 20_000 }).toBeGreaterThan(0);
-    expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThan(0);
     /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });

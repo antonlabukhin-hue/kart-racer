@@ -17,7 +17,7 @@ export function placePlan(items, env) {
     dropBusy(items, function(d) { const z = S - d; return (env.busy || []).some(function(b) { return z >= b[0] - 4 && z <= b[1] + 4; }); }).forEach(function(it) {
         const z = S - it.d;
         let c = null;
-        if (it.kind === 'patEnd') { if (env.onPatEnd) env.onPatEnd(z, it.pat); return; }
+        if (it.kind === 'patEnd') { if (env.onPatEnd) env.onPatEnd(z, it.pat, it.name); return; }
         if (it.kind === 'echip') { L.collectibles.push(make.eChip(it.x != null ? it.x : LX[it.lane], it.y, z)); return; }
         if (it.kind === 'vhs') { L.collectibles.push(make.vhs(LX[it.lane], 0.75, z)); return; }
         if (it.kind === 'power') { L.collectibles.push(make.power(LX[it.lane], z, it.type)); return; }

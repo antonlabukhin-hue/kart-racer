@@ -8652,7 +8652,7 @@ function startGaragePreview(carId) {
                         const b = smashBoards[si];
                         if (b.smashed || !sweptZ(b.z, 0.9) || Math.abs(xPos - b.x) > 1.25 || carYOffset > 1.1) continue;
                         smashBoard(b, scene, Math.abs(speed) * 60).forEach(function(pt) { smashParts.push(pt); });
-                        stats.billboards = (stats.billboards || 0) + 1; riskEvent(risk, 'billboard'); stats.eChips = (stats.eChips || 0) + SMASH_CHIPS; // сразу в счётчик «Е»
+                        stats.billboards = (stats.billboards || 0) + 1; if (!INF) riskEvent(risk, 'billboard'); /* бесконечная трасса: снёс щит на прямой — не риск, «В ударе» за это не набирается */ stats.eChips = (stats.eChips || 0) + SMASH_CHIPS; // сразу в счётчик «Е»
                         speed *= 0.9;
                         shakeTime = Math.max(shakeTime, 0.12);
                         fovPunch = Math.max(fovPunch || 0, 6); buzz('board', _settings.vibrate);

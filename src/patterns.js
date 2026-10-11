@@ -137,3 +137,10 @@ export function chapterPatterns(len, rnd, o) {
     }
     return out;
 }
+
+/** Даёт ли чистый проход узора ступень множителя: только сложные (minT ≥ HARD_T) — за простые и прямые «В ударе» не набирается */
+export const HARD_T = 0.25;
+export function patternCounts(id) {
+    const p = PATTERNS.find(function(x) { return x.id === id; });
+    return !!p && p.minT >= HARD_T;
+}

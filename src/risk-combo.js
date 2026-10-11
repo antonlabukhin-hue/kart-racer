@@ -5,7 +5,7 @@
  * «В УДАРЕ» (бесконечная трасса, createRisk(true)): дошёл до ×5 — FEVER_TIME секунд неуязвимости (src/fever.js);
  * пока горит, цепочка не гаснет, потом множитель — снова ×1 (следующий «В ударе» — заново с нуля).
  */
-export const FEVER_TIME = 5; // было 7: неуязвимость дольше снимала напряжение кульминации
+export const FEVER_TIME = 3; // было 7, потом 5: неуязвимость дольше снимала напряжение кульминации
 export const RISK_POINTS = { nearMiss: 50, nearClose: 80, nearPerfect: 120, jump: 80, landing: 60, billboard: 40, pattern: 60 }; // pattern — узор пройден, ничего не задел (src/patterns.js)
 export const MAX_MULT = 5;
 export const CHAIN_WINDOW = 5; // с
