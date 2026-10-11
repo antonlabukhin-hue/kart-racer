@@ -8034,7 +8034,7 @@ function startGaragePreview(carId) {
                 if (ABILITY === 'rewind' && !rewindUsed) { rewindUsed = true; speed *= 0.8; try { showBigPlaque('⏪ ОТМОТКА ВРЕМЕНИ', 'Этой аварии не было — один раз за заезд', 'armor'); } catch (e) {} return; } // «Машина времени»
                 // щит «чистого отрезка» съедает удар (кроме падения в разлом — там спасает только трамплин)
                 _nmBlock = 2; /* удар (в т.ч. в броне) — 2 с «на волоске» не считается: сквозь машины и зверей в броне — не риск */ if (obs.cause !== 'gap' && cleanRun.useShield()) {
-                    setShieldVisible(cleanRun.shield); const sb = INF ? shieldBonus(powers.lv.shield) : 0; if (sb) stats.eChips = (stats.eChips || 0) + sb; /* прокачанная броня: держит ещё удары и даёт «Е» за отбитый */
+                    setShieldVisible(cleanRun.shield); riskCrash(risk); /* броня держит удар, но множитель сгорает: любое столкновение — сначала */ const sb = INF ? shieldBonus(powers.lv.shield) : 0; if (sb) stats.eChips = (stats.eChips || 0) + sb; /* прокачанная броня: держит ещё удары и даёт «Е» за отбитый */
                     speed *= 0.8;
                     shakeTime = Math.max(shakeTime, 0.15);
                     try { showBigPlaque('🛡 БРОНЯ ПРИНЯЛА УДАР', cleanRun.shield ? 'Аварии нет — броня держит ещё ' + cleanRun.shieldHits + (sb ? ' · +' + sb + ' Е' : '') : 'Аварии нет — копи новый чистый отрезок' + (sb ? ' · +' + sb + ' Е' : ''), 'armor-used'); } catch (e) {}
@@ -9053,6 +9053,7 @@ function startGaragePreview(carId) {
                         } else if (hazardKind(obs.type) === 'slow') {
                             // тормозит (яма, кочка, шипы, смола) — одинаково: скорость падает и пару секунд не разогнаться (src/hazards.js)
                             if (obs.type === 'spikes') { stats.lastSpike = { before: speed, after: speed * SLOW_MUL }; stats.spikes = (stats.spikes || 0) + 1; obs.mesh.scale.y = 0.3; } else obs.mesh.visible = false;
+                            if (INF) riskCrash(risk); /* любое столкновение — множитель к «В ударе» сначала */
                             speed *= SLOW_MUL; spikeSlowT = SLOW_TIME; shakeTime = 0.18; carYOffset = Math.max(carYOffset, 0.12); carBumpTimer = 0.15;
                             obs.active = false;
                             try { if (playerCar) playerCar.userData._suspensionKick = 0.18; } catch (e) {}
@@ -9061,7 +9062,7 @@ function startGaragePreview(carId) {
                             for (let s = 0; s < 6; s++) particleSystem.emit(_v.p1.set(xPos, 0.2, zPos), _v.vel.set((Math.random() - 0.5) * 2, 1 + Math.random(), (Math.random() - 0.5) * 2), 1, 0.15);
                         } else if (hazardKind(obs.type) === 'skid') {
                             // заносит (масло, лёд, кислота) — одинаково: руль скользит, машину ведёт в сторону
-                            stats.oilHits++;
+                            stats.oilHits++; if (INF) riskCrash(risk); /* любое столкновение — множитель сначала */
                             oilSlideTimer = SKID_TIME;
                             speed *= SKID_MUL;
                             xVelocity += (Math.random() < 0.5 ? -1 : 1) * SKID_KICK * (0.6 + Math.random() * 0.4);
