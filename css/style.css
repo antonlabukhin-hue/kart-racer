@@ -6586,3 +6586,6 @@ body:not(.swipe-ctl) #mobile-controls.active ~ #nitro-btn { right: calc(env(safe
     #nitro-btn b { font-size: 12px; }
     body.race-mode.swipe-ctl #btnPauseMobile { position: fixed !important; right: calc(env(safe-area-inset-right, 0px) + 38px) !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 134px) !important; z-index: 113; }
 }
+
+/* полсердца (зверь) */
+#game-hud .hud-hearts i.half { background: linear-gradient(90deg, #ff3b4a 50%, #55505c 50%); -webkit-background-clip: text; background-clip: text; color: transparent !important; text-shadow: none; }

@@ -258,7 +258,7 @@ test('погоня ГАИ: вторая авария во время погон�
     await expect(page.locator('.police-hud')).toBeVisible();
     await page.evaluate(() => { const c = window.__raceDebug.cars[0]; c.x = 99; c.mesh.position.x = 99; });
     await page.waitForTimeout(600);
-    expect(await crash()).toBe(5);
+    expect(await crash()).toBe(3); // поймали — все сердца сразу (их три)
     await expect(page.locator('.police-hud')).toHaveCount(0);
     // ролик поимки (облёт машин с мигалками) и потом — итоги заезда (на «Второй шанс» в тесте нечем платить)
     await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 15_000 });

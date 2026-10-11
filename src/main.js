@@ -2671,8 +2671,8 @@ function startGaragePreview(carId) {
             if (!el) return;
             const mobile = !!(window.__isMobile || window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
             el.innerHTML = mobile
-                ? '<b>Как играть</b><div class="ob-keys">Машина едет сама · ◀▶ — полосы<br>▲ — прыжок · ▼ — подныр<br>Не больше <b>5 аварий</b> · собирай нитро</div>'
-                : '<b>Как играть</b><div class="ob-keys">Машина едет сама · <span>A</span><span>D</span> полосы<br><span>W</span>/<span>↑</span>/<span>Пробел</span> прыжок · <span>S</span>/<span>↓</span> подныр<br><span>P</span> пауза · <span>C</span> камера<br>Лимит: <b>5 аварий</b> · нитро ускоряет</div>';
+                ? '<b>Как играть</b><div class="ob-keys">Машина едет сама · ◀▶ — полосы<br>▲ — прыжок · ▼ — подныр<br>Береги <b>♥ сердца</b> · копи нитро</div>'
+                : '<b>Как играть</b><div class="ob-keys">Машина едет сама · <span>A</span><span>D</span> полосы<br><span>W</span>/<span>↑</span>/<span>Пробел</span> прыжок · <span>S</span>/<span>↓</span> подныр<br><span>P</span> пауза · <span>C</span> камера<br>Береги <b>♥ сердца</b> · нитро — E</div>';
             el.classList.add('show');
             if (window.__onboardStop) window.__onboardStop();
             // снять таймеры и слушатели; teardownRaceUI зовёт это при выходе из заезда
@@ -4428,7 +4428,8 @@ function startGaragePreview(carId) {
                 if (refs.heartsEl && _heartsShown !== strikes) {
                     const hs = refs.heartsEl.children;
                     for (let hi = 0; hi < hs.length; hi++) {
-                        const lost = hi >= MAX_STRIKES - strikes;
+                        const left = MAX_STRIKES - strikes, lost = hi >= Math.ceil(left - 1e-6); /* зверь — полсердца (src/hit-zones.js) */
+                        hs[hi].classList.toggle('half', !lost && hi === Math.floor(left) && left % 1 > 0.01);
                         if (lost && !hs[hi].classList.contains('lost') && _heartsShown >= 0) { hs[hi].classList.add('break'); crashFlash(strikes); }
                         hs[hi].classList.toggle('lost', lost);
                     }
@@ -8013,6 +8014,7 @@ function startGaragePreview(carId) {
             };
             // «задел боком» (src/hit-zones.js): не авария — скорость, множитель и толчок вбок; в правиле «ГАИ на хвосте» — погоня, задел в погоне — авария
             function hitOrGraze(obs, dx, hw) {
+                if (INF && (obs.type === 'animal' || obs.speciesKey)) { obs.halfHeart = true; return handleObstacleHit(obs); } /* зверь — полсердца при любом ударе, и краем тоже: риск должен быть */
                 if (hitSeverity(dx, hw, INF) === 'major') return handleObstacleHit(obs);
                 if (gameState !== 'racing') return;
                 _nmBlock = 2;
@@ -8044,7 +8046,7 @@ function startGaragePreview(carId) {
                     return;
                 }
                 logHit(obs.cause || obs.speciesKey || obs.type || 'animal');
-                strikes++;
+                strikes += obs.halfHeart ? 0.5 : 1; /* зверь — полсердца */
                 const _pr = police && (FAIL.chaseAll || String(obs.cause || '').indexOf('car:') === 0) ? police.crash() : null; /* «сердца»: ГАИ — только за столкновение с машиной; «ГАИ на хвосте» (src/fail-rules.js) — за любую аварию */
                 if (_pr === 'caught' && FAIL.chaseAll && strikes < MAX_STRIKES) police.crash(); /* «Рафик» в погоне выдержал удар — погоня заново */
                 if (_pr === 'caught' && (FAIL.chaseAll ? strikes >= MAX_STRIKES : strikes < MAX_STRIKES)) { // ГАИ поймала: ролик облёта (src/police-chase.js), потом — как обычно «Второй шанс»
