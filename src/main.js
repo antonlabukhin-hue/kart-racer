@@ -8070,7 +8070,8 @@ function startGaragePreview(carId) {
                 if (obs.type === 'animal' || obs.speciesKey) stats.animalsHit++;
                 
                 const animalName = obs.type === 'animal' ? ANIMAL_TYPES[obs.speciesKey]?.name : '';
-                showTimePenaltyPopup(penaltySeconds, animalName);
+                if (INF) { const at = obs.speciesKey && ANIMAL_TYPES[obs.speciesKey]; showTimePenaltyPopup(0, (at ? (at.emoji || '🐾') + ' ' + at.name : '💥 Авария') + ' −' + (obs.halfHeart ? '½' : '1') + ' ♥'); } /* бесконечная трасса: время ничего не значит — пишем, сколько сердца ушло */
+                else showTimePenaltyPopup(penaltySeconds, animalName);
                 try { playPlayerDamageAnim(0.9); } catch (e) {}
                 try { if (particleSystem && particleSystem.explode) particleSystem.explode({ x: xPos, y: 0.35, z: zPos }, 0.6); } catch (e) {} try { if (window.soundEngine) window.soundEngine.playSfx('explode', 0.7); } catch (e2) {}
                 try { if (window.soundEngine) window.soundEngine.playSfx('animal'); } catch (e) {}
