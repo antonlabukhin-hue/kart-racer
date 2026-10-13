@@ -108,7 +108,7 @@ test('бесконечная трасса: усиление подбираетс
     await expect(page.locator('.chance-modal')).toContainText('200 Е');
     await page.locator('.chance-modal .cc-pay-e').click();
     await expect(page.locator('.chance-modal')).toHaveCount(0);
-    await expect.poll(() => page.evaluate(() => [window.__raceDebug.state, window.__raceDebug.strikes].join())).toBe('racing,3');
+    await expect.poll(() => page.evaluate(() => [window.__raceDebug.state, window.__raceDebug.strikes].join())).toBe('racing,1'); // три сердца: после «Второго шанса» потрачено одно (MAX_STRIKES − 2)
     // после оплаты машина едет дальше (раньше игровой цикл вставал)
     const z0 = await page.evaluate(() => window.__raceDebug.z);
     /* газ жмётся сам (W — прыжок) */
@@ -154,6 +154,7 @@ test('бесконечная трасса: ящик «?» разбивается
     await page.locator('#shop-action').click();
     await waitRacing(page);
     /* газ жмётся сам (W — прыжок) */
+    await page.evaluate(() => { window.__crPops = []; new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.classList && (n.classList.contains('big-plaque') || n.classList.contains('penalty-pop'))) window.__crPops.push(n.textContent); }))).observe(document.body, { childList: true, subtree: true }); }); // плашка живёт ~2 с — под нагрузкой проверка опаздывала
     const crate = await page.evaluate(async () => {
         const g = window.__raceDebug;
         const c = g.collectibles.filter(c => c.type === 'crate' && c.active && c.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
@@ -164,7 +165,7 @@ test('бесконечная трасса: ящик «?» разбивается
         return { crates: g.stats.crates || 0, strikes: g.strikes };
     });
     expect(crate).toEqual({ crates: 1, strikes: 0 });
-    await expect(page.locator('.big-plaque, .penalty-pop').first()).toBeVisible(); // исход — большой плашкой; значок 90-х (7%) — строкой сверху
+    await expect.poll(() => page.evaluate(() => window.__crPops.length)).toBeGreaterThan(0); // исход — большой плашкой; значок 90-х (7%) — строкой сверху
     // вперёд за 600 м — там уже шипы
     await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 700); });
     // шипы — впереди машины (их нет на этом отрезке — проехать дальше; аварии по дороге не считаются)
@@ -258,7 +259,7 @@ test('погоня ГАИ: вторая авария во время погон�
     await expect(page.locator('.police-hud')).toBeVisible();
     await page.evaluate(() => { const c = window.__raceDebug.cars[0]; c.x = 99; c.mesh.position.x = 99; });
     await page.waitForTimeout(600);
-    expect(await crash()).toBe(5);
+    expect(await crash()).toBe(3); // поймали — все сердца сразу (их три)
     await expect(page.locator('.police-hud')).toHaveCount(0);
     // ролик поимки (облёт машин с мигалками) и потом — итоги заезда (на «Второй шанс» в тесте нечем платить)
     await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 15_000 });
@@ -354,7 +355,7 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
     await page.locator('#shop-action').click();
     await waitRacing(page);
     /* газ жмётся сам (W — прыжок) */
-    await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearMiss'); });
+    await page.evaluate(() => { const g = window.__raceDebug; for (let i = 0; i < 4; i++) g.riskEvent('nearClose'); });
     await expect(page.locator('#fever-fx')).toBeVisible();
     await expect(page.locator('.big-plaque')).toContainText('В УДАРЕ');
     // «В ударе» — на нитро: линии скорости по краям (src/juice.js; слой всегда на месте, видно — по прозрачности)
@@ -378,7 +379,7 @@ test('«В ударе»: на ×5 неуязвим, попутки сносят�
 });
 
 // узор пройден, ничего не задев, — «✔ Чисто!» и множитель риска растёт (путь к «В ударе»)
-test('узоры: чистый проход — рисковое действие', async ({ page }) => {
+test('узоры: чистый проход засчитан (множитель — только за сложные, src/patterns.js patternCounts)', async ({ page }) => {
     const problems = watchProblems(page);
     await login(page);
     await page.locator('.menu-card[data-menu="infinite"]').click();
@@ -396,7 +397,6 @@ test('узоры: чистый проход — рисковое действи�
         return last.z;
     });
     await expect.poll(() => page.evaluate(() => window.__raceDebug.stats.patterns || 0), { timeout: 20_000 }).toBeGreaterThan(0);
-    expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThan(0);
     /* газ жмётся сам (W — прыжок) */
     expect(problems).toEqual([]);
 });
@@ -612,7 +612,7 @@ test('слипстрим: мешок копит бак, «Рывок» при у
     await page.evaluate(() => {
         const g = window.__raceDebug;
         g.cars.forEach((c, i) => { c.z = g.z - 300 - i * 40; c.x = 99; c.mesh.position.set(99, 0, c.z); });
-        const c = g.cars[0]; c.x = g.x; c.lane = 1; c.targetLane = 1; c.laneChangeTimer = 99; c.speed = 0.005; c.z = g.z - 30; c.mesh.position.set(c.x, 0.1, c.z); window.__slipCar = c;
+        const c = g.cars[0]; c.x = g.x; c.lane = 1; c.targetLane = 1; c.laneChangeTimer = 99; c._avoidLock = 99; c.speed = 0.005; c.z = g.z - 30; c.mesh.position.set(c.x, 0.1, c.z); window.__slipCar = c; // _avoidLock — не перестраивается следом за игроком
     });
     await expect(page.locator('#nitro-btn')).toHaveClass(/drafting/, { timeout: 20_000 }); // в мешке — кнопка светится
     // уход вбок — прямо в странице, как только попутка ближе 7 м (опрос из теста под нагрузкой опаздывает)
@@ -722,11 +722,60 @@ test('«на волоске»: уход из полосы перед попут�
     await page.evaluate(() => {
         const g = window.__raceDebug;
         g.cars.forEach((c, i) => { c.z = g.z - 300 - i * 40; c.x = 99; c.mesh.position.set(99, 0, c.z); });
-        const c = g.cars[0]; c.x = g.x; c.lane = 1; c.targetLane = 1; c.laneChangeTimer = 99; c.speed = 0.005; c.z = g.z - 30; c.mesh.position.set(c.x, 0.1, c.z); window.__nmCar = c;
+        const c = g.cars[0]; c.x = g.x; c.lane = 1; c.targetLane = 1; c.laneChangeTimer = 99; c._avoidLock = 99; c.speed = 0.005; c.z = g.z - 30; c.mesh.position.set(c.x, 0.1, c.z); window.__nmCar = c;
     });
     await page.evaluate(() => new Promise(res => { const g = window.__raceDebug; const t = setInterval(() => { if (g.z - window.__nmCar.z < 8) { clearInterval(t); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD' })); setTimeout(() => { document.dispatchEvent(new KeyboardEvent('keyup', { key: 'd', code: 'KeyD' })); res(); }, 400); } }, 10); }));
     await expect(page.locator('.animal-shout').filter({ hasText: /(На волоске|Впритирку|ИДЕАЛЬНО)! ▮/ })).toHaveCount(1, { timeout: 5_000 });
     expect(await page.evaluate(() => window.__raceDebug.strikes)).toBe(0);
     expect(await page.evaluate(() => window.__raceDebug.risk.points)).toBeGreaterThanOrEqual(50);
+    expect(problems).toEqual([]);
+});
+
+// потери при столкновениях (отзыв 11.10): три сердца, зверь — полсердца, труба — сердце, краем попутки — без сердца,
+// любое столкновение сбрасывает множитель; брони без фишки нет
+test('столкновения: что теряешь — зверь полсердца, труба сердце, краем попутки — только скорость и множитель', async ({ page }) => {
+    const problems = watchProblems(page);
+    await login(page);
+    await page.locator('#main-menu-play').click();
+    await waitRacing(page);
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#heartsDisplay i')).toHaveCount(3);
+    await page.evaluate(() => { window.__pops2 = []; new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.classList && n.classList.contains('penalty-pop')) window.__pops2.push(n.textContent); }))).observe(document.body, { childList: true, subtree: true }); });
+    expect(await page.evaluate(() => window.__raceDebug.cleanRun.shield)).toBe(false); // брони без фишки нет
+    const clear = () => page.evaluate(() => { const g = window.__raceDebug; g.cars.forEach(c => { c.x = 99; c.mesh.position.x = 99; }); (g.animals || []).forEach(a => { a.hit = true; }); });
+    // зверь прямо в машину — полсердца
+    await clear();
+    const animal = await page.evaluate(async () => {
+        const g = window.__raceDebug, before = g.strikes;
+        g.riskEvent('nearClose'); const m0 = g.risk.mult;
+        (g.animals || []).forEach(x => { x.hit = true; }); // один зверь — иначе два удара в одном кадре дают целое сердце
+        g.cars.forEach(c => { c.x = 99; c.mesh.position.x = 99; });
+        g.spawnAnimal(6); // зверь прямо перед машиной
+        for (let i = 0; i < 60 && g.strikes === before; i++) await new Promise(r => setTimeout(r, 30));
+        return { lost: g.strikes - before, m0, m1: g.risk.mult, cause: (g.hitLog[g.hitLog.length - 1] || {}).cause };
+    });
+    expect(animal.lost, JSON.stringify(animal)).toBe(0.5);
+    expect(animal.m0).toBeGreaterThan(1);
+    expect(animal.m1).toBe(1);
+    await expect(page.locator('#heartsDisplay i.half')).toHaveCount(1);
+    expect((await page.evaluate(() => window.__pops2.join('|')))).toMatch(/−½ ♥/); // штраф видно
+    // краем попутки — без сердца
+    await page.waitForTimeout(800); await clear();
+    const graze = await page.evaluate(async () => {
+        const g = window.__raceDebug, before = g.strikes, gr = g.stats.grazes || 0, c = g.cars[0], hw = (c.hitW || 0.75) * 0.55;
+        for (let i = 0; i < 20 && (g.stats.grazes || 0) === gr && g.strikes === before; i++) { c.hitCooldown = 0; c.x = g.x + hw * 0.85; c.z = g.z; c.mesh.position.set(c.x, 0, c.z); await new Promise(r => setTimeout(r, 50)); }
+        c.x = 99; c.mesh.position.x = 99;
+        return { lost: g.strikes - before, grazed: (g.stats.grazes || 0) - gr };
+    });
+    expect(graze).toEqual({ lost: 0, grazed: 1 });
+    // труба через всю дорогу без прыжка — целое сердце
+    await page.waitForTimeout(800); await clear();
+    const pipe = await page.evaluate(async () => {
+        const g = window.__raceDebug, before = g.strikes;
+        g.spawnHurdle('pipe', [0, 1, 2], 12);
+        for (let i = 0; i < 60 && g.strikes === before; i++) await new Promise(r => setTimeout(r, 50));
+        return g.strikes - before;
+    });
+    expect(pipe).toBe(1);
     expect(problems).toEqual([]);
 });

@@ -38,6 +38,6 @@ export function nearGrade(gap, late) {
 export const NEAR_STYLE = {
     clean:   { risk: 'nearMiss',    text: '⚡ На волоске!',      bar: '▮▯▯', color: '#66ffcc', charge: 1,   nitro: 0,   sfx: null },
     close:   { risk: 'nearClose',   text: '⚡⚡ Впритирку!',      bar: '▮▮▯', color: '#ffe066', charge: 1.6, nitro: 0,   sfx: 'pickup' },
-    perfect: { risk: 'nearPerfect', text: '⚡⚡⚡ ИДЕАЛЬНО!',     bar: '▮▮▮', color: '#ff7ad8', charge: 2.5, nitro: 0.6, sfx: 'nitro_pick' }
+    perfect: { risk: 'nearPerfect', text: '⚡⚡⚡ ИДЕАЛЬНО!',     bar: '▮▮▮', color: '#ff7ad8', charge: 2.5, nitro: 0,   sfx: 'nitro_pick' }
 };
 export function nearStyle(grade) { return NEAR_STYLE[grade] || NEAR_STYLE.clean; }

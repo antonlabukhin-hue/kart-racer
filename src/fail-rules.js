@@ -1,6 +1,6 @@
 /**
  * Правило провала бесконечной трассы — A/B (какое держит лучше, решают данные run_events, docs/METRICS.md §4):
- *   'hearts' — как было: пять сердец (у «Рафика» шесть), ГАИ — только за столкновение с машиной;
+ *   'hearts' — три сердца (у «Рафика» четыре; было пять — риска не чувствовалось), ГАИ — только за столкновение с машиной;
  *   'chase'  — как в Subway Surfers: ошибка сажает ГАИ на хвост, ошибка во время погони — конец.
  *              Два сердца: первая авария (любая — машина, зверь, яма) — погоня CHASE_AB с; ушёл от ГАИ — сердце вернулось.
  * Пока игроков мало (A/B не наберёт выборку) — выбор в «Настройках» (settings.fail, передаётся как fallback, жребия нет);
@@ -13,6 +13,7 @@ export const AB_KEY = 'road_racing_ab_fail';
 export const VARIANTS = ['hearts', 'chase'];
 export const CHASE_AB = 8;      // с погони в варианте 'chase' (в 'hearts' — CHASE_TIME из src/police-chase.js)
 export const CHASE_HEARTS = 2;  // сердец в варианте 'chase'
+export const HEARTS = 3;        // сердец в варианте 'hearts'
 
 /**
  * Вариант устройства: из адреса (?fail=), из хранилища или новый (rnd — генератор [0,1)).
@@ -39,5 +40,5 @@ export function failRules(o) {
     const medic = o && o.medic ? 1 : 0;
     if (o && o.ruleStrikes) return { variant: 'hearts', maxStrikes: o.ruleStrikes, chaseAll: false, chaseTime: 0, refill: false };
     if (variant === 'chase') return { variant: variant, maxStrikes: CHASE_HEARTS + medic, chaseAll: true, chaseTime: CHASE_AB, refill: true };
-    return { variant: variant, maxStrikes: 5 + medic, chaseAll: false, chaseTime: 0, refill: false };
+    return { variant: variant, maxStrikes: HEARTS + medic, chaseAll: false, chaseTime: 0, refill: false };
 }

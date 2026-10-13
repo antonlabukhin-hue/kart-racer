@@ -20,6 +20,25 @@ export function onCrash(st, time) {
 }
 export function tickChase(st, dt) { st.t = Math.max(0, st.t - dt); return st.t; }
 
+/**
+ * Ход машины ГАИ за игроком — плавно, без дёрганья: соседняя полоса выбирается один раз и меняется, только если игрок ушёл
+ * в крайнюю полосу с её стороны (раньше сторона прыгала при каждом пересечении x = 0.5, а x повторял каждое шевеление руля);
+ * x и отставание догоняют цель мягко (сглаживание по времени), лёгкий наклон кузова по ходу.
+ * p — { side (−1 слева, +1 справа, 0 — ещё не выбрана), x, gap }; px — x игрока; base — отставание; t — время погони.
+ */
+export const POLICE_LANES = [-2, 0, 2];
+export function policeStep(p, px, base, t, dt) {
+    const lane = Math.max(0, Math.min(2, Math.round((px + 2) / 2)));
+    let side = p.side || (lane === 2 ? -1 : 1);
+    if (lane + side < 0 || lane + side > 2) side = -side;
+    const tx = POLICE_LANES[lane + side];
+    const k = Math.min(1, (dt || 0) * 2);
+    const x = p.x + (tx - p.x) * k;
+    const tg = (base || 1.6) + Math.sin(t * 1.3) * 0.4; // то нагоняет, то отстаёт — медленно
+    const gap = p.gap ? p.gap + (tg - p.gap) * Math.min(1, (dt || 0) * 3) : tg;
+    return { side: side, x: x, gap: gap, yaw: Math.max(-0.2, Math.min(0.2, (x - p.x) / Math.max(1e-3, dt || 1e-3) * -0.04)) };
+}
+
 // ---- модель: белый седан 80-х — три объёма, синяя полоса и «ГАИ» на дверях, мигалка-«люстра» с куполами,
 // двойные фары, хромированные бамперы, фара-искатель и антенна. Перёд — к −z.
 function doorLabel() {
@@ -150,7 +169,7 @@ function glowTexture() {
  */
 export function createPolice(scene, onChase, onEscape, time) { // onChase — погоня началась (ведущий: «ГАИ на хвосте!»), onEscape — ушёл от погони
     const st = createChaseState();
-    let car = null, hud = null, t = 0;
+    let car = null, hud = null, t = 0, side = 0, gapZ = 0;
     const show = function(on) {
         if (on && !car) { car = policeCar(); scene.add(car); }
         if (car) car.visible = on;
@@ -164,17 +183,17 @@ export function createPolice(scene, onChase, onEscape, time) { // onChase — п
     };
     return {
         state: st,
-        crash: function() { const r = onCrash(st, time); show(r === 'chase'); if (r === 'chase' && onChase) onChase(); return r; },
+        crash: function() { const r = onCrash(st, time); show(r === 'chase'); if (r === 'chase') { side = 0; gapZ = 0; if (onChase) onChase(); } return r; },
         stop: function() { st.t = 0; show(false); },
         tick: function(dt, x, z, gap) {
             if (st.t <= 0) return;
             t += dt;
             if (tickChase(st, dt) <= 0) { show(false); if (onEscape) onEscape(); return; }
             if (car) {
-                const tx = x + (x > 0.5 ? -1.9 : 1.9); // соседняя полоса, ближе к середине дороги
-                car.position.x += (tx - car.position.x) * Math.min(1, dt * 2.5);
-                car.position.z = z + (gap || 1.6) + Math.sin(t * 2.2) * 0.5; // то нагоняет, то отстаёт
-                car.position.y = 0;
+                const step = policeStep({ side: side, x: car.position.x, gap: gapZ }, x, gap, t, dt);
+                side = step.side; gapZ = step.gap;
+                car.position.x = step.x; car.position.z = z + step.gap; car.position.y = 0;
+                car.rotation.y = step.yaw;
                 blink(car, t);
             }
             if (hud) hud.querySelector('u').style.width = Math.round(st.t / (time || CHASE_TIME) * 100) + '%';

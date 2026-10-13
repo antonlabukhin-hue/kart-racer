@@ -28,6 +28,7 @@ import { createThemeEvents } from '../theme-events.js';
 import { createRingChain, renderSpeedLines, speedLinesK } from '../juice.js';
 import { feverHold, renderFeverFx } from '../fever.js';
 import { riskEvent, FEVER_TIME } from '../risk-combo.js';
+import { patternCounts } from '../patterns.js';
 import { tickPowers, activePowers } from '../powerups.js';
 import { renderPowerHud } from '../ui/second-chance.js';
 import { HEADSTART_M } from '../ui/boosts.js';
@@ -111,7 +112,7 @@ export function createInfiniteRun(ctx) {
         placePlan(plan, { scene: scene, START_Z: START_Z, lists: L, make: make, busy: ctx.busy, arch: ctx.arch, noNitro: rule.noNitro,
             slideOf: function(d) { return rule.slide || themeAt(d).theme.slide; },
             letter: function() { return wordState(player, dayKey(new Date())).next; },
-            onPatEnd: function(z, pat) { patEnds.push({ z: z, pat: pat }); } });
+            onPatEnd: function(z, pat, name) { patEnds.push({ z: z, pat: pat, name: name }); } });
     }
     function track(list) {
         list.forEach(function(o) { box.setFromObject(o); if (!box.isEmpty()) roots.push([o, box.min.z]); });
@@ -171,8 +172,8 @@ export function createInfiniteRun(ctx) {
                 const pe = patEnds.shift();
                 if (!patHit.has(pe.pat) && ctx.state === 'racing' && z > pe.z - 30) {
                     stats.patterns = (stats.patterns || 0) + 1;
-                    const rv = riskEvent(risk, 'pattern');
-                    try { ctx.popup('✔ Чисто! ×' + rv.mult); } catch (e) {}
+                    if (patternCounts(pe.name)) { const rv = riskEvent(risk, 'pattern'); try { ctx.popup('✔ Чисто! ×' + rv.mult); } catch (e) {} } // множитель — только за сложные связки, простые и прямые — без
+                    else try { ctx.popup('✔ Чисто!'); } catch (e) {}
                 }
             }
             // «В УДАРЕ» (src/fever.js) и сочность (src/juice.js)

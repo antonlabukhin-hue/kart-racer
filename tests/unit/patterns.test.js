@@ -113,3 +113,14 @@ describe('за пиком сложности — связки, а не скор�
         expect(hard(1)).toBeGreaterThan(hard(0) * 1.6);
     });
 });
+
+import { patternCounts } from '../../src/patterns.js';
+describe('«В ударе» — только за сложное', () => {
+    it('простые и прямые связки множитель не двигают', () => {
+        expect(patternCounts('corridor')).toBe(false);
+        expect(patternCounts('three-lines')).toBe(false);
+        expect(patternCounts('minefield')).toBe(true);
+        expect(patternCounts('chicane')).toBe(true);
+        expect(patternCounts('nope')).toBe(false);
+    });
+});

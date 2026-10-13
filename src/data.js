@@ -179,7 +179,7 @@ export const CAR_PRESETS = {
     gazel:       { name: 'Газель',     color: 0xf2f2ee, maxSpeed: 0.42, accel: 0.021, durability: 1.2, oilGrip: 1.05, priceChips: 8500,
         ability: { id: 'trade', name: 'Челнок', desc: '+25% «Е» на итогах заезда' } },
     rafik:       { name: 'Рафик',      color: 0xefefe8, maxSpeed: 0.405, accel: 0.0198, durability: 1.1, oilGrip: 1.0, priceChips: 7000,
-        ability: { id: 'medic', name: 'Скорая', desc: 'шесть жизней вместо пяти' } },
+        ability: { id: 'medic', name: 'Скорая', desc: 'на одно сердце больше' } },
     buhanka:     { name: 'Буханка',    color: 0x5e7040, maxSpeed: 0.39, accel: 0.0192, durability: 1.35, oilGrip: 1.1, priceChips: 6000,
         ability: { id: 'armor', name: 'Броня', desc: 'каждый заезд — с бронёй: первый удар не авария' } },
     shestisot:   { name: 'Шестисотый', color: 0x0e0e12, maxSpeed: 0.468, accel: 0.0252, durability: 1.2, oilGrip: 0.95, priceChips: 10000,

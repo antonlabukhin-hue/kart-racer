@@ -17,6 +17,7 @@ export const SLIP_CLOSE = 2;
 export const SLIP_MIN = 0.3;    // с в мешке, чтобы выход дал «Рывок»
 export const SLING_DZ = 7;      // и при выходе попутка была ближе стольких ед.
 export const SLING_MOVE = 0.5;  // ушёл вбок сам (попутка перестроилась — не «Рывок»)
+export const SLING_CHARGE = 0.25; // бак за «Рывок» (было — 0.8 с нитро сразу: ускорений стало слишком много)
 export const SLING_TIME = 0.8;  // с нитро за «Рывок»
 export const NM_CHARGE = 0.15;  // бак за «на волоске»
 export const HINT_KEY = 'road_racing_slip_hint'; // первая подсказка про мешок — раз на устройство

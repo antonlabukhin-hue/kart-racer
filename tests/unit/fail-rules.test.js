@@ -21,9 +21,9 @@ describe('правило провала A/B', () => {
         expect(st.m[AB_KEY]).toBeUndefined();
     });
 
-    it('«сердца»: пять (у «Рафика» шесть), ГАИ — только за машины', () => {
-        expect(failRules({ variant: 'hearts' })).toMatchObject({ variant: 'hearts', maxStrikes: 5, chaseAll: false, refill: false });
-        expect(failRules({ variant: 'hearts', medic: true }).maxStrikes).toBe(6);
+    it('«сердца»: три (у «Рафика» четыре), ГАИ — только за машины', () => {
+        expect(failRules({ variant: 'hearts' })).toMatchObject({ variant: 'hearts', maxStrikes: 3, chaseAll: false, refill: false });
+        expect(failRules({ variant: 'hearts', medic: true }).maxStrikes).toBe(4);
     });
 
     it('«ГАИ на хвосте»: два сердца, погоня за любую аварию, ушёл — сердца снова полные', () => {

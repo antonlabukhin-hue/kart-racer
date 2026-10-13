@@ -58,12 +58,12 @@ describe('качество «на волоске»', () => {
         expect(nearGrade(1.2, CLOSE_LATE - 0.01)).toBe('close');
         expect(nearGrade(1.2, 9)).toBe('clean');
     });
-    it('точнее — дороже: очки, бак, нитро', () => {
+    it('точнее — дороже: очки и бак (без нитро)', () => {
         const c = nearStyle('clean'), m = nearStyle('close'), p = nearStyle('perfect');
         expect(RISK_POINTS[c.risk]).toBeLessThan(RISK_POINTS[m.risk]);
         expect(RISK_POINTS[m.risk]).toBeLessThan(RISK_POINTS[p.risk]);
         expect(c.charge).toBeLessThan(m.charge); expect(m.charge).toBeLessThan(p.charge);
-        expect(p.nitro).toBeGreaterThan(0);
+        expect(p.nitro).toBe(0); // без ускорения: ускоряешься кнопкой нитро
         expect(nearStyle(undefined)).toBe(c);
     });
     it('шаг возвращает качество (строка — прежние if() работают)', () => {

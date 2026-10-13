@@ -6,7 +6,9 @@
 export const CLEAN_SEGMENT = 10;
 export const CLEAN_CHIPS = 20;
 
-export function createCleanRun() {
+/** o.noFreeShield — броня только с фишки (бесконечная трасса): чистый отрезок даёт «Е», а не броню */
+export function createCleanRun(o) {
+    const free = !(o && o.noFreeShield);
     let t = 0, shield = 0, chips = 0, segments = 0; // shield — сколько ударов ещё держит броня
     return {
         /** Кадр езды; moving — машина едет. Возвращает 'shield' | 'chips' | null */
@@ -16,7 +18,7 @@ export function createCleanRun() {
             if (t < CLEAN_SEGMENT) return null;
             t -= CLEAN_SEGMENT;
             segments++;
-            if (!shield) { shield = 1; return 'shield'; }
+            if (!shield && free) { shield = 1; return 'shield'; }
             chips += CLEAN_CHIPS;
             return 'chips';
         },

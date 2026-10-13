@@ -18,3 +18,18 @@ describe('погоня ГАИ', () => {
         expect(onCrash(st)).toBe('chase');
     });
 });
+
+import { policeStep } from '../../src/police-chase.js';
+describe('машина ГАИ едет плавно', () => {
+    it('сторона не прыгает от шевеления руля, x догоняет цель мягко', () => {
+        let p = { side: 0, x: 2, gap: 0 };
+        const xs = [];
+        for (let i = 0; i < 60; i++) { p = Object.assign(p, policeStep(p, 0.45 + (i % 2 ? 0.1 : -0.1), 1.6, i / 60, 1 / 60)); xs.push(p.x); }
+        expect(p.side).toBe(1); // игрок в средней полосе — ГАИ справа, и не перескакивает
+        for (let i = 1; i < xs.length; i++) expect(Math.abs(xs[i] - xs[i - 1])).toBeLessThan(0.1);
+    });
+    it('игрок ушёл в крайнюю полосу со стороны ГАИ — она переходит на другую сторону', () => {
+        const s = policeStep({ side: 1, x: 2, gap: 1.6 }, 2, 1.6, 0, 1 / 60);
+        expect(s.side).toBe(-1);
+    });
+});
