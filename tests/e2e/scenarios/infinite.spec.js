@@ -154,6 +154,7 @@ test('бесконечная трасса: ящик «?» разбивается
     await page.locator('#shop-action').click();
     await waitRacing(page);
     /* газ жмётся сам (W — прыжок) */
+    await page.evaluate(() => { window.__crPops = []; new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.classList && (n.classList.contains('big-plaque') || n.classList.contains('penalty-pop'))) window.__crPops.push(n.textContent); }))).observe(document.body, { childList: true, subtree: true }); }); // плашка живёт ~2 с — под нагрузкой проверка опаздывала
     const crate = await page.evaluate(async () => {
         const g = window.__raceDebug;
         const c = g.collectibles.filter(c => c.type === 'crate' && c.active && c.z < g.z - 5).sort((a, b) => b.z - a.z)[0];
@@ -164,7 +165,7 @@ test('бесконечная трасса: ящик «?» разбивается
         return { crates: g.stats.crates || 0, strikes: g.strikes };
     });
     expect(crate).toEqual({ crates: 1, strikes: 0 });
-    await expect(page.locator('.big-plaque, .penalty-pop').first()).toBeVisible(); // исход — большой плашкой; значок 90-х (7%) — строкой сверху
+    await expect.poll(() => page.evaluate(() => window.__crPops.length)).toBeGreaterThan(0); // исход — большой плашкой; значок 90-х (7%) — строкой сверху
     // вперёд за 600 м — там уже шипы
     await page.evaluate(() => { const g = window.__raceDebug; g.setZ(g.startZ - 700); });
     // шипы — впереди машины (их нет на этом отрезке — проехать дальше; аварии по дороге не считаются)
